@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440
     embedding_dimensions: int = 1536
+    deepseek_api_key: str | None = None
+    deepseek_base_url: str = "https://api.deepseek.com"
+    deepseek_rewrite_model: str = "deepseek-v4-flash"
+    deepseek_timeout_seconds: float = 60.0
     frontend_origin: str = "http://localhost:3000"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

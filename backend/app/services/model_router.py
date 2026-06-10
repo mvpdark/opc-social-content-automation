@@ -1,8 +1,10 @@
 from pathlib import Path
 import hashlib
+import json
 import math
 import re
 
+import httpx
 from fastapi import HTTPException, status
 
 from app.core.config import settings
@@ -20,6 +22,24 @@ def load_prompt(name: str) -> str:
             detail=f"Prompt template is missing: {name}",
         )
     return prompt_path.read_text(encoding="utf-8")
+
+
+def _redacted_provider_error(provider: str, status_code: int | None = None) -> str:
+    suffix = f" HTTP {status_code}" if status_code is not None else ""
+    return f"{provider} request failed{suffix}. Check provider configuration and logs."
+
+
+def _deepseek_messages(prompt_template: str, payload: dict[str, object]) -> list[dict[str, str]]:
+    return [
+        {
+            "role": "system",
+            "content": prompt_template,
+        },
+        {
+            "role": "user",
+            "content": json.dumps(payload, ensure_ascii=False, indent=2),
+        },
+    ]
 
 
 class ModelRouter:
@@ -49,11 +69,57 @@ class ModelRouter:
         )
 
     def rewrite_model(self, prompt_name: str, payload: dict[str, object]) -> str:
-        load_prompt(prompt_name)
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Rewrite model provider is not configured yet.",
-        )
+        prompt_template = load_prompt(prompt_name)
+        if not settings.deepseek_api_key:
+            raise HTTPException(
+                status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                detail="DeepSeek rewrite provider is not configured yet.",
+            )
+
+        request_payload: dict[str, object] = {
+            "model": settings.deepseek_rewrite_model,
+            "messages": _deepseek_messages(prompt_template, payload),
+            "thinking": {"type": "disabled"},
+            "temperature": 0.7,
+            "stream": False,
+        }
+        try:
+            with httpx.Client(timeout=settings.deepseek_timeout_seconds) as client:
+                response = client.post(
+                    f"{settings.deepseek_base_url.rstrip('/')}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {settings.deepseek_api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json=request_payload,
+                )
+                response.raise_for_status()
+                data = response.json()
+        except httpx.HTTPStatusError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=_redacted_provider_error("DeepSeek", exc.response.status_code),
+            ) from exc
+        except (httpx.HTTPError, ValueError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=_redacted_provider_error("DeepSeek"),
+            ) from exc
+
+        try:
+            content = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="DeepSeek response did not include message content.",
+            ) from exc
+
+        if not isinstance(content, str) or not content.strip():
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="DeepSeek response content was empty.",
+            )
+        return content.strip()
 
     def image_model(self, prompt_name: str, payload: dict[str, object]) -> str:
         load_prompt(prompt_name)

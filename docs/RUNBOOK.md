@@ -29,6 +29,33 @@ Run the API:
 uvicorn app.main:app --reload
 ```
 
+## DeepSeek Rewrite Provider
+
+The humanization rewrite path uses DeepSeek's official OpenAI-compatible Chat Completion API.
+
+Set these values in `.env`:
+
+```bash
+DEEPSEEK_API_KEY=your-secret-key
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_REWRITE_MODEL=deepseek-v4-flash
+DEEPSEEK_TIMEOUT_SECONDS=60
+```
+
+Only `.env.example` is committed. The real `.env` file stays local and ignored by Git.
+
+Check model availability without generating content:
+
+```bash
+python scripts/check_deepseek.py
+```
+
+Run a small rewrite smoke test:
+
+```bash
+python scripts/smoke_deepseek_rewrite.py
+```
+
 ## Frontend
 
 ```bash

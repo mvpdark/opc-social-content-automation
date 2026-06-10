@@ -47,6 +47,7 @@ Data collection -> Knowledge base -> Draft generation -> Humanization -> Review 
 - Image generation requires approved content, uses cover templates, and records generated assets with prompt metadata.
 - Trend collection jobs store safety profiles for Playwright-assisted collection, including randomized delays, human-like scrolling, session persistence, and cookie persistence.
 - Promoter workspace supports export-ready content, formatted export packages, and publish-record tracking.
+- DeepSeek official API is wired for the humanization rewrite provider through the Model Router.
 
 ## Delivery
 

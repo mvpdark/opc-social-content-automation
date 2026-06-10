@@ -1,3 +1,6 @@
+import pytest
+from fastapi import HTTPException
+
 from app.core.config import settings
 from app.services.model_router import model_router
 
@@ -15,3 +18,63 @@ def test_embedding_model_handles_empty_text() -> None:
 
     assert len(vector) == settings.embedding_dimensions
     assert set(vector) == {0.0}
+
+
+def test_rewrite_model_requires_deepseek_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "deepseek_api_key", None)
+
+    with pytest.raises(HTTPException) as exc:
+        model_router.rewrite_model("humanization", {"body": "test"})
+
+    assert exc.value.status_code == 501
+    assert "DeepSeek rewrite provider" in exc.value.detail
+
+
+def test_rewrite_model_calls_deepseek_without_exposing_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    requests: list[dict[str, object]] = []
+    secret = "test-secret-key"
+    monkeypatch.setattr(settings, "deepseek_api_key", secret)
+    monkeypatch.setattr(settings, "deepseek_base_url", "https://api.deepseek.com")
+    monkeypatch.setattr(settings, "deepseek_rewrite_model", "deepseek-v4-flash")
+
+    class FakeResponse:
+        status_code = 200
+
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, object]:
+            return {"choices": [{"message": {"content": "humanized output"}}]}
+
+    class FakeClient:
+        def __init__(self, timeout: float) -> None:
+            self.timeout = timeout
+
+        def __enter__(self) -> "FakeClient":
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def post(
+            self,
+            url: str,
+            headers: dict[str, str],
+            json: dict[str, object],
+        ) -> FakeResponse:
+            requests.append({"url": url, "headers": headers, "json": json})
+            return FakeResponse()
+
+    monkeypatch.setattr("app.services.model_router.httpx.Client", FakeClient)
+
+    result = model_router.rewrite_model("humanization", {"body": "AI draft"})
+
+    assert result == "humanized output"
+    assert requests[0]["url"] == "https://api.deepseek.com/chat/completions"
+    request_json = requests[0]["json"]
+    assert isinstance(request_json, dict)
+    assert request_json["model"] == "deepseek-v4-flash"
+    assert request_json["thinking"] == {"type": "disabled"}
+    assert secret not in str(request_json)
