@@ -56,6 +56,18 @@ Run a small rewrite smoke test:
 python scripts/smoke_deepseek_rewrite.py
 ```
 
+## Test Draft and Image Providers
+
+During MVP testing, text draft generation and image generation can use local `codex_test` providers:
+
+```bash
+DRAFT_PROVIDER=codex_test
+IMAGE_PROVIDER=codex_test
+TEST_STATIC_URL_PREFIX=/static/generated
+```
+
+This mode creates clearly labeled test drafts and local SVG cover assets under `backend/static/generated/`. It is for workflow testing only. Switch these providers to official API-backed implementations before production.
+
 ## Frontend
 
 ```bash

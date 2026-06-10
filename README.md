@@ -48,6 +48,7 @@ Data collection -> Knowledge base -> Draft generation -> Humanization -> Review 
 - Trend collection jobs store safety profiles for Playwright-assisted collection, including randomized delays, human-like scrolling, session persistence, and cookie persistence.
 - Promoter workspace supports export-ready content, formatted export packages, and publish-record tracking.
 - DeepSeek official API is wired for the humanization rewrite provider through the Model Router.
+- Test-stage draft and image generation use `codex_test` providers until official APIs are configured.
 
 ## Delivery
 

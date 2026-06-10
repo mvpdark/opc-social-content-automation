@@ -2,7 +2,7 @@ import pytest
 from fastapi import HTTPException
 
 from app.core.config import settings
-from app.services.model_router import model_router
+from app.services.model_router import GENERATED_ASSET_ROOT, model_router
 
 
 def test_embedding_model_is_deterministic() -> None:
@@ -18,6 +18,47 @@ def test_embedding_model_handles_empty_text() -> None:
 
     assert len(vector) == settings.embedding_dimensions
     assert set(vector) == {0.0}
+
+
+def test_codex_test_draft_provider(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "draft_provider", "codex_test")
+
+    result = model_router.draft_model(
+        "draft_generation",
+        {
+            "platform": "xiaohongshu",
+            "topic": "硕升博申请节奏",
+            "tags": ["规划", "申请"],
+            "knowledge_context": [{"title": "申请时间线"}],
+        },
+    )
+
+    assert "【测试草稿】硕升博申请节奏" in result
+    assert "codex_test 测试 Provider" in result
+    assert "申请时间线" in result
+
+
+def test_codex_test_image_provider_creates_svg(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "image_provider", "codex_test")
+    monkeypatch.setattr(settings, "test_static_url_prefix", "/static/generated")
+
+    image_url = model_router.image_model(
+        "image_generation",
+        {
+            "content_id": 1,
+            "platform": "xiaohongshu",
+            "title": "硕升博申请节奏",
+            "template": {"name": "Xiaohongshu cover"},
+            "aspect_ratio": "3:4",
+        },
+    )
+
+    assert image_url.startswith("/static/generated/codex-test-")
+    filename = image_url.rsplit("/", 1)[-1]
+    generated_file = GENERATED_ASSET_ROOT / filename
+    assert generated_file.exists()
+    assert "OPC TEST ASSET" in generated_file.read_text(encoding="utf-8")
+    generated_file.unlink()
 
 
 def test_rewrite_model_requires_deepseek_key(monkeypatch: pytest.MonkeyPatch) -> None:

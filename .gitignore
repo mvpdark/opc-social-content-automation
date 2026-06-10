@@ -29,3 +29,4 @@ Thumbs.db
 # Generated
 coverage/
 htmlcov/
+backend/static/generated/
