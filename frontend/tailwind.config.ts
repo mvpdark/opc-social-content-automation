@@ -5,15 +5,17 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#182033",
-        paper: "#f7f7f2",
-        line: "#dcd9cf",
-        moss: "#4f6f52",
-        coral: "#c7634c",
-        steel: "#456179"
+        ink: "#172033",
+        paper: "#f4f6f8",
+        line: "#d7dee8",
+        moss: "#4f7a63",
+        coral: "#c65d45",
+        steel: "#36678f",
+        amber: "#b88734"
       },
       boxShadow: {
-        soft: "0 18px 50px rgba(24, 32, 51, 0.08)"
+        soft: "0 18px 45px rgba(23, 32, 51, 0.08)",
+        panel: "0 1px 0 rgba(23, 32, 51, 0.04)"
       }
     }
   },

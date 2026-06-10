@@ -19,8 +19,8 @@ type SearchTarget = {
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api";
 
 const platformLabels: Record<Platform, string> = {
-  xiaohongshu: "Xiaohongshu",
-  douyin: "Douyin"
+  xiaohongshu: "小红书",
+  douyin: "抖音"
 };
 
 function buildLocalSearchTarget(platform: Platform, keyword: string): SearchTarget {
@@ -49,7 +49,7 @@ export function TrendCollectorPanel() {
   const [accessToken, setAccessToken] = useState("");
   const [sourcesReviewed, setSourcesReviewed] = useState(false);
   const [target, setTarget] = useState<SearchTarget | null>(null);
-  const [statusText, setStatusText] = useState("Ready for public-first image-text collection.");
+  const [statusText, setStatusText] = useState("准备进行公开优先的图文采集。");
   const [busyAction, setBusyAction] = useState<"target" | "job" | "digest" | null>(null);
 
   const canSubmit = useMemo(() => keyword.trim().length > 0, [keyword]);
@@ -67,13 +67,13 @@ export function TrendCollectorPanel() {
 
   async function openSearchPage() {
     if (!canSubmit) {
-      setStatusText("Add a keyword before opening a platform search page.");
+      setStatusText("先填写关键词，再打开平台搜索页。");
       return;
     }
     const fallbackTarget = buildLocalSearchTarget(platform, keyword);
     setTarget(fallbackTarget);
     const tab = window.open(fallbackTarget.search_url, "_blank", "noopener,noreferrer");
-    setStatusText(`${platformLabels[platform]} search page opened for ${fallbackTarget.keyword}.`);
+    setStatusText(`已打开 ${platformLabels[platform]} 搜索页：${fallbackTarget.keyword}。`);
     setBusyAction("target");
     try {
       const nextTarget = await loadSearchTarget();
@@ -83,8 +83,8 @@ export function TrendCollectorPanel() {
     } catch (error) {
       setStatusText(
         error instanceof Error
-          ? `${platformLabels[platform]} search page opened; ${error.message}`
-          : `${platformLabels[platform]} search page opened.`
+          ? `${platformLabels[platform]} 搜索页已打开；${error.message}`
+          : `${platformLabels[platform]} 搜索页已打开。`
       );
     } finally {
       setBusyAction(null);
@@ -93,7 +93,7 @@ export function TrendCollectorPanel() {
 
   async function createCollectionJob() {
     if (!canSubmit) {
-      setStatusText("Add a keyword before queueing collection.");
+      setStatusText("先填写关键词，再创建采集任务。");
       return;
     }
     setBusyAction("job");
@@ -116,12 +116,12 @@ export function TrendCollectorPanel() {
         })
       });
       if (!response.ok) {
-        throw new Error("Collection job needs an authenticated workspace session.");
+        throw new Error("创建采集任务需要有效的工作台登录令牌。");
       }
       const data = (await response.json()) as { id: number; status: string };
-      setStatusText(`Collection job #${data.id} is ${data.status}.`);
+      setStatusText(`采集任务 #${data.id} 当前状态：${data.status}。`);
     } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Collection job failed.");
+      setStatusText(error instanceof Error ? error.message : "采集任务创建失败。");
     } finally {
       setBusyAction(null);
     }
@@ -129,11 +129,11 @@ export function TrendCollectorPanel() {
 
   async function summarizeCollectedAssets() {
     if (!canSubmit) {
-      setStatusText("Add a keyword before summarizing collected assets.");
+      setStatusText("先填写关键词，再汇总采集素材。");
       return;
     }
     if (!sourcesReviewed) {
-      setStatusText("Review collected image-text sources before saving a knowledge digest.");
+      setStatusText("保存知识摘要前，需要先确认已人工看过图文来源。");
       return;
     }
     setBusyAction("digest");
@@ -153,45 +153,45 @@ export function TrendCollectorPanel() {
         })
       });
       if (!response.ok) {
-        throw new Error("No matching collected assets are ready for knowledge digest.");
+        throw new Error("还没有可用于知识摘要的匹配素材。");
       }
       const data = (await response.json()) as { knowledge_id: number; item_count: number };
       setStatusText(
-        `Knowledge item #${data.knowledge_id} created from ${data.item_count} collected assets.`
+        `知识条目 #${data.knowledge_id} 已由 ${data.item_count} 条素材生成。`
       );
     } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Knowledge digest failed.");
+      setStatusText(error instanceof Error ? error.message : "知识摘要生成失败。");
     } finally {
       setBusyAction(null);
     }
   }
 
   return (
-    <section className="rounded-md border border-line bg-white shadow-soft">
-      <div className="border-b border-line px-5 py-4">
-        <h2 className="text-base font-semibold leading-6">Platform research</h2>
-        <p className="text-sm text-slate-500">
-          Visible browser collection for Xiaohongshu and Douyin source material.
+    <section className="rounded-md border border-line bg-white shadow-panel">
+      <div className="border-b border-line px-4 py-3">
+        <h2 className="text-sm font-semibold leading-5">平台研究采集</h2>
+        <p className="text-xs text-slate-500">
+          公开优先、图文限定、人工确认后再入知识库。
         </p>
       </div>
 
       <div className="grid grid-cols-1 divide-y divide-line xl:grid-cols-[1.1fr_0.9fr] xl:divide-x xl:divide-y-0">
-        <div className="px-5 py-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="px-4 py-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="block">
-              <span className="text-xs font-medium text-slate-500">Platform</span>
+              <span className="text-xs font-medium text-slate-500">平台</span>
               <select
                 className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
                 value={platform}
                 onChange={(event) => setPlatform(event.target.value as Platform)}
               >
-                <option value="xiaohongshu">Xiaohongshu</option>
-                <option value="douyin">Douyin</option>
+                <option value="xiaohongshu">小红书</option>
+                <option value="douyin">抖音</option>
               </select>
             </label>
 
             <label className="block">
-              <span className="text-xs font-medium text-slate-500">Keyword</span>
+              <span className="text-xs font-medium text-slate-500">关键词</span>
               <input
                 className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
                 value={keyword}
@@ -201,7 +201,7 @@ export function TrendCollectorPanel() {
             </label>
 
             <label className="block">
-              <span className="text-xs font-medium text-slate-500">Max items</span>
+              <span className="text-xs font-medium text-slate-500">最大条数</span>
               <input
                 className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
                 max={100}
@@ -213,7 +213,7 @@ export function TrendCollectorPanel() {
             </label>
 
             <label className="block">
-              <span className="text-xs font-medium text-slate-500">Delay window</span>
+              <span className="text-xs font-medium text-slate-500">采集间隔</span>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <input
                   aria-label="Minimum delay seconds"
@@ -237,18 +237,18 @@ export function TrendCollectorPanel() {
             </label>
           </div>
 
-          <label className="mt-4 block">
-            <span className="text-xs font-medium text-slate-500">Workspace access</span>
+          <label className="mt-3 block">
+            <span className="text-xs font-medium text-slate-500">工作台令牌</span>
             <input
               className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
               onChange={(event) => setAccessToken(event.target.value)}
-              placeholder="Bearer token for queued jobs and knowledge digest"
+              placeholder="用于创建任务和保存知识摘要的 Bearer token"
               type="password"
               value={accessToken}
             />
           </label>
 
-          <label className="mt-4 flex items-start gap-3 rounded-md border border-line bg-paper px-3 py-3 text-sm">
+          <label className="mt-3 flex items-start gap-3 rounded-md border border-line bg-paper px-3 py-3 text-sm">
             <input
               checked={sourcesReviewed}
               className="mt-1 h-4 w-4"
@@ -256,14 +256,14 @@ export function TrendCollectorPanel() {
               type="checkbox"
             />
             <span>
-              <span className="block font-medium text-ink">Sources reviewed</span>
-              <span className="mt-1 block leading-5 text-slate-600">
-                Confirm collected public image-text sources before saving a knowledge digest.
-              </span>
+                <span className="block font-medium text-ink">来源已人工确认</span>
+                <span className="mt-1 block leading-5 text-slate-600">
+                  保存知识摘要前，需要确认采集来源是真实公开图文。
+                </span>
             </span>
           </label>
 
-          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
             <button
               className="flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-white text-sm font-medium text-ink"
               disabled={busyAction !== null}
@@ -275,7 +275,7 @@ export function TrendCollectorPanel() {
               ) : (
                 <ExternalLink className="h-4 w-4" />
               )}
-              Open page
+              打开搜索
             </button>
             <button
               className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-white"
@@ -288,7 +288,7 @@ export function TrendCollectorPanel() {
               ) : (
                 <Play className="h-4 w-4" />
               )}
-              Queue job
+              创建任务
             </button>
             <button
               className="flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-paper text-sm font-medium text-ink"
@@ -301,58 +301,58 @@ export function TrendCollectorPanel() {
               ) : (
                 <Save className="h-4 w-4" />
               )}
-              Save digest
+              保存摘要
             </button>
           </div>
         </div>
 
-        <div className="px-5 py-4">
+        <div className="px-4 py-4">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-md bg-paper text-steel">
               <Search className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <div className="text-sm font-semibold">Collection state</div>
+              <div className="text-sm font-semibold">采集状态</div>
               <p className="mt-1 text-sm leading-5 text-slate-600">{statusText}</p>
             </div>
           </div>
 
           <div className="mt-5 divide-y divide-line border-y border-line text-sm">
             <div className="flex items-center justify-between gap-3 py-3">
-              <span className="text-slate-500">Content kind</span>
+              <span className="text-slate-500">内容类型</span>
               <span className="font-medium">
-                {target?.content_kind === "image_text" ? "Image-text only" : "Not prepared"}
+                {target?.content_kind === "image_text" ? "仅图文" : "未准备"}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3 py-3">
-              <span className="text-slate-500">Video collection</span>
+              <span className="text-slate-500">视频采集</span>
               <span className="font-medium">
-                {target?.video_collection_enabled ? "Enabled" : "Disabled"}
+                {target?.video_collection_enabled ? "已启用" : "已禁用"}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3 py-3">
-              <span className="text-slate-500">Target URL</span>
+              <span className="text-slate-500">目标链接</span>
               <span className="min-w-0 truncate text-right font-medium">
-                {target?.search_url ?? "Not prepared"}
+                {target?.search_url ?? "未准备"}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3 py-3">
-              <span className="text-slate-500">Login gate</span>
+              <span className="text-slate-500">登录门槛</span>
               <span className="font-medium">
-                {target?.requires_manual_login === false ? "Public first" : "Operator required"}
+                {target?.requires_manual_login === false ? "公开优先" : "需人工处理"}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3 py-3">
-              <span className="text-slate-500">Automation</span>
+              <span className="text-slate-500">自动化模式</span>
               <span className="font-medium">
-                {target?.automation_mode ?? "Visible browser"}
+                {target?.automation_mode ?? "可见浏览器"}
               </span>
             </div>
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
-            <div className="border-l-4 border-moss pl-3">Public search runs before manual login.</div>
-            <div className="border-l-4 border-steel pl-3">Collected assets are summarized after capture.</div>
+            <div className="border-l-4 border-moss pl-3">先试公开搜索，再考虑人工登录。</div>
+            <div className="border-l-4 border-steel pl-3">采集素材先审核，再进入知识摘要。</div>
           </div>
         </div>
       </div>
