@@ -1,17 +1,20 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ArrowRight,
   ClipboardCheck,
   Eye,
   EyeOff,
   Image,
+  KeyRound,
   Loader2,
   PenLine,
   RotateCcw,
+  Save,
   Settings,
-  ShieldCheck
+  ShieldCheck,
+  Trash2
 } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
@@ -54,6 +57,21 @@ const pillTone: Record<string, string> = {
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api";
+const CREDENTIAL_STORAGE_KEY = "opc_workspace_credentials_v1";
+
+type CredentialSettings = {
+  workspaceToken: string;
+  draftApiKey: string;
+  imageApiKey: string;
+  rewriteApiKey: string;
+};
+
+const emptyCredentials: CredentialSettings = {
+  workspaceToken: "",
+  draftApiKey: "",
+  imageApiKey: "",
+  rewriteApiKey: ""
+};
 
 type GeneratedContent = {
   body: string;
@@ -67,18 +85,52 @@ type GeneratedContent = {
 export default function Home() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("dashboard");
   const [showHelperText, setShowHelperText] = useState(true);
+  const [credentialsLoaded, setCredentialsLoaded] = useState(false);
+  const [credentials, setCredentials] = useState<CredentialSettings>(emptyCredentials);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(CREDENTIAL_STORAGE_KEY);
+      if (stored) {
+        setCredentials({ ...emptyCredentials, ...JSON.parse(stored) });
+      }
+    } catch (_error) {
+      setCredentials(emptyCredentials);
+    } finally {
+      setCredentialsLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!credentialsLoaded) {
+      return;
+    }
+    window.localStorage.setItem(CREDENTIAL_STORAGE_KEY, JSON.stringify(credentials));
+  }, [credentials, credentialsLoaded]);
 
   return (
     <AppShell activeTab={activeTab} onTabChange={setActiveTab} showHelperText={showHelperText}>
       {activeTab === "dashboard" ? <DashboardView /> : null}
-      {activeTab === "research" ? <ResearchView /> : null}
+      {activeTab === "research" ? (
+        <ResearchView
+          onOpenSettings={() => setActiveTab("settings")}
+          workspaceToken={credentials.workspaceToken}
+        />
+      ) : null}
       {activeTab === "knowledge" ? <KnowledgeView /> : null}
-      {activeTab === "content" ? <ContentView /> : null}
+      {activeTab === "content" ? (
+        <ContentView
+          onOpenSettings={() => setActiveTab("settings")}
+          workspaceToken={credentials.workspaceToken}
+        />
+      ) : null}
       {activeTab === "review" ? <ReviewView /> : null}
       {activeTab === "cover" ? <CoverView /> : null}
       {activeTab === "delivery" ? <DeliveryView /> : null}
       {activeTab === "settings" ? (
         <SettingsView
+          credentials={credentials}
+          onCredentialsChange={setCredentials}
           onReset={() => setShowHelperText(true)}
           onShowHelperTextChange={setShowHelperText}
           showHelperText={showHelperText}
@@ -194,10 +246,16 @@ function DashboardView() {
   );
 }
 
-function ResearchView() {
+function ResearchView({
+  onOpenSettings,
+  workspaceToken
+}: {
+  onOpenSettings: () => void;
+  workspaceToken: string;
+}) {
   return (
     <div className="space-y-4">
-      <TrendCollectorPanel />
+      <TrendCollectorPanel onOpenSettings={onOpenSettings} workspaceToken={workspaceToken} />
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <ReferencePanel
           helper="后续写稿时优先参考这些高赞图文结构。"
@@ -252,10 +310,16 @@ function KnowledgeView() {
   );
 }
 
-function ContentView() {
+function ContentView({
+  onOpenSettings,
+  workspaceToken
+}: {
+  onOpenSettings: () => void;
+  workspaceToken: string;
+}) {
   return (
     <div className="space-y-4">
-      <GenerationLauncher />
+      <GenerationLauncher onOpenSettings={onOpenSettings} workspaceToken={workspaceToken} />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
         <DraftPanel />
@@ -288,16 +352,21 @@ function ContentView() {
   );
 }
 
-function GenerationLauncher() {
+function GenerationLauncher({
+  onOpenSettings,
+  workspaceToken
+}: {
+  onOpenSettings: () => void;
+  workspaceToken: string;
+}) {
   const [platform, setPlatform] = useState("xiaohongshu");
   const [topic, setTopic] = useState("硕升博申请第一步，不是先套磁");
   const [knowledgeQuery, setKnowledgeQuery] = useState("硕升博 高赞图文 写作参考");
   const [targetAudience, setTargetAudience] = useState("准备硕升博申请的学生");
   const [tone, setTone] = useState("小红书图文，短段落，先拆误区，再给清单");
   const [tagsText, setTagsText] = useState("硕升博,博士申请,研究方向,申请规划");
-  const [accessToken, setAccessToken] = useState("");
   const [busyAction, setBusyAction] = useState<"draft" | "review" | null>(null);
-  const [statusText, setStatusText] = useState("填写主题和令牌后，点击“生成图文”创建草稿。");
+  const [statusText, setStatusText] = useState("填写主题后，点击“生成图文”创建草稿。");
   const [lastContent, setLastContent] = useState<GeneratedContent | null>(null);
 
   const canGenerate = topic.trim().length > 0 && busyAction === null;
@@ -306,7 +375,7 @@ function GenerationLauncher() {
   function authHeaders() {
     return {
       "Content-Type": "application/json",
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+      ...(workspaceToken ? { Authorization: `Bearer ${workspaceToken}` } : {})
     };
   }
 
@@ -315,8 +384,8 @@ function GenerationLauncher() {
       setStatusText("先填写选题，再生成图文。");
       return;
     }
-    if (!accessToken.trim()) {
-      setStatusText("需要工作台令牌，后端才会创建真实草稿。");
+    if (!workspaceToken.trim()) {
+      setStatusText("先到设置里填写工作台令牌，后端才会创建真实草稿。");
       return;
     }
 
@@ -358,8 +427,8 @@ function GenerationLauncher() {
       setStatusText("先生成草稿，再提交审核。");
       return;
     }
-    if (!accessToken.trim()) {
-      setStatusText("提交审核需要工作台令牌。");
+    if (!workspaceToken.trim()) {
+      setStatusText("先到设置里填写工作台令牌，才能提交审核。");
       return;
     }
 
@@ -408,16 +477,21 @@ function GenerationLauncher() {
                 <option value="douyin">抖音图文</option>
               </select>
             </label>
-            <label className="block">
-              <span className="text-xs font-medium text-muted">工作台令牌</span>
-              <input
-                className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
-                onChange={(event) => setAccessToken(event.target.value)}
-                placeholder="用于生成草稿的 Bearer token"
-                type="password"
-                value={accessToken}
-              />
-            </label>
+            <div className="rounded-md border border-line bg-mist px-3 py-2">
+              <div className="text-xs font-medium text-muted">工作台令牌</div>
+              <div className="mt-1 flex items-center justify-between gap-3">
+                <span className="text-sm font-medium">
+                  {workspaceToken ? "已在设置中配置" : "未配置"}
+                </span>
+                <button
+                  className="rounded-md border border-line bg-white px-2 py-1 text-xs font-medium text-ink"
+                  onClick={onOpenSettings}
+                  type="button"
+                >
+                  打开设置
+                </button>
+              </div>
+            </div>
             <label className="block md:col-span-2">
               <span className="text-xs font-medium text-muted">选题</span>
               <input
@@ -641,16 +715,166 @@ function DeliveryView() {
 }
 
 function SettingsView({
+  credentials,
+  onCredentialsChange,
   onReset,
   onShowHelperTextChange,
   showHelperText
 }: {
+  credentials: CredentialSettings;
+  onCredentialsChange: (nextCredentials: CredentialSettings) => void;
   onReset: () => void;
   onShowHelperTextChange: (nextValue: boolean) => void;
   showHelperText: boolean;
 }) {
+  const [credentialStatus, setCredentialStatus] = useState("凭证会保存在当前浏览器本机。");
+  const [credentialBusy, setCredentialBusy] = useState(false);
+
+  function updateCredential(key: keyof CredentialSettings, value: string) {
+    onCredentialsChange({ ...credentials, [key]: value });
+  }
+
+  function clearCredentials() {
+    onCredentialsChange(emptyCredentials);
+    setCredentialStatus("已清空本机保存的凭证。");
+  }
+
+  async function applyProviderKeys() {
+    if (!credentials.workspaceToken.trim()) {
+      setCredentialStatus("先填写工作台令牌，再应用服务 API Key 到后端。");
+      return;
+    }
+    setCredentialBusy(true);
+    setCredentialStatus("正在应用服务 API Key 到后端运行时。");
+    try {
+      const response = await fetch(`${API_BASE}/workspace/provider-keys`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${credentials.workspaceToken}`
+        },
+        body: JSON.stringify({
+          draft_api_key: credentials.draftApiKey,
+          image_api_key: credentials.imageApiKey,
+          deepseek_api_key: credentials.rewriteApiKey
+        })
+      });
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        throw new Error(errorBody?.detail ?? "服务 API Key 应用失败。");
+      }
+      setCredentialStatus("服务 API Key 已应用到当前后端运行时，响应未回显密钥。");
+    } catch (error) {
+      setCredentialStatus(error instanceof Error ? error.message : "服务 API Key 应用失败。");
+    } finally {
+      setCredentialBusy(false);
+    }
+  }
+
+  const credentialFields: Array<{
+    helper: string;
+    keyName: keyof CredentialSettings;
+    label: string;
+    placeholder: string;
+  }> = [
+    {
+      keyName: "workspaceToken",
+      label: "工作台令牌",
+      placeholder: "Bearer token",
+      helper: "采集、生成、审核等工作台请求统一使用。"
+    },
+    {
+      keyName: "draftApiKey",
+      label: "GPT-5.5 API Key",
+      placeholder: "sk-...",
+      helper: "撰稿服务使用；应用到后端后由服务端调用。"
+    },
+    {
+      keyName: "imageApiKey",
+      label: "image2 API Key",
+      placeholder: "sk-...",
+      helper: "图片生成服务使用；封面生成走服务端。"
+    },
+    {
+      keyName: "rewriteApiKey",
+      label: "DeepSeek API Key",
+      placeholder: "sk-...",
+      helper: "正文改写和人味化使用。"
+    }
+  ];
+
   return (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
+    <div className="space-y-4">
+      <Panel
+        action={<Pill tone="blue">集中管理</Pill>}
+        helper="所有令牌和服务 API Key 都在这里填写；其他页面只读取这里的配置状态。"
+        title="API Key 与令牌"
+      >
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {credentialFields.map((field) => (
+              <label key={field.keyName} className="block">
+                <span className="text-xs font-medium text-muted">{field.label}</span>
+                <input
+                  className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+                  onChange={(event) => updateCredential(field.keyName, event.target.value)}
+                  placeholder={field.placeholder}
+                  type="password"
+                  value={credentials[field.keyName]}
+                />
+                <span className="mt-1 block text-xs leading-5 text-muted">{field.helper}</span>
+              </label>
+            ))}
+          </div>
+
+          <div className="rounded-md border border-line bg-mist/70 p-4">
+            <div className="flex items-center gap-3">
+              <IconBox tone="blue">
+                <KeyRound className="h-4 w-4" />
+              </IconBox>
+              <div>
+                <div className="text-sm font-semibold">凭证状态</div>
+                <p className="mt-1 text-xs leading-5 text-muted">{credentialStatus}</p>
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-1 gap-2">
+              <button
+                className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={credentialBusy}
+                onClick={applyProviderKeys}
+                type="button"
+              >
+                {credentialBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                应用服务 API Key
+              </button>
+              <button
+                className="flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-white text-sm font-medium text-ink"
+                onClick={clearCredentials}
+                type="button"
+              >
+                <Trash2 className="h-4 w-4" />
+                清空本机凭证
+              </button>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+              <Pill tone={credentials.workspaceToken ? "green" : "amber"}>
+                工作台 {credentials.workspaceToken ? "已填" : "未填"}
+              </Pill>
+              <Pill tone={credentials.draftApiKey ? "green" : "amber"}>
+                撰稿 {credentials.draftApiKey ? "已填" : "未填"}
+              </Pill>
+              <Pill tone={credentials.imageApiKey ? "green" : "amber"}>
+                图片 {credentials.imageApiKey ? "已填" : "未填"}
+              </Pill>
+              <Pill tone={credentials.rewriteApiKey ? "green" : "amber"}>
+                改写 {credentials.rewriteApiKey ? "已填" : "未填"}
+              </Pill>
+            </div>
+          </div>
+        </div>
+      </Panel>
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
       <Panel
         action={<Pill tone="green">设置入口固定保留</Pill>}
         helper="隐藏偏好只作用在辅助说明上，不会隐藏左侧“设置”和顶部齿轮入口。"
@@ -719,6 +943,7 @@ function SettingsView({
           <SafetyGateList />
         </Panel>
       </div>
+    </div>
     </div>
   );
 }

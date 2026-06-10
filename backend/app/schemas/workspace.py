@@ -55,3 +55,9 @@ class ProviderStatusItem(BaseModel):
     configured: bool
     status: str
     note: str
+
+
+class ProviderKeyUpdateRequest(BaseModel):
+    draft_api_key: str | None = Field(default=None, max_length=500)
+    image_api_key: str | None = Field(default=None, max_length=500)
+    deepseek_api_key: str | None = Field(default=None, max_length=500)

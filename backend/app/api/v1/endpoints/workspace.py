@@ -14,10 +14,12 @@ from app.schemas.workspace import (
     ExportResponse,
     PublishRecordCreate,
     PublishRecordRead,
+    ProviderKeyUpdateRequest,
     ProviderStatusItem,
     WorkspaceContentItem,
 )
 from app.services.workspace_service import (
+    apply_provider_key_settings,
     approved_content_items,
     create_export_package,
     list_publish_records,
@@ -62,6 +64,15 @@ def dashboard(db: Session = Depends(get_db)) -> dict[str, object]:
 @router.get("/provider-status", response_model=list[ProviderStatusItem])
 def get_provider_status() -> list[ProviderStatusItem]:
     return provider_status_items()
+
+
+@router.post("/provider-keys", response_model=list[ProviderStatusItem])
+def update_provider_keys(
+    payload: ProviderKeyUpdateRequest,
+    current_user: User = Depends(get_current_user),
+) -> list[ProviderStatusItem]:
+    _ = current_user
+    return apply_provider_key_settings(payload)
 
 
 @router.get("/approved-content", response_model=list[WorkspaceContentItem])

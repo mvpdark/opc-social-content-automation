@@ -40,13 +40,18 @@ function buildLocalSearchTarget(platform: Platform, keyword: string): SearchTarg
   };
 }
 
-export function TrendCollectorPanel() {
+export function TrendCollectorPanel({
+  onOpenSettings,
+  workspaceToken
+}: {
+  onOpenSettings: () => void;
+  workspaceToken: string;
+}) {
   const [platform, setPlatform] = useState<Platform>("xiaohongshu");
   const [keyword, setKeyword] = useState("硕升博");
   const [maxItems, setMaxItems] = useState(20);
   const [minDelay, setMinDelay] = useState(4);
   const [maxDelay, setMaxDelay] = useState(12);
-  const [accessToken, setAccessToken] = useState("");
   const [sourcesReviewed, setSourcesReviewed] = useState(false);
   const [target, setTarget] = useState<SearchTarget | null>(null);
   const [statusText, setStatusText] = useState("准备进行公开优先的图文采集。");
@@ -96,13 +101,17 @@ export function TrendCollectorPanel() {
       setStatusText("先填写关键词，再创建采集任务。");
       return;
     }
+    if (!workspaceToken.trim()) {
+      setStatusText("先到设置里填写工作台令牌，再创建采集任务。");
+      return;
+    }
     setBusyAction("job");
     try {
       const response = await fetch(`${API_BASE}/trends/jobs`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+          ...(workspaceToken ? { Authorization: `Bearer ${workspaceToken}` } : {})
         },
         body: JSON.stringify({
           platform,
@@ -136,13 +145,17 @@ export function TrendCollectorPanel() {
       setStatusText("保存知识摘要前，需要先确认已人工看过图文来源。");
       return;
     }
+    if (!workspaceToken.trim()) {
+      setStatusText("先到设置里填写工作台令牌，再保存知识摘要。");
+      return;
+    }
     setBusyAction("digest");
     try {
       const response = await fetch(`${API_BASE}/trends/knowledge-digest`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+          ...(workspaceToken ? { Authorization: `Bearer ${workspaceToken}` } : {})
         },
         body: JSON.stringify({
           platform,
@@ -237,16 +250,21 @@ export function TrendCollectorPanel() {
             </label>
           </div>
 
-          <label className="mt-3 block">
-            <span className="text-xs font-medium text-slate-500">工作台令牌</span>
-            <input
-              className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
-              onChange={(event) => setAccessToken(event.target.value)}
-              placeholder="用于创建任务和保存知识摘要的 Bearer token"
-              type="password"
-              value={accessToken}
-            />
-          </label>
+          <div className="mt-3 rounded-md border border-line bg-paper px-3 py-3">
+            <div className="text-xs font-medium text-slate-500">工作台令牌</div>
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <span className="text-sm font-medium text-ink">
+                {workspaceToken ? "已在设置中配置" : "未配置"}
+              </span>
+              <button
+                className="rounded-md border border-line bg-white px-2 py-1 text-xs font-medium text-ink"
+                onClick={onOpenSettings}
+                type="button"
+              >
+                打开设置
+              </button>
+            </div>
+          </div>
 
           <label className="mt-3 flex items-start gap-3 rounded-md border border-line bg-paper px-3 py-3 text-sm">
             <input

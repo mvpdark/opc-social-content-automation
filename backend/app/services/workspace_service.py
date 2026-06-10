@@ -8,7 +8,13 @@ from app.models.content import Content
 from app.models.publish_record import PublishRecord
 from app.models.user import User
 from app.core.config import settings
-from app.schemas.workspace import ExportItem, ExportRequest, ExportResponse, ProviderStatusItem
+from app.schemas.workspace import (
+    ExportItem,
+    ExportRequest,
+    ExportResponse,
+    ProviderKeyUpdateRequest,
+    ProviderStatusItem,
+)
 
 
 EXPORTABLE_STATUSES = {"approved", "published"}
@@ -164,3 +170,15 @@ def provider_status_items() -> list[ProviderStatusItem]:
             note=image_note,
         ),
     ]
+
+
+def apply_provider_key_settings(payload: ProviderKeyUpdateRequest) -> list[ProviderStatusItem]:
+    if payload.draft_api_key is not None:
+        settings.draft_provider = "openai_compatible"
+        settings.openai_compatible_api_key = payload.draft_api_key.strip() or None
+    if payload.image_api_key is not None:
+        settings.image_provider = "openai_compatible"
+        settings.image_openai_compatible_api_key = payload.image_api_key.strip() or None
+    if payload.deepseek_api_key is not None:
+        settings.deepseek_api_key = payload.deepseek_api_key.strip() or None
+    return provider_status_items()
