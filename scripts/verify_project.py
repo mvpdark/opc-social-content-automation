@@ -36,6 +36,8 @@ def validate_required_files() -> int:
         ROOT / "backend" / "app" / "main.py",
         ROOT / "backend" / "alembic" / "versions" / "0007_trend_collection_jobs.py",
         ROOT / "frontend" / "app" / "page.tsx",
+        ROOT / "docs" / "RUNBOOK.md",
+        ROOT / "docs" / "SECURITY_NOTES.md",
         ROOT / "prompts" / "draft_generation.md",
         ROOT / "prompts" / "humanization.md",
         ROOT / "prompts" / "review.md",

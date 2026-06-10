@@ -52,3 +52,4 @@ Data collection -> Knowledge base -> Draft generation -> Humanization -> Review 
 
 - GitHub Actions runs backend verification, backend tests, and frontend typecheck.
 - Local release checks are documented in `docs/RUNBOOK.md`.
+- Dependency audit notes are tracked in `docs/SECURITY_NOTES.md`.
