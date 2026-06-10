@@ -22,6 +22,7 @@ class TrendCollectRequest(BaseModel):
 class TrendCollectionJobCreate(BaseModel):
     platform: str = Field(pattern="^(xiaohongshu|douyin)$")
     keyword: str = Field(min_length=1, max_length=120)
+    content_kind: str = Field(default="image_text", pattern="^(image_text|video|mixed)$")
     max_items: int = Field(default=20, ge=1, le=100)
     min_delay_seconds: int = Field(default=4, ge=2, le=60)
     max_delay_seconds: int = Field(default=12, ge=3, le=120)
@@ -33,6 +34,8 @@ class TrendCollectionJobCreate(BaseModel):
 class PlatformSearchTarget(BaseModel):
     platform: str
     keyword: str
+    content_kind: str
+    video_collection_enabled: bool
     search_url: str
     requires_manual_login: bool
     automation_mode: str
@@ -66,6 +69,7 @@ class TrendKnowledgeDigestRequest(BaseModel):
     trend_ids: list[int] = Field(default_factory=list)
     limit: int = Field(default=20, ge=1, le=100)
     category: str = Field(default="trend-insight", max_length=80)
+    source_reviewed: bool = False
 
 
 class TrendKnowledgeDigestResponse(BaseModel):

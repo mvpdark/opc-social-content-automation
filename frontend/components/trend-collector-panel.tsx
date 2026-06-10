@@ -8,6 +8,8 @@ type Platform = "xiaohongshu" | "douyin";
 type SearchTarget = {
   platform: Platform;
   keyword: string;
+  content_kind: "image_text" | "video" | "mixed";
+  video_collection_enabled: boolean;
   search_url: string;
   requires_manual_login: boolean;
   automation_mode: string;
@@ -26,12 +28,14 @@ function buildLocalSearchTarget(platform: Platform, keyword: string): SearchTarg
   return {
     platform,
     keyword: keyword.trim(),
+    content_kind: "image_text",
+    video_collection_enabled: false,
     search_url:
       platform === "xiaohongshu"
         ? `https://www.xiaohongshu.com/search_result?keyword=${encodedKeyword}`
         : `https://www.douyin.com/search/${encodedKeyword}`,
-    requires_manual_login: true,
-    automation_mode: "operator_assisted_visible_browser",
+    requires_manual_login: false,
+    automation_mode: "public_first_visible_browser",
     safety_notes: []
   };
 }
@@ -43,8 +47,9 @@ export function TrendCollectorPanel() {
   const [minDelay, setMinDelay] = useState(4);
   const [maxDelay, setMaxDelay] = useState(12);
   const [accessToken, setAccessToken] = useState("");
+  const [sourcesReviewed, setSourcesReviewed] = useState(false);
   const [target, setTarget] = useState<SearchTarget | null>(null);
-  const [statusText, setStatusText] = useState("Ready for operator-assisted collection.");
+  const [statusText, setStatusText] = useState("Ready for public-first image-text collection.");
   const [busyAction, setBusyAction] = useState<"target" | "job" | "digest" | null>(null);
 
   const canSubmit = useMemo(() => keyword.trim().length > 0, [keyword]);
@@ -102,6 +107,7 @@ export function TrendCollectorPanel() {
         body: JSON.stringify({
           platform,
           keyword: keyword.trim(),
+          content_kind: "image_text",
           max_items: maxItems,
           min_delay_seconds: minDelay,
           max_delay_seconds: maxDelay,
@@ -126,6 +132,10 @@ export function TrendCollectorPanel() {
       setStatusText("Add a keyword before summarizing collected assets.");
       return;
     }
+    if (!sourcesReviewed) {
+      setStatusText("Review collected image-text sources before saving a knowledge digest.");
+      return;
+    }
     setBusyAction("digest");
     try {
       const response = await fetch(`${API_BASE}/trends/knowledge-digest`, {
@@ -138,7 +148,8 @@ export function TrendCollectorPanel() {
           platform,
           keyword: keyword.trim(),
           limit: maxItems,
-          category: "trend-insight"
+          category: "trend-insight",
+          source_reviewed: true
         })
       });
       if (!response.ok) {
@@ -237,6 +248,21 @@ export function TrendCollectorPanel() {
             />
           </label>
 
+          <label className="mt-4 flex items-start gap-3 rounded-md border border-line bg-paper px-3 py-3 text-sm">
+            <input
+              checked={sourcesReviewed}
+              className="mt-1 h-4 w-4"
+              onChange={(event) => setSourcesReviewed(event.target.checked)}
+              type="checkbox"
+            />
+            <span>
+              <span className="block font-medium text-ink">Sources reviewed</span>
+              <span className="mt-1 block leading-5 text-slate-600">
+                Confirm collected public image-text sources before saving a knowledge digest.
+              </span>
+            </span>
+          </label>
+
           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
             <button
               className="flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-white text-sm font-medium text-ink"
@@ -293,6 +319,18 @@ export function TrendCollectorPanel() {
 
           <div className="mt-5 divide-y divide-line border-y border-line text-sm">
             <div className="flex items-center justify-between gap-3 py-3">
+              <span className="text-slate-500">Content kind</span>
+              <span className="font-medium">
+                {target?.content_kind === "image_text" ? "Image-text only" : "Not prepared"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3 py-3">
+              <span className="text-slate-500">Video collection</span>
+              <span className="font-medium">
+                {target?.video_collection_enabled ? "Enabled" : "Disabled"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3 py-3">
               <span className="text-slate-500">Target URL</span>
               <span className="min-w-0 truncate text-right font-medium">
                 {target?.search_url ?? "Not prepared"}
@@ -301,7 +339,7 @@ export function TrendCollectorPanel() {
             <div className="flex items-center justify-between gap-3 py-3">
               <span className="text-slate-500">Login gate</span>
               <span className="font-medium">
-                {target?.requires_manual_login === false ? "Open" : "Operator required"}
+                {target?.requires_manual_login === false ? "Public first" : "Operator required"}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3 py-3">
@@ -313,7 +351,7 @@ export function TrendCollectorPanel() {
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
-            <div className="border-l-4 border-moss pl-3">Manual login and captcha stay manual.</div>
+            <div className="border-l-4 border-moss pl-3">Public search runs before manual login.</div>
             <div className="border-l-4 border-steel pl-3">Collected assets are summarized after capture.</div>
           </div>
         </div>

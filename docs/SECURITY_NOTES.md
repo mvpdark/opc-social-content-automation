@@ -28,7 +28,13 @@ Collection jobs must preserve:
 - Visible browser sessions with manual login or captcha handling.
 - No bypassing platform access controls or private-content boundaries.
 
-The Platform research panel may open Xiaohongshu or Douyin search pages and queue collection jobs, but knowledge-base summaries must be created from stored trend assets only. Do not create synthetic trend rows to make a digest look successful.
+The Platform research panel may open Xiaohongshu or Douyin search pages and queue public-first collection jobs, but knowledge-base summaries must be created from stored trend assets only. Do not create synthetic trend rows to make a digest look successful.
+
+Collection jobs default to image-text-only mode. Video collection should stay disabled until the separate transcript and rights-review workflow is implemented.
+
+The public image-text smoke test is diagnostic only. It may run up to 10 serial anonymous no-cookie attempts, each in a fresh browser context without storage state, but must not use account rotation. Its JSON artifact must remain under ignored `artifacts/` storage and must not be imported into `trend_contents` or the knowledge base until a reviewer confirms the source content is appropriate.
+
+Trend knowledge digests require `source_reviewed=true`. This gate prevents unreviewed platform text from entering RAG context.
 
 The local browser worker stores session state under `.browser-sessions/`, which is ignored by Git. Treat those files like logged-in browser state and do not share them.
 

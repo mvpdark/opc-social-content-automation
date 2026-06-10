@@ -43,3 +43,99 @@ def test_extract_candidate_assets_returns_empty_without_public_items() -> None:
     )
 
     assert assets == []
+
+
+def test_extract_candidate_assets_skips_video_markers_by_default() -> None:
+    assets = extract_candidate_assets(
+        raw_items=[
+            {
+                "text": "硕升博申请经验 视频播放 先介绍背景，再讲研究计划。",
+                "url": "https://www.xiaohongshu.com/explore/video-example",
+            }
+        ],
+        platform="xiaohongshu",
+        keyword="硕升博",
+        max_items=5,
+    )
+
+    assert assets == []
+
+
+def test_extract_candidate_assets_does_not_skip_douyin_domain_by_default() -> None:
+    assets = extract_candidate_assets(
+        raw_items=[
+            {
+                "text": "博士申请图文经验 先确认研究方向，再整理套磁材料和研究计划。",
+                "url": "https://www.douyin.com/search/%E5%8D%9A%E5%A3%AB%E7%94%B3%E8%AF%B7",
+            }
+        ],
+        platform="douyin",
+        keyword="博士申请",
+        max_items=5,
+    )
+
+    assert len(assets) == 1
+
+
+def test_extract_candidate_assets_skips_login_wall_text() -> None:
+    assets = extract_candidate_assets(
+        raw_items=[
+            {
+                "text": "登录后查看搜索结果 可用 小红书 或 微信 扫码 手机号登录 获取验证码 用户协议 隐私政策",
+                "url": "https://agree.xiaohongshu.com/h5/terms/ZXXY20220331001/-1",
+            }
+        ],
+        platform="xiaohongshu",
+        keyword="硕升博",
+        max_items=5,
+    )
+
+    assert assets == []
+
+
+def test_extract_candidate_assets_skips_legal_footer_text() -> None:
+    assets = extract_candidate_assets(
+        raw_items=[
+            {
+                "text": "沪ICP备13030189号 营业执照 增值电信业务经营许可证 医疗器械网络交易服务第三方平台备案 违法不良信息举报电话 行吟信息科技",
+                "url": "https://fe-video-qc.xhscdn.com/fe-platform/example.pdf",
+            }
+        ],
+        platform="xiaohongshu",
+        keyword="硕升博",
+        max_items=5,
+    )
+
+    assert assets == []
+
+
+def test_extract_candidate_assets_skips_algorithm_filing_pdf() -> None:
+    assets = extract_candidate_assets(
+        raw_items=[
+            {
+                "text": "个性化推荐算法 网信算备310101216601302230019号",
+                "url": "https://beian.cac.gov.cn/api/static/fileUpload/example.pdf",
+            }
+        ],
+        platform="xiaohongshu",
+        keyword="硕升博",
+        max_items=5,
+    )
+
+    assert assets == []
+
+
+def test_extract_candidate_assets_skips_browser_warning_text() -> None:
+    assets = extract_candidate_assets(
+        raw_items=[
+            {
+                "text": "温馨提示 您的浏览器似乎开启了广告屏蔽插件，可能对正常使用造成影响，请移除插件或将小红书加入插件白名单后继续使用。",
+                "url": "https://www.xiaohongshu.com/search_result?keyword=test",
+            }
+        ],
+        platform="xiaohongshu",
+        keyword="硕升博",
+        max_items=5,
+    )
+
+    assert assets == []

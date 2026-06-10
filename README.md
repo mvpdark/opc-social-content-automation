@@ -45,9 +45,9 @@ Data collection -> Knowledge base -> Draft generation -> Humanization -> Review 
 - Content generation now prepares RAG-backed prompt packages and logs provider-not-configured failures instead of creating fake drafts.
 - Review workflow stores human scores and decisions, and export/publish paths require content status `approved`.
 - Image generation requires approved content, uses cover templates, and records generated assets with prompt metadata.
-- Trend collection jobs store safety profiles for Playwright-assisted collection, including platform search targets, randomized delays, human-like scrolling, session persistence, and cookie persistence.
+- Trend collection jobs store safety profiles for public-first Playwright-assisted collection, including platform search targets, image-text-only defaults, randomized delays, human-like scrolling, session persistence, and cookie persistence.
 - The frontend Platform research panel can open Xiaohongshu/Douyin search pages, queue operator-assisted collection jobs, and summarize stored trend assets into the knowledge base.
-- A local visible-browser trend worker can process queued jobs, preserve browser session state, extract public visible page text, and write real collected assets to `trend_contents`.
+- A local visible-browser trend worker can process queued jobs, preserve browser session state, extract public visible image-text page content, skip video/live markers by default, and write real collected assets to `trend_contents`.
 - Promoter workspace supports export-ready content, formatted export packages, and publish-record tracking.
 - DeepSeek official API is wired for the humanization rewrite provider through the Model Router.
 - Draft and image generation support `codex_test` and OpenAI-compatible providers.

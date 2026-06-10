@@ -124,7 +124,7 @@ The frontend Platform research panel supports Xiaohongshu and Douyin research se
 - Queue a safe collection job through `/api/trends/jobs`.
 - Summarize already collected trend assets into the knowledge base through `/api/trends/knowledge-digest`.
 
-Collection jobs are operator-assisted. The operator completes login or captcha manually, and the collection worker must keep randomized delays, visible browsing, session persistence, and account-safety-first pacing enabled. The knowledge digest endpoint does not browse the web or invent platform content; it only summarizes rows already stored in `trend_contents`.
+Collection jobs are public-first and operator-assisted. The worker tries anonymous public search first. The operator completes login or captcha manually only if the platform blocks public results, and the collection worker must keep randomized delays, visible browsing, session persistence, and account-safety-first pacing enabled. The knowledge digest endpoint does not browse the web or invent platform content; it only summarizes rows already stored in `trend_contents`.
 
 Install the optional browser collector dependency and Chromium runtime:
 
@@ -136,10 +136,26 @@ python -m playwright install chromium
 Run a queued job in a visible browser session:
 
 ```bash
+python scripts/run_trend_collection_job.py 1
+```
+
+The worker opens the platform search URL stored in the job safety profile, starts with public results, scrolls with randomized delays, extracts only visible public page text, and stores extracted items as `trend_contents`. Collection jobs default to `content_kind=image_text`, so obvious video/live markers are skipped until video collection is explicitly enabled. If no public image-text items are visible, the job is marked `needs_operator_review` and no trend rows are created.
+
+If the public page is blocked and the operator needs time to complete login or captcha, pass an explicit wait window:
+
+```bash
 python scripts/run_trend_collection_job.py 1 --operator-wait-seconds 90
 ```
 
-The worker opens the platform search URL stored in the job safety profile, waits for manual login/captcha, scrolls with randomized delays, extracts only visible public page text, and stores extracted items as `trend_contents`. If no public items are visible, the job is marked `needs_operator_review` and no trend rows are created.
+Run an anonymous public image-text smoke test without writing to the database:
+
+```bash
+python scripts/smoke_public_image_text_search.py --platform xiaohongshu --keyword 硕升博 --max-items 8 --attempts 10
+```
+
+The smoke test runs serial anonymous no-cookie browser attempts, capped at 10. Each attempt creates a fresh browser context without loading storage state. It writes a JSON artifact under `artifacts/`, filters obvious video/live markers, and does not create trend rows or knowledge-base entries. Do not use account rotation for this test.
+
+Before creating a trend knowledge digest, an operator must review the collected image-text sources and set `source_reviewed=true`. The backend rejects digest creation when this review gate is missing.
 
 ## Frontend
 

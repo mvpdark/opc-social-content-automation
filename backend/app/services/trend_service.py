@@ -62,11 +62,14 @@ def build_platform_search_target(platform: str, keyword: str) -> PlatformSearchT
     return PlatformSearchTarget(
         platform=normalized_platform,
         keyword=normalized_keyword,
+        content_kind="image_text",
+        video_collection_enabled=False,
         search_url=search_url,
-        requires_manual_login=True,
-        automation_mode="operator_assisted_visible_browser",
+        requires_manual_login=False,
+        automation_mode="public_first_visible_browser",
         safety_notes=[
-            "Use a visible browser session and let the operator complete login or captcha.",
+            "Try public search first in a visible browser session.",
+            "Ask the operator to complete login or captcha only if public results are blocked.",
             "Do not bypass platform access controls or collect private content.",
             "Keep randomized delays and human-like scrolling enabled.",
             "Store collected notes as trend assets before summarizing them into the knowledge base.",
@@ -93,6 +96,8 @@ def build_safety_profile(payload: TrendCollectionJobCreate) -> dict[str, object]
         "cookie_persistence": payload.persist_cookies,
         "session_label": payload.session_label,
         "max_items": payload.max_items,
+        "content_kind": payload.content_kind,
+        "video_collection_enabled": payload.content_kind in {"video", "mixed"},
         "speed_policy": "account_safety_first",
         "target": build_platform_search_target(payload.platform, payload.keyword).model_dump(),
     }
@@ -235,6 +240,8 @@ def create_trend_knowledge_digest(
     current_user: User,
 ) -> TrendKnowledgeDigestResponse:
     _ = current_user
+    ensure_trend_sources_reviewed(payload.source_reviewed)
+
     items = list(db.scalars(_trend_filter_statement(payload)).all())
     title, content, source_ids = render_trend_knowledge_digest(items, payload)
     knowledge: KnowledgeBase = create_knowledge_item(
@@ -253,6 +260,14 @@ def create_trend_knowledge_digest(
         item_count=len(source_ids),
         content=knowledge.content,
     )
+
+
+def ensure_trend_sources_reviewed(source_reviewed: bool) -> None:
+    if not source_reviewed:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Trend sources must be reviewed before creating a knowledge digest.",
+        )
 
 
 def trend_report(db: Session) -> dict[str, object]:

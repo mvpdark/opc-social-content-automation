@@ -17,6 +17,35 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 BROWSER_SESSION_ROOT = PROJECT_ROOT / ".browser-sessions"
 HASHTAG_RE = re.compile(r"[#＃]([\w\u4e00-\u9fff-]{2,40})", re.UNICODE)
 SPACE_RE = re.compile(r"\s+")
+VIDEO_MARKERS = ("视频", "播放", "直播", "video-card", "video_note", "shorts")
+BLOCKED_MARKERS = (
+    "登录后查看搜索结果",
+    "手机号登录",
+    "获取验证码",
+    "用户协议",
+    "隐私政策",
+    "扫码登录",
+    "温馨提示",
+    "广告屏蔽插件",
+    "插件白名单",
+    "沪ICP备",
+    "营业执照",
+    "公网安备",
+    "增值电信业务经营许可证",
+    "医疗器械网络交易服务第三方平台备案",
+    "网械平台备字",
+    "互联网药品信息服务资格证书",
+    "网络文化经营许可证",
+    "违法不良信息举报",
+    "行吟信息科技",
+    "个性化推荐算法",
+    "网信算备",
+    "beian.miit.gov.cn",
+    "beian.cac.gov.cn",
+    "agree.xiaohongshu.com",
+    "fe-platform",
+    ".pdf",
+)
 
 
 @dataclass(frozen=True)
@@ -58,6 +87,7 @@ def extract_candidate_assets(
     platform: str,
     keyword: str,
     max_items: int,
+    content_kind: str = "image_text",
 ) -> list[CollectedTrendAsset]:
     assets: list[CollectedTrendAsset] = []
     seen: set[str] = set()
@@ -71,6 +101,13 @@ def extract_candidate_assets(
             continue
 
         url = normalize_visible_text(raw_item.get("url")) or None
+        marker_source = f"{text} {url or ''}".lower()
+        if any(marker in marker_source for marker in BLOCKED_MARKERS):
+            continue
+        if content_kind == "image_text" and any(
+            marker in marker_source for marker in VIDEO_MARKERS
+        ):
+            continue
         key = url or text[:140]
         if key in seen:
             continue
@@ -135,6 +172,14 @@ def _safe_max_items(job: TrendCollectionJob) -> int:
     return 20
 
 
+def _content_kind(job: TrendCollectionJob) -> str:
+    profile = job.safety_profile or {}
+    content_kind = profile.get("content_kind")
+    if isinstance(content_kind, str) and content_kind in {"image_text", "video", "mixed"}:
+        return content_kind
+    return "image_text"
+
+
 def _delay_window(job: TrendCollectionJob) -> tuple[int, int]:
     profile = job.safety_profile or {}
     delays = profile.get("randomized_delay_seconds")
@@ -175,7 +220,7 @@ def _store_assets(
         "message": (
             "Collected public visible items from the operator-assisted browser session."
             if stored
-            else "No collected public items were found. Complete login/captcha and retry."
+            else "No collected public image-text items were found. Complete login/captcha only if public results are blocked, then retry."
         ),
         "collected_items": len(stored),
         "trend_ids": [],
@@ -198,7 +243,7 @@ def run_browser_collection_job(
     job_id: int,
     *,
     headless: bool = False,
-    operator_wait_seconds: int = 60,
+    operator_wait_seconds: int = 0,
     max_scrolls: int = 6,
 ) -> list[TrendContent]:
     job = db.get(TrendCollectionJob, job_id)
@@ -219,6 +264,7 @@ def run_browser_collection_job(
 
     target_url = _target_url(job)
     max_items = _safe_max_items(job)
+    content_kind = _content_kind(job)
     min_delay, max_delay = _delay_window(job)
     session_dir = _session_dir(job)
     session_dir.mkdir(parents=True, exist_ok=True)
@@ -227,6 +273,7 @@ def run_browser_collection_job(
     job.result_summary = {
         "message": "Visible browser collection started.",
         "target_url": target_url,
+        "content_kind": content_kind,
         "collected_items": 0,
     }
     job.error = None
@@ -249,7 +296,18 @@ def run_browser_collection_job(
 
             for _ in range(max(1, max_scrolls)):
                 raw_items.extend(page.evaluate(_raw_visible_items_script()))
-                if len(extract_candidate_assets(raw_items, job.platform, job.keyword, max_items)) >= max_items:
+                if (
+                    len(
+                        extract_candidate_assets(
+                            raw_items,
+                            job.platform,
+                            job.keyword,
+                            max_items,
+                            content_kind=content_kind,
+                        )
+                    )
+                    >= max_items
+                ):
                     break
                 page.mouse.move(random.randint(280, 980), random.randint(240, 760))
                 page.mouse.wheel(0, random.randint(480, 980))
@@ -260,7 +318,7 @@ def run_browser_collection_job(
         job.status = "needs_operator_review"
         job.error = "Visible browser timed out while loading the platform page."
         job.result_summary = {
-            "message": "Open the platform page manually, complete login/captcha, and retry.",
+            "message": "Retry public search first; complete login/captcha only if public results are blocked.",
             "target_url": target_url,
             "collected_items": 0,
         }
@@ -277,5 +335,11 @@ def run_browser_collection_job(
         db.commit()
         raise
 
-    assets = extract_candidate_assets(raw_items, job.platform, job.keyword, max_items)
+    assets = extract_candidate_assets(
+        raw_items,
+        job.platform,
+        job.keyword,
+        max_items,
+        content_kind=content_kind,
+    )
     return _store_assets(db=db, job=job, assets=assets)
