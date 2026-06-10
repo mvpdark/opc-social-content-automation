@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { Bell, Command, Search, ShieldCheck } from "lucide-react";
+import { Bell, Command, PenLine, Search, ShieldCheck } from "lucide-react";
 
 import { navigation, tabMeta, type WorkspaceTab } from "@/lib/dashboard-data";
 
@@ -77,6 +77,14 @@ export function AppShell({ activeTab, children, onTabChange }: AppShellProps) {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
+                  <button
+                    className="flex h-9 shrink-0 items-center gap-2 rounded-md bg-ink px-3 text-sm font-medium text-white"
+                    onClick={() => onTabChange("content")}
+                    type="button"
+                  >
+                    <PenLine className="h-4 w-4" />
+                    生成图文
+                  </button>
                   <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-md border border-line bg-mist px-3 text-sm text-muted lg:w-72 lg:flex-none">
                     <Search className="h-4 w-4" />
                     <input

@@ -5,6 +5,7 @@ import {
   ArrowRight,
   ClipboardCheck,
   Image,
+  Loader2,
   PenLine,
   ShieldCheck
 } from "lucide-react";
@@ -46,6 +47,17 @@ const pillTone: Record<string, string> = {
   blue: "border-steel/40 bg-steel/10 text-steel",
   red: "border-coral/40 bg-coral/10 text-coral",
   amber: "border-amber/40 bg-amber/10 text-amber"
+};
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api";
+
+type GeneratedContent = {
+  body: string;
+  id: number;
+  platform: string;
+  status: string;
+  tags: string[] | null;
+  title: string;
 };
 
 export default function Home() {
@@ -230,32 +242,250 @@ function KnowledgeView() {
 
 function ContentView() {
   return (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
-      <DraftPanel />
-      <div className="space-y-4">
-        <Panel helper="生成前需要明确输入、改写和审核边界。" title="生产控制">
-          <div className="space-y-3">
-            {contentControls.map((control) => (
-              <div key={control.title} className="rounded-md border border-line bg-white p-3">
-                <div className="flex items-center gap-3">
-                  <IconBox tone="blue">
-                    <control.icon className="h-4 w-4" />
-                  </IconBox>
-                  <div>
-                    <div className="text-sm font-semibold">{control.title}</div>
-                    <p className="mt-1 text-xs leading-5 text-muted">{control.detail}</p>
+    <div className="space-y-4">
+      <GenerationLauncher />
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
+        <DraftPanel />
+        <div className="space-y-4">
+          <Panel helper="生成前需要明确输入、改写和审核边界。" title="生产控制">
+            <div className="space-y-3">
+              {contentControls.map((control) => (
+                <div key={control.title} className="rounded-md border border-line bg-white p-3">
+                  <div className="flex items-center gap-3">
+                    <IconBox tone="blue">
+                      <control.icon className="h-4 w-4" />
+                    </IconBox>
+                    <div>
+                      <div className="text-sm font-semibold">{control.title}</div>
+                      <p className="mt-1 text-xs leading-5 text-muted">{control.detail}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </Panel>
-        <ReferencePanel
-          helper="用于降低模板感、提高开头吸引力。"
-          items={writingReferences}
-          title="可用参考"
-        />
+              ))}
+            </div>
+          </Panel>
+          <ReferencePanel
+            helper="用于降低模板感、提高开头吸引力。"
+            items={writingReferences}
+            title="可用参考"
+          />
+        </div>
       </div>
+    </div>
+  );
+}
+
+function GenerationLauncher() {
+  const [platform, setPlatform] = useState("xiaohongshu");
+  const [topic, setTopic] = useState("硕升博申请第一步，不是先套磁");
+  const [knowledgeQuery, setKnowledgeQuery] = useState("硕升博 高赞图文 写作参考");
+  const [targetAudience, setTargetAudience] = useState("准备硕升博申请的学生");
+  const [tone, setTone] = useState("小红书图文，短段落，先拆误区，再给清单");
+  const [tagsText, setTagsText] = useState("硕升博,博士申请,研究方向,申请规划");
+  const [accessToken, setAccessToken] = useState("");
+  const [busyAction, setBusyAction] = useState<"draft" | "review" | null>(null);
+  const [statusText, setStatusText] = useState("填写主题和令牌后，点击“生成图文”创建草稿。");
+  const [lastContent, setLastContent] = useState<GeneratedContent | null>(null);
+
+  const canGenerate = topic.trim().length > 0 && busyAction === null;
+  const canRequestReview = lastContent !== null && busyAction === null;
+
+  function authHeaders() {
+    return {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+    };
+  }
+
+  async function generateDraft() {
+    if (!topic.trim()) {
+      setStatusText("先填写选题，再生成图文。");
+      return;
+    }
+    if (!accessToken.trim()) {
+      setStatusText("需要工作台令牌，后端才会创建真实草稿。");
+      return;
+    }
+
+    setBusyAction("draft");
+    setStatusText("正在生成图文草稿，生成后不会自动发布。");
+    try {
+      const response = await fetch(`${API_BASE}/content/generate`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          platform,
+          topic: topic.trim(),
+          knowledge_query: knowledgeQuery.trim() || undefined,
+          tone: tone.trim() || undefined,
+          target_audience: targetAudience.trim() || undefined,
+          knowledge_limit: 5,
+          tags: tagsText
+            .split(/[,，]/)
+            .map((tag) => tag.trim())
+            .filter(Boolean)
+        })
+      });
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        throw new Error(errorBody?.detail ?? "图文草稿生成失败。");
+      }
+      const data = (await response.json()) as GeneratedContent;
+      setLastContent(data);
+      setStatusText(`草稿 #${data.id} 已生成，当前状态：${data.status}。下一步请提交人工审核。`);
+    } catch (error) {
+      setStatusText(error instanceof Error ? error.message : "图文草稿生成失败。");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function requestReview() {
+    if (!lastContent) {
+      setStatusText("先生成草稿，再提交审核。");
+      return;
+    }
+    if (!accessToken.trim()) {
+      setStatusText("提交审核需要工作台令牌。");
+      return;
+    }
+
+    setBusyAction("review");
+    setStatusText(`正在提交草稿 #${lastContent.id} 进入人工审核。`);
+    try {
+      const response = await fetch(`${API_BASE}/content/${lastContent.id}/review-request`, {
+        method: "POST",
+        headers: authHeaders()
+      });
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        throw new Error(errorBody?.detail ?? "提交审核失败。");
+      }
+      const data = (await response.json()) as GeneratedContent;
+      setLastContent(data);
+      setStatusText(`草稿 #${data.id} 已进入审核，审核通过后再到“封面”页生成图片。`);
+    } catch (error) {
+      setStatusText(error instanceof Error ? error.message : "提交审核失败。");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  return (
+    <div data-testid="generation-launcher">
+      <Panel
+        action={
+          <Pill tone={lastContent ? "green" : "blue"}>
+            {lastContent ? `草稿 #${lastContent.id}` : "主入口"}
+          </Pill>
+        }
+        helper="这里是启动生成图文的入口；生成只创建草稿，不跳过人工审核。"
+        title="生成图文"
+      >
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <label className="block">
+              <span className="text-xs font-medium text-muted">平台</span>
+              <select
+                className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+                value={platform}
+                onChange={(event) => setPlatform(event.target.value)}
+              >
+                <option value="xiaohongshu">小红书图文</option>
+                <option value="douyin">抖音图文</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-muted">工作台令牌</span>
+              <input
+                className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+                onChange={(event) => setAccessToken(event.target.value)}
+                placeholder="用于生成草稿的 Bearer token"
+                type="password"
+                value={accessToken}
+              />
+            </label>
+            <label className="block md:col-span-2">
+              <span className="text-xs font-medium text-muted">选题</span>
+              <input
+                className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+                onChange={(event) => setTopic(event.target.value)}
+                placeholder="输入要生成的图文主题"
+                value={topic}
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-muted">知识检索词</span>
+              <input
+                className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+                onChange={(event) => setKnowledgeQuery(event.target.value)}
+                value={knowledgeQuery}
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-muted">目标人群</span>
+              <input
+                className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+                onChange={(event) => setTargetAudience(event.target.value)}
+                value={targetAudience}
+              />
+            </label>
+            <label className="block md:col-span-2">
+              <span className="text-xs font-medium text-muted">风格要求</span>
+              <input
+                className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+                onChange={(event) => setTone(event.target.value)}
+                value={tone}
+              />
+            </label>
+            <label className="block md:col-span-2">
+              <span className="text-xs font-medium text-muted">标签</span>
+              <input
+                className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+                onChange={(event) => setTagsText(event.target.value)}
+                value={tagsText}
+              />
+            </label>
+          </div>
+
+          <div className="rounded-md border border-line bg-mist/70 p-4">
+            <div className="text-sm font-semibold">启动状态</div>
+            <p className="mt-2 text-sm leading-6 text-muted">{statusText}</p>
+            <div className="mt-4 grid grid-cols-1 gap-2">
+              <button
+                className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={!canGenerate}
+                onClick={generateDraft}
+                type="button"
+              >
+                {busyAction === "draft" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <PenLine className="h-4 w-4" />
+                )}
+                生成图文
+              </button>
+              <button
+                className="flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-white text-sm font-medium text-ink disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={!canRequestReview}
+                onClick={requestReview}
+                type="button"
+              >
+                {busyAction === "review" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ClipboardCheck className="h-4 w-4" />
+                )}
+                提交审核
+              </button>
+            </div>
+            <div className="mt-4 border-l-4 border-amber pl-3 text-xs leading-5 text-muted">
+              封面图片要等内容人工批准后，在“封面”页生成。
+            </div>
+          </div>
+        </div>
+      </Panel>
     </div>
   );
 }
