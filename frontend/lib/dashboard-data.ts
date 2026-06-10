@@ -2,40 +2,88 @@ import {
   AlertTriangle,
   BarChart3,
   BookOpenText,
-  Brain,
   CheckCircle2,
   ClipboardCheck,
+  Clock3,
   Database,
   Download,
   ExternalLink,
   FileText,
   Image,
-  KeyRound,
   LayoutTemplate,
+  Link2,
+  ListChecks,
+  Palette,
   PenLine,
   Radar,
-  RefreshCcw,
+  Search,
   Send,
   ShieldCheck,
   Sparkles,
-  Users
+  Upload,
+  Users,
+  Wand2
 } from "lucide-react";
 
-export const navigation = [
-  { label: "指挥台", icon: BarChart3, active: true },
-  { label: "趋势采集", icon: Radar },
-  { label: "知识库", icon: BookOpenText },
-  { label: "内容生产", icon: PenLine },
-  { label: "审核", icon: ClipboardCheck },
-  { label: "封面", icon: Image },
-  { label: "发布交付", icon: Users }
+export type WorkspaceTab =
+  | "dashboard"
+  | "research"
+  | "knowledge"
+  | "content"
+  | "review"
+  | "cover"
+  | "delivery";
+
+export const navigation: Array<{
+  id: WorkspaceTab;
+  label: string;
+  icon: typeof BarChart3;
+}> = [
+  { id: "dashboard", label: "指挥台", icon: BarChart3 },
+  { id: "research", label: "趋势采集", icon: Radar },
+  { id: "knowledge", label: "知识库", icon: BookOpenText },
+  { id: "content", label: "内容生产", icon: PenLine },
+  { id: "review", label: "审核", icon: ClipboardCheck },
+  { id: "cover", label: "封面", icon: Image },
+  { id: "delivery", label: "发布交付", icon: Users }
 ];
+
+export const tabMeta: Record<WorkspaceTab, { title: string; description: string }> = {
+  dashboard: {
+    title: "内容运营指挥台",
+    description: "只保留今日优先级、生产进度和必须处理的风险。"
+  },
+  research: {
+    title: "趋势采集",
+    description: "先看公开高赞图文，再沉淀写作参考和封面参考。"
+  },
+  knowledge: {
+    title: "知识库",
+    description: "管理趋势摘要、内部资料、写作参考和可检索资产。"
+  },
+  content: {
+    title: "内容生产",
+    description: "围绕知识库生成初稿、改写正文，并保留人工审核入口。"
+  },
+  review: {
+    title: "审核工作台",
+    description: "发布前检查事实、风格、来源和平台风险。"
+  },
+  cover: {
+    title: "封面工作台",
+    description: "根据高赞图文风格生成封面方案，并人工复核标题准确性。"
+  },
+  delivery: {
+    title: "发布交付",
+    description: "管理已批准内容、导出包、发布记录和推广交接。"
+  }
+};
 
 export const stats = [
   { label: "趋势素材", value: "0", helper: "公开图文样本", tone: "steel" },
   { label: "知识条目", value: "0", helper: "可检索资产", tone: "moss" },
   { label: "待审稿件", value: "0", helper: "人工审核前", tone: "coral" },
-  { label: "可交付内容", value: "0", helper: "批准后发布", tone: "ink" }
+  { label: "可交付内容", value: "0", helper: "批准后发布", tone: "amber" }
 ];
 
 export const pipeline = [
@@ -48,19 +96,19 @@ export const pipeline = [
   {
     title: "知识沉淀",
     state: "可用",
-    description: "审核后的趋势资产进入知识库，供 RAG 检索。",
+    description: "审核后的趋势资产进入知识库，供检索和复用。",
     icon: BookOpenText
   },
   {
     title: "撰稿生成",
     state: "已接入",
-    description: "GPT-5.5 通过 Model Router 生成初稿。",
+    description: "撰稿服务读取知识库与写作参考，生成可审核初稿。",
     icon: PenLine
   },
   {
     title: "人味化",
     state: "已接入",
-    description: "DeepSeek 4 Pro 改写正文，保留赛道关键词。",
+    description: "改写服务压低模板感，保留关键词和事实边界。",
     icon: Sparkles
   },
   {
@@ -72,9 +120,36 @@ export const pipeline = [
   {
     title: "封面与发布",
     state: "追踪",
-    description: "gpt-image-2 出图，Canva/发布记录跟踪交付。",
+    description: "图片服务生成素材，人工复核后交付发布。",
     icon: Send
   }
+];
+
+export const commandFocus = [
+  {
+    title: "先补高赞图文参考",
+    detail: "采集同类小红书图文，整理开头、标题、封面和评论触发点。",
+    state: "今天重点",
+    icon: Radar
+  },
+  {
+    title: "把参考沉淀进知识库",
+    detail: "保存来源摘要前必须人工确认，避免把不可靠样本写进资产库。",
+    state: "门控",
+    icon: BookOpenText
+  },
+  {
+    title: "生成前先走审核规则",
+    detail: "初稿、改写、封面都进入待审，不自动发布。",
+    state: "强制",
+    icon: ShieldCheck
+  }
+];
+
+export const nextActions = [
+  "测试图文采集任务能否稳定创建",
+  "把高赞标题和封面风格整理成写作参考",
+  "用参考生成一篇新草稿并进入审核队列"
 ];
 
 export const queues = [
@@ -129,29 +204,23 @@ export const publishingRecords = [
   }
 ];
 
-export const providerStatuses = [
+export const connectionStatuses = [
   {
-    name: "Draft generation",
-    provider: "openai_compatible",
-    model: "gpt-5.5",
-    status: "Connected",
-    note: "撰稿中转站已完成 smoke test。",
+    name: "撰稿服务",
+    status: "可用",
+    note: "用于生成初稿；前端不展示具体供应商和底层配置。",
     icon: PenLine
   },
   {
-    name: "Humanization rewrite",
-    provider: "deepseek",
-    model: "deepseek-v4-pro",
-    status: "Connected",
-    note: "DeepSeek 官方 API 已完成 rewrite smoke test。",
-    icon: KeyRound
+    name: "改写服务",
+    status: "可用",
+    note: "用于正文人味化和风格修正；仍需人工审阅。",
+    icon: Wand2
   },
   {
-    name: "Image generation",
-    provider: "openai_compatible",
-    model: "gpt-image-2",
-    status: "Connected",
-    note: "gpt-image-2 已完成真实图片 smoke test。",
+    name: "图片服务",
+    status: "可用",
+    note: "用于封面素材生成；标题和文字必须二次复核。",
     icon: Image
   }
 ];
@@ -165,9 +234,114 @@ export const draftPreview = {
   tags: ["硕升博", "博士申请", "研究方向", "申请规划"]
 };
 
+export const writingReferences = [
+  {
+    title: "开头先拆误区",
+    source: "高赞图文参考",
+    detail: "第一句话直接反常识：不是先做 A，而是先想清 B。读者会自然继续看原因。",
+    icon: PenLine
+  },
+  {
+    title: "正文用短段推进",
+    source: "小红书风格",
+    detail: "每段只解决一个判断，少用长解释，结尾给出可执行清单。",
+    icon: ListChecks
+  },
+  {
+    title: "评论区引导问题",
+    source: "互动参考",
+    detail: "把结尾设计成申请阶段自查问题，方便用户留言自己的情况。",
+    icon: Users
+  }
+];
+
+export const coverReferences = [
+  {
+    title: "大标题先给结论",
+    detail: "封面只保留一个核心判断，避免信息堆满。",
+    icon: LayoutTemplate
+  },
+  {
+    title: "三点清单增强停留",
+    detail: "用 1/2/3 列出读者能马上理解的步骤。",
+    icon: ListChecks
+  },
+  {
+    title: "底色要轻，标题要重",
+    detail: "背景偏清爽，主标题黑色高对比，关键词用强调色。",
+    icon: Palette
+  }
+];
+
+export const knowledgeAssets = [
+  {
+    title: "高赞图文写作参考",
+    status: "待采集",
+    detail: "从公开图文里整理标题、开头、结构、评论触发点。",
+    icon: Search
+  },
+  {
+    title: "内部申请资料",
+    status: "可上传",
+    detail: "学校、项目、导师方向、成功案例和避坑经验。",
+    icon: Upload
+  },
+  {
+    title: "Prompt 模板库",
+    status: "独立存放",
+    detail: "撰稿、改写、封面提示词不写死在业务代码里。",
+    icon: FileText
+  },
+  {
+    title: "来源链接归档",
+    status: "必填",
+    detail: "保存知识摘要时保留公开链接和人工确认状态。",
+    icon: Link2
+  }
+];
+
+export const contentControls = [
+  {
+    title: "选题输入",
+    detail: "选择平台、关键词、目标人群和参考知识条目。",
+    icon: PenLine
+  },
+  {
+    title: "正文改写",
+    detail: "压掉模板味，保留关键词和事实边界。",
+    icon: Wand2
+  },
+  {
+    title: "进入审核",
+    detail: "生成结果只进入待审，不会自动发布。",
+    icon: ShieldCheck
+  }
+];
+
+export const imageWorkflow = [
+  {
+    title: "封面 brief",
+    detail: "从标题、三点清单和风格参考生成图片需求。",
+    status: "可准备",
+    icon: LayoutTemplate
+  },
+  {
+    title: "生成素材",
+    detail: "图片服务只负责出图，不直接发布。",
+    status: "待触发",
+    icon: Image
+  },
+  {
+    title: "人工复核",
+    detail: "检查文字、事实、平台适配和是否需要重新出图。",
+    status: "强制",
+    icon: ClipboardCheck
+  }
+];
+
 export const reviewQueue = [
-  { title: "硕升博申请顺序", source: "GPT-5.5 + DeepSeek", status: "待审", icon: ClipboardCheck },
-  { title: "封面标题准确性", source: "gpt-image-2", status: "需复核", icon: LayoutTemplate },
+  { title: "硕升博申请顺序", source: "撰稿与改写服务", status: "待审", icon: ClipboardCheck },
+  { title: "封面标题准确性", source: "图片生成服务", status: "需复核", icon: LayoutTemplate },
   { title: "高赞样本参考", source: "小红书登录态", status: "待采集", icon: ExternalLink }
 ];
 
@@ -178,8 +352,8 @@ export const safetyGates = [
   { label: "图片标题需复核", state: "提醒", icon: AlertTriangle }
 ];
 
-export const modelRouterChecks = [
-  { label: "GPT-5.5 撰稿", state: "Connected", icon: Brain },
-  { label: "DeepSeek 4 Pro", state: "Connected", icon: RefreshCcw },
-  { label: "gpt-image-2", state: "Connected", icon: Image }
+export const timeline = [
+  { label: "采集公开样本", helper: "先看真实内容", icon: Radar },
+  { label: "保存知识摘要", helper: "人工确认来源", icon: BookOpenText },
+  { label: "生成并审核", helper: "不自动发布", icon: Clock3 }
 ];

@@ -3,14 +3,14 @@
 @tailwind utilities;
 
 :root {
-  --background: #f4f6f8;
-  --foreground: #172033;
-  --muted: #667085;
-  --line: #d7dee8;
+  --background: #eef8f4;
+  --foreground: #12312d;
+  --muted: #5f726d;
+  --line: #c9dfd7;
   --surface: #ffffff;
-  --moss: #4f7a63;
-  --coral: #c65d45;
-  --steel: #36678f;
+  --moss: #34805c;
+  --coral: #d76547;
+  --steel: #2f73a7;
 }
 
 * {
