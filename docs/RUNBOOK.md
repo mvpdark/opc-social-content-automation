@@ -68,6 +68,24 @@ TEST_STATIC_URL_PREFIX=/static/generated
 
 This mode creates clearly labeled test drafts and local SVG cover assets under `backend/static/generated/`. It is for workflow testing only. Switch these providers to official API-backed implementations before production.
 
+## OpenAI-Compatible Draft Provider
+
+Draft generation can use an OpenAI-compatible Chat Completions provider:
+
+```bash
+DRAFT_PROVIDER=openai_compatible
+DRAFT_MODEL=gpt-5.5
+DRAFT_TIMEOUT_SECONDS=120
+OPENAI_COMPATIBLE_BASE_URL=https://your-compatible-provider.example/v1
+OPENAI_COMPATIBLE_API_KEY=your-secret-key
+```
+
+Run a small draft smoke test:
+
+```bash
+python scripts/smoke_draft_provider.py
+```
+
 ## Frontend
 
 ```bash

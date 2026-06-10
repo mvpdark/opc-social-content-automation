@@ -46,6 +46,85 @@ def _deepseek_messages(prompt_template: str, payload: dict[str, object]) -> list
     ]
 
 
+def _chat_messages(prompt_template: str, payload: dict[str, object]) -> list[dict[str, str]]:
+    return [
+        {
+            "role": "system",
+            "content": prompt_template,
+        },
+        {
+            "role": "user",
+            "content": json.dumps(payload, ensure_ascii=False, indent=2),
+        },
+    ]
+
+
+def _extract_chat_content(provider: str, data: dict[str, object]) -> str:
+    try:
+        choices = data["choices"]
+        if not isinstance(choices, list):
+            raise TypeError
+        message = choices[0]["message"]
+        content = message["content"]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"{provider} response did not include message content.",
+        ) from exc
+
+    if isinstance(content, list):
+        content = "\n".join(
+            str(part.get("text", ""))
+            for part in content
+            if isinstance(part, dict) and part.get("text")
+        )
+
+    if not isinstance(content, str) or not content.strip():
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"{provider} response content was empty.",
+        )
+    return content.strip()
+
+
+def _post_chat_completion(
+    provider: str,
+    base_url: str,
+    api_key: str,
+    timeout_seconds: float,
+    payload: dict[str, object],
+) -> dict[str, object]:
+    try:
+        with httpx.Client(timeout=timeout_seconds) as client:
+            response = client.post(
+                f"{base_url.rstrip('/')}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
+            response.raise_for_status()
+            data = response.json()
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=_redacted_provider_error(provider, exc.response.status_code),
+        ) from exc
+    except (httpx.HTTPError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=_redacted_provider_error(provider),
+        ) from exc
+
+    if not isinstance(data, dict):
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"{provider} response was not a JSON object.",
+        )
+    return data
+
+
 def _string_list(value: object) -> list[str]:
     if not isinstance(value, list):
         return []
@@ -180,9 +259,29 @@ class ModelRouter:
         return [value / magnitude for value in vector]
 
     def draft_model(self, prompt_name: str, payload: dict[str, object]) -> str:
-        load_prompt(prompt_name)
+        prompt_template = load_prompt(prompt_name)
         if settings.draft_provider == "codex_test":
             return _test_draft(payload)
+        if settings.draft_provider == "openai_compatible":
+            if not settings.openai_compatible_api_key:
+                raise HTTPException(
+                    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                    detail="OpenAI-compatible draft provider is not configured yet.",
+                )
+            request_payload: dict[str, object] = {
+                "model": settings.draft_model,
+                "messages": _chat_messages(prompt_template, payload),
+                "stream": False,
+                "store": False,
+            }
+            data = _post_chat_completion(
+                provider="OpenAI-compatible draft provider",
+                base_url=settings.openai_compatible_base_url,
+                api_key=settings.openai_compatible_api_key,
+                timeout_seconds=settings.draft_timeout_seconds,
+                payload=request_payload,
+            )
+            return _extract_chat_content("OpenAI-compatible draft provider", data)
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="Draft model provider is not configured yet.",
@@ -203,43 +302,14 @@ class ModelRouter:
             "temperature": 0.7,
             "stream": False,
         }
-        try:
-            with httpx.Client(timeout=settings.deepseek_timeout_seconds) as client:
-                response = client.post(
-                    f"{settings.deepseek_base_url.rstrip('/')}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {settings.deepseek_api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json=request_payload,
-                )
-                response.raise_for_status()
-                data = response.json()
-        except httpx.HTTPStatusError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=_redacted_provider_error("DeepSeek", exc.response.status_code),
-            ) from exc
-        except (httpx.HTTPError, ValueError) as exc:
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=_redacted_provider_error("DeepSeek"),
-            ) from exc
-
-        try:
-            content = data["choices"][0]["message"]["content"]
-        except (KeyError, IndexError, TypeError) as exc:
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="DeepSeek response did not include message content.",
-            ) from exc
-
-        if not isinstance(content, str) or not content.strip():
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="DeepSeek response content was empty.",
-            )
-        return content.strip()
+        data = _post_chat_completion(
+            provider="DeepSeek",
+            base_url=settings.deepseek_base_url,
+            api_key=settings.deepseek_api_key,
+            timeout_seconds=settings.deepseek_timeout_seconds,
+            payload=request_payload,
+        )
+        return _extract_chat_content("DeepSeek", data)
 
     def image_model(self, prompt_name: str, payload: dict[str, object]) -> str:
         load_prompt(prompt_name)

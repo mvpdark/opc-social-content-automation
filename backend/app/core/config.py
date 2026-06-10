@@ -11,8 +11,12 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 1440
     embedding_dimensions: int = 1536
     draft_provider: str = "codex_test"
+    draft_model: str = "gpt-5.5"
+    draft_timeout_seconds: float = 120.0
     image_provider: str = "codex_test"
     test_static_url_prefix: str = "/static/generated"
+    openai_compatible_api_key: str | None = None
+    openai_compatible_base_url: str = "https://api.openai.com/v1"
     deepseek_api_key: str | None = None
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_rewrite_model: str = "deepseek-v4-pro"

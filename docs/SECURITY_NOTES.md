@@ -33,3 +33,4 @@ Publishing and image generation remain blocked until content has passed human ap
 - Real provider keys must live in `.env`, which is ignored by Git.
 - Do not commit `.env` or paste provider keys into documentation.
 - Provider error messages should be redacted before they are written to generation logs.
+- OpenAI-compatible provider keys use the same rule as official provider keys: local `.env` only, never committed.
