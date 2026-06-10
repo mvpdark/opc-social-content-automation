@@ -38,6 +38,7 @@ def validate_required_files() -> int:
         ROOT / "frontend" / "app" / "page.tsx",
         ROOT / "docs" / "RUNBOOK.md",
         ROOT / "docs" / "SECURITY_NOTES.md",
+        ROOT / "scripts" / "run_trend_collection_job.py",
         ROOT / "prompts" / "draft_generation.md",
         ROOT / "prompts" / "humanization.md",
         ROOT / "prompts" / "review.md",
@@ -99,6 +100,11 @@ def validate_safety_gates() -> int:
             "cookie_persistence",
             "build_platform_search_target",
             "create_trend_knowledge_digest",
+        ],
+        "backend/app/services/trend_browser_collector.py": [
+            "operator_wait_seconds",
+            "headless: bool = False",
+            "No collected public items were found",
         ],
         "backend/app/services/model_router.py": [
             "load_prompt",

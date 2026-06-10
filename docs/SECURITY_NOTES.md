@@ -30,6 +30,8 @@ Collection jobs must preserve:
 
 The Platform research panel may open Xiaohongshu or Douyin search pages and queue collection jobs, but knowledge-base summaries must be created from stored trend assets only. Do not create synthetic trend rows to make a digest look successful.
 
+The local browser worker stores session state under `.browser-sessions/`, which is ignored by Git. Treat those files like logged-in browser state and do not share them.
+
 Publishing and image generation remain blocked until content has passed human approval.
 
 ## API Keys

@@ -20,6 +20,9 @@ dependencies = [
 dev = [
   "pytest>=8.0.0"
 ]
+collector = [
+  "playwright>=1.45.0"
+]
 
 [build-system]
 requires = ["setuptools>=69", "wheel"]

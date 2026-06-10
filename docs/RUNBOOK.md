@@ -126,6 +126,21 @@ The frontend Platform research panel supports Xiaohongshu and Douyin research se
 
 Collection jobs are operator-assisted. The operator completes login or captcha manually, and the collection worker must keep randomized delays, visible browsing, session persistence, and account-safety-first pacing enabled. The knowledge digest endpoint does not browse the web or invent platform content; it only summarizes rows already stored in `trend_contents`.
 
+Install the optional browser collector dependency and Chromium runtime:
+
+```bash
+python -m pip install -e "backend[collector]"
+python -m playwright install chromium
+```
+
+Run a queued job in a visible browser session:
+
+```bash
+python scripts/run_trend_collection_job.py 1 --operator-wait-seconds 90
+```
+
+The worker opens the platform search URL stored in the job safety profile, waits for manual login/captcha, scrolls with randomized delays, extracts only visible public page text, and stores extracted items as `trend_contents`. If no public items are visible, the job is marked `needs_operator_review` and no trend rows are created.
+
 ## Frontend
 
 ```bash
