@@ -36,6 +36,30 @@ export type WorkspaceTab =
   | "delivery"
   | "settings";
 
+export type InterfaceStyle = "apple" | "mint" | "warm";
+
+export const interfaceStyles: Array<{
+  id: InterfaceStyle;
+  label: string;
+  description: string;
+}> = [
+  {
+    id: "apple",
+    label: "苹果风",
+    description: "灰白底、系统蓝、轻边框，适合日常高频使用。"
+  },
+  {
+    id: "mint",
+    label: "清爽绿",
+    description: "延续 OPC 的知识库感，视觉更轻、更安静。"
+  },
+  {
+    id: "warm",
+    label: "柔和暖色",
+    description: "更亲和，适合运营和推广场景。"
+  }
+];
+
 export const navigation: Array<{
   id: WorkspaceTab;
   label: string;

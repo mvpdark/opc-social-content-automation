@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  ArrowRight,
   ClipboardCheck,
   Eye,
   EyeOff,
@@ -27,6 +26,7 @@ import {
   coverReferences,
   draftPreview,
   imageWorkflow,
+  interfaceStyles,
   knowledgeAssets,
   nextActions,
   pipeline,
@@ -35,7 +35,7 @@ import {
   queues,
   reviewQueue,
   safetyGates,
-  timeline,
+  type InterfaceStyle,
   type WorkspaceTab,
   writingReferences
 } from "@/lib/dashboard-data";
@@ -58,6 +58,7 @@ const pillTone: Record<string, string> = {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api";
 const CREDENTIAL_STORAGE_KEY = "opc_workspace_credentials_v1";
+const INTERFACE_STYLE_STORAGE_KEY = "opc_interface_style_v1";
 
 type CredentialSettings = {
   workspaceToken: string;
@@ -165,11 +166,21 @@ type GeneratedContent = {
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("dashboard");
+  const [interfaceStyle, setInterfaceStyle] = useState<InterfaceStyle>("apple");
   const [showHelperText, setShowHelperText] = useState(true);
   const [credentialsLoaded, setCredentialsLoaded] = useState(false);
   const [credentials, setCredentials] = useState<CredentialSettings>(emptyCredentials);
 
   useEffect(() => {
+    const storedStyle = window.localStorage.getItem(INTERFACE_STYLE_STORAGE_KEY);
+    if (
+      storedStyle === "apple" ||
+      storedStyle === "mint" ||
+      storedStyle === "warm"
+    ) {
+      setInterfaceStyle(storedStyle);
+    }
+
     try {
       const stored = window.localStorage.getItem(CREDENTIAL_STORAGE_KEY);
       if (stored) {
@@ -189,8 +200,17 @@ export default function Home() {
     window.localStorage.setItem(CREDENTIAL_STORAGE_KEY, JSON.stringify(credentials));
   }, [credentials, credentialsLoaded]);
 
+  useEffect(() => {
+    window.localStorage.setItem(INTERFACE_STYLE_STORAGE_KEY, interfaceStyle);
+  }, [interfaceStyle]);
+
   return (
-    <AppShell activeTab={activeTab} onTabChange={setActiveTab} showHelperText={showHelperText}>
+    <AppShell
+      activeTab={activeTab}
+      interfaceStyle={interfaceStyle}
+      onTabChange={setActiveTab}
+      showHelperText={showHelperText}
+    >
       {activeTab === "dashboard" ? <DashboardView /> : null}
       {activeTab === "research" ? (
         <ResearchView
@@ -211,8 +231,10 @@ export default function Home() {
       {activeTab === "settings" ? (
         <SettingsView
           credentials={credentials}
+          interfaceStyle={interfaceStyle}
           onCredentialsChange={setCredentials}
           onReset={() => setShowHelperText(true)}
+          onStyleChange={setInterfaceStyle}
           onShowHelperTextChange={setShowHelperText}
           showHelperText={showHelperText}
         />
@@ -222,77 +244,41 @@ export default function Home() {
 }
 
 function DashboardView() {
+  const primaryFocus = commandFocus[0];
+
   return (
     <div className="space-y-4">
-      <StatStrip />
-
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         <Panel
           action={
-            <Pill tone="green">
+            <Pill tone="blue">
               <ShieldCheck className="h-3.5 w-3.5" />
-              人工审核必需
+              公开采集优先
             </Pill>
           }
-          helper="把复杂工作收拢成采集、沉淀、生成、审核、交付五步。"
-          title="今日指挥"
+          helper="首页只保留当前最重要的动作，细节进入对应标签页处理。"
+          title="今日重点"
         >
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-            {commandFocus.map((item) => (
-              <div key={item.title} className="rounded-md border border-line bg-mist/60 p-4">
-                <div className="flex items-center gap-3">
-                  <IconBox tone="blue">
-                    <item.icon className="h-4 w-4" />
-                  </IconBox>
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold">{item.title}</div>
-                    <div className="mt-1 text-xs font-medium text-steel">{item.state}</div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_300px]">
+            <div className="flex items-start gap-4 rounded-md bg-mist/70 p-4">
+              <IconBox tone="blue">
+                <primaryFocus.icon className="h-4 w-4" />
+              </IconBox>
+              <div>
+                <div className="text-lg font-semibold leading-7">{primaryFocus.title}</div>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">{primaryFocus.detail}</p>
+              </div>
+            </div>
+            <div className="divide-y divide-line rounded-md border border-line bg-white">
+              {nextActions.map((action, index) => (
+                <div key={action} className="flex items-center gap-3 px-3 py-3">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-ink text-xs font-semibold text-white">
+                    {index + 1}
                   </div>
+                  <span className="text-sm font-medium leading-5">{action}</span>
                 </div>
-                <p className="mt-3 text-xs leading-5 text-muted">{item.detail}</p>
-              </div>
-            ))}
-          </div>
-        </Panel>
-
-        <Panel helper="下一步只放可执行动作，避免首页变成清单仓库。" title="下一步">
-          <div className="space-y-3">
-            {nextActions.map((action, index) => (
-              <div key={action} className="flex items-center gap-3 rounded-md border border-line bg-white px-3 py-3">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-ink text-xs font-semibold text-white">
-                  {index + 1}
-                </div>
-                <span className="text-sm font-medium">{action}</span>
-              </div>
-            ))}
-          </div>
-        </Panel>
-      </section>
-
-      <section className="grid grid-cols-1 gap-4 2xl:grid-cols-[1fr_360px]">
-        <Panel helper="首页只显示进度和阻塞点，具体操作分散到左侧标签页。" title="MVP 生产线">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {pipeline.map((step, index) => (
-              <div key={step.title} className="relative rounded-md border border-line bg-white p-4">
-                <div className="flex items-start gap-3">
-                  <IconBox tone={index === 0 ? "blue" : "green"}>
-                    <step.icon className="h-4 w-4" />
-                  </IconBox>
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold leading-5">{step.title}</div>
-                    <div
-                      className={[
-                        "mt-2 inline-flex rounded-md border px-2 py-1 text-xs font-medium",
-                        stateTone[step.state] ?? pillTone.neutral
-                      ].join(" ")}
-                    >
-                      {step.state}
-                    </div>
-                  </div>
-                </div>
-                <p className="mt-3 text-xs leading-5 text-muted">{step.description}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </Panel>
 
@@ -305,20 +291,27 @@ function DashboardView() {
         </Panel>
       </section>
 
-      <Panel helper="从公开样本到可交付内容，中间始终保留人工确认。" title="工作节奏">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          {timeline.map((item, index) => (
-            <div key={item.label} className="flex items-center gap-3 rounded-md border border-line bg-white px-4 py-3">
-              <IconBox tone="amber">
-                <item.icon className="h-4 w-4" />
-              </IconBox>
-              <div className="min-w-0">
-                <div className="text-sm font-semibold">{item.label}</div>
-                <div className="text-xs text-muted">{item.helper}</div>
+      <StatStrip />
+
+      <Panel helper="完整流程保留，但首页只展示状态概览。" title="MVP 生产线">
+        <div className="grid grid-cols-1 divide-y divide-line md:grid-cols-2 md:divide-x md:divide-y-0 2xl:grid-cols-6">
+          {pipeline.map((step, index) => (
+            <div key={step.title} className="px-3 py-3 md:first:pl-0 2xl:px-4">
+              <div className="flex items-center justify-between gap-3">
+                <IconBox tone={index === 0 ? "blue" : step.state === "强制" ? "red" : "green"}>
+                  <step.icon className="h-4 w-4" />
+                </IconBox>
+                <span
+                  className={[
+                    "rounded-md border px-2 py-1 text-xs font-medium",
+                    stateTone[step.state] ?? pillTone.neutral
+                  ].join(" ")}
+                >
+                  {step.state}
+                </span>
               </div>
-              {index < timeline.length - 1 ? (
-                <ArrowRight className="ml-auto hidden h-4 w-4 text-muted/60 lg:block" />
-              ) : null}
+              <div className="mt-3 text-sm font-semibold leading-5">{step.title}</div>
+              <p className="mt-2 text-xs leading-5 text-muted">{step.description}</p>
             </div>
           ))}
         </div>
@@ -873,15 +866,19 @@ function DeliveryView() {
 
 function SettingsView({
   credentials,
+  interfaceStyle,
   onCredentialsChange,
   onReset,
   onShowHelperTextChange,
+  onStyleChange,
   showHelperText
 }: {
   credentials: CredentialSettings;
+  interfaceStyle: InterfaceStyle;
   onCredentialsChange: (nextCredentials: CredentialSettings) => void;
   onReset: () => void;
   onShowHelperTextChange: (nextValue: boolean) => void;
+  onStyleChange: (nextStyle: InterfaceStyle) => void;
   showHelperText: boolean;
 }) {
   const [credentialStatus, setCredentialStatus] = useState("凭证会保存在当前浏览器本机。");
@@ -1032,54 +1029,90 @@ function SettingsView({
       </Panel>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
-      <Panel
-        action={<Pill tone="green">设置入口固定保留</Pill>}
-        helper="隐藏偏好只作用在辅助说明上，不会隐藏左侧“设置”和顶部齿轮入口。"
-        title="界面显示"
-      >
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          <div className="rounded-md border border-line bg-white p-4">
-            <div className="flex items-start gap-3">
-              <IconBox tone={showHelperText ? "green" : "amber"}>
-                {showHelperText ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-              </IconBox>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-semibold">辅助说明</h3>
-                  <Pill tone={showHelperText ? "green" : "amber"}>
-                    {showHelperText ? "显示中" : "已隐藏"}
-                  </Pill>
-                </div>
-                <p className="mt-2 text-xs leading-5 text-muted">
-                  控制顶部副标题和侧边说明的显示，不影响导航、设置入口和主要按钮。
-                </p>
-                <button
-                  className="mt-4 flex h-9 items-center gap-2 rounded-md border border-line bg-white px-3 text-sm font-medium text-ink"
-                  onClick={() => onShowHelperTextChange(!showHelperText)}
-                  type="button"
-                >
-                  {showHelperText ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  {showHelperText ? "隐藏辅助说明" : "显示辅助说明"}
-                </button>
+        <Panel
+          action={<Pill tone="green">设置入口固定保留</Pill>}
+          helper="切换风格只影响视觉；导航、设置入口和主要按钮始终保留。"
+          title="界面显示"
+        >
+          <div className="space-y-4">
+            <div>
+              <div className="text-xs font-medium text-muted">界面风格</div>
+              <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-3">
+                {interfaceStyles.map((style) => {
+                  const selected = style.id === interfaceStyle;
+                  return (
+                    <button
+                      aria-pressed={selected}
+                      className={[
+                        `theme-${style.id}`,
+                        "rounded-md border px-4 py-3 text-left transition",
+                        selected
+                          ? "border-steel bg-mist text-ink"
+                          : "border-line bg-white text-ink hover:border-steel/50"
+                      ].join(" ")}
+                      key={style.id}
+                      onClick={() => onStyleChange(style.id)}
+                      type="button"
+                    >
+                      <span className="block text-sm font-semibold">{style.label}</span>
+                      <span className="mt-1 block text-xs leading-5 text-muted">
+                        {style.description}
+                      </span>
+                      <span className="mt-3 flex gap-1">
+                        <span className="h-2.5 w-8 rounded-sm bg-steel" />
+                        <span className="h-2.5 w-8 rounded-sm bg-moss" />
+                        <span className="h-2.5 w-8 rounded-sm bg-coral" />
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          </div>
 
-          <div className="rounded-md border border-line bg-mist/70 p-4">
-            <div className="flex items-start gap-3">
-              <IconBox tone="blue">
-                <Settings className="h-4 w-4" />
-              </IconBox>
-              <div>
-                <h3 className="text-sm font-semibold">设置入口</h3>
-                <p className="mt-2 text-xs leading-5 text-muted">
-                  左侧导航的“设置”和顶部齿轮按钮不受隐藏状态影响，避免入口被自己藏掉。
-                </p>
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              <div className="rounded-md border border-line bg-white p-4">
+                <div className="flex items-start gap-3">
+                  <IconBox tone={showHelperText ? "green" : "amber"}>
+                    {showHelperText ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                  </IconBox>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-semibold">辅助说明</h3>
+                      <Pill tone={showHelperText ? "green" : "amber"}>
+                        {showHelperText ? "显示中" : "已隐藏"}
+                      </Pill>
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-muted">
+                      控制顶部副标题和侧边说明的显示，不影响导航、设置入口和主要按钮。
+                    </p>
+                    <button
+                      className="mt-4 flex h-9 items-center gap-2 rounded-md border border-line bg-white px-3 text-sm font-medium text-ink"
+                      onClick={() => onShowHelperTextChange(!showHelperText)}
+                      type="button"
+                    >
+                      {showHelperText ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showHelperText ? "隐藏辅助说明" : "显示辅助说明"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-md border border-line bg-mist/70 p-4">
+                <div className="flex items-start gap-3">
+                  <IconBox tone="blue">
+                    <Settings className="h-4 w-4" />
+                  </IconBox>
+                  <div>
+                    <h3 className="text-sm font-semibold">设置入口</h3>
+                    <p className="mt-2 text-xs leading-5 text-muted">
+                      左侧导航的“设置”和顶部齿轮按钮不受隐藏状态影响，避免入口被自己藏掉。
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </Panel>
+        </Panel>
 
       <div className="space-y-4">
         <Panel helper="如果界面被收得太干净，可以一键恢复说明文字。" title="恢复">

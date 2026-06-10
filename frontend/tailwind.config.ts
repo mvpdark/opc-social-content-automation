@@ -5,15 +5,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#12312d",
-        paper: "#eef8f4",
-        mist: "#e3f1ec",
-        line: "#c9dfd7",
-        muted: "#5f726d",
-        moss: "#34805c",
-        coral: "#d76547",
-        steel: "#2f73a7",
-        amber: "#c98f2e"
+        ink: "rgb(var(--ink) / <alpha-value>)",
+        paper: "rgb(var(--paper) / <alpha-value>)",
+        mist: "rgb(var(--mist) / <alpha-value>)",
+        line: "rgb(var(--line) / <alpha-value>)",
+        muted: "rgb(var(--muted) / <alpha-value>)",
+        moss: "rgb(var(--moss) / <alpha-value>)",
+        coral: "rgb(var(--coral) / <alpha-value>)",
+        steel: "rgb(var(--steel) / <alpha-value>)",
+        amber: "rgb(var(--amber) / <alpha-value>)"
       },
       boxShadow: {
         soft: "0 18px 45px rgba(18, 49, 45, 0.08)",
