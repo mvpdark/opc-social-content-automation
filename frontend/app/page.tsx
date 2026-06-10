@@ -294,9 +294,9 @@ function DashboardView() {
       <StatStrip />
 
       <Panel helper="完整流程保留，但首页只展示状态概览。" title="MVP 生产线">
-        <div className="grid grid-cols-1 divide-y divide-line md:grid-cols-2 md:divide-x md:divide-y-0 2xl:grid-cols-6">
+        <div className="grid grid-cols-1 divide-y divide-line md:grid-cols-2 md:divide-x md:divide-y-0 lg:grid-cols-3 xl:grid-cols-6">
           {pipeline.map((step, index) => (
-            <div key={step.title} className="px-3 py-3 md:first:pl-0 2xl:px-4">
+            <div key={step.title} className="px-3 py-3 md:first:pl-0 xl:px-3">
               <div className="flex items-center justify-between gap-3">
                 <IconBox tone={index === 0 ? "blue" : step.state === "强制" ? "red" : "green"}>
                   <step.icon className="h-4 w-4" />
@@ -311,7 +311,9 @@ function DashboardView() {
                 </span>
               </div>
               <div className="mt-3 text-sm font-semibold leading-5">{step.title}</div>
-              <p className="mt-2 text-xs leading-5 text-muted">{step.description}</p>
+              <p className="mt-2 text-xs leading-5 text-muted xl:hidden 2xl:block">
+                {step.description}
+              </p>
             </div>
           ))}
         </div>
