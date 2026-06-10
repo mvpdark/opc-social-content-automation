@@ -138,8 +138,8 @@ export const providerStatuses = [
     name: "Image generation",
     provider: "openai_compatible",
     model: "gpt-image-2",
-    status: "Relay waiting",
-    note: "接口已接通；中转站当前返回无可用图片账号。",
+    status: "Connected",
+    note: "gpt-image-2 已完成真实图片 smoke test。",
     icon: Image
   }
 ];

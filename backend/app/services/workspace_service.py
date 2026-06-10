@@ -132,9 +132,7 @@ def provider_status_items() -> list[ProviderStatusItem]:
 
     image_note = "Ready for test SVG generation."
     if settings.image_provider == "openai_compatible":
-        image_note = (
-            "Configured; current relay may still return 503 if no compatible image account is available."
-        )
+        image_note = "OpenAI-compatible image provider is configured for generation."
 
     return [
         ProviderStatusItem(
