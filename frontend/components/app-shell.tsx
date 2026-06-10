@@ -1,7 +1,15 @@
 "use client";
 
 import type React from "react";
-import { Bell, Command, PenLine, Search, Settings, ShieldCheck } from "lucide-react";
+import {
+  Bell,
+  Command,
+  PenLine,
+  Search,
+  Settings,
+  ShieldCheck,
+  Smartphone
+} from "lucide-react";
 
 import { navigation, tabMeta, type WorkspaceTab } from "@/lib/dashboard-data";
 
@@ -82,6 +90,16 @@ export function AppShell({ activeTab, children, onTabChange, showHelperText }: A
                   </div>
                 ) : null}
                 <div className="flex items-center gap-3">
+                  <button
+                    className="flex h-9 shrink-0 items-center gap-2 rounded-md border border-line bg-white px-3 text-sm font-medium text-ink"
+                    onClick={() => {
+                      window.location.href = "/android";
+                    }}
+                    type="button"
+                  >
+                    <Smartphone className="h-4 w-4" />
+                    安卓端
+                  </button>
                   <button
                     className="flex h-9 shrink-0 items-center gap-2 rounded-md bg-ink px-3 text-sm font-medium text-white"
                     onClick={() => onTabChange("content")}
