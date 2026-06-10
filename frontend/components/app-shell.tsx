@@ -15,7 +15,6 @@ type AppShellProps = {
   activeTab: WorkspaceTab;
   children: React.ReactNode;
   interfaceStyle: InterfaceStyle;
-  onTabChange: (tab: WorkspaceTab) => void;
   showHelperText: boolean;
 };
 
@@ -23,10 +22,10 @@ export function AppShell({
   activeTab,
   children,
   interfaceStyle,
-  onTabChange,
   showHelperText
 }: AppShellProps) {
   const activeMeta = tabMeta[activeTab];
+  const tabHref = (tab: WorkspaceTab) => (tab === "dashboard" ? "/" : `/?tab=${tab}`);
 
   return (
     <main className={`theme-${interfaceStyle} min-h-screen bg-paper text-ink`}>
@@ -45,7 +44,8 @@ export function AppShell({
             {navigation.map((item) => {
               const active = item.id === activeTab;
               return (
-                <button
+                <a
+                  href={tabHref(item.id)}
                   key={item.id}
                   className={[
                     "mb-1 flex h-10 min-w-max items-center gap-3 rounded-md px-3 text-sm transition xl:w-full",
@@ -53,12 +53,10 @@ export function AppShell({
                       ? "bg-ink text-white shadow-panel"
                       : "text-muted hover:bg-mist hover:text-ink"
                   ].join(" ")}
-                  onClick={() => onTabChange(item.id)}
-                  type="button"
                 >
                   <item.icon className="h-4 w-4" />
                   <span>{item.label}</span>
-                </button>
+                </a>
               );
             })}
           </nav>
@@ -92,32 +90,27 @@ export function AppShell({
                   </div>
                 ) : null}
                 <div className="flex items-center gap-3">
-                  <button
+                  <a
                     className="flex h-9 shrink-0 items-center gap-2 rounded-md border border-line bg-white px-3 text-sm font-medium text-ink"
-                    onClick={() => {
-                      window.location.href = "/android";
-                    }}
-                    type="button"
+                    href="/android"
                   >
                     <Smartphone className="h-4 w-4" />
                     安卓端
-                  </button>
-                  <button
+                  </a>
+                  <a
                     className="flex h-9 shrink-0 items-center gap-2 rounded-md bg-ink px-3 text-sm font-medium text-white"
-                    onClick={() => onTabChange("content")}
-                    type="button"
+                    href={tabHref("content")}
                   >
                     <PenLine className="h-4 w-4" />
                     生成图文
-                  </button>
-                  <button
+                  </a>
+                  <a
                     aria-label="打开设置"
                     className="flex h-9 w-9 items-center justify-center rounded-md border border-line bg-white text-muted"
-                    onClick={() => onTabChange("settings")}
-                    type="button"
+                    href={tabHref("settings")}
                   >
                     <Settings className="h-4 w-4" />
-                  </button>
+                  </a>
                 </div>
               </div>
             </div>
