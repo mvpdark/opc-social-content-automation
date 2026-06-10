@@ -1,6 +1,12 @@
 import { AppShell } from "@/components/app-shell";
 import { StatStrip } from "@/components/stat-strip";
-import { pipeline, promoterActions, publishingRecords, queues } from "@/lib/dashboard-data";
+import {
+  pipeline,
+  promoterActions,
+  providerStatuses,
+  publishingRecords,
+  queues
+} from "@/lib/dashboard-data";
 
 export default function Home() {
   return (
@@ -134,6 +140,34 @@ export default function Home() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        <section className="rounded-md border border-line bg-white shadow-soft">
+          <div className="border-b border-line px-5 py-4">
+            <h2 className="text-base font-semibold leading-6">Provider status</h2>
+            <p className="text-sm text-slate-500">Model routing without exposing keys</p>
+          </div>
+          <div className="grid grid-cols-1 divide-y divide-line lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+            {providerStatuses.map((provider) => (
+              <div key={provider.name} className="px-5 py-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-paper text-steel">
+                    <provider.icon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold">{provider.name}</div>
+                    <div className="mt-1 text-xs text-slate-500">
+                      {provider.provider} / {provider.model}
+                    </div>
+                    <div className="mt-3 inline-flex rounded-md border border-line bg-paper px-2 py-1 text-xs font-medium text-slate-600">
+                      {provider.status}
+                    </div>
+                    <p className="mt-3 text-sm leading-5 text-slate-600">{provider.note}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 

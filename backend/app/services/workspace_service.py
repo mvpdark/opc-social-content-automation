@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session
 from app.models.content import Content
 from app.models.publish_record import PublishRecord
 from app.models.user import User
-from app.schemas.workspace import ExportItem, ExportRequest, ExportResponse
+from app.core.config import settings
+from app.schemas.workspace import ExportItem, ExportRequest, ExportResponse, ProviderStatusItem
 
 
 EXPORTABLE_STATUSES = {"approved", "published"}
@@ -118,3 +119,50 @@ def create_export_package(
         items=items,
         payload=rendered,
     )
+
+
+def provider_status_items() -> list[ProviderStatusItem]:
+    draft_configured = settings.draft_provider == "codex_test" or bool(
+        settings.openai_compatible_api_key
+    )
+    rewrite_configured = bool(settings.deepseek_api_key)
+    image_configured = settings.image_provider == "codex_test" or bool(
+        settings.image_openai_compatible_api_key or settings.openai_compatible_api_key
+    )
+
+    image_note = "Ready for test SVG generation."
+    if settings.image_provider == "openai_compatible":
+        image_note = (
+            "Configured; current relay may still return 503 if no compatible image account is available."
+        )
+
+    return [
+        ProviderStatusItem(
+            name="Draft generation",
+            provider=settings.draft_provider,
+            model=settings.draft_model if settings.draft_provider != "codex_test" else None,
+            configured=draft_configured,
+            status="configured" if draft_configured else "missing_key",
+            note=(
+                "OpenAI-compatible draft provider is configured."
+                if settings.draft_provider == "openai_compatible"
+                else "Using codex_test workflow draft provider."
+            ),
+        ),
+        ProviderStatusItem(
+            name="Humanization rewrite",
+            provider="deepseek",
+            model=settings.deepseek_rewrite_model,
+            configured=rewrite_configured,
+            status="configured" if rewrite_configured else "missing_key",
+            note="DeepSeek official API provider for rewrite and de-AIGC pass.",
+        ),
+        ProviderStatusItem(
+            name="Image generation",
+            provider=settings.image_provider,
+            model=settings.image_model if settings.image_provider != "codex_test" else None,
+            configured=image_configured,
+            status="configured" if image_configured else "missing_key",
+            note=image_note,
+        ),
+    ]

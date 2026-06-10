@@ -102,6 +102,10 @@ def validate_safety_gates() -> int:
             "load_prompt",
             "Review model provider is not configured yet.",
         ],
+        "backend/app/services/workspace_service.py": [
+            "provider_status_items",
+            "missing_key",
+        ],
     }
     total = 0
     for rel_path, snippets in checks.items():

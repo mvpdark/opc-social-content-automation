@@ -28,6 +28,7 @@ def test_documented_api_paths_are_registered() -> None:
         "/api/image/list",
         "/api/image/{image_id}",
         "/api/workspace/dashboard",
+        "/api/workspace/provider-status",
         "/api/workspace/approved-content",
         "/api/workspace/export",
         "/api/workspace/publish-record",

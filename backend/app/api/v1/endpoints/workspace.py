@@ -14,12 +14,14 @@ from app.schemas.workspace import (
     ExportResponse,
     PublishRecordCreate,
     PublishRecordRead,
+    ProviderStatusItem,
     WorkspaceContentItem,
 )
 from app.services.workspace_service import (
     approved_content_items,
     create_export_package,
     list_publish_records,
+    provider_status_items,
 )
 
 
@@ -55,6 +57,11 @@ def dashboard(db: Session = Depends(get_db)) -> dict[str, object]:
         {"name": "Publishing", "status": "human_approval_required"},
     ]
     return {"counts": counts, "pipeline": pipeline}
+
+
+@router.get("/provider-status", response_model=list[ProviderStatusItem])
+def get_provider_status() -> list[ProviderStatusItem]:
+    return provider_status_items()
 
 
 @router.get("/approved-content", response_model=list[WorkspaceContentItem])

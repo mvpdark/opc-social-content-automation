@@ -46,3 +46,12 @@ class WorkspaceContentItem(BaseModel):
     title: str
     tags: list[str] | None
     status: str
+
+
+class ProviderStatusItem(BaseModel):
+    name: str
+    provider: str
+    model: str | None
+    configured: bool
+    status: str
+    note: str

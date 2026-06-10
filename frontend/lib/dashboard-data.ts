@@ -7,6 +7,7 @@ import {
   Download,
   FileText,
   Image,
+  KeyRound,
   PenLine,
   Radar,
   Send,
@@ -113,5 +114,32 @@ export const publishingRecords = [
     platform: "Multi",
     owner: "Workspace",
     status: "Ready"
+  }
+];
+
+export const providerStatuses = [
+  {
+    name: "Draft generation",
+    provider: "openai_compatible",
+    model: "gpt-5.5",
+    status: "Connected",
+    note: "撰稿中转站已完成 smoke test。",
+    icon: PenLine
+  },
+  {
+    name: "Humanization rewrite",
+    provider: "deepseek",
+    model: "deepseek-v4-pro",
+    status: "Connected",
+    note: "DeepSeek 官方 API 已完成 rewrite smoke test。",
+    icon: KeyRound
+  },
+  {
+    name: "Image generation",
+    provider: "openai_compatible",
+    model: "gpt-image-2",
+    status: "Relay waiting",
+    note: "接口已接通；中转站当前返回无可用图片账号。",
+    icon: Image
   }
 ];
