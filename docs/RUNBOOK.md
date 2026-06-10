@@ -116,6 +116,16 @@ python scripts/probe_image_provider.py
 
 For the current relay, `image2` is exposed as `gpt-image-2` in `/models`. If the probe returns `503 No available compatible accounts`, the backend integration is reaching the relay but the relay has no currently available image account for that model.
 
+## Platform Research Collection
+
+The frontend Platform research panel supports Xiaohongshu and Douyin research setup:
+
+- Open the platform search page for a keyword in a visible browser tab.
+- Queue a safe collection job through `/api/trends/jobs`.
+- Summarize already collected trend assets into the knowledge base through `/api/trends/knowledge-digest`.
+
+Collection jobs are operator-assisted. The operator completes login or captcha manually, and the collection worker must keep randomized delays, visible browsing, session persistence, and account-safety-first pacing enabled. The knowledge digest endpoint does not browse the web or invent platform content; it only summarizes rows already stored in `trend_contents`.
+
 ## Frontend
 
 ```bash

@@ -8,14 +8,19 @@ from app.models.trend_content import TrendContent
 from app.models.user import User
 from app.schemas.trend import (
     KeywordAnalysisItem,
+    PlatformSearchTarget,
     TrendCollectRequest,
     TrendCollectionJobCreate,
     TrendCollectionJobRead,
+    TrendKnowledgeDigestRequest,
+    TrendKnowledgeDigestResponse,
     TrendRead,
 )
 from app.services.trend_service import (
     analyze_keywords,
+    build_platform_search_target,
     create_collection_job,
+    create_trend_knowledge_digest,
     create_trend_asset,
     list_collection_jobs,
     trend_report as build_trend_report,
@@ -51,6 +56,14 @@ def keyword_analysis(
     return analyze_keywords(db=db, platform=platform, limit=limit)
 
 
+@router.get("/search-target", response_model=PlatformSearchTarget)
+def get_platform_search_target(
+    platform: str = Query(pattern="^(xiaohongshu|douyin)$"),
+    keyword: str = Query(min_length=1, max_length=120),
+) -> PlatformSearchTarget:
+    return build_platform_search_target(platform=platform, keyword=keyword)
+
+
 @router.post("/jobs", response_model=TrendCollectionJobRead)
 def create_trend_collection_job(
     payload: TrendCollectionJobCreate,
@@ -59,6 +72,19 @@ def create_trend_collection_job(
 ) -> TrendCollectionJobRead:
     job = create_collection_job(db, payload, current_user)
     return TrendCollectionJobRead.model_validate(job)
+
+
+@router.post("/knowledge-digest", response_model=TrendKnowledgeDigestResponse)
+def create_knowledge_digest(
+    payload: TrendKnowledgeDigestRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> TrendKnowledgeDigestResponse:
+    return create_trend_knowledge_digest(
+        db=db,
+        payload=payload,
+        current_user=current_user,
+    )
 
 
 @router.get("/jobs", response_model=list[TrendCollectionJobRead])

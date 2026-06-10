@@ -1,18 +1,25 @@
 import re
 from collections import Counter, defaultdict
+from urllib.parse import quote
 
 from fastapi import HTTPException, status
 from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
+from app.models.knowledge_base import KnowledgeBase
 from app.models.trend_collection_job import TrendCollectionJob
 from app.models.trend_content import TrendContent
 from app.models.user import User
+from app.schemas.knowledge import KnowledgeUploadRequest
 from app.schemas.trend import (
     KeywordAnalysisItem,
+    PlatformSearchTarget,
     TrendCollectRequest,
     TrendCollectionJobCreate,
+    TrendKnowledgeDigestRequest,
+    TrendKnowledgeDigestResponse,
 )
+from app.services.knowledge_service import create_knowledge_item
 
 
 TOKEN_RE = re.compile(r"[\w\u4e00-\u9fff]+", re.UNICODE)
@@ -29,6 +36,42 @@ STOP_WORDS = {
     "怎么",
     "我们",
 }
+SUPPORTED_PLATFORMS = {"xiaohongshu", "douyin"}
+
+
+def build_platform_search_target(platform: str, keyword: str) -> PlatformSearchTarget:
+    normalized_platform = platform.strip().lower()
+    normalized_keyword = keyword.strip()
+    if normalized_platform not in SUPPORTED_PLATFORMS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="platform must be xiaohongshu or douyin.",
+        )
+    if not normalized_keyword:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="keyword is required.",
+        )
+
+    encoded_keyword = quote(normalized_keyword)
+    search_url = (
+        f"https://www.xiaohongshu.com/search_result?keyword={encoded_keyword}"
+        if normalized_platform == "xiaohongshu"
+        else f"https://www.douyin.com/search/{encoded_keyword}"
+    )
+    return PlatformSearchTarget(
+        platform=normalized_platform,
+        keyword=normalized_keyword,
+        search_url=search_url,
+        requires_manual_login=True,
+        automation_mode="operator_assisted_visible_browser",
+        safety_notes=[
+            "Use a visible browser session and let the operator complete login or captcha.",
+            "Do not bypass platform access controls or collect private content.",
+            "Keep randomized delays and human-like scrolling enabled.",
+            "Store collected notes as trend assets before summarizing them into the knowledge base.",
+        ],
+    )
 
 
 def build_safety_profile(payload: TrendCollectionJobCreate) -> dict[str, object]:
@@ -51,6 +94,7 @@ def build_safety_profile(payload: TrendCollectionJobCreate) -> dict[str, object]
         "session_label": payload.session_label,
         "max_items": payload.max_items,
         "speed_policy": "account_safety_first",
+        "target": build_platform_search_target(payload.platform, payload.keyword).model_dump(),
     }
 
 
@@ -101,6 +145,114 @@ def create_trend_asset(
     db.commit()
     db.refresh(item)
     return item
+
+
+def _trend_filter_statement(payload: TrendKnowledgeDigestRequest):
+    statement = select(TrendContent).order_by(desc(TrendContent.created_at)).limit(payload.limit)
+    if payload.trend_ids:
+        statement = statement.where(TrendContent.id.in_(payload.trend_ids))
+    if payload.platform:
+        statement = statement.where(TrendContent.platform == payload.platform)
+    if payload.keyword:
+        pattern = f"%{payload.keyword}%"
+        statement = statement.where(
+            TrendContent.title.ilike(pattern) | TrendContent.content.ilike(pattern)
+        )
+    return statement
+
+
+def render_trend_knowledge_digest(
+    items: list[TrendContent],
+    payload: TrendKnowledgeDigestRequest,
+) -> tuple[str, str, list[int]]:
+    if not items:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No collected trend assets matched the digest request.",
+        )
+
+    source_ids = [item.id for item in items]
+    keyword = payload.keyword or "recent collected trends"
+    platform = payload.platform or "multi-platform"
+    title = f"Trend digest: {keyword} ({platform})"
+    lines = [
+        f"# {title}",
+        "",
+        "This knowledge entry summarizes collected public trend assets for drafting reference.",
+        "It is not a publishing approval and should be reviewed before use in content production.",
+        "",
+        "## Source themes",
+    ]
+
+    tag_counts: Counter[str] = Counter()
+    for item in items:
+        for tag in item.tags or []:
+            normalized = str(tag).strip("# ").lower()
+            if normalized:
+                tag_counts[normalized] += 1
+
+    if tag_counts:
+        lines.extend(f"- {tag}: {count}" for tag, count in tag_counts.most_common(12))
+    else:
+        lines.append("- No tags were captured.")
+
+    lines.extend(["", "## Collected examples"])
+    for index, item in enumerate(items, start=1):
+        metrics = (
+            f"likes={item.likes}, favorites={item.favorites}, "
+            f"comments={item.comments}, shares={item.shares}"
+        )
+        author = item.author or "unknown author"
+        url = item.url or "no url"
+        excerpt = re.sub(r"\s+", " ", item.content).strip()[:260]
+        lines.extend(
+            [
+                f"{index}. {item.title}",
+                f"   Platform: {item.platform}; Author: {author}; Metrics: {metrics}",
+                f"   Source: {url}",
+                f"   Notes: {excerpt}",
+            ]
+        )
+        if item.video_transcript:
+            transcript_excerpt = re.sub(r"\s+", " ", item.video_transcript).strip()[:220]
+            lines.append(f"   Video transcript: {transcript_excerpt}")
+
+    lines.extend(
+        [
+            "",
+            "## Drafting guardrails",
+            "- Treat trend assets as inspiration and citation context, not direct copy.",
+            "- Avoid making unsupported outcome promises about admissions or supervisors.",
+            "- Use human review before any generated content is published.",
+        ]
+    )
+    return title, "\n".join(lines), source_ids
+
+
+def create_trend_knowledge_digest(
+    db: Session,
+    payload: TrendKnowledgeDigestRequest,
+    current_user: User,
+) -> TrendKnowledgeDigestResponse:
+    _ = current_user
+    items = list(db.scalars(_trend_filter_statement(payload)).all())
+    title, content, source_ids = render_trend_knowledge_digest(items, payload)
+    knowledge: KnowledgeBase = create_knowledge_item(
+        db,
+        KnowledgeUploadRequest(
+            title=title,
+            content=content,
+            category=payload.category,
+        ),
+    )
+    return TrendKnowledgeDigestResponse(
+        knowledge_id=knowledge.id,
+        title=knowledge.title,
+        category=knowledge.category or payload.category,
+        source_trend_ids=source_ids,
+        item_count=len(source_ids),
+        content=knowledge.content,
+    )
 
 
 def trend_report(db: Session) -> dict[str, object]:

@@ -97,6 +97,8 @@ def validate_safety_gates() -> int:
             "human_like_scrolling",
             "account_safety_first",
             "cookie_persistence",
+            "build_platform_search_target",
+            "create_trend_knowledge_digest",
         ],
         "backend/app/services/model_router.py": [
             "load_prompt",

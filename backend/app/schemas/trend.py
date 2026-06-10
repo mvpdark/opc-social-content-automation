@@ -30,6 +30,15 @@ class TrendCollectionJobCreate(BaseModel):
     persist_cookies: bool = True
 
 
+class PlatformSearchTarget(BaseModel):
+    platform: str
+    keyword: str
+    search_url: str
+    requires_manual_login: bool
+    automation_mode: str
+    safety_notes: list[str]
+
+
 class TrendCollectionJobRead(BaseModel):
     id: int
     platform: str
@@ -49,6 +58,23 @@ class KeywordAnalysisItem(BaseModel):
     keyword: str
     count: int
     platforms: list[str]
+
+
+class TrendKnowledgeDigestRequest(BaseModel):
+    platform: str | None = Field(default=None, pattern="^(xiaohongshu|douyin)$")
+    keyword: str | None = Field(default=None, min_length=1, max_length=120)
+    trend_ids: list[int] = Field(default_factory=list)
+    limit: int = Field(default=20, ge=1, le=100)
+    category: str = Field(default="trend-insight", max_length=80)
+
+
+class TrendKnowledgeDigestResponse(BaseModel):
+    knowledge_id: int
+    title: str
+    category: str
+    source_trend_ids: list[int]
+    item_count: int
+    content: str
 
 
 class TrendRead(BaseModel):

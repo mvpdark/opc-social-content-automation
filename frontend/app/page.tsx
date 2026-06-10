@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { StatStrip } from "@/components/stat-strip";
+import { TrendCollectorPanel } from "@/components/trend-collector-panel";
 import {
   pipeline,
   promoterActions,
@@ -13,6 +14,8 @@ export default function Home() {
     <AppShell>
       <div className="space-y-6">
         <StatStrip />
+
+        <TrendCollectorPanel />
 
         <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_1fr]">
           <div className="rounded-md border border-line bg-white shadow-soft">

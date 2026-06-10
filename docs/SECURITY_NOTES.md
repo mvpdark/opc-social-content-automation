@@ -25,6 +25,10 @@ Collection jobs must preserve:
 - Randomized interaction paths.
 - Session persistence.
 - Cookie persistence.
+- Visible browser sessions with manual login or captcha handling.
+- No bypassing platform access controls or private-content boundaries.
+
+The Platform research panel may open Xiaohongshu or Douyin search pages and queue collection jobs, but knowledge-base summaries must be created from stored trend assets only. Do not create synthetic trend rows to make a digest look successful.
 
 Publishing and image generation remain blocked until content has passed human approval.
 
