@@ -3,6 +3,8 @@
 @tailwind utilities;
 
 :root {
+  --apple-font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", Arial, sans-serif;
   --ink: 29 29 31;
   --paper: 245 245 247;
   --mist: 242 242 247;
@@ -54,13 +56,12 @@
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
   background: rgb(var(--paper));
   color: rgb(var(--ink));
-  font-family:
-    -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC",
-    "Hiragino Sans GB", "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--apple-font-stack) !important;
   letter-spacing: 0;
 }
 
@@ -68,7 +69,8 @@ button,
 input,
 textarea,
 select {
-  font: inherit;
+  font-family: var(--apple-font-stack) !important;
+  font-size: inherit;
 }
 
 a {
