@@ -73,6 +73,87 @@ const emptyCredentials: CredentialSettings = {
   rewriteApiKey: ""
 };
 
+const writingStylePresets = [
+  {
+    id: "warm_cute",
+    label: "女性可爱",
+    helper: "亲近、软一点、有陪伴感",
+    prompt:
+      "偏女性可爱风，像学姐认真提醒：语气温柔、轻松、有陪伴感，开头要有共鸣，不要像硬广"
+  },
+  {
+    id: "professional",
+    label: "专业清爽",
+    helper: "信息密度高，少情绪",
+    prompt:
+      "专业清爽风，短段落、强逻辑，先拆误区再给清单，表达可信克制"
+  },
+  {
+    id: "experience",
+    label: "学姐经验",
+    helper: "像真实经历复盘",
+    prompt:
+      "学姐经验风，用第一线观察和申请复盘口吻写，避免空泛说教，多写具体判断"
+  },
+  {
+    id: "high_hook",
+    label: "高赞钩子",
+    helper: "冲突感更强，适合封面",
+    prompt:
+      "高赞钩子风，开头直接打破常见误区，标题和前三行要有停留感，但不能夸大承诺"
+  }
+] as const;
+
+type WritingStylePresetId = (typeof writingStylePresets)[number]["id"];
+type ExpressionOptionKey = "emoji" | "punctuation" | "meme" | "softCta";
+
+const defaultExpressionOptions: Record<ExpressionOptionKey, boolean> = {
+  emoji: true,
+  punctuation: true,
+  meme: true,
+  softCta: true
+};
+
+const expressionOptions = [
+  {
+    key: "emoji",
+    label: "轻量表情",
+    enabled: "每 2-3 段可以放 1 个 emoji 或颜文字",
+    disabled: "不使用 emoji 或颜文字"
+  },
+  {
+    key: "punctuation",
+    label: "活泼标点",
+    enabled: "允许使用 ～、！！、？ 来制造口语节奏，但不要连续堆叠",
+    disabled: "标点保持克制"
+  },
+  {
+    key: "meme",
+    label: "表情包感",
+    enabled: "可以用短括号吐槽和口语停顿制造表情包感，例如“先别急”“真的别反着来”",
+    disabled: "不使用吐槽式表达"
+  },
+  {
+    key: "softCta",
+    label: "软 CTA",
+    enabled: "结尾用温和提醒引导咨询，不制造焦虑，不承诺结果",
+    disabled: "结尾只给中性建议"
+  }
+] as const;
+
+function buildWritingTone(
+  presetId: WritingStylePresetId,
+  options: Record<ExpressionOptionKey, boolean>
+) {
+  const preset =
+    writingStylePresets.find((item) => item.id === presetId) ?? writingStylePresets[0];
+  const optionGuides = expressionOptions.map((option) =>
+    options[option.key] ? option.enabled : option.disabled
+  );
+
+  return `${preset.prompt}；${optionGuides.join("；")}。`;
+}
+
 type GeneratedContent = {
   body: string;
   id: number;
@@ -363,7 +444,12 @@ function GenerationLauncher({
   const [topic, setTopic] = useState("硕升博申请第一步，不是先套磁");
   const [knowledgeQuery, setKnowledgeQuery] = useState("硕升博 高赞图文 写作参考");
   const [targetAudience, setTargetAudience] = useState("准备硕升博申请的学生");
-  const [tone, setTone] = useState("小红书图文，短段落，先拆误区，再给清单");
+  const [stylePreset, setStylePreset] = useState<WritingStylePresetId>("warm_cute");
+  const [styleOptions, setStyleOptions] =
+    useState<Record<ExpressionOptionKey, boolean>>(defaultExpressionOptions);
+  const [tone, setTone] = useState(() =>
+    buildWritingTone("warm_cute", defaultExpressionOptions)
+  );
   const [tagsText, setTagsText] = useState("硕升博,博士申请,研究方向,申请规划");
   const [busyAction, setBusyAction] = useState<"draft" | "review" | null>(null);
   const [statusText, setStatusText] = useState("填写主题后，点击“生成图文”创建草稿。");
@@ -377,6 +463,22 @@ function GenerationLauncher({
       "Content-Type": "application/json",
       ...(workspaceToken ? { Authorization: `Bearer ${workspaceToken}` } : {})
     };
+  }
+
+  function applyStylePreset(nextPreset: WritingStylePresetId) {
+    setStylePreset(nextPreset);
+    setTone(buildWritingTone(nextPreset, styleOptions));
+  }
+
+  function toggleStyleOption(optionKey: ExpressionOptionKey) {
+    setStyleOptions((currentOptions) => {
+      const nextOptions = {
+        ...currentOptions,
+        [optionKey]: !currentOptions[optionKey]
+      };
+      setTone(buildWritingTone(stylePreset, nextOptions));
+      return nextOptions;
+    });
   }
 
   async function generateDraft() {
@@ -517,10 +619,65 @@ function GenerationLauncher({
                 value={targetAudience}
               />
             </label>
+            <div className="md:col-span-2">
+              <span className="text-xs font-medium text-muted">撰稿风格</span>
+              <div className="mt-2 grid grid-cols-2 gap-2 lg:grid-cols-4">
+                {writingStylePresets.map((preset) => {
+                  const selected = stylePreset === preset.id;
+                  return (
+                    <button
+                      aria-pressed={selected}
+                      className={`min-h-20 rounded-md border px-3 py-2 text-left transition ${
+                        selected
+                          ? "border-coral bg-coral/10 text-ink"
+                          : "border-line bg-white text-ink hover:border-coral/50"
+                      }`}
+                      key={preset.id}
+                      onClick={() => applyStylePreset(preset.id)}
+                      type="button"
+                    >
+                      <span className="block text-sm font-semibold">{preset.label}</span>
+                      <span className="mt-1 block text-xs leading-5 text-muted">
+                        {preset.helper}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="md:col-span-2">
+              <span className="text-xs font-medium text-muted">表达增强</span>
+              <div className="mt-2 grid grid-cols-2 gap-2 lg:grid-cols-4">
+                {expressionOptions.map((option) => {
+                  const enabled = styleOptions[option.key];
+                  return (
+                    <button
+                      aria-checked={enabled}
+                      className={`flex min-h-10 items-center justify-between gap-2 rounded-md border px-3 text-left text-xs font-medium transition ${
+                        enabled
+                          ? "border-moss bg-moss/10 text-moss"
+                          : "border-line bg-white text-muted"
+                      }`}
+                      key={option.key}
+                      onClick={() => toggleStyleOption(option.key)}
+                      role="switch"
+                      type="button"
+                    >
+                      <span>{option.label}</span>
+                      <span>{enabled ? "开" : "关"}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <label className="block md:col-span-2">
-              <span className="text-xs font-medium text-muted">风格要求</span>
-              <input
-                className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+              <span className="flex items-center justify-between gap-3 text-xs font-medium text-muted">
+                <span>风格要求</span>
+                <span>{tone.length}/420</span>
+              </span>
+              <textarea
+                className="mt-2 min-h-24 w-full resize-y rounded-md border border-line bg-white px-3 py-2 text-sm leading-6 outline-none"
+                maxLength={420}
                 onChange={(event) => setTone(event.target.value)}
                 value={tone}
               />

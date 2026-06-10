@@ -23,6 +23,26 @@ def test_draft_prompt_package_includes_xiaohongshu_style_reference() -> None:
     assert "Xiaohongshu Style Reference" in str(package.payload["style_reference"])
 
 
+def test_draft_prompt_package_preserves_detailed_style_guidance() -> None:
+    tone = (
+        "偏女性可爱风，像学姐认真提醒：语气温柔、轻松、有陪伴感；"
+        "每 2-3 段可以放 1 个 emoji 或颜文字；"
+        "允许使用 ～、！！、？ 来制造口语节奏；"
+        "可以用短括号吐槽制造表情包感；结尾用温和提醒引导咨询。"
+    )
+    payload = ContentGenerateRequest(
+        platform="xiaohongshu",
+        topic="硕升博申请第一步",
+        knowledge_limit=0,
+        tone=tone,
+    )
+    user = User(id=1, role="promoter", phone="test", password_hash="hash")
+
+    package = build_draft_prompt_package(db=None, payload=payload, current_user=user)  # type: ignore[arg-type]
+
+    assert package.payload["tone"] == tone
+
+
 def test_rewrite_prompt_package_includes_xiaohongshu_style_reference() -> None:
     content = Content(
         id=1,

@@ -8,7 +8,7 @@ class ContentGenerateRequest(BaseModel):
     topic: str = Field(min_length=1, max_length=255)
     knowledge_query: str | None = Field(default=None, max_length=255)
     category: str | None = Field(default=None, max_length=80)
-    tone: str | None = Field(default=None, max_length=120)
+    tone: str | None = Field(default=None, max_length=420)
     target_audience: str | None = Field(default=None, max_length=120)
     knowledge_limit: int = Field(default=5, ge=0, le=20)
     tags: list[str] = Field(default_factory=list)
