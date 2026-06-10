@@ -18,6 +18,7 @@ import {
   Radar,
   Search,
   Send,
+  Settings,
   ShieldCheck,
   Sparkles,
   Upload,
@@ -32,7 +33,8 @@ export type WorkspaceTab =
   | "content"
   | "review"
   | "cover"
-  | "delivery";
+  | "delivery"
+  | "settings";
 
 export const navigation: Array<{
   id: WorkspaceTab;
@@ -45,7 +47,8 @@ export const navigation: Array<{
   { id: "content", label: "内容生产", icon: PenLine },
   { id: "review", label: "审核", icon: ClipboardCheck },
   { id: "cover", label: "封面", icon: Image },
-  { id: "delivery", label: "发布交付", icon: Users }
+  { id: "delivery", label: "发布交付", icon: Users },
+  { id: "settings", label: "设置", icon: Settings }
 ];
 
 export const tabMeta: Record<WorkspaceTab, { title: string; description: string }> = {
@@ -76,6 +79,10 @@ export const tabMeta: Record<WorkspaceTab, { title: string; description: string 
   delivery: {
     title: "发布交付",
     description: "管理已批准内容、导出包、发布记录和推广交接。"
+  },
+  settings: {
+    title: "设置",
+    description: "管理界面显示偏好；设置入口会始终保留。"
   }
 };
 

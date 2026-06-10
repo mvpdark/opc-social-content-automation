@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { Bell, Command, PenLine, Search, ShieldCheck } from "lucide-react";
+import { Bell, Command, PenLine, Search, Settings, ShieldCheck } from "lucide-react";
 
 import { navigation, tabMeta, type WorkspaceTab } from "@/lib/dashboard-data";
 
@@ -9,9 +9,10 @@ type AppShellProps = {
   activeTab: WorkspaceTab;
   children: React.ReactNode;
   onTabChange: (tab: WorkspaceTab) => void;
+  showHelperText: boolean;
 };
 
-export function AppShell({ activeTab, children, onTabChange }: AppShellProps) {
+export function AppShell({ activeTab, children, onTabChange, showHelperText }: AppShellProps) {
   const activeMeta = tabMeta[activeTab];
 
   return (
@@ -53,9 +54,11 @@ export function AppShell({ activeTab, children, onTabChange }: AppShellProps) {
               <ShieldCheck className="h-4 w-4 text-moss" />
               发布安全门
             </div>
-            <p className="mt-2 text-xs leading-5 text-muted">
-              所有内容必须先经过人工审核，图片标题需要二次确认。
-            </p>
+            {showHelperText ? (
+              <p className="mt-2 text-xs leading-5 text-muted">
+                所有内容必须先经过人工审核，图片标题需要二次确认。
+              </p>
+            ) : null}
           </div>
         </aside>
 
@@ -64,10 +67,11 @@ export function AppShell({ activeTab, children, onTabChange }: AppShellProps) {
             <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-center 2xl:justify-between">
               <div>
                 <h1 className="text-xl font-semibold leading-7">{activeMeta.title}</h1>
-                <p className="text-xs text-muted">{activeMeta.description}</p>
+                {showHelperText ? <p className="text-xs text-muted">{activeMeta.description}</p> : null}
               </div>
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                <div className="hidden flex-wrap gap-2 xl:flex">
+                {showHelperText ? (
+                  <div className="hidden flex-wrap gap-2 xl:flex">
                   <div className="inline-flex h-8 items-center gap-2 rounded-md border border-line bg-mist px-2.5 text-xs font-medium text-muted">
                     <ShieldCheck className="h-3.5 w-3.5 text-moss" />
                     人工审核开启
@@ -75,7 +79,8 @@ export function AppShell({ activeTab, children, onTabChange }: AppShellProps) {
                   <div className="inline-flex h-8 items-center gap-2 rounded-md border border-line bg-mist px-2.5 text-xs font-medium text-muted">
                     公开采集优先
                   </div>
-                </div>
+                  </div>
+                ) : null}
                 <div className="flex items-center gap-3">
                   <button
                     className="flex h-9 shrink-0 items-center gap-2 rounded-md bg-ink px-3 text-sm font-medium text-white"
@@ -99,6 +104,14 @@ export function AppShell({ activeTab, children, onTabChange }: AppShellProps) {
                     type="button"
                   >
                     <Bell className="h-4 w-4" />
+                  </button>
+                  <button
+                    aria-label="打开设置"
+                    className="flex h-9 w-9 items-center justify-center rounded-md border border-line bg-white text-muted"
+                    onClick={() => onTabChange("settings")}
+                    type="button"
+                  >
+                    <Settings className="h-4 w-4" />
                   </button>
                 </div>
               </div>

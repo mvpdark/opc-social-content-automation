@@ -4,9 +4,13 @@ import { useState, type ReactNode } from "react";
 import {
   ArrowRight,
   ClipboardCheck,
+  Eye,
+  EyeOff,
   Image,
   Loader2,
   PenLine,
+  RotateCcw,
+  Settings,
   ShieldCheck
 } from "lucide-react";
 
@@ -62,9 +66,10 @@ type GeneratedContent = {
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("dashboard");
+  const [showHelperText, setShowHelperText] = useState(true);
 
   return (
-    <AppShell activeTab={activeTab} onTabChange={setActiveTab}>
+    <AppShell activeTab={activeTab} onTabChange={setActiveTab} showHelperText={showHelperText}>
       {activeTab === "dashboard" ? <DashboardView /> : null}
       {activeTab === "research" ? <ResearchView /> : null}
       {activeTab === "knowledge" ? <KnowledgeView /> : null}
@@ -72,6 +77,13 @@ export default function Home() {
       {activeTab === "review" ? <ReviewView /> : null}
       {activeTab === "cover" ? <CoverView /> : null}
       {activeTab === "delivery" ? <DeliveryView /> : null}
+      {activeTab === "settings" ? (
+        <SettingsView
+          onReset={() => setShowHelperText(true)}
+          onShowHelperTextChange={setShowHelperText}
+          showHelperText={showHelperText}
+        />
+      ) : null}
     </AppShell>
   );
 }
@@ -624,6 +636,89 @@ function DeliveryView() {
         </Panel>
         <PublishingTable />
       </section>
+    </div>
+  );
+}
+
+function SettingsView({
+  onReset,
+  onShowHelperTextChange,
+  showHelperText
+}: {
+  onReset: () => void;
+  onShowHelperTextChange: (nextValue: boolean) => void;
+  showHelperText: boolean;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
+      <Panel
+        action={<Pill tone="green">设置入口固定保留</Pill>}
+        helper="隐藏偏好只作用在辅助说明上，不会隐藏左侧“设置”和顶部齿轮入口。"
+        title="界面显示"
+      >
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <div className="rounded-md border border-line bg-white p-4">
+            <div className="flex items-start gap-3">
+              <IconBox tone={showHelperText ? "green" : "amber"}>
+                {showHelperText ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              </IconBox>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-semibold">辅助说明</h3>
+                  <Pill tone={showHelperText ? "green" : "amber"}>
+                    {showHelperText ? "显示中" : "已隐藏"}
+                  </Pill>
+                </div>
+                <p className="mt-2 text-xs leading-5 text-muted">
+                  控制顶部副标题和侧边说明的显示，不影响导航、设置入口和主要按钮。
+                </p>
+                <button
+                  className="mt-4 flex h-9 items-center gap-2 rounded-md border border-line bg-white px-3 text-sm font-medium text-ink"
+                  onClick={() => onShowHelperTextChange(!showHelperText)}
+                  type="button"
+                >
+                  {showHelperText ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showHelperText ? "隐藏辅助说明" : "显示辅助说明"}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-md border border-line bg-mist/70 p-4">
+            <div className="flex items-start gap-3">
+              <IconBox tone="blue">
+                <Settings className="h-4 w-4" />
+              </IconBox>
+              <div>
+                <h3 className="text-sm font-semibold">设置入口</h3>
+                <p className="mt-2 text-xs leading-5 text-muted">
+                  左侧导航的“设置”和顶部齿轮按钮不受隐藏状态影响，避免入口被自己藏掉。
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Panel>
+
+      <div className="space-y-4">
+        <Panel helper="如果界面被收得太干净，可以一键恢复说明文字。" title="恢复">
+          <button
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-white"
+            onClick={onReset}
+            type="button"
+          >
+            <RotateCcw className="h-4 w-4" />
+            恢复默认界面
+          </button>
+          <p className="mt-3 text-xs leading-5 text-muted">
+            恢复后，顶部页面说明和侧边安全门说明会重新显示。
+          </p>
+        </Panel>
+
+        <Panel helper="项目级安全规则仍然固定启用。" title="安全规则">
+          <SafetyGateList />
+        </Panel>
+      </div>
     </div>
   );
 }
