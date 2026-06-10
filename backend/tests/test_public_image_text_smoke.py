@@ -83,9 +83,44 @@ def test_run_serial_anonymous_attempts_caps_at_callers_attempt_count(
     )
 
     assert calls == [1, 2, 3]
+    assert result["status"] == "ok"
     assert result["mode"] == "serial_anonymous_no_cookie"
     assert result["total_image_text_count"] == 1
     assert result["successful_attempts"] == [2]
+
+
+def test_run_serial_anonymous_attempts_marks_zero_results_for_operator_review(
+    monkeypatch,
+) -> None:
+    def fake_collect_public_candidates(
+        platform: str,
+        keyword: str,
+        max_items: int,
+        attempt: int = 1,
+    ) -> dict[str, object]:
+        return {
+            "attempt": attempt,
+            "platform": platform,
+            "keyword": keyword,
+            "page_title": "login",
+            "final_url": "https://www.xiaohongshu.com/search_result",
+            "raw_candidates": 0,
+            "image_text_count": 0,
+            "image_text_candidates": [],
+        }
+
+    monkeypatch.setattr(smoke, "collect_public_candidates", fake_collect_public_candidates)
+
+    result = smoke.run_serial_anonymous_attempts(
+        platform="xiaohongshu",
+        keyword="硕升博",
+        max_items=8,
+        attempts=2,
+    )
+
+    assert result["status"] == "needs_operator_review"
+    assert result["total_image_text_count"] == 0
+    assert result["successful_attempts"] == []
 
 
 def test_extract_image_text_candidates_skips_login_wall_text() -> None:

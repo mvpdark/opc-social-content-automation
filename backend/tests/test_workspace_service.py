@@ -1,3 +1,7 @@
+import pytest
+from pydantic import ValidationError
+
+from app.schemas.workspace import PublishRecordCreate
 from app.schemas.workspace import ExportItem
 from app.services.workspace_service import _render_markdown, _render_plain
 
@@ -30,3 +34,8 @@ def test_render_plain_export_payload() -> None:
     payload = _render_plain([item])
 
     assert payload == "导师沟通\n表达研究兴趣，不要泛泛而谈。"
+
+
+def test_publish_record_schema_rejects_non_published_status() -> None:
+    with pytest.raises(ValidationError):
+        PublishRecordCreate(content_id=1, platform="xiaohongshu", status="failed")

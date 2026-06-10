@@ -1,4 +1,9 @@
+import pytest
+from fastapi import HTTPException
+
+from app.models.trend_collection_job import TrendCollectionJob
 from app.services.trend_browser_collector import (
+    _content_kind,
     extract_candidate_assets,
     normalize_visible_text,
 )
@@ -59,6 +64,21 @@ def test_extract_candidate_assets_skips_video_markers_by_default() -> None:
     )
 
     assert assets == []
+
+
+def test_content_kind_rejects_legacy_video_jobs() -> None:
+    job = TrendCollectionJob(
+        id=1,
+        platform="xiaohongshu",
+        keyword="硕升博",
+        safety_profile={"content_kind": "video"},
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        _content_kind(job)
+
+    assert exc.value.status_code == 409
+    assert "Video collection is disabled" in exc.value.detail
 
 
 def test_extract_candidate_assets_does_not_skip_douyin_domain_by_default() -> None:

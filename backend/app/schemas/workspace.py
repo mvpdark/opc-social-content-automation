@@ -26,7 +26,7 @@ class PublishRecordCreate(BaseModel):
     content_id: int
     platform: str = Field(min_length=1, max_length=40)
     external_url: str | None = Field(default=None, max_length=500)
-    status: str = Field(default="recorded", max_length=40)
+    status: str = Field(default="published", pattern="^published$")
 
 
 class PublishRecordRead(BaseModel):

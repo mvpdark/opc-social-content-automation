@@ -50,6 +50,20 @@ def test_build_safety_profile_rejects_invalid_delay_window() -> None:
         build_safety_profile(payload)
 
 
+def test_build_safety_profile_rejects_video_until_review_workflow_exists() -> None:
+    payload = TrendCollectionJobCreate(
+        platform="xiaohongshu",
+        keyword="硕升博",
+        content_kind="video",
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        build_safety_profile(payload)
+
+    assert exc.value.status_code == 422
+    assert "Video collection is disabled" in exc.value.detail
+
+
 def test_render_trend_knowledge_digest_includes_sources() -> None:
     payload = TrendKnowledgeDigestRequest(
         platform="douyin",

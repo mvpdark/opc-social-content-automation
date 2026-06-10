@@ -140,7 +140,9 @@ def run_serial_anonymous_attempts(
         for index in range(1, attempts + 1)
     ]
     total_image_text_count = sum(int(result["image_text_count"]) for result in results)
+    result_status = "ok" if total_image_text_count > 0 else "needs_operator_review"
     return {
+        "status": result_status,
         "platform": platform,
         "keyword": keyword,
         "mode": "serial_anonymous_no_cookie",
@@ -214,7 +216,7 @@ def main() -> None:
         json.dumps(
             {
                 "status": (
-                    "ok" if int(result["total_image_text_count"]) > 0 else "needs_operator_review"
+                    result["status"]
                 ),
                 "platform": result["platform"],
                 "keyword": result["keyword"],

@@ -18,6 +18,9 @@ BROWSER_SESSION_ROOT = PROJECT_ROOT / ".browser-sessions"
 HASHTAG_RE = re.compile(r"[#＃]([\w\u4e00-\u9fff-]{2,40})", re.UNICODE)
 SPACE_RE = re.compile(r"\s+")
 VIDEO_MARKERS = ("视频", "播放", "直播", "video-card", "video_note", "shorts")
+VIDEO_COLLECTION_DISABLED_DETAIL = (
+    "Video collection is disabled until a separate transcript and rights review workflow is implemented."
+)
 BLOCKED_MARKERS = (
     "登录后查看搜索结果",
     "手机号登录",
@@ -175,7 +178,12 @@ def _safe_max_items(job: TrendCollectionJob) -> int:
 def _content_kind(job: TrendCollectionJob) -> str:
     profile = job.safety_profile or {}
     content_kind = profile.get("content_kind")
-    if isinstance(content_kind, str) and content_kind in {"image_text", "video", "mixed"}:
+    if content_kind in {"video", "mixed"}:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=VIDEO_COLLECTION_DISABLED_DETAIL,
+        )
+    if content_kind == "image_text":
         return content_kind
     return "image_text"
 

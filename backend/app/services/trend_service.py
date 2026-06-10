@@ -37,6 +37,9 @@ STOP_WORDS = {
     "我们",
 }
 SUPPORTED_PLATFORMS = {"xiaohongshu", "douyin"}
+VIDEO_COLLECTION_DISABLED_DETAIL = (
+    "Video collection is disabled until a separate transcript and rights review workflow is implemented."
+)
 
 
 def build_platform_search_target(platform: str, keyword: str) -> PlatformSearchTarget:
@@ -83,6 +86,11 @@ def build_safety_profile(payload: TrendCollectionJobCreate) -> dict[str, object]
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="min_delay_seconds must be lower than max_delay_seconds.",
         )
+    if payload.content_kind != "image_text":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=VIDEO_COLLECTION_DISABLED_DETAIL,
+        )
 
     return {
         "collector": "playwright_assisted",
@@ -97,7 +105,7 @@ def build_safety_profile(payload: TrendCollectionJobCreate) -> dict[str, object]
         "session_label": payload.session_label,
         "max_items": payload.max_items,
         "content_kind": payload.content_kind,
-        "video_collection_enabled": payload.content_kind in {"video", "mixed"},
+        "video_collection_enabled": False,
         "speed_policy": "account_safety_first",
         "target": build_platform_search_target(payload.platform, payload.keyword).model_dump(),
     }

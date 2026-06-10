@@ -125,7 +125,7 @@ def create_publish_record(
         user_id=current_user.id,
         platform=payload.platform,
         external_url=payload.external_url,
-        status=payload.status,
+        status="published",
     )
     db.add(record)
     content.status = "published"

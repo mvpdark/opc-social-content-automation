@@ -139,7 +139,7 @@ Run a queued job in a visible browser session:
 python scripts/run_trend_collection_job.py 1
 ```
 
-The worker opens the platform search URL stored in the job safety profile, starts with public results, scrolls with randomized delays, extracts only visible public page text, and stores extracted items as `trend_contents`. Collection jobs default to `content_kind=image_text`, so obvious video/live markers are skipped until video collection is explicitly enabled. If no public image-text items are visible, the job is marked `needs_operator_review` and no trend rows are created.
+The worker opens the platform search URL stored in the job safety profile, starts with public results, scrolls with randomized delays, extracts only visible public page text, and stores extracted items as `trend_contents`. Collection jobs are limited to `content_kind=image_text`, so obvious video/live markers are skipped until a separate transcript and rights-review workflow exists. If no public image-text items are visible, the job is marked `needs_operator_review` and no trend rows are created.
 
 If the public page is blocked and the operator needs time to complete login or captcha, pass an explicit wait window:
 
