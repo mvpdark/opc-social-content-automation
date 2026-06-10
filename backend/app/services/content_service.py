@@ -9,7 +9,7 @@ from app.models.generation_log import GenerationLog
 from app.models.user import User
 from app.schemas.content import ContentGenerateRequest, ContentRewriteRequest
 from app.services.knowledge_service import search_knowledge_items
-from app.services.model_router import load_prompt, model_router
+from app.services.model_router import load_platform_style_reference, load_prompt, model_router
 
 
 @dataclass(frozen=True)
@@ -74,6 +74,7 @@ def build_draft_prompt_package(
             "target_audience": payload.target_audience,
             "knowledge_query": payload.knowledge_query,
             "knowledge_context": _knowledge_context(db, payload),
+            "style_reference": load_platform_style_reference(payload.platform),
             "user": {
                 "id": current_user.id,
                 "role": current_user.role,
@@ -97,6 +98,7 @@ def build_rewrite_prompt_package(
             "body": content.body,
             "tags": content.tags or [],
             "instruction": payload.instruction,
+            "style_reference": load_platform_style_reference(content.platform),
             "user": {
                 "id": current_user.id,
                 "role": current_user.role,

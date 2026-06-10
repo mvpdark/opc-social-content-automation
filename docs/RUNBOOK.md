@@ -157,6 +157,10 @@ The smoke test runs serial anonymous no-cookie browser attempts, capped at 10. E
 
 Before creating a trend knowledge digest, an operator must review the collected image-text sources and set `source_reviewed=true`. The backend rejects digest creation when this review gate is missing.
 
+## Xiaohongshu Style Reference
+
+The project includes a provisional public-source reference at `docs/XIAOHONGSHU_STYLE_REFERENCE.md` and `prompts/xiaohongshu_style_reference.md`. Draft, rewrite, and image generation include this style reference for Xiaohongshu payloads. Treat it as structural guidance only; it is not a reviewed high-like Xiaohongshu sample set. Upgrade it only after operator-reviewed Xiaohongshu samples are collected as trend assets.
+
 ## Frontend
 
 ```bash

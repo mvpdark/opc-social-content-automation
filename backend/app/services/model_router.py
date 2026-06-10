@@ -29,6 +29,13 @@ def load_prompt(name: str) -> str:
     return prompt_path.read_text(encoding="utf-8")
 
 
+def load_platform_style_reference(platform: object) -> str:
+    normalized_platform = str(platform or "").strip().lower()
+    if normalized_platform == "xiaohongshu":
+        return load_prompt("xiaohongshu_style_reference")
+    return ""
+
+
 def _redacted_provider_error(provider: str, status_code: int | None = None) -> str:
     suffix = f" HTTP {status_code}" if status_code is not None else ""
     return f"{provider} request failed{suffix}. Check provider configuration and logs."
@@ -299,19 +306,22 @@ def _image_prompt(payload: dict[str, object]) -> str:
     if isinstance(template, dict):
         template_name = str(template.get("name") or template_name)
     body_excerpt = body[:500]
-    return "\n".join(
-        [
-            f"Create a mobile-first social media cover image for {platform}.",
-            f"Template: {template_name}.",
-            f"Title text: {title}",
-            f"Tags: {tags}",
-            f"Style notes: {style_notes}",
-            "Use clean editorial layout, strong Chinese headline hierarchy, and no clutter.",
-            "The image must be suitable for postgraduate-to-PhD education content.",
-            "Avoid exaggerated claims, medical/legal/financial advice, and misleading badges.",
-            f"Content context: {body_excerpt}",
-        ]
-    )
+    lines = [
+        f"Create a mobile-first social media cover image for {platform}.",
+        f"Template: {template_name}.",
+        f"Primary cover headline, copied verbatim: {title}",
+        "Use the exact title text verbatim as the primary cover headline; do not rewrite it.",
+        f"Tags: {tags}",
+        f"Style notes: {style_notes}",
+        "Use clean editorial layout, strong Chinese headline hierarchy, and no clutter.",
+        "The image must be suitable for postgraduate-to-PhD education content.",
+        "Avoid exaggerated claims, medical/legal/financial advice, and misleading badges.",
+        f"Content context: {body_excerpt}",
+    ]
+    style_reference = str(payload.get("style_reference") or "").strip()
+    if style_reference:
+        lines.extend(["", "Platform style reference:", style_reference[:2400]])
+    return "\n".join(lines)
 
 
 def _extract_image_url(provider: str, data: dict[str, object], payload: dict[str, object]) -> str:

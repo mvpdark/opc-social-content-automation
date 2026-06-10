@@ -51,6 +51,7 @@ Data collection -> Knowledge base -> Draft generation -> Humanization -> Review 
 - Promoter workspace supports export-ready content, formatted export packages, and publish-record tracking.
 - DeepSeek official API is wired for the humanization rewrite provider through the Model Router.
 - Draft and image generation support `codex_test` and OpenAI-compatible providers.
+- Xiaohongshu drafting and cover generation include a provisional public-source style reference until operator-reviewed platform samples are collected.
 
 ## Delivery
 

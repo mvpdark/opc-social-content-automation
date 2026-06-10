@@ -44,6 +44,8 @@ def validate_required_files() -> int:
         ROOT / "prompts" / "humanization.md",
         ROOT / "prompts" / "review.md",
         ROOT / "prompts" / "image_generation.md",
+        ROOT / "prompts" / "xiaohongshu_style_reference.md",
+        ROOT / "docs" / "XIAOHONGSHU_STYLE_REFERENCE.md",
     ]
     missing = [str(file.relative_to(ROOT)) for file in required if not file.exists()]
     if missing:
@@ -94,6 +96,7 @@ def validate_safety_gates() -> int:
         "backend/app/services/image_service.py": [
             "Only human-approved content can be used for image generation.",
             "provider_not_configured",
+            "load_platform_style_reference",
         ],
         "backend/app/services/trend_service.py": [
             "human_like_scrolling",
@@ -132,6 +135,8 @@ def validate_safety_gates() -> int:
         ],
         "backend/app/services/model_router.py": [
             "load_prompt",
+            "load_platform_style_reference",
+            "Use the exact title text verbatim",
             "Review model provider is not configured yet.",
         ],
         "backend/app/services/workspace_service.py": [

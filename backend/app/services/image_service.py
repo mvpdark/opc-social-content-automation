@@ -7,7 +7,7 @@ from app.models.generated_image import GeneratedImage
 from app.models.user import User
 from app.schemas.image import ImageGenerateRequest
 from app.services.content_service import PromptPackage, record_generation_log
-from app.services.model_router import load_prompt, model_router
+from app.services.model_router import load_platform_style_reference, load_prompt, model_router
 
 
 COVER_TEMPLATES = [
@@ -89,6 +89,7 @@ def build_image_prompt_package(
             "template": template,
             "aspect_ratio": payload.aspect_ratio,
             "style_notes": payload.style_notes,
+            "style_reference": load_platform_style_reference(content.platform),
             "user": {
                 "id": current_user.id,
                 "role": current_user.role,

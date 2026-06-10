@@ -2,7 +2,11 @@ import pytest
 from fastapi import HTTPException
 
 from app.core.config import settings
-from app.services.model_router import GENERATED_ASSET_ROOT, model_router
+from app.services.model_router import (
+    GENERATED_ASSET_ROOT,
+    load_platform_style_reference,
+    model_router,
+)
 
 
 def test_embedding_model_is_deterministic() -> None:
@@ -59,6 +63,13 @@ def test_codex_test_image_provider_creates_svg(monkeypatch: pytest.MonkeyPatch) 
     assert generated_file.exists()
     assert "OPC TEST ASSET" in generated_file.read_text(encoding="utf-8")
     generated_file.unlink()
+
+
+def test_load_platform_style_reference_for_xiaohongshu() -> None:
+    reference = load_platform_style_reference("xiaohongshu")
+
+    assert "Xiaohongshu Style Reference" in reference
+    assert "not as proof of platform performance" in reference
 
 
 def test_openai_compatible_draft_provider_requires_key(
@@ -183,7 +194,12 @@ def test_openai_compatible_image_provider_accepts_remote_url(
 
     result = model_router.image_model(
         "image_generation",
-        {"title": "硕升博封面", "platform": "xiaohongshu", "aspect_ratio": "3:4"},
+        {
+            "title": "硕升博封面",
+            "platform": "xiaohongshu",
+            "aspect_ratio": "3:4",
+            "style_reference": "Use strong mobile cover hooks.",
+        },
     )
 
     assert result == "https://cdn.test/image.png"
@@ -192,6 +208,8 @@ def test_openai_compatible_image_provider_accepts_remote_url(
     assert isinstance(request_json, dict)
     assert request_json["model"] == "gpt-image-2"
     assert request_json["size"] == "1024x1536"
+    assert "Use the exact title text verbatim" in str(request_json["prompt"])
+    assert "Use strong mobile cover hooks." in str(request_json["prompt"])
     assert secret not in str(request_json)
 
 
