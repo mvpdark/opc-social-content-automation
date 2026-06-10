@@ -37,7 +37,7 @@ def test_rewrite_model_calls_deepseek_without_exposing_key(
     secret = "test-secret-key"
     monkeypatch.setattr(settings, "deepseek_api_key", secret)
     monkeypatch.setattr(settings, "deepseek_base_url", "https://api.deepseek.com")
-    monkeypatch.setattr(settings, "deepseek_rewrite_model", "deepseek-v4-flash")
+    monkeypatch.setattr(settings, "deepseek_rewrite_model", "deepseek-v4-pro")
 
     class FakeResponse:
         status_code = 200
@@ -75,6 +75,6 @@ def test_rewrite_model_calls_deepseek_without_exposing_key(
     assert requests[0]["url"] == "https://api.deepseek.com/chat/completions"
     request_json = requests[0]["json"]
     assert isinstance(request_json, dict)
-    assert request_json["model"] == "deepseek-v4-flash"
+    assert request_json["model"] == "deepseek-v4-pro"
     assert request_json["thinking"] == {"type": "disabled"}
     assert secret not in str(request_json)

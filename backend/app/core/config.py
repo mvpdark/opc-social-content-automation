@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     embedding_dimensions: int = 1536
     deepseek_api_key: str | None = None
     deepseek_base_url: str = "https://api.deepseek.com"
-    deepseek_rewrite_model: str = "deepseek-v4-flash"
+    deepseek_rewrite_model: str = "deepseek-v4-pro"
     deepseek_timeout_seconds: float = 60.0
     frontend_origin: str = "http://localhost:3000"
 

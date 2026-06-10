@@ -38,7 +38,7 @@ Set these values in `.env`:
 ```bash
 DEEPSEEK_API_KEY=your-secret-key
 DEEPSEEK_BASE_URL=https://api.deepseek.com
-DEEPSEEK_REWRITE_MODEL=deepseek-v4-flash
+DEEPSEEK_REWRITE_MODEL=deepseek-v4-pro
 DEEPSEEK_TIMEOUT_SECONDS=60
 ```
 
