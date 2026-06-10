@@ -27,6 +27,7 @@ Data collection -> Knowledge base -> Draft generation -> Humanization -> Review 
 - `frontend/` Next.js promoter/admin workspace.
 - `prompts/` prompt templates used by the Model Router.
 - `docs/` local project notes and task breakdowns.
+- `scripts/` local verification helpers.
 
 ## MVP Phases
 
@@ -46,3 +47,8 @@ Data collection -> Knowledge base -> Draft generation -> Humanization -> Review 
 - Image generation requires approved content, uses cover templates, and records generated assets with prompt metadata.
 - Trend collection jobs store safety profiles for Playwright-assisted collection, including randomized delays, human-like scrolling, session persistence, and cookie persistence.
 - Promoter workspace supports export-ready content, formatted export packages, and publish-record tracking.
+
+## Delivery
+
+- GitHub Actions runs backend verification, backend tests, and frontend typecheck.
+- Local release checks are documented in `docs/RUNBOOK.md`.
