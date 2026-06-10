@@ -34,3 +34,4 @@ Publishing and image generation remain blocked until content has passed human ap
 - Do not commit `.env` or paste provider keys into documentation.
 - Provider error messages should be redacted before they are written to generation logs.
 - OpenAI-compatible provider keys use the same rule as official provider keys: local `.env` only, never committed.
+- Image provider keys also stay local-only. Generated images under `backend/static/generated/` are ignored by Git.

@@ -14,9 +14,15 @@ class Settings(BaseSettings):
     draft_model: str = "gpt-5.5"
     draft_timeout_seconds: float = 120.0
     image_provider: str = "codex_test"
+    image_model: str = "gpt-image-2"
+    image_size: str | None = None
+    image_response_format: str | None = None
+    image_timeout_seconds: float = 180.0
     test_static_url_prefix: str = "/static/generated"
     openai_compatible_api_key: str | None = None
     openai_compatible_base_url: str = "https://api.openai.com/v1"
+    image_openai_compatible_api_key: str | None = None
+    image_openai_compatible_base_url: str | None = None
     deepseek_api_key: str | None = None
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_rewrite_model: str = "deepseek-v4-pro"

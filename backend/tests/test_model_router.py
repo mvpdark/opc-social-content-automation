@@ -125,6 +125,119 @@ def test_openai_compatible_draft_provider_calls_chat_completion(
     assert secret not in str(request_json)
 
 
+def test_openai_compatible_image_provider_requires_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "image_provider", "openai_compatible")
+    monkeypatch.setattr(settings, "image_openai_compatible_api_key", None)
+    monkeypatch.setattr(settings, "openai_compatible_api_key", None)
+
+    with pytest.raises(HTTPException) as exc:
+        model_router.image_model("image_generation", {"title": "test"})
+
+    assert exc.value.status_code == 501
+    assert "OpenAI-compatible image provider" in exc.value.detail
+
+
+def test_openai_compatible_image_provider_accepts_remote_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    requests: list[dict[str, object]] = []
+    secret = "test-image-key"
+    monkeypatch.setattr(settings, "image_provider", "openai_compatible")
+    monkeypatch.setattr(settings, "image_openai_compatible_api_key", secret)
+    monkeypatch.setattr(settings, "image_openai_compatible_base_url", "https://image.test/v1")
+    monkeypatch.setattr(settings, "image_model", "gpt-image-2")
+    monkeypatch.setattr(settings, "image_size", None)
+    monkeypatch.setattr(settings, "image_response_format", None)
+
+    class FakeResponse:
+        status_code = 200
+
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, object]:
+            return {"data": [{"url": "https://cdn.test/image.png"}]}
+
+    class FakeClient:
+        def __init__(self, timeout: float) -> None:
+            self.timeout = timeout
+
+        def __enter__(self) -> "FakeClient":
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def post(
+            self,
+            url: str,
+            headers: dict[str, str],
+            json: dict[str, object],
+        ) -> FakeResponse:
+            requests.append({"url": url, "headers": headers, "json": json})
+            return FakeResponse()
+
+    monkeypatch.setattr("app.services.model_router.httpx.Client", FakeClient)
+
+    result = model_router.image_model(
+        "image_generation",
+        {"title": "硕升博封面", "platform": "xiaohongshu", "aspect_ratio": "3:4"},
+    )
+
+    assert result == "https://cdn.test/image.png"
+    assert requests[0]["url"] == "https://image.test/v1/images/generations"
+    request_json = requests[0]["json"]
+    assert isinstance(request_json, dict)
+    assert request_json["model"] == "gpt-image-2"
+    assert request_json["size"] == "1024x1536"
+    assert secret not in str(request_json)
+
+
+def test_openai_compatible_image_provider_stores_b64_png(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "image_provider", "openai_compatible")
+    monkeypatch.setattr(settings, "image_openai_compatible_api_key", "test-image-key")
+    monkeypatch.setattr(settings, "image_openai_compatible_base_url", "https://image.test/v1")
+    monkeypatch.setattr(settings, "test_static_url_prefix", "/static/generated")
+    monkeypatch.setattr(settings, "image_size", "1024x1024")
+    monkeypatch.setattr(settings, "image_response_format", "b64_json")
+
+    class FakeResponse:
+        status_code = 200
+
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, object]:
+            return {"data": [{"b64_json": "iVBORw0KGgo="}]}
+
+    class FakeClient:
+        def __init__(self, timeout: float) -> None:
+            self.timeout = timeout
+
+        def __enter__(self) -> "FakeClient":
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def post(self, *args: object, **kwargs: object) -> FakeResponse:
+            return FakeResponse()
+
+    monkeypatch.setattr("app.services.model_router.httpx.Client", FakeClient)
+
+    result = model_router.image_model("image_generation", {"title": "硕升博封面"})
+
+    assert result.startswith("/static/generated/image2-")
+    generated_file = GENERATED_ASSET_ROOT / result.rsplit("/", 1)[-1]
+    assert generated_file.exists()
+    assert generated_file.suffix == ".png"
+    generated_file.unlink()
+
+
 def test_rewrite_model_requires_deepseek_key(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "deepseek_api_key", None)
 

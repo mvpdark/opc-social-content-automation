@@ -86,6 +86,36 @@ Run a small draft smoke test:
 python scripts/smoke_draft_provider.py
 ```
 
+## OpenAI-Compatible Image Provider
+
+Image generation can use an OpenAI-compatible image generation endpoint:
+
+```bash
+IMAGE_PROVIDER=openai_compatible
+IMAGE_MODEL=gpt-image-2
+IMAGE_SIZE=1024x1536
+IMAGE_RESPONSE_FORMAT=
+IMAGE_TIMEOUT_SECONDS=180
+IMAGE_OPENAI_COMPATIBLE_BASE_URL=https://your-compatible-provider.example/v1
+IMAGE_OPENAI_COMPATIBLE_API_KEY=your-secret-key
+```
+
+If the provider returns `b64_json`, the backend stores the image under `backend/static/generated/` and returns a `/static/generated/...png` URL. If the provider returns a remote `url`, the backend stores that URL directly.
+
+Run a small image smoke test:
+
+```bash
+python scripts/smoke_image_provider.py
+```
+
+If a compatible provider returns HTTP 400, use the raw probe to inspect the redacted request shape and first part of the provider error:
+
+```bash
+python scripts/probe_image_provider.py
+```
+
+For the current relay, `image2` is exposed as `gpt-image-2` in `/models`. If the probe returns `503 No available compatible accounts`, the backend integration is reaching the relay but the relay has no currently available image account for that model.
+
 ## Frontend
 
 ```bash

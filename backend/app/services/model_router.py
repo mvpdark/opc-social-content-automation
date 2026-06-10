@@ -5,6 +5,7 @@ import json
 import math
 import re
 import textwrap
+from base64 import b64decode
 
 import httpx
 from fastapi import HTTPException, status
@@ -98,6 +99,44 @@ def _post_chat_completion(
         with httpx.Client(timeout=timeout_seconds) as client:
             response = client.post(
                 f"{base_url.rstrip('/')}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
+            response.raise_for_status()
+            data = response.json()
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=_redacted_provider_error(provider, exc.response.status_code),
+        ) from exc
+    except (httpx.HTTPError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=_redacted_provider_error(provider),
+        ) from exc
+
+    if not isinstance(data, dict):
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"{provider} response was not a JSON object.",
+        )
+    return data
+
+
+def _post_image_generation(
+    provider: str,
+    base_url: str,
+    api_key: str,
+    timeout_seconds: float,
+    payload: dict[str, object],
+) -> dict[str, object]:
+    try:
+        with httpx.Client(timeout=timeout_seconds) as client:
+            response = client.post(
+                f"{base_url.rstrip('/')}/images/generations",
                 headers={
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
@@ -239,6 +278,83 @@ def _test_image(payload: dict[str, object]) -> str:
     return f"{settings.test_static_url_prefix.rstrip('/')}/{filename}"
 
 
+def _image_size(aspect_ratio: str) -> str:
+    mapping = {
+        "1:1": "1024x1024",
+        "3:4": "1024x1536",
+        "4:5": "1024x1536",
+        "9:16": "1024x1792",
+    }
+    return mapping.get(aspect_ratio, "1024x1536")
+
+
+def _image_prompt(payload: dict[str, object]) -> str:
+    title = str(payload.get("title") or "OPC cover")
+    platform = str(payload.get("platform") or "multi")
+    body = str(payload.get("body") or "")
+    tags = " ".join(f"#{tag}" for tag in _string_list(payload.get("tags")))
+    style_notes = str(payload.get("style_notes") or "clean, readable, platform-ready")
+    template = payload.get("template")
+    template_name = "cover"
+    if isinstance(template, dict):
+        template_name = str(template.get("name") or template_name)
+    body_excerpt = body[:500]
+    return "\n".join(
+        [
+            f"Create a mobile-first social media cover image for {platform}.",
+            f"Template: {template_name}.",
+            f"Title text: {title}",
+            f"Tags: {tags}",
+            f"Style notes: {style_notes}",
+            "Use clean editorial layout, strong Chinese headline hierarchy, and no clutter.",
+            "The image must be suitable for postgraduate-to-PhD education content.",
+            "Avoid exaggerated claims, medical/legal/financial advice, and misleading badges.",
+            f"Content context: {body_excerpt}",
+        ]
+    )
+
+
+def _extract_image_url(provider: str, data: dict[str, object], payload: dict[str, object]) -> str:
+    items = data.get("data")
+    if not isinstance(items, list) or not items:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"{provider} response did not include image data.",
+        )
+    first = items[0]
+    if not isinstance(first, dict):
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"{provider} response image data was invalid.",
+        )
+
+    url = first.get("url")
+    if isinstance(url, str) and url.strip():
+        return url.strip()
+
+    b64_json = first.get("b64_json")
+    if isinstance(b64_json, str) and b64_json.strip():
+        title = str(payload.get("title") or "opc-image")
+        digest = hashlib.sha256(b64_json.encode("utf-8")).hexdigest()[:12]
+        slug = FILENAME_RE.sub("-", title.lower()).strip("-")[:36] or "opc-image"
+        filename = f"image2-{slug}-{digest}.png"
+        GENERATED_ASSET_ROOT.mkdir(parents=True, exist_ok=True)
+        target = GENERATED_ASSET_ROOT / filename
+        try:
+            target.write_bytes(b64decode(b64_json))
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"{provider} response image payload was invalid.",
+            ) from exc
+        return f"{settings.test_static_url_prefix.rstrip('/')}/{filename}"
+
+    raise HTTPException(
+        status_code=status.HTTP_502_BAD_GATEWAY,
+        detail=f"{provider} response did not include a supported image field.",
+    )
+
+
 class ModelRouter:
     def embedding_model(self, text: str) -> list[float]:
         tokens = TOKEN_RE.findall(text.lower())
@@ -315,6 +431,39 @@ class ModelRouter:
         load_prompt(prompt_name)
         if settings.image_provider == "codex_test":
             return _test_image(payload)
+        if settings.image_provider == "openai_compatible":
+            api_key = settings.image_openai_compatible_api_key or settings.openai_compatible_api_key
+            if not api_key:
+                raise HTTPException(
+                    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                    detail="OpenAI-compatible image provider is not configured yet.",
+                )
+            base_url = (
+                settings.image_openai_compatible_base_url
+                or settings.openai_compatible_base_url
+            )
+            request_payload: dict[str, object] = {
+                "model": settings.image_model,
+                "prompt": _image_prompt(payload),
+                "n": 1,
+            }
+            request_payload["size"] = settings.image_size or _image_size(
+                str(payload.get("aspect_ratio") or "3:4")
+            )
+            if settings.image_response_format:
+                request_payload["response_format"] = settings.image_response_format
+            data = _post_image_generation(
+                provider="OpenAI-compatible image provider",
+                base_url=base_url,
+                api_key=api_key,
+                timeout_seconds=settings.image_timeout_seconds,
+                payload=request_payload,
+            )
+            return _extract_image_url(
+                "OpenAI-compatible image provider",
+                data,
+                payload,
+            )
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="Image model provider is not configured yet.",
