@@ -1,0 +1,48 @@
+# OPC Social Content Automation
+
+MVP platform for postgraduate-to-PhD market content operations. The product is built around a safe content pipeline:
+
+Data collection -> Knowledge base -> Draft generation -> Humanization -> Review -> Image generation -> Promoter workspace.
+
+## Principles
+
+- MVP first.
+- Data collection is the foundation; generation comes after reusable assets exist.
+- All model calls go through the Model Router.
+- Prompts live outside application code.
+- Human approval is required before publishing.
+- Platform longevity and risk control outrank automation speed.
+
+## Stack
+
+- Frontend: Next.js, React, TypeScript, Tailwind, Shadcn-style components
+- Backend: FastAPI
+- Database: PostgreSQL with pgvector
+- Queue/cache: Redis
+- Browser automation: Playwright
+
+## Project Layout
+
+- `backend/` FastAPI application, database models, migrations, tests.
+- `frontend/` Next.js promoter/admin workspace.
+- `prompts/` prompt templates used by the Model Router.
+- `docs/` local project notes and task breakdowns.
+
+## MVP Phases
+
+1. Project foundation, auth, migrations, admin layout.
+2. Knowledge base upload, pgvector integration, RAG search.
+3. GPT draft generation, prompt management, content storage.
+4. DeepSeek rewrite, human score, content review.
+5. Image generation, cover templates, asset management.
+6. Trend collector, trend reports, keyword analysis.
+7. Promoter workspace, export tools, publish record tracking.
+
+## Current Implementation Notes
+
+- Knowledge embeddings use a deterministic local lexical vectorizer through the Model Router boundary. This makes pgvector search usable during MVP setup and can be replaced by a provider-backed embedding model later.
+- Content generation now prepares RAG-backed prompt packages and logs provider-not-configured failures instead of creating fake drafts.
+- Review workflow stores human scores and decisions, and export/publish paths require content status `approved`.
+- Image generation requires approved content, uses cover templates, and records generated assets with prompt metadata.
+- Trend collection jobs store safety profiles for Playwright-assisted collection, including randomized delays, human-like scrolling, session persistence, and cookie persistence.
+- Promoter workspace supports export-ready content, formatted export packages, and publish-record tracking.

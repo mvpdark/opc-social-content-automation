@@ -1,0 +1,212 @@
+import json
+from dataclasses import dataclass
+
+from fastapi import HTTPException
+from sqlalchemy.orm import Session
+
+from app.models.content import Content
+from app.models.generation_log import GenerationLog
+from app.models.user import User
+from app.schemas.content import ContentGenerateRequest, ContentRewriteRequest
+from app.services.knowledge_service import search_knowledge_items
+from app.services.model_router import load_prompt, model_router
+
+
+@dataclass(frozen=True)
+class PromptPackage:
+    prompt_name: str
+    prompt_template: str
+    payload: dict[str, object]
+
+    def to_log_text(self) -> str:
+        return json.dumps(
+            {
+                "prompt_name": self.prompt_name,
+                "prompt_template": self.prompt_template,
+                "payload": self.payload,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+
+
+def _knowledge_context(
+    db: Session,
+    payload: ContentGenerateRequest,
+) -> list[dict[str, object]]:
+    query = payload.knowledge_query or payload.topic
+    if payload.knowledge_limit == 0:
+        return []
+
+    results = search_knowledge_items(
+        db=db,
+        query=query,
+        category=payload.category,
+        limit=payload.knowledge_limit,
+        mode="hybrid",
+    )
+    return [
+        {
+            "id": item.id,
+            "title": item.title,
+            "category": item.category,
+            "content": item.content,
+            "score": item.score,
+            "match_type": item.match_type,
+        }
+        for item in results
+    ]
+
+
+def build_draft_prompt_package(
+    db: Session,
+    payload: ContentGenerateRequest,
+    current_user: User,
+) -> PromptPackage:
+    return PromptPackage(
+        prompt_name="draft_generation",
+        prompt_template=load_prompt("draft_generation"),
+        payload={
+            "platform": payload.platform,
+            "topic": payload.topic,
+            "tags": payload.tags,
+            "tone": payload.tone,
+            "target_audience": payload.target_audience,
+            "knowledge_query": payload.knowledge_query,
+            "knowledge_context": _knowledge_context(db, payload),
+            "user": {
+                "id": current_user.id,
+                "role": current_user.role,
+            },
+        },
+    )
+
+
+def build_rewrite_prompt_package(
+    content: Content,
+    payload: ContentRewriteRequest,
+    current_user: User,
+) -> PromptPackage:
+    return PromptPackage(
+        prompt_name="humanization",
+        prompt_template=load_prompt("humanization"),
+        payload={
+            "content_id": content.id,
+            "platform": content.platform,
+            "title": content.title,
+            "body": content.body,
+            "tags": content.tags or [],
+            "instruction": payload.instruction,
+            "user": {
+                "id": current_user.id,
+                "role": current_user.role,
+            },
+        },
+    )
+
+
+def record_generation_log(
+    db: Session,
+    current_user: User,
+    purpose: str,
+    model: str,
+    package: PromptPackage,
+    result: str,
+    status: str,
+    error: str | None = None,
+) -> GenerationLog:
+    log = GenerationLog(
+        user_id=current_user.id,
+        purpose=purpose,
+        model=model,
+        prompt=package.to_log_text(),
+        result=result,
+        status=status,
+        error=error,
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+    return log
+
+
+def generate_content_draft(
+    db: Session,
+    payload: ContentGenerateRequest,
+    current_user: User,
+) -> Content:
+    package = build_draft_prompt_package(db, payload, current_user)
+    try:
+        draft = model_router.draft_model(package.prompt_name, package.payload)
+    except HTTPException as exc:
+        record_generation_log(
+            db=db,
+            current_user=current_user,
+            purpose="draft_generation",
+            model="draft_model",
+            package=package,
+            result="",
+            status="provider_not_configured",
+            error=str(exc.detail),
+        )
+        raise
+
+    content = Content(
+        user_id=current_user.id,
+        platform=payload.platform,
+        title=payload.topic,
+        body=draft,
+        tags=payload.tags,
+        status="draft",
+    )
+    db.add(content)
+    db.flush()
+    record_generation_log(
+        db=db,
+        current_user=current_user,
+        purpose="draft_generation",
+        model="draft_model",
+        package=package,
+        result=draft,
+        status="success",
+    )
+    db.refresh(content)
+    return content
+
+
+def rewrite_content_body(
+    db: Session,
+    content: Content,
+    payload: ContentRewriteRequest,
+    current_user: User,
+) -> Content:
+    package = build_rewrite_prompt_package(content, payload, current_user)
+    try:
+        rewritten = model_router.rewrite_model(package.prompt_name, package.payload)
+    except HTTPException as exc:
+        record_generation_log(
+            db=db,
+            current_user=current_user,
+            purpose="humanization",
+            model="rewrite_model",
+            package=package,
+            result="",
+            status="provider_not_configured",
+            error=str(exc.detail),
+        )
+        raise
+
+    content.body = rewritten
+    content.status = "rewritten"
+    db.commit()
+    db.refresh(content)
+    record_generation_log(
+        db=db,
+        current_user=current_user,
+        purpose="humanization",
+        model="rewrite_model",
+        package=package,
+        result=rewritten,
+        status="success",
+    )
+    return content
