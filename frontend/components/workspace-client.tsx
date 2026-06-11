@@ -97,6 +97,7 @@ const dependencyStatusLabel = {
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8010/api";
 const CREDENTIAL_STORAGE_KEY = "opc_workspace_credentials_v1";
 const INTERFACE_STYLE_STORAGE_KEY = "opc_interface_style_v1";
+const LAST_GENERATED_CONTENT_STORAGE_KEY = "opc_latest_generated_content_v1";
 
 type CredentialSettings = {
   workspaceToken: string;
@@ -311,6 +312,48 @@ function complianceWarnings(content: GeneratedContent) {
 
 function isTestDraft(content: GeneratedContent) {
   return content.body.includes("codex_test") || content.body.includes("【测试草稿】");
+}
+
+function isGeneratedContent(value: unknown): value is GeneratedContent {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const content = value as Partial<GeneratedContent>;
+  return (
+    typeof content.body === "string" &&
+    typeof content.id === "number" &&
+    typeof content.platform === "string" &&
+    typeof content.status === "string" &&
+    typeof content.title === "string" &&
+    (Array.isArray(content.tags) || content.tags === null || content.tags === undefined)
+  );
+}
+
+function loadStoredGeneratedContent() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  try {
+    const rawContent = window.localStorage.getItem(LAST_GENERATED_CONTENT_STORAGE_KEY);
+    if (!rawContent) {
+      return null;
+    }
+    const parsedContent = JSON.parse(rawContent) as unknown;
+    return isGeneratedContent(parsedContent) ? parsedContent : null;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function saveStoredGeneratedContent(content: GeneratedContent) {
+  if (typeof window === "undefined" || isTestDraft(content)) {
+    return;
+  }
+  try {
+    window.localStorage.setItem(LAST_GENERATED_CONTENT_STORAGE_KEY, JSON.stringify(content));
+  } catch (_error) {
+    // Browser storage can be unavailable in restricted modes; the backend list still remains source of truth.
+  }
 }
 
 async function copyText(text: string) {
@@ -831,17 +874,62 @@ function ContentView({
   workspaceToken: string;
 }) {
   const [previewContent, setPreviewContent] = useState<GeneratedContent | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(true);
+
+  function handleGeneratedContent(content: GeneratedContent) {
+    setPreviewContent(content);
+    saveStoredGeneratedContent(content);
+  }
+
+  useEffect(() => {
+    let active = true;
+    const storedContent = loadStoredGeneratedContent();
+    if (storedContent) {
+      setPreviewContent(storedContent);
+    }
+
+    async function loadLatestContent() {
+      try {
+        const response = await fetch(`${API_BASE}/content/list?platform=xiaohongshu`);
+        if (!response.ok) {
+          return;
+        }
+        const contents = (await response.json()) as unknown;
+        if (!Array.isArray(contents)) {
+          return;
+        }
+        const latestContent = contents
+          .filter(isGeneratedContent)
+          .find((content) => !isTestDraft(content));
+        if (active && latestContent) {
+          setPreviewContent(latestContent);
+          saveStoredGeneratedContent(latestContent);
+        }
+      } catch (_error) {
+        // Keep the local draft or full example visible when the database/API is not available.
+      } finally {
+        if (active) {
+          setPreviewLoading(false);
+        }
+      }
+    }
+
+    void loadLatestContent();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div className="space-y-4">
       <GenerationLauncher
-        onGeneratedContent={setPreviewContent}
+        onGeneratedContent={handleGeneratedContent}
         onOpenSettings={onOpenSettings}
         workspaceToken={workspaceToken}
       />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
-        <DraftPanel content={previewContent} />
+        <DraftPanel content={previewContent} loading={previewLoading} />
         <div className="space-y-4">
           <Panel helper="生成前需要明确输入、改写和确认边界。" title="生产控制">
             <div className="space-y-3">
@@ -1963,7 +2051,13 @@ function platformDisplayName(platform: string) {
   return platform;
 }
 
-function DraftPanel({ content }: { content: GeneratedContent | null }) {
+function DraftPanel({
+  content,
+  loading
+}: {
+  content: GeneratedContent | null;
+  loading: boolean;
+}) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [portalReady, setPortalReady] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
@@ -1971,7 +2065,7 @@ function DraftPanel({ content }: { content: GeneratedContent | null }) {
     body: content?.body ?? draftPreview.body,
     id: content?.id ?? null,
     platform: content ? platformDisplayName(content.platform) : draftPreview.platform,
-    status: content ? "可预览" : draftPreview.status,
+    status: content ? "最近草稿" : loading ? "读取中" : draftPreview.status,
     tags: content?.tags ?? draftPreview.tags,
     title: content?.title ?? draftPreview.title
   };
@@ -1999,7 +2093,7 @@ function DraftPanel({ content }: { content: GeneratedContent | null }) {
 
   return (
     <Panel
-      action={<Pill tone={content ? "green" : "amber"}>{preview.status}</Pill>}
+      action={<Pill tone={content ? "green" : loading ? "blue" : "amber"}>{preview.status}</Pill>}
       helper="按小红书笔记卡片和弹窗预览最终展示效果。"
       title="创作台"
     >
@@ -2039,7 +2133,7 @@ function DraftPanel({ content }: { content: GeneratedContent | null }) {
           <div className="p-4">
             <div className="flex items-center justify-between gap-3 text-xs text-muted">
               <span>{preview.platform}</span>
-              <span>{content ? `草稿 #${preview.id}` : "示例预览"}</span>
+              <span>{content ? `草稿 #${preview.id}` : loading ? "正在读取最近草稿" : "示例预览"}</span>
             </div>
             <button
               className="mt-2 block w-full text-left text-base font-semibold leading-6 text-ink transition hover:text-coral"
@@ -2114,7 +2208,11 @@ function DraftPanel({ content }: { content: GeneratedContent | null }) {
               {copyState === "copied" ? "已复制文案" : "复制文案"}
             </button>
             <div className={`${subtleCardClass} flex min-h-11 items-center px-3 text-xs leading-5 text-muted`}>
-              {content ? "封面仍是版式预览，真实图片生成后会在这里替换。" : "生成草稿后，这里会自动切换为最新内容。"}
+              {content
+                ? "封面仍是版式预览，真实图片生成后会在这里替换。"
+                : loading
+                  ? "正在读取最近生成的全文草稿。"
+                  : "生成草稿后，这里会自动切换为最新内容。"}
             </div>
           </div>
         </div>
@@ -2162,12 +2260,18 @@ function DraftPanel({ content }: { content: GeneratedContent | null }) {
                     <div className="text-xs text-muted">发布前预览 - {preview.platform}</div>
                   </div>
                 </div>
-                <Pill tone={content ? "green" : "amber"}>{content ? "最新草稿" : "示例"}</Pill>
+                <Pill tone={content ? "green" : loading ? "blue" : "amber"}>
+                  {content ? "最新草稿" : loading ? "读取中" : "示例"}
+                </Pill>
               </div>
 
               <div className="px-5 py-5">
                 <h3 className="text-xl font-semibold leading-8 text-ink">{preview.title}</h3>
-                <div className="mt-4 space-y-3 text-sm leading-7 text-ink/82">
+                <div className="mt-4 text-xs font-semibold text-muted">正文全文</div>
+                <div
+                  className="mt-3 space-y-3 text-sm leading-7 text-ink/82"
+                  data-testid="xhs-preview-full-body"
+                >
                   {paragraphs.map((paragraph) => (
                     <p key={paragraph}>{paragraph}</p>
                   ))}
