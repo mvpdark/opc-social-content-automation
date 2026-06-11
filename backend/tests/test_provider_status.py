@@ -58,6 +58,26 @@ def test_apply_provider_keys_updates_runtime_without_exposing_values(monkeypatch
     assert deepseek_secret not in text
 
 
+def test_apply_provider_keys_ignores_blank_values(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "draft_provider", "openai_compatible")
+    monkeypatch.setattr(settings, "image_provider", "openai_compatible")
+    monkeypatch.setattr(settings, "openai_compatible_api_key", "existing-draft-key")
+    monkeypatch.setattr(settings, "image_openai_compatible_api_key", "existing-image-key")
+    monkeypatch.setattr(settings, "deepseek_api_key", "existing-rewrite-key")
+
+    apply_provider_key_settings(
+        ProviderKeyUpdateRequest(
+            draft_api_key="",
+            image_api_key="   ",
+            deepseek_api_key="",
+        )
+    )
+
+    assert settings.openai_compatible_api_key == "existing-draft-key"
+    assert settings.image_openai_compatible_api_key == "existing-image-key"
+    assert settings.deepseek_api_key == "existing-rewrite-key"
+
+
 def test_provider_connection_check_reports_missing_draft_key(monkeypatch) -> None:
     monkeypatch.setattr(settings, "draft_provider", "openai_compatible")
     monkeypatch.setattr(settings, "openai_compatible_api_key", None)

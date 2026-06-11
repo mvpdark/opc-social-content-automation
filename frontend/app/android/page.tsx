@@ -31,6 +31,11 @@ import {
 
 import { PlatformIcon, PlatformLabel } from "@/components/platform-icon";
 import { getApiBase } from "@/lib/api-base";
+import {
+  providerBindingDefaultsFromStatuses,
+  providerKeyUpdatePayload,
+  type ProviderStatusItem
+} from "@/lib/provider-settings";
 
 type MobileTab = "home" | "collect" | "create" | "settings";
 type MobilePlatform = "douyin" | "xiaohongshu";
@@ -218,6 +223,14 @@ function authHeaders(credentials: CredentialSettings) {
       ? { Authorization: `Bearer ${credentials.workspaceToken.trim()}` }
       : {})
   };
+}
+
+async function fetchProviderStatuses() {
+  const response = await fetch(`${API_BASE}/workspace/provider-status`);
+  if (!response.ok) {
+    throw new Error(await readApiError(response, "服务状态读取失败。"));
+  }
+  return (await response.json()) as ProviderStatusItem[];
 }
 
 async function readApiError(response: Response, fallback: string) {
@@ -584,6 +597,7 @@ export default function AndroidPreviewPage() {
   const [activeTab, setActiveTab] = useState<MobileTab>("home");
   const [status, setStatus] = useState("手机端操作已就绪");
   const [credentials, setCredentials] = useState<CredentialSettings>(emptyCredentials);
+  const [providerStatuses, setProviderStatuses] = useState<ProviderStatusItem[]>([]);
 
   useEffect(() => {
     try {
@@ -603,6 +617,28 @@ export default function AndroidPreviewPage() {
       // Mobile private browsing can block localStorage; the UI remains usable for this session.
     }
   }, [credentials]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadProviderStatuses() {
+      try {
+        const data = await fetchProviderStatuses();
+        if (active) {
+          setProviderStatuses(data);
+        }
+      } catch (_error) {
+        if (active) {
+          setStatus("后端服务状态暂时读取失败，生成时会继续尝试连接。");
+        }
+      }
+    }
+
+    void loadProviderStatuses();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function openTab(tab: MobileTab, message = taskActionCopy[tab]) {
     setActiveTab(tab);
@@ -640,6 +676,8 @@ export default function AndroidPreviewPage() {
                 credentials={credentials}
                 onAction={setStatus}
                 onCredentialsChange={setCredentials}
+                onProviderStatusesChange={setProviderStatuses}
+                providerStatuses={providerStatuses}
               />
             </div>
           </section>
@@ -1796,14 +1834,19 @@ function CreateScreen({
 function SettingsScreen({
   credentials,
   onAction,
-  onCredentialsChange
+  onCredentialsChange,
+  onProviderStatusesChange,
+  providerStatuses
 }: {
   credentials: CredentialSettings;
   onAction: (message: string) => void;
   onCredentialsChange: (nextCredentials: CredentialSettings) => void;
+  onProviderStatusesChange: (nextStatuses: ProviderStatusItem[]) => void;
+  providerStatuses: ProviderStatusItem[];
 }) {
   const [busyAction, setBusyAction] = useState<"apply" | "check" | null>(null);
   const [checkStatus, setCheckStatus] = useState<ProviderCheckResult | null>(null);
+  const providerBindings = providerBindingDefaultsFromStatuses(providerStatuses);
 
   function updateCredential(key: keyof CredentialSettings, value: string) {
     onCredentialsChange({ ...credentials, [key]: value });
@@ -1816,21 +1859,33 @@ function SettingsScreen({
   }
 
   async function applyProviderKeys() {
+    const payload = providerKeyUpdatePayload(credentials);
+
     setBusyAction("apply");
-    onAction("正在应用服务 API Key 到后端运行时。");
+    onAction(
+      Object.keys(payload).length
+        ? "正在应用服务 API Key 到后端运行时。"
+        : "正在刷新后端默认绑定状态。"
+    );
     try {
+      if (!Object.keys(payload).length) {
+        const statuses = await fetchProviderStatuses();
+        onProviderStatusesChange(statuses);
+        onAction("后端默认 Key 已绑定；没有填写新 Key，不会覆盖。");
+        setCheckStatus(null);
+        return;
+      }
+
       const response = await fetch(`${API_BASE}/workspace/provider-keys`, {
         method: "POST",
         headers: authHeaders(credentials),
-        body: JSON.stringify({
-          draft_api_key: credentials.draftApiKey,
-          image_api_key: credentials.imageApiKey,
-          deepseek_api_key: credentials.rewriteApiKey
-        })
+        body: JSON.stringify(payload)
       });
       if (!response.ok) {
         throw new Error(await readApiError(response, "服务 API Key 应用失败。"));
       }
+      const statuses = (await response.json()) as ProviderStatusItem[];
+      onProviderStatusesChange(statuses);
       onAction("服务 API Key 已应用到后端运行时。");
       setCheckStatus(null);
     } catch (error) {
@@ -1874,6 +1929,7 @@ function SettingsScreen({
     label: string;
     placeholder: string;
     testId: string;
+    backendBound?: boolean;
   }> = [
     {
       keyName: "workspaceToken",
@@ -1884,20 +1940,23 @@ function SettingsScreen({
     {
       keyName: "draftApiKey",
       label: "撰稿 API Key",
-      placeholder: "sk-...",
-      testId: "mobile-draft-key"
+      placeholder: "后端已默认绑定，测试阶段免填",
+      testId: "mobile-draft-key",
+      backendBound: providerBindings.draft
     },
     {
       keyName: "imageApiKey",
       label: "图片 API Key",
-      placeholder: "sk-...",
-      testId: "mobile-image-key"
+      placeholder: "后端已默认绑定，测试阶段免填",
+      testId: "mobile-image-key",
+      backendBound: providerBindings.image
     },
     {
       keyName: "rewriteApiKey",
       label: "改写 API Key",
-      placeholder: "sk-...",
-      testId: "mobile-rewrite-key"
+      placeholder: "后端已默认绑定，测试阶段免填",
+      testId: "mobile-rewrite-key",
+      backendBound: providerBindings.rewrite
     }
   ];
 
@@ -1908,9 +1967,27 @@ function SettingsScreen({
           凭证保存在当前手机浏览器本机；应用后由后端运行时调用服务，响应不会回显密钥。
         </p>
         <div className="space-y-3">
-          {credentialFields.map((field) => (
+          {credentialFields.map((field) => {
+            const localFilled = credentials[field.keyName].trim().length > 0;
+            const statusText = field.keyName === "workspaceToken"
+              ? "测试免填"
+              : localFilled
+                ? "本机已填"
+                : field.backendBound
+                  ? "后端已绑定"
+                  : "未绑定";
+            const statusClass = field.keyName === "workspaceToken" || localFilled || field.backendBound
+              ? "bg-[#e5f2ec] text-moss"
+              : "bg-[#fff3d8] text-[#8a5a00]";
+
+            return (
             <label className="block" key={field.keyName}>
-              <span className="text-xs font-medium text-muted">{field.label}</span>
+              <span className="flex items-center justify-between gap-2 text-xs font-medium text-muted">
+                <span>{field.label}</span>
+                <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${statusClass}`}>
+                  {statusText}
+                </span>
+              </span>
               <input
                 className="mt-2 h-11 w-full rounded-md border border-[#d6e8df] bg-white px-3 text-sm font-medium text-ink outline-none"
                 data-testid={field.testId}
@@ -1920,7 +1997,8 @@ function SettingsScreen({
                 value={credentials[field.keyName]}
               />
             </label>
-          ))}
+            );
+          })}
         </div>
         <div className="mt-4 grid grid-cols-1 gap-2">
           <button

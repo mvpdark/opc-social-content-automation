@@ -175,15 +175,26 @@ def provider_status_items() -> list[ProviderStatusItem]:
     ]
 
 
+def _clean_provider_key(value: str | None) -> str | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    return stripped or None
+
+
 def apply_provider_key_settings(payload: ProviderKeyUpdateRequest) -> list[ProviderStatusItem]:
-    if payload.draft_api_key is not None:
+    draft_api_key = _clean_provider_key(payload.draft_api_key)
+    image_api_key = _clean_provider_key(payload.image_api_key)
+    deepseek_api_key = _clean_provider_key(payload.deepseek_api_key)
+
+    if draft_api_key:
         settings.draft_provider = "openai_compatible"
-        settings.openai_compatible_api_key = payload.draft_api_key.strip() or None
-    if payload.image_api_key is not None:
+        settings.openai_compatible_api_key = draft_api_key
+    if image_api_key:
         settings.image_provider = "openai_compatible"
-        settings.image_openai_compatible_api_key = payload.image_api_key.strip() or None
-    if payload.deepseek_api_key is not None:
-        settings.deepseek_api_key = payload.deepseek_api_key.strip() or None
+        settings.image_openai_compatible_api_key = image_api_key
+    if deepseek_api_key:
+        settings.deepseek_api_key = deepseek_api_key
     return provider_status_items()
 
 

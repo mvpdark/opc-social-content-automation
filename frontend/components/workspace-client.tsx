@@ -58,6 +58,11 @@ import {
   type WorkspaceTab,
   writingReferences
 } from "@/lib/dashboard-data";
+import {
+  providerBindingDefaultsFromStatuses,
+  providerKeyUpdatePayload,
+  type ProviderStatusItem
+} from "@/lib/provider-settings";
 
 const pillTone = {
   neutral: "border-line bg-mist text-muted",
@@ -743,15 +748,6 @@ type GeneratedImageAsset = {
   prompt: string | null;
   status: string;
   template: string | null;
-};
-
-type ProviderStatusItem = {
-  configured: boolean;
-  model: string | null;
-  name: string;
-  note: string;
-  provider: string;
-  status: string;
 };
 
 type ProviderCheckResult = {
@@ -2620,12 +2616,50 @@ function SettingsView({
 }) {
   const [credentialStatus, setCredentialStatus] = useState("凭证会保存在当前浏览器本机。");
   const [credentialBusy, setCredentialBusy] = useState(false);
+  const [providerStatuses, setProviderStatuses] = useState<ProviderStatusItem[]>([]);
+  const [providerStatusError, setProviderStatusError] = useState<string | null>(null);
   const [providerCheckStatus, setProviderCheckStatus] = useState<string | null>(null);
   const [providerCheckBusy, setProviderCheckBusy] = useState(false);
-  const hasWorkspaceToken = credentials.workspaceToken.trim().length > 0;
   const canApplyProviderKeys = !credentialBusy;
   const canCheckProvider = !credentialBusy && !providerCheckBusy;
   const providerApplyLabel = "应用服务 API Key";
+  const providerBindings = providerBindingDefaultsFromStatuses(providerStatuses);
+
+  async function refreshProviderStatuses() {
+    try {
+      const statuses = await fetchProviderStatuses();
+      setProviderStatuses(statuses);
+      setProviderStatusError(null);
+      return statuses;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "服务状态读取失败。";
+      setProviderStatusError(message);
+      return null;
+    }
+  }
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadProviderStatuses() {
+      try {
+        const statuses = await fetchProviderStatuses();
+        if (active) {
+          setProviderStatuses(statuses);
+          setProviderStatusError(null);
+        }
+      } catch (error) {
+        if (active) {
+          setProviderStatusError(error instanceof Error ? error.message : "服务状态读取失败。");
+        }
+      }
+    }
+
+    void loadProviderStatuses();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function updateCredential(key: keyof CredentialSettings, value: string) {
     onCredentialsChange({ ...credentials, [key]: value });
@@ -2637,9 +2671,22 @@ function SettingsView({
   }
 
   async function applyProviderKeys() {
+    const payload = providerKeyUpdatePayload(credentials);
+
     setCredentialBusy(true);
-    setCredentialStatus("正在应用服务 API Key 到后端运行时。");
+    setCredentialStatus(
+      Object.keys(payload).length
+        ? "正在应用服务 API Key 到后端运行时。"
+        : "正在刷新后端默认绑定状态。"
+    );
     try {
+      if (!Object.keys(payload).length) {
+        await refreshProviderStatuses();
+        setCredentialStatus("后端默认 Key 已绑定；没有填写新 Key，不会覆盖。");
+        setProviderCheckStatus(null);
+        return;
+      }
+
       const response = await fetch(`${API_BASE}/workspace/provider-keys`, {
         method: "POST",
         headers: {
@@ -2648,15 +2695,14 @@ function SettingsView({
             ? { Authorization: `Bearer ${credentials.workspaceToken}` }
             : {})
         },
-        body: JSON.stringify({
-          draft_api_key: credentials.draftApiKey,
-          image_api_key: credentials.imageApiKey,
-          deepseek_api_key: credentials.rewriteApiKey
-        })
+        body: JSON.stringify(payload)
       });
       if (!response.ok) {
         throw new Error(await readApiError(response, "服务 API Key 应用失败。"));
       }
+      const statuses = (await response.json()) as ProviderStatusItem[];
+      setProviderStatuses(statuses);
+      setProviderStatusError(null);
       setCredentialStatus("服务 API Key 已应用到当前后端运行时，响应未回显密钥。");
       setProviderCheckStatus(null);
     } catch (error) {
@@ -2698,6 +2744,7 @@ function SettingsView({
   }
 
   const credentialFields: Array<{
+    backendBound?: boolean;
     helper: string;
     keyName: keyof CredentialSettings;
     label: string;
@@ -2712,20 +2759,23 @@ function SettingsView({
     {
       keyName: "draftApiKey",
       label: "撰稿 API Key",
-      placeholder: "sk-...",
-      helper: "撰稿服务使用；应用到后端后由服务端调用。"
+      placeholder: "后端已默认绑定，测试阶段免填",
+      helper: "撰稿服务已由后端默认绑定；只有更换 Key 时才需要填写。",
+      backendBound: providerBindings.draft
     },
     {
       keyName: "imageApiKey",
       label: "图片 API Key",
-      placeholder: "sk-...",
-      helper: "图片生成服务使用；封面生成走服务端。"
+      placeholder: "后端已默认绑定，测试阶段免填",
+      helper: "图片生成服务已由后端默认绑定；封面生成走服务端。",
+      backendBound: providerBindings.image
     },
     {
       keyName: "rewriteApiKey",
       label: "改写 API Key",
-      placeholder: "sk-...",
-      helper: "正文改写和人味化使用。"
+      placeholder: "后端已默认绑定，测试阶段免填",
+      helper: "改写和人味化服务已由后端默认绑定；响应不会回显密钥。",
+      backendBound: providerBindings.rewrite
     }
   ];
 
@@ -2742,9 +2792,27 @@ function SettingsView({
       >
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {credentialFields.map((field) => (
+            {credentialFields.map((field) => {
+              const localFilled = credentials[field.keyName].trim().length > 0;
+              const statusText = field.keyName === "workspaceToken"
+                ? "测试免填"
+                : localFilled
+                  ? "本机已填"
+                  : field.backendBound
+                    ? "后端已绑定"
+                    : "未绑定";
+              const statusToneClass = field.keyName === "workspaceToken" || localFilled || field.backendBound
+                ? "bg-mist text-moss"
+                : "bg-amber/15 text-[#8a5a00]";
+
+              return (
               <label key={field.keyName} className="block">
-                <span className="text-xs font-medium text-muted">{field.label}</span>
+                <span className="flex items-center justify-between gap-2 text-xs font-medium text-muted">
+                  <span>{field.label}</span>
+                  <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${statusToneClass}`}>
+                    {statusText}
+                  </span>
+                </span>
                 <input
                   className={`${formControlClass} h-10`}
                   onChange={(event) => updateCredential(field.keyName, event.target.value)}
@@ -2754,7 +2822,8 @@ function SettingsView({
                 />
                 <span className="mt-1 block text-xs leading-5 text-muted">{field.helper}</span>
               </label>
-            ))}
+              );
+            })}
           </div>
 
           <div className={`${subtleCardClass} p-4`}>
@@ -2767,6 +2836,9 @@ function SettingsView({
                 <p className="mt-1 text-xs leading-5 text-muted">{credentialStatus}</p>
                 {providerCheckStatus ? (
                   <p className="mt-2 text-xs leading-5 text-muted">{providerCheckStatus}</p>
+                ) : null}
+                {providerStatusError ? (
+                  <p className="mt-2 text-xs leading-5 text-coral">{providerStatusError}</p>
                 ) : null}
               </div>
             </div>
@@ -2804,14 +2876,14 @@ function SettingsView({
               <Pill tone={credentials.workspaceToken ? "green" : "amber"}>
                 登录 {credentials.workspaceToken ? "已填" : "测试免填"}
               </Pill>
-              <Pill tone={credentials.draftApiKey ? "green" : "amber"}>
-                撰稿 {credentials.draftApiKey ? "已填" : "未填"}
+              <Pill tone={credentials.draftApiKey || providerBindings.draft ? "green" : "amber"}>
+                撰稿 {credentials.draftApiKey ? "本机已填" : providerBindings.draft ? "后端已绑定" : "未绑定"}
               </Pill>
-              <Pill tone={credentials.imageApiKey ? "green" : "amber"}>
-                图片 {credentials.imageApiKey ? "已填" : "未填"}
+              <Pill tone={credentials.imageApiKey || providerBindings.image ? "green" : "amber"}>
+                图片 {credentials.imageApiKey ? "本机已填" : providerBindings.image ? "后端已绑定" : "未绑定"}
               </Pill>
-              <Pill tone={credentials.rewriteApiKey ? "green" : "amber"}>
-                改写 {credentials.rewriteApiKey ? "已填" : "未填"}
+              <Pill tone={credentials.rewriteApiKey || providerBindings.rewrite ? "green" : "amber"}>
+                改写 {credentials.rewriteApiKey ? "本机已填" : providerBindings.rewrite ? "后端已绑定" : "未绑定"}
               </Pill>
             </div>
           </div>
