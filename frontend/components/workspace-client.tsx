@@ -223,6 +223,9 @@ const hiddenXhsStickerToneGuide =
 const xhsHighAttractionCoverStyle =
   "小红书高吸引封面：真实学习桌/申请材料场景，大字反常识标题，红色风险标签，3个短清单芯片，女性可爱但可信，奶油底+珊瑚红+薄荷绿，避免官方标志和录取承诺。";
 
+const douyinHighAttractionCoverStyle =
+  "抖音图文封面：9:16高对比竖版首屏，强结果标题，真实学习/申请材料场景，短清单信息块，明亮但不杂乱，避免官方标志和录取承诺。";
+
 type XhsStickerCategory =
   | "基础情绪"
   | "互动语气"
@@ -2088,6 +2091,13 @@ function GeneratedPostExportCard({
   const copyPayload = buildPlatformCopy(content);
   const tagLine = formatTagLine(content.tags);
   const imagePreviewUrl = imageAsset ? resolveAssetUrl(imageAsset.image_url) : null;
+  const isDouyinPost = content.platform === "douyin";
+  const platformLabel = isDouyinPost ? "抖音" : "小红书";
+  const coverAspectRatio = isDouyinPost ? "9:16" : "3:4";
+  const coverStyleNotes = isDouyinPost
+    ? douyinHighAttractionCoverStyle
+    : xhsHighAttractionCoverStyle;
+  const coverTemplate = isDouyinPost ? "douyin-cover" : "xiaohongshu-cover";
 
   function authHeaders() {
     return {
@@ -2126,10 +2136,10 @@ function GeneratedPostExportCard({
         method: "POST",
         headers: authHeaders(),
         body: JSON.stringify({
-          aspect_ratio: "3:4",
+          aspect_ratio: coverAspectRatio,
           content_id: content.id,
-          style_notes: xhsHighAttractionCoverStyle,
-          template: content.platform === "douyin" ? "douyin-cover" : "xiaohongshu-cover"
+          style_notes: coverStyleNotes,
+          template: coverTemplate
         })
       });
       if (!response.ok) {
@@ -2172,7 +2182,7 @@ function GeneratedPostExportCard({
               ? "测试草稿不可复制"
               : copyState === "copied"
                 ? "已复制"
-                : "一键复制小红书文案"}
+                : `一键复制${platformLabel}文案`}
           </button>
         </div>
 
@@ -2184,7 +2194,7 @@ function GeneratedPostExportCard({
         </div>
 
         <p className="mt-3 text-xs leading-5 text-muted">
-          复制内容包含标题、正文和话题标签；不会自动发布，粘贴到小红书前仍需人工看一遍。
+          复制内容包含标题、正文和话题标签；不会自动发布，粘贴到{platformLabel}前仍需人工看一遍。
         </p>
       </div>
 
@@ -2228,10 +2238,10 @@ function GeneratedPostExportCard({
           <div>
             <div className="flex items-center gap-2 text-sm font-semibold">
               <Image className="h-4 w-4 text-steel" />
-              小红书封面图
+              {platformLabel}封面图
             </div>
             <p className="mt-2 text-xs leading-5 text-muted">
-              使用高吸引封面公式生成 3:4 竖版图；生成后只是待确认素材，不会自动发布。
+              使用高吸引封面公式生成 {coverAspectRatio} 竖版图；生成后只是待确认素材，不会自动发布。
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -2271,14 +2281,14 @@ function GeneratedPostExportCard({
             <div className="overflow-hidden rounded-[18px] border border-line bg-paper">
               <img
                 alt="生成的封面图预览"
-                className="aspect-[3/4] w-full object-cover"
+                className={`${isDouyinPost ? "aspect-[9/16]" : "aspect-[3/4]"} w-full object-cover`}
                 src={imagePreviewUrl}
               />
             </div>
             <div className="rounded-md border border-line bg-mist/60 p-4 text-xs leading-6 text-muted">
               <div className="font-semibold text-ink">图片状态：{imageAsset.status}</div>
               <div className="mt-2">
-                非已批准内容生成的封面会保持待确认状态。粘贴到小红书前，请确认标题、图中文字、封面暗示和正文一致。
+                非已批准内容生成的封面会保持待确认状态。粘贴到{platformLabel}前，请确认标题、图中文字、封面暗示和正文一致。
               </div>
               <a
                 className="mt-3 inline-flex items-center gap-2 font-semibold text-steel"
@@ -2934,6 +2944,7 @@ function DraftPanel({
   const [portalReady, setPortalReady] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const previewPlatformId = platformIdForPreview(content?.platform ?? "xiaohongshu");
+  const previewPlatformLabel = previewPlatformId === "douyin" ? "抖音" : "小红书";
   const preview = {
     body: content?.body ?? draftPreview.body,
     id: content?.id ?? null,
@@ -2967,7 +2978,7 @@ function DraftPanel({
   return (
     <Panel
       action={<Pill tone={content ? "green" : loading ? "blue" : "amber"}>{preview.status}</Pill>}
-      helper="按小红书笔记卡片和弹窗预览最终展示效果。"
+      helper={`按${previewPlatformLabel}图文卡片和弹窗预览最终展示效果。`}
       title="创作台"
     >
       <div className="grid grid-cols-1 gap-5 2xl:grid-cols-[minmax(280px,360px)_1fr]">
@@ -2976,7 +2987,7 @@ function DraftPanel({
           data-testid="xhs-preview-card"
         >
           <button
-            aria-label="打开小红书发布效果预览"
+            aria-label={`打开${previewPlatformLabel}发布效果预览`}
             className="group block w-full text-left"
             data-testid="xhs-preview-cover-button"
             onClick={() => setPreviewOpen(true)}
@@ -3104,7 +3115,7 @@ function DraftPanel({
           <div className="grid max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-[24px] border border-white/40 bg-paper shadow-2xl lg:grid-cols-[minmax(300px,420px)_1fr] lg:overflow-hidden">
             <div className="relative min-h-[320px] bg-[radial-gradient(circle_at_20%_18%,rgba(255,255,255,0.95),transparent_32%),linear-gradient(145deg,#fff7e8_0%,#d9f3e6_48%,#f8cfc0_100%)] p-7 sm:min-h-[420px]">
               <button
-                aria-label="关闭小红书预览"
+                aria-label={`关闭${previewPlatformLabel}预览`}
                 className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-ink shadow-sm"
                 data-testid="xhs-preview-close"
                 onClick={() => setPreviewOpen(false)}
@@ -3113,7 +3124,7 @@ function DraftPanel({
                 <X className="h-4 w-4" />
               </button>
               <div className="rounded-md bg-white/75 px-2 py-1 text-[11px] font-semibold text-ink/70 shadow-sm">
-                小红书封面预览
+                {previewPlatformLabel}封面预览
               </div>
               <div className="absolute inset-x-7 bottom-8">
                 <div className="mb-4 h-1.5 w-14 rounded-full bg-coral" />
@@ -3172,7 +3183,7 @@ function DraftPanel({
                 </div>
 
                 <div className="mt-5 rounded-md border border-amber/40 bg-amber/10 p-3 text-xs leading-5 text-ink">
-                  这是发布效果预览，不会自动发布；粘贴到小红书前仍需要人工确认标题、正文、标签和封面。
+                  这是发布效果预览，不会自动发布；粘贴到{previewPlatformLabel}前仍需要人工确认标题、正文、标签和封面。
                 </div>
                 {copyState === "failed" ? (
                   <div className="mt-3 rounded-md border border-coral/40 bg-coral/10 p-3 text-xs leading-5 text-ink">
@@ -3196,7 +3207,7 @@ function DraftPanel({
                   type="button"
                 >
                   <Clipboard className="h-4 w-4" />
-                  {copyState === "copied" ? "已复制" : "复制小红书文案"}
+                  {copyState === "copied" ? "已复制" : `复制${previewPlatformLabel}文案`}
                 </button>
               </div>
             </div>
