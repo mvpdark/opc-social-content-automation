@@ -49,13 +49,13 @@ const stateTone = {
   追踪: "border-amber bg-amber/10 text-ink"
 } satisfies Record<(typeof pipeline)[number]["state"], string>;
 
-const pillTone: Record<string, string> = {
+const pillTone = {
   neutral: "border-line bg-mist text-muted",
   green: "border-moss/40 bg-moss/10 text-ink",
   blue: "border-steel/40 bg-steel/10 text-ink",
   red: "border-coral/40 bg-coral/10 text-ink",
   amber: "border-amber/40 bg-amber/10 text-ink"
-};
+} satisfies Record<string, string>;
 
 const subtleCardClass = "glass-subtle rounded-md border";
 const formControlClass =
