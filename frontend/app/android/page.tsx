@@ -32,7 +32,7 @@ const bottomTabs: Array<{ id: MobileTab; icon: typeof Home; label: string }> = [
 
 const workItems = [
   { label: "补高赞图文参考", state: "待采集", icon: Radar },
-  { label: "生成硕升博草稿", state: "可开始", icon: PenLine },
+  { label: "生成硕升博草稿", state: "PC 端开始", icon: PenLine },
   { label: "复核封面标题", state: "待确认", icon: Image }
 ];
 
@@ -168,7 +168,7 @@ function HomeScreen({ onChangeTab }: { onChangeTab: (tab: MobileTab) => void }) 
           type="button"
         >
           <PenLine className="h-4 w-4" />
-          生成图文
+          查看创作预览
         </button>
       </section>
 
@@ -222,12 +222,12 @@ function CollectScreen() {
           />
         </div>
         <button
-          aria-label="打开搜索，需连接采集任务后启用"
+          aria-label="回 PC 创建公开采集任务"
           className="mt-3 h-11 w-full rounded-md bg-ink text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-55"
           disabled
           type="button"
         >
-          打开搜索
+          回 PC 创建任务
         </button>
         <p className="mt-2 text-[11px] leading-5 text-muted">
           采集任务需在 PC 工作台创建。
@@ -281,13 +281,13 @@ function CreateScreen() {
           />
         </div>
         <button
-          aria-label="生成图文，需回到 PC 工作台执行"
+          aria-label="回 PC 生成图文草稿"
           className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-md bg-ink text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-55"
           disabled
           type="button"
         >
           <Sparkles className="h-4 w-4" />
-          生成图文
+          回 PC 生成
         </button>
         <p className="mt-2 text-[11px] leading-5 text-muted">
           真实生成请回到 PC 工作台。
