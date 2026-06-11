@@ -197,9 +197,8 @@ const expressionOptions = [
   {
     key: "emoji",
     label: "轻量表情",
-    enabled:
-      "每 2-3 段可以放 1 个通用 emoji；必要时可使用 RedNote / 小红书表情字符码，例如 [笑哭R]、[哭惹R]、[哇R]、[赞R]、[doge]",
-    disabled: "不使用 emoji、颜文字或小红书表情字符码"
+    enabled: "每 2-3 段可以放 1 个轻量表情，让语气更像真实小红书笔记",
+    disabled: "不使用 emoji 或颜文字"
   },
   {
     key: "punctuation",
@@ -221,6 +220,9 @@ const expressionOptions = [
   }
 ] as const;
 
+const hiddenXhsStickerToneGuide =
+  "隐藏撰稿规则：如果平台是小红书，生成正文时可自然少量使用小红书可识别的表情字符码，优先 [笑哭R]、[哭惹R]、[哇R]、[赞R]、[doge]、[蹲后续H]，每篇 2-5 个即可；字符码要融入正文语气，不要解释字符码，不要列出表情清单。";
+
 type XhsStickerCategory =
   | "基础情绪"
   | "互动语气"
@@ -237,13 +239,9 @@ type XhsStickerCategory =
   | "爱心文字";
 
 type XhsSticker = {
-  accent: string;
   aliases?: readonly string[];
-  category: XhsStickerCategory;
   code: string;
-  cue: string;
   face: string;
-  label: string;
   name: string;
 };
 
@@ -436,22 +434,6 @@ const xhsStickerCatalog: readonly {
   }
 ] as const;
 
-const xhsStickerAccentByCategory: Record<XhsStickerCategory, string> = {
-  基础情绪: "bg-coral/12 text-coral",
-  互动语气: "bg-moss/12 text-moss",
-  反应吐槽: "bg-steel/12 text-steel",
-  生活种草: "bg-amber/14 text-amber",
-  薯系角色: "bg-blue/12 text-blue",
-  露营户外: "bg-moss/12 text-moss",
-  运动骑行: "bg-blue/12 text-blue",
-  手势互动: "bg-coral/12 text-coral",
-  人群角色: "bg-amber/14 text-amber",
-  发布场景: "bg-steel/12 text-steel",
-  节日符号: "bg-coral/12 text-coral",
-  自然食物: "bg-moss/12 text-moss",
-  爱心文字: "bg-blue/12 text-blue"
-};
-
 const xhsStickerFaceByName: Record<string, string> = {
   doge: "😏",
   买爆: "🛍️",
@@ -639,25 +621,6 @@ const xhsStickerFaceByName: Record<string, string> = {
   禁: "禁"
 };
 
-const xhsStickerCueByName: Record<string, string> = {
-  doge: "轻松收尾、开玩笑、降低营销感",
-  买爆: "种草强烈、适合福利和清单结尾",
-  可怜: "软化催促、降低距离感",
-  哇: "经验复盘、发现感、惊喜感",
-  哭惹: "提醒读者先别急、先稳住",
-  喝奶茶: "生活化过渡，适合女性可爱风",
-  大笑: "轻松吐槽，适合反常识开头",
-  汗颜: "清单、步骤、避坑提醒",
-  笑哭: "开头吐槽、轻松化解焦虑",
-  笑哭了: "更强的吐槽节奏，少量使用",
-  赞: "正向鼓励、行动建议、收藏提示",
-  蹲后续: "引导评论和关注后续",
-  鄙视: "轻微吐槽，营销文案里谨慎使用",
-  暗中观察: "制造悬念，适合案例预告",
-  种草: "推荐、清单、服务卖点引出",
-  超喜欢: "可爱夸张的好感表达"
-};
-
 const xhsStickerCodeByName: Record<string, string> = {
   doge: "[doge]",
   蹲后续: "[蹲后续H]",
@@ -669,40 +632,13 @@ const xhsStickerAliasesByName: Record<string, readonly string[]> = {
   蹲后续: ["[蹲后续R]"]
 };
 
-const xhsFeaturedStickerNames = [
-  "笑哭",
-  "哭惹",
-  "哇",
-  "汗颜",
-  "赞",
-  "doge",
-  "买爆",
-  "种草",
-  "喝奶茶",
-  "暗中观察",
-  "蹲后续",
-  "鄙视"
-] as const;
-
 const xhsStyleStickers: XhsSticker[] = xhsStickerCatalog.flatMap((group) =>
   group.names.map((name) => ({
-    accent: xhsStickerAccentByCategory[group.category],
     aliases: xhsStickerAliasesByName[name],
-    category: group.category,
     code: xhsStickerCodeByName[name] ?? `[${name}R]`,
-    cue: xhsStickerCueByName[name] ?? `${group.category}类 RedNote 表情字符码`,
     face: xhsStickerFaceByName[name] ?? "💬",
-    label: name,
     name
   }))
-);
-
-const xhsFeaturedStickers = xhsFeaturedStickerNames
-  .map((name) => xhsStyleStickers.find((sticker) => sticker.name === name))
-  .filter(Boolean) as XhsSticker[];
-
-const xhsStickerByName = new Map<string, XhsSticker>(
-  xhsStyleStickers.map((sticker) => [sticker.name, sticker])
 );
 
 const xhsStickerByCode = new Map<string, XhsSticker>(
@@ -722,6 +658,18 @@ function buildWritingTone(
   );
 
   return `${preset.prompt}；${optionGuides.join("；")}。`;
+}
+
+function buildGenerationTone(
+  visibleTone: string,
+  platform: string,
+  options: Record<ExpressionOptionKey, boolean>
+) {
+  const trimmedTone = visibleTone.trim();
+  if (platform !== "xiaohongshu" || !options.emoji) {
+    return trimmedTone || undefined;
+  }
+  return [trimmedTone, hiddenXhsStickerToneGuide].filter(Boolean).join("；");
 }
 
 function isWorkspaceTab(value: string | null): value is WorkspaceTab {
@@ -1656,7 +1604,7 @@ function GenerationLauncher({
           platform,
           topic: topic.trim(),
           knowledge_query: knowledgeQuery.trim() || undefined,
-          tone: tone.trim() || undefined,
+          tone: buildGenerationTone(tone, platform, styleOptions),
           target_audience: targetAudience.trim() || undefined,
           knowledge_limit: 5,
           tags: tagsText
@@ -1835,7 +1783,6 @@ function GenerationLauncher({
                   );
                 })}
               </div>
-              <XhsStyleStickerTray />
             </div>
             <label className="block md:col-span-2">
               <span className="flex items-center justify-between gap-3 text-xs font-medium text-muted">
@@ -2031,86 +1978,6 @@ function GeneratedPostExportCard({ content }: { content: GeneratedContent }) {
               浏览器复制失败，请手动选中正文复制。
             </div>
           ) : null}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function XhsStyleStickerTray() {
-  return (
-    <div
-      className="mt-3 rounded-md border border-line bg-mist/50 p-4"
-      data-testid="xhs-sticker-tray"
-    >
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="text-sm font-semibold text-ink">小红书表情字符码</div>
-          <p className="mt-1 text-xs leading-5 text-muted">
-            按 RedNote / 小红书公开短码和表情图片目录整理；复制时保留字符码，粘贴到小红书后由小红书识别成表情。
-          </p>
-        </div>
-        <Pill tone="blue">{xhsStickerByCode.size} 个码</Pill>
-      </div>
-      <div className="mt-3 rounded-md border border-coral/20 bg-coral/10 px-3 py-2 text-xs leading-6 text-ink">
-        效果示例：{renderXhsExpressionText("先别急 [笑哭R] 先把方向想清楚 [赞R]，我在这蹲后续 [蹲后续H]")}
-      </div>
-      <div className="mt-2 text-[11px] leading-5 text-muted">
-        说明：这里不复制官方图片资产；本地只做近似视觉预览，最终以小红书发布框识别结果为准。
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-3">
-        {xhsFeaturedStickers.map((sticker) => (
-          <div
-            className="glass-subtle rounded-md border px-3 py-3"
-            key={sticker.code}
-          >
-            <div className="flex items-center gap-3">
-              <span
-                aria-hidden="true"
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] text-xl ${sticker.accent}`}
-              >
-                {sticker.face}
-              </span>
-              <div className="min-w-0">
-                <div className="truncate text-sm font-semibold text-ink">{sticker.label}</div>
-                <div className="mt-0.5 font-mono text-[11px] leading-4 text-coral">{sticker.code}</div>
-              </div>
-            </div>
-            <div className="mt-2 border-l-2 border-coral/40 pl-2 text-[11px] leading-4 text-muted">
-              {sticker.cue}。复制文案保留 {sticker.code}，预览按近似表情显示。
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 rounded-md border border-line bg-paper/55 p-3">
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <span className="text-xs font-semibold text-ink">完整 RedNote 名录</span>
-          <span className="text-[11px] text-muted">复制正文时字符码会原样保留</span>
-        </div>
-        <div className="space-y-3">
-          {xhsStickerCatalog.map((group) => (
-            <div key={group.category}>
-              <div className="mb-1 text-[11px] font-medium text-muted">{group.category}</div>
-              <div className="flex flex-wrap gap-1.5">
-                {group.names.map((name) => {
-                  const sticker = xhsStickerByName.get(name);
-                  if (!sticker) {
-                    return null;
-                  }
-                  return (
-                    <span
-                      className="inline-flex items-center gap-1 rounded-md border border-line bg-mist/60 px-2 py-1 font-mono text-[11px] leading-4 text-ink"
-                      key={sticker.code}
-                      title={`${sticker.name}：${sticker.code}`}
-                    >
-                      <span aria-hidden="true">{sticker.face}</span>
-                      <span>{sticker.code}</span>
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
         </div>
       </div>
     </div>

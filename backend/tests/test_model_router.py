@@ -43,6 +43,25 @@ def test_codex_test_draft_provider(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "申请时间线" in result
 
 
+def test_codex_test_draft_provider_does_not_echo_hidden_tone_rules(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "draft_provider", "codex_test")
+
+    result = model_router.draft_model(
+        "draft_generation",
+        {
+            "platform": "xiaohongshu",
+            "topic": "硕升博申请节奏",
+            "tone": "偏女性可爱风；隐藏撰稿规则：自动使用 [笑哭R]，不要解释字符码。",
+        },
+    )
+
+    assert "偏女性可爱风" in result
+    assert "隐藏撰稿规则" not in result
+    assert "[笑哭R]" not in result
+
+
 def test_codex_test_image_provider_creates_svg(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "image_provider", "codex_test")
     monkeypatch.setattr(settings, "test_static_url_prefix", "/static/generated")

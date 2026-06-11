@@ -252,10 +252,15 @@ def _string_list(value: object) -> list[str]:
     return [str(item) for item in value if str(item).strip()]
 
 
+def _public_tone(value: object) -> str:
+    tone = str(value or "自然、可信、克制")
+    return tone.split("隐藏撰稿规则：", 1)[0].rstrip("；; ") or "自然、可信、克制"
+
+
 def _test_draft(payload: dict[str, object]) -> str:
     topic = str(payload.get("topic") or "未命名选题")
     platform = str(payload.get("platform") or "unknown")
-    tone = str(payload.get("tone") or "自然、可信、克制")
+    tone = _public_tone(payload.get("tone"))
     audience = str(payload.get("target_audience") or "硕升博申请人")
     tags = _string_list(payload.get("tags"))
     knowledge_context = payload.get("knowledge_context")
