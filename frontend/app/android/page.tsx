@@ -197,6 +197,8 @@ function HomeScreen({ onChangeTab }: { onChangeTab: (tab: MobileTab) => void }) 
 }
 
 function CollectScreen() {
+  const [platform, setPlatform] = useState<"douyin" | "xiaohongshu">("xiaohongshu");
+
   return (
     <div className="space-y-4">
       <MobilePanel title="公开图文搜索">
@@ -207,8 +209,16 @@ function CollectScreen() {
           </div>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <ModeChip active label="小红书" />
-          <ModeChip label="抖音图文" />
+          <ModeChip
+            active={platform === "xiaohongshu"}
+            label="小红书"
+            onClick={() => setPlatform("xiaohongshu")}
+          />
+          <ModeChip
+            active={platform === "douyin"}
+            label="抖音图文"
+            onClick={() => setPlatform("douyin")}
+          />
         </div>
         <button className="mt-3 h-11 w-full rounded-md bg-ink text-sm font-semibold text-white" type="button">
           打开搜索
@@ -238,6 +248,8 @@ function CollectScreen() {
 }
 
 function CreateScreen() {
+  const [contentMode, setContentMode] = useState<"short" | "xiaohongshu">("xiaohongshu");
+
   return (
     <div className="space-y-4">
       <MobilePanel title="生成图文" action="草稿">
@@ -248,8 +260,16 @@ function CreateScreen() {
           </div>
         </label>
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <ModeChip active label="小红书图文" />
-          <ModeChip label="短段正文" />
+          <ModeChip
+            active={contentMode === "xiaohongshu"}
+            label="小红书图文"
+            onClick={() => setContentMode("xiaohongshu")}
+          />
+          <ModeChip
+            active={contentMode === "short"}
+            label="短段正文"
+            onClick={() => setContentMode("short")}
+          />
         </div>
         <button className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-md bg-ink text-sm font-semibold text-white" type="button">
           <Sparkles className="h-4 w-4" />
@@ -259,7 +279,9 @@ function CreateScreen() {
 
       <MobilePanel title="草稿预览">
         <div className="rounded-md border border-[#d6e8df] bg-white p-3">
-          <div className="text-xs font-medium text-steel">小红书图文</div>
+          <div className="text-xs font-medium text-steel">
+            {contentMode === "xiaohongshu" ? "小红书图文" : "短段正文"}
+          </div>
           <h2 className="mt-2 text-lg font-semibold leading-6">不是先套磁，先想清楚这 3 件事</h2>
           <p className="mt-2 text-sm leading-6 text-muted">
             很多人一上来就急着群发邮件，但研究方向、读博动机和导师匹配没想清楚，反而容易浪费第一印象。
@@ -421,7 +443,15 @@ function StepTile({ icon, label, state }: { icon: ReactNode; label: string; stat
   );
 }
 
-function ModeChip({ active = false, label }: { active?: boolean; label: string }) {
+function ModeChip({
+  active = false,
+  label,
+  onClick
+}: {
+  active?: boolean;
+  label: string;
+  onClick: () => void;
+}) {
   return (
     <button
       aria-pressed={active}
@@ -429,6 +459,7 @@ function ModeChip({ active = false, label }: { active?: boolean; label: string }
         "h-10 rounded-md border text-sm font-semibold",
         active ? "border-moss bg-[#e5f2ec] text-moss" : "border-[#d6e8df] bg-white text-muted"
       ].join(" ")}
+      onClick={onClick}
       type="button"
     >
       {label}
