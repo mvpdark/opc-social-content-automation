@@ -226,8 +226,12 @@ def _database_items() -> list[dict[str, object]]:
         ]
 
     postgres_open = _port_is_open("127.0.0.1", 5432)
-    redis_open = _port_is_open("127.0.0.1", 6379)
-    return [
+    postgres_fix = (
+        "安装 Docker 后运行 docker compose up -d postgres redis；或将 DATABASE_URL 切到 sqlite:///./artifacts/dev/opc-dev.db。"
+        if settings.is_self_hosted_profile
+        else "Windows 安装包不需要 Docker；测试环境请运行 python scripts/setup_local.py 使用本地 SQLite，或确认 DATABASE_URL 指向可用数据库。"
+    )
+    postgres_items = [
         _item(
             name="PostgreSQL",
             category="数据库",
@@ -240,12 +244,15 @@ def _database_items() -> list[dict[str, object]]:
                 if postgres_open
                 else "PostgreSQL 未运行；内容生成、知识库和工作台会不可用。"
             ),
-            fix=(
-                None
-                if postgres_open
-                else "安装 Docker 后运行 docker compose up -d postgres redis；或将 DATABASE_URL 切到 sqlite:///./artifacts/dev/opc-dev.db。"
-            ),
-        ),
+            fix=None if postgres_open else postgres_fix,
+        )
+    ]
+    if not settings.is_self_hosted_profile:
+        return postgres_items
+
+    redis_open = _port_is_open("127.0.0.1", 6379)
+    return [
+        *postgres_items,
         _item(
             name="Redis",
             category="缓存/队列",
@@ -305,13 +312,19 @@ def dependency_report() -> dict[str, object]:
             required=True,
             fix="安装 Git for Windows 2.40 或更高版本。",
         ),
-        _version_item(
-            name="Docker",
-            category="工具",
-            command=["docker", "--version"],
-            minimum="24.0.0",
-            required=False,
-            fix="安装 Docker Desktop；无 Docker 时可使用 SQLite 本地测试数据库。",
+        *(
+            [
+                _version_item(
+                    name="Docker",
+                    category="自部署工具",
+                    command=["docker", "--version"],
+                    minimum="24.0.0",
+                    required=False,
+                    fix="安装 Docker Desktop；仅自部署 PostgreSQL/Redis 时需要。",
+                )
+            ]
+            if settings.is_self_hosted_profile
+            else []
         ),
         *_database_items(),
     ]

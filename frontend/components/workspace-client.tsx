@@ -548,7 +548,7 @@ function DependencyDoctorPanel() {
           检测依赖
         </button>
       }
-      helper="换电脑安装时先看这里：检测版本、定位缺失项，并给出本机修复命令。"
+      helper="开发/测试换电脑时先看这里；Windows 安装包只检查内置运行环境和项目依赖。"
       title="环境检测与一键修复"
     >
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[280px_1fr]">
@@ -657,7 +657,7 @@ function DependencyDoctorPanel() {
                 ))}
               </div>
               <p className="mt-3 text-xs leading-5 text-muted">
-                当前按钮只生成修复命令，不直接执行系统安装；项目内依赖可运行第一条命令自动安装，Node、Git、Docker 等系统级组件仍需人工确认。
+                当前按钮只生成修复命令，不直接执行系统安装；Windows 安装包模式不需要 Docker，自部署模式才会提示 Docker。
               </p>
             </div>
           ) : null}

@@ -9,6 +9,7 @@ PROJECT_ROOT = BACKEND_ROOT.parent
 
 
 class Settings(BaseSettings):
+    runtime_profile: str = "desktop"
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/opc"
     database_connect_timeout_seconds: int = 2
     redis_url: str = "redis://localhost:6379/0"
@@ -52,6 +53,15 @@ class Settings(BaseSettings):
     @property
     def is_postgresql(self) -> bool:
         return self.database_url.startswith("postgresql")
+
+    @property
+    def is_self_hosted_profile(self) -> bool:
+        return self.runtime_profile.strip().lower() in {
+            "developer",
+            "development",
+            "self_hosted",
+            "self-hosted",
+        }
 
 
 @lru_cache

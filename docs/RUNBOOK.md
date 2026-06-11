@@ -9,10 +9,17 @@ python scripts/setup_local.py
 ```
 
 The helper creates `.venv`, installs backend and frontend packages, prepares
-`artifacts/dev`, and creates a SQLite-backed `.env` when no `.env` exists. It
-does not install system-level tools such as Python, Node.js, Git, or Docker; the
-command center dependency doctor will detect those versions and list the manual
-upgrade steps.
+`artifacts/dev`, and creates a SQLite-backed `.env` when no `.env` exists.
+Windows installer builds should use the desktop profile and must not require
+Docker. Docker is only relevant for developer or self-hosted PostgreSQL/Redis
+deployments.
+
+Use this only when intentionally running the Docker-backed stack:
+
+```bash
+RUNTIME_PROFILE=self_hosted
+docker compose up -d
+```
 
 ## Local Services
 
