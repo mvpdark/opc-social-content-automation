@@ -132,12 +132,13 @@ function MobileHeader({ activeTab }: { activeTab: MobileTab }) {
           <h1 className="truncate text-lg font-semibold leading-6">{titles[activeTab]}</h1>
         </div>
         <button
-          aria-label="通知"
-          className="relative flex h-9 w-9 items-center justify-center rounded-md border border-[#d6e8df] bg-[#f6fbf6] text-ink"
+          aria-label="通知，暂未接入"
+          className="flex h-9 w-9 items-center justify-center rounded-md border border-[#d6e8df] bg-[#f6fbf6] text-ink disabled:cursor-not-allowed disabled:opacity-55"
+          disabled
+          title="通知中心暂未接入"
           type="button"
         >
           <Bell className="h-4 w-4" />
-          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-coral" />
         </button>
       </div>
     </header>
