@@ -883,25 +883,37 @@ function GenerationLauncher({
   const [needsProviderSettings, setNeedsProviderSettings] = useState(false);
   const [providerStatuses, setProviderStatuses] = useState<ProviderStatusItem[]>([]);
   const [providerStatusError, setProviderStatusError] = useState<string | null>(null);
+  const [draftCheckStatus, setDraftCheckStatus] = useState<ProviderCheckResult | null>(null);
+  const [draftCheckBusy, setDraftCheckBusy] = useState(false);
 
   const hasTopic = topic.trim().length > 0;
   const draftProviderStatus = providerStatuses.find((item) => item.name === "Draft generation");
   const draftProviderMissing = Boolean(providerStatuses.length && !draftProviderStatus?.configured);
-  const canGenerate = hasTopic && busyAction === null && !draftProviderMissing;
+  const draftProviderCheckFailed = Boolean(
+    draftCheckStatus && draftCheckStatus.status !== "ok"
+  );
+  const draftProviderBlocked = draftProviderMissing || draftProviderCheckFailed;
+  const canGenerate = hasTopic && busyAction === null && !draftProviderBlocked;
   const generateButtonLabel = !hasTopic
       ? "先填写选题"
       : draftProviderMissing
         ? "先配置撰稿服务"
+      : draftProviderCheckFailed
+        ? "先修复撰稿服务"
       : "开始生产图文";
   const generateButtonTitle = !hasTopic
       ? "先填写选题，再开始生产图文"
       : draftProviderMissing
         ? "去设置里填写并应用撰稿 API Key"
+      : draftProviderCheckFailed
+        ? "检测到撰稿服务不可用，请先去设置页更换或重新应用 API Key"
       : undefined;
   const launchStatusText = !hasTopic
       ? "先填写选题，再开始生产图文。"
       : draftProviderMissing
         ? "撰稿服务缺少 API Key，先去设置页填写并应用。"
+      : draftProviderCheckFailed
+        ? draftCheckStatus?.message ?? "撰稿服务检测未通过，请先去设置页修复。"
       : statusText;
   const primaryGenerateLabel =
     busyAction === "draft"
@@ -951,6 +963,43 @@ function GenerationLauncher({
       active = false;
     };
   }, []);
+
+  async function checkDraftProviderFromLauncher() {
+    setDraftCheckBusy(true);
+    setDraftCheckStatus(null);
+    setStatusText("正在检测撰稿服务连接。");
+    try {
+      const response = await fetch(`${API_BASE}/workspace/provider-check`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ target: "draft" })
+      });
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error("服务检测接口暂不可用，请重启后端服务后再试。");
+        }
+        throw new Error(await readApiError(response, "撰稿服务检测失败。"));
+      }
+      const data = (await response.json()) as ProviderCheckResult;
+      setDraftCheckStatus(data);
+      setNeedsProviderSettings(data.status !== "ok");
+      setStatusText(
+        data.status === "ok" ? data.message : `检测未通过：${data.message}`
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "撰稿服务检测失败。";
+      setDraftCheckStatus({
+        configured: false,
+        message,
+        status: "failed",
+        target: "draft"
+      });
+      setNeedsProviderSettings(true);
+      setStatusText(message);
+    } finally {
+      setDraftCheckBusy(false);
+    }
+  }
 
   function applyStylePreset(nextPreset: WritingStylePresetId) {
     setStylePreset(nextPreset);
@@ -1221,6 +1270,22 @@ function GenerationLauncher({
               {providerStatusError ? (
                 <p className="mt-2 text-xs leading-5 text-muted">{providerStatusError}</p>
               ) : null}
+              {draftCheckStatus ? (
+                <p className="mt-2 text-xs leading-5 text-muted">
+                  {draftCheckStatus.status === "ok"
+                    ? draftCheckStatus.message
+                    : `检测未通过：${draftCheckStatus.message}`}
+                </p>
+              ) : null}
+              <button
+                className={`${secondaryButtonClass} mt-3 h-9 w-full disabled:cursor-not-allowed disabled:opacity-60`}
+                disabled={draftCheckBusy || busyAction !== null}
+                onClick={checkDraftProviderFromLauncher}
+                type="button"
+              >
+                {draftCheckBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                {draftCheckBusy ? "正在检测" : "检测撰稿连接"}
+              </button>
             </div>
             {needsProviderSettings ? (
               <button
