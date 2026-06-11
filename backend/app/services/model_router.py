@@ -110,11 +110,20 @@ def _chat_messages(prompt_template: str, payload: dict[str, object]) -> list[dic
     return [
         {
             "role": "system",
-            "content": prompt_template,
+            "content": "\n".join(
+                [
+                    prompt_template,
+                    "",
+                    "Compatibility note: the user payload is ASCII JSON with "
+                    "Unicode escape sequences such as \\u7855. Decode those "
+                    "sequences before writing. When the target platform is "
+                    "Xiaohongshu, still return natural Simplified Chinese.",
+                ]
+            ),
         },
         {
             "role": "user",
-            "content": json.dumps(payload, ensure_ascii=False, indent=2),
+            "content": json.dumps(payload, ensure_ascii=True, indent=2),
         },
     ]
 

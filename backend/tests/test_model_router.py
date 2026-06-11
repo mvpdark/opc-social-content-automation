@@ -134,6 +134,8 @@ def test_openai_compatible_draft_provider_calls_chat_completion(
     assert isinstance(request_json, dict)
     assert request_json["model"] == "gpt-5.5"
     assert request_json["store"] is False
+    assert "\\u" in str(request_json["messages"])
+    assert "硕升博" not in str(request_json["messages"])
     assert secret not in str(request_json)
 
 
