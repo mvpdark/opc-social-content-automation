@@ -30,9 +30,7 @@ export function AppShell({
     if (tab !== "dashboard") {
       params.set("tab", tab);
     }
-    if (interfaceStyle !== "apple") {
-      params.set("theme", interfaceStyle);
-    }
+    params.set("theme", interfaceStyle);
     const query = params.toString();
     return query ? `/?${query}` : "/";
   };

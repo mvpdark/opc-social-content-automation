@@ -281,9 +281,7 @@ export function WorkspaceClient({
     if (tab !== "dashboard") {
       params.set("tab", tab);
     }
-    if (style !== "apple") {
-      params.set("theme", style);
-    }
+    params.set("theme", style);
     const query = params.toString();
     return query ? `/?${query}` : "/";
   }
