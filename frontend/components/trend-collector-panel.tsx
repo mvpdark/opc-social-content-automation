@@ -68,6 +68,36 @@ export function TrendCollectorPanel({
   const [busyAction, setBusyAction] = useState<"target" | "job" | "digest" | null>(null);
 
   const canSubmit = useMemo(() => keyword.trim().length > 0, [keyword]);
+  const hasWorkspaceToken = workspaceToken.trim().length > 0;
+  const canOpenSearch = canSubmit && busyAction === null;
+  const canCreateJob = canSubmit && hasWorkspaceToken && busyAction === null;
+  const canSaveDigest = canSubmit && sourcesReviewed && hasWorkspaceToken && busyAction === null;
+  const openSearchLabel = canSubmit ? "打开搜索" : "先填关键词";
+  const createJobLabel = !canSubmit
+    ? "先填关键词"
+    : !hasWorkspaceToken
+      ? "先配置令牌"
+      : "创建任务";
+  const saveDigestLabel = !canSubmit
+    ? "先填关键词"
+    : !sourcesReviewed
+      ? "先确认来源"
+      : !hasWorkspaceToken
+        ? "先配置令牌"
+        : "保存摘要";
+  const openSearchTitle = canSubmit ? undefined : "先填写关键词，再打开公开搜索页";
+  const createJobTitle = !canSubmit
+    ? "先填写关键词，再创建采集任务"
+    : !hasWorkspaceToken
+      ? "创建采集任务前需要工作台令牌"
+      : undefined;
+  const saveDigestTitle = !canSubmit
+    ? "先填写关键词，再保存知识摘要"
+    : !sourcesReviewed
+      ? "保存摘要前需要人工确认来源"
+      : !hasWorkspaceToken
+        ? "保存知识摘要前需要工作台令牌"
+        : undefined;
 
   async function loadSearchTarget(): Promise<SearchTarget> {
     const params = new URLSearchParams({ platform, keyword: keyword.trim() });
@@ -267,6 +297,7 @@ export function TrendCollectorPanel({
                 {workspaceToken ? "已在设置中配置" : "未配置"}
               </span>
               <button
+                aria-label="打开设置配置工作台令牌"
                 className="glass-control rounded-md border px-2 py-1 text-xs font-medium text-ink"
                 onClick={onOpenSettings}
                 type="button"
@@ -293,9 +324,11 @@ export function TrendCollectorPanel({
 
           <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
             <button
+              aria-label={openSearchLabel}
               className={secondaryButtonClass}
-              disabled={busyAction !== null}
+              disabled={!canOpenSearch}
               onClick={openSearchPage}
+              title={openSearchTitle}
               type="button"
             >
               {busyAction === "target" ? (
@@ -303,12 +336,14 @@ export function TrendCollectorPanel({
               ) : (
                 <ExternalLink className="h-4 w-4" />
               )}
-              打开搜索
+              {busyAction === "target" ? "正在打开" : openSearchLabel}
             </button>
             <button
+              aria-label={createJobLabel}
               className={primaryButtonClass}
-              disabled={busyAction !== null}
+              disabled={!canCreateJob}
               onClick={createCollectionJob}
+              title={createJobTitle}
               type="button"
             >
               {busyAction === "job" ? (
@@ -316,12 +351,14 @@ export function TrendCollectorPanel({
               ) : (
                 <Play className="h-4 w-4" />
               )}
-              创建任务
+              {busyAction === "job" ? "正在创建" : createJobLabel}
             </button>
             <button
+              aria-label={saveDigestLabel}
               className={secondaryButtonClass}
-              disabled={busyAction !== null}
+              disabled={!canSaveDigest}
               onClick={summarizeCollectedAssets}
+              title={saveDigestTitle}
               type="button"
             >
               {busyAction === "digest" ? (
@@ -329,7 +366,7 @@ export function TrendCollectorPanel({
               ) : (
                 <Save className="h-4 w-4" />
               )}
-              保存摘要
+              {busyAction === "digest" ? "正在保存" : saveDigestLabel}
             </button>
           </div>
         </div>
