@@ -215,16 +215,23 @@ export function WorkspaceClient({
   const [credentials, setCredentials] = useState<CredentialSettings>(emptyCredentials);
 
   useEffect(() => {
-    function syncTabFromUrl() {
-      const tab = new URLSearchParams(window.location.search).get("tab");
+    function syncStateFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab");
+      const theme = params.get("theme");
+
       setActiveTab(isWorkspaceTab(tab) ? tab : "dashboard");
+      if (isInterfaceStyle(theme)) {
+        setInterfaceStyle(theme);
+      }
     }
 
-    syncTabFromUrl();
-    window.addEventListener("popstate", syncTabFromUrl);
+    syncStateFromUrl();
+    window.addEventListener("popstate", syncStateFromUrl);
 
+    const params = new URLSearchParams(window.location.search);
     const storedStyle = readLocalStorage(INTERFACE_STYLE_STORAGE_KEY);
-    if (!hasInitialTheme && isInterfaceStyle(storedStyle)) {
+    if (!hasInitialTheme && !isInterfaceStyle(params.get("theme")) && isInterfaceStyle(storedStyle)) {
       setInterfaceStyle(storedStyle);
     }
 
@@ -239,7 +246,7 @@ export function WorkspaceClient({
       setCredentialsLoaded(true);
     }
 
-    return () => window.removeEventListener("popstate", syncTabFromUrl);
+    return () => window.removeEventListener("popstate", syncStateFromUrl);
   }, [hasInitialTheme]);
 
   useEffect(() => {
