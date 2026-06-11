@@ -55,6 +55,7 @@ export function AppShell({
               const active = item.id === activeTab;
               return (
                 <a
+                  aria-current={active ? "page" : undefined}
                   href={tabHref(item.id)}
                   key={item.id}
                   className={[
@@ -108,7 +109,13 @@ export function AppShell({
                     安卓端
                   </a>
                   <a
-                    className="glass-selected flex h-9 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-medium"
+                    aria-current={activeTab === "content" ? "page" : undefined}
+                    className={[
+                      "flex h-9 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-medium",
+                      activeTab === "content"
+                        ? "glass-selected"
+                        : "glass-control border text-ink"
+                    ].join(" ")}
                     href={tabHref("content")}
                   >
                     <PenLine className="h-4 w-4" />
