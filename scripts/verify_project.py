@@ -40,7 +40,9 @@ def validate_required_files() -> int:
         ROOT / "frontend" / "middleware.ts",
         ROOT / "frontend" / "lib" / "api-base.ts",
         ROOT / "docs" / "RUNBOOK.md",
+        ROOT / "docs" / "CLOUDFLARE_OPC.md",
         ROOT / "docs" / "SECURITY_NOTES.md",
+        ROOT / "infra" / "cloudflare" / "opc-tunnel.example.yml",
         ROOT / "scripts" / "run_trend_collection_job.py",
         ROOT / "scripts" / "smoke_public_image_text_search.py",
         ROOT / "prompts" / "draft_generation.md",
@@ -161,6 +163,7 @@ def validate_safety_gates() -> int:
         ],
         "backend/app/core/config.py": [
             "cors_origin_regex",
+            "opc\\.mvpdark\\.top",
             "192\\.168",
             "10\\.",
             "172\\.",
@@ -170,6 +173,8 @@ def validate_safety_gates() -> int:
             "NEXT_PUBLIC_API_PORT",
             "window.location",
             "hostname",
+            "isLocalOrPrivateHostname",
+            "return `${origin}/api`",
         ],
         "frontend/package.json": [
             '"dev:lan": "next dev -H 0.0.0.0"',
@@ -177,6 +182,20 @@ def validate_safety_gates() -> int:
         "scripts/setup_local.py": [
             "--host 0.0.0.0",
             "npm run dev:lan",
+        ],
+        "infra/cloudflare/opc-tunnel.example.yml": [
+            "hostname: opc.mvpdark.top",
+            "path: ^/api($|/.*)",
+            "path: ^/static($|/.*)",
+            "service: http://localhost:8010",
+            "service: http://localhost:3000",
+            "service: http_status:404",
+        ],
+        "docs/CLOUDFLARE_OPC.md": [
+            "https://opc.mvpdark.top",
+            "cloudflared tunnel route dns opc-social-content-automation opc.mvpdark.top",
+            "opc.mvpdark.top/api",
+            "opc.mvpdark.top/static",
         ],
     }
     total = 0

@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     cors_origin_regex: str | None = (
         r"^https?://("
         r"localhost|127\.0\.0\.1|"
+        r"opc\.mvpdark\.top|"
         r"10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
         r"192\.168\.\d{1,3}\.\d{1,3}|"
         r"172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}"

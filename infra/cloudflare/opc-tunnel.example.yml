@@ -1,0 +1,17 @@
+# Copy this file to your cloudflared config location after creating a tunnel.
+# Replace the tunnel id and credentials-file path with values from:
+#   cloudflared tunnel create opc-social-content-automation
+
+tunnel: REPLACE_WITH_TUNNEL_ID
+credentials-file: C:\Users\YOUR_USER\.cloudflared\REPLACE_WITH_TUNNEL_ID.json
+
+ingress:
+  - hostname: opc.mvpdark.top
+    path: ^/api($|/.*)
+    service: http://localhost:8010
+  - hostname: opc.mvpdark.top
+    path: ^/static($|/.*)
+    service: http://localhost:8010
+  - hostname: opc.mvpdark.top
+    service: http://localhost:3000
+  - service: http_status:404

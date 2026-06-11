@@ -69,6 +69,9 @@ For example, opening `http://192.168.10.88:3000` makes browser requests go to
 tooling, so keep the OPC backend on `8010` unless you also update
 `NEXT_PUBLIC_API_BASE_URL` or `NEXT_PUBLIC_API_PORT`.
 
+For external access through Cloudflare, use `opc.mvpdark.top` with the tunnel
+configuration in `docs/CLOUDFLARE_OPC.md`.
+
 During planner-stage testing, `AUTH_REQUIRED=false` disables the workspace bearer
 token gate and uses a local planner test user for protected operations. Set
 `AUTH_REQUIRED=true` before restoring formal login and multi-user permissions.
