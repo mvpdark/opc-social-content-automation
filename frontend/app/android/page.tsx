@@ -335,12 +335,17 @@ function SettingsScreen() {
 
 function BottomNav({ activeTab, onChange }: { activeTab: MobileTab; onChange: (tab: MobileTab) => void }) {
   return (
-    <nav className="absolute bottom-0 left-0 right-0 z-20 border-t border-[#d6e8df] bg-white/95 px-3 pb-3 pt-2 backdrop-blur sm:rounded-b-[28px]">
+    <nav
+      aria-label="安卓端主导航"
+      className="absolute bottom-0 left-0 right-0 z-20 border-t border-[#d6e8df] bg-white/95 px-3 pb-3 pt-2 backdrop-blur sm:rounded-b-[28px]"
+    >
       <div className="grid grid-cols-5 gap-1">
         {bottomTabs.map((tab) => {
           const active = tab.id === activeTab;
           return (
             <button
+              aria-label={`${tab.label}${active ? "，当前页面" : ""}`}
+              aria-pressed={active}
               key={tab.id}
               className={[
                 "flex h-12 flex-col items-center justify-center gap-1 rounded-md text-[11px] font-semibold",
@@ -419,6 +424,7 @@ function StepTile({ icon, label, state }: { icon: ReactNode; label: string; stat
 function ModeChip({ active = false, label }: { active?: boolean; label: string }) {
   return (
     <button
+      aria-pressed={active}
       className={[
         "h-10 rounded-md border text-sm font-semibold",
         active ? "border-moss bg-[#e5f2ec] text-moss" : "border-[#d6e8df] bg-white text-muted"
