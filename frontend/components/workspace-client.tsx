@@ -538,8 +538,30 @@ function GenerationLauncher({
   const [statusText, setStatusText] = useState("填写主题后，点击“生成图文”创建草稿。");
   const [lastContent, setLastContent] = useState<GeneratedContent | null>(null);
 
-  const canGenerate = topic.trim().length > 0 && busyAction === null;
-  const canRequestReview = lastContent !== null && busyAction === null;
+  const hasWorkspaceToken = workspaceToken.trim().length > 0;
+  const hasTopic = topic.trim().length > 0;
+  const canGenerate = hasWorkspaceToken && hasTopic && busyAction === null;
+  const canRequestReview = hasWorkspaceToken && lastContent !== null && busyAction === null;
+  const generateButtonLabel = !hasWorkspaceToken
+    ? "先配置令牌"
+    : !hasTopic
+      ? "先填写选题"
+      : "生成图文";
+  const reviewButtonLabel = !lastContent
+    ? "先生成草稿"
+    : !hasWorkspaceToken
+      ? "先配置令牌"
+      : "提交审核";
+  const generateButtonTitle = !hasWorkspaceToken
+    ? "生成图文前需要在设置里填写工作台令牌"
+    : !hasTopic
+      ? "先填写选题，再生成图文"
+      : undefined;
+  const reviewButtonTitle = !lastContent
+    ? "先生成草稿，再提交人工审核"
+    : !hasWorkspaceToken
+      ? "提交审核前需要工作台令牌"
+      : undefined;
 
   function authHeaders() {
     return {
@@ -669,6 +691,7 @@ function GenerationLauncher({
                   {workspaceToken ? "已在设置中配置" : "未配置"}
                 </span>
                 <button
+                  aria-label="打开设置配置工作台令牌"
                   className="glass-control rounded-md border px-2 py-1 text-xs font-medium text-ink"
                   onClick={onOpenSettings}
                   type="button"
@@ -780,9 +803,11 @@ function GenerationLauncher({
             <p className="mt-2 text-sm leading-6 text-muted">{statusText}</p>
             <div className="mt-4 grid grid-cols-1 gap-2">
               <button
+                aria-label={generateButtonLabel}
                 className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-paper disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={!canGenerate}
                 onClick={generateDraft}
+                title={generateButtonTitle}
                 type="button"
               >
                 {busyAction === "draft" ? (
@@ -790,12 +815,14 @@ function GenerationLauncher({
                 ) : (
                   <PenLine className="h-4 w-4" />
                 )}
-                生成图文
+                {busyAction === "draft" ? "正在生成" : generateButtonLabel}
               </button>
               <button
+                aria-label={reviewButtonLabel}
                 className={`${secondaryButtonClass} h-10 disabled:cursor-not-allowed disabled:opacity-60`}
                 disabled={!canRequestReview}
                 onClick={requestReview}
+                title={reviewButtonTitle}
                 type="button"
               >
                 {busyAction === "review" ? (
@@ -803,7 +830,7 @@ function GenerationLauncher({
                 ) : (
                   <ClipboardCheck className="h-4 w-4" />
                 )}
-                提交审核
+                {busyAction === "review" ? "正在提交" : reviewButtonLabel}
               </button>
             </div>
             <div className="mt-4 border-l-4 border-amber pl-3 text-xs leading-5 text-muted">
