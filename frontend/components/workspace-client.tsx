@@ -3239,7 +3239,7 @@ function DraftPanel({
                 platform={previewPlatformId}
                 suffix="图文"
               />
-              <span>{content ? `草稿 #${preview.id}` : loading ? "正在读取最近草稿" : "示例预览"}</span>
+              <span>{content ? `草稿 #${preview.id}` : loading ? "正在读取最近草稿" : "等待草稿"}</span>
             </div>
             <button
               className="mt-2 block w-full text-left text-base font-semibold leading-6 text-ink transition hover:text-coral"
@@ -3381,7 +3381,7 @@ function DraftPanel({
                   </div>
                 </div>
                 <Pill tone={content ? "green" : loading ? "blue" : "amber"}>
-                  {content ? "最新草稿" : loading ? "读取中" : "示例"}
+                  {content ? "最新草稿" : loading ? "读取中" : "未生成"}
                 </Pill>
               </div>
 
