@@ -368,7 +368,7 @@ export const connectionStatuses = [
     note: "设置页应用后用于封面素材生成；标题和文字必须二次复核。",
     icon: Image
   }
-];
+] as const;
 
 export const draftPreview = {
   title: "硕升博申请第一步，不是先套磁",

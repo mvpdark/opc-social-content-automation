@@ -84,8 +84,6 @@ type CredentialSettings = {
   rewriteApiKey: string;
 };
 
-type ServiceCredentialKey = "draftApiKey" | "imageApiKey" | "rewriteApiKey";
-
 const emptyCredentials: CredentialSettings = {
   workspaceToken: "",
   draftApiKey: "",
@@ -865,8 +863,7 @@ function ReviewView({ credentials }: { credentials: CredentialSettings }) {
         <Panel helper="读取设置页的本机配置状态，不暴露具体供应商和底层配置。" title="服务状态">
           <div className="space-y-3">
             {connectionStatuses.map((status) => {
-              const credentialKey = status.credentialKey as ServiceCredentialKey;
-              const configured = Boolean(credentials[credentialKey]);
+              const configured = Boolean(credentials[status.credentialKey]);
               return (
                 <div key={status.name} className={`${subtleCardClass} p-3`}>
                   <div className="flex items-start gap-3">
