@@ -84,6 +84,8 @@ type CredentialSettings = {
   rewriteApiKey: string;
 };
 
+type ServiceCredentialKey = "draftApiKey" | "imageApiKey" | "rewriteApiKey";
+
 const emptyCredentials: CredentialSettings = {
   workspaceToken: "",
   draftApiKey: "",
@@ -314,7 +316,7 @@ export function WorkspaceClient({
           workspaceToken={credentials.workspaceToken}
         />
       ) : null}
-      {activeTab === "review" ? <ReviewView /> : null}
+      {activeTab === "review" ? <ReviewView credentials={credentials} /> : null}
       {activeTab === "cover" ? <CoverView /> : null}
       {activeTab === "delivery" ? <DeliveryView /> : null}
       {activeTab === "settings" ? (
@@ -848,7 +850,7 @@ function GenerationLauncher({
   );
 }
 
-function ReviewView() {
+function ReviewView({ credentials }: { credentials: CredentialSettings }) {
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
       <Panel helper="所有内容在发布前都先进入这里。" title="审核队列">
@@ -860,24 +862,30 @@ function ReviewView() {
       </Panel>
 
       <div className="space-y-4">
-        <Panel helper="前端只展示能力状态，不暴露供应商和底层配置。" title="服务状态">
+        <Panel helper="读取设置页的本机配置状态，不暴露具体供应商和底层配置。" title="服务状态">
           <div className="space-y-3">
-            {connectionStatuses.map((status) => (
-              <div key={status.name} className={`${subtleCardClass} p-3`}>
-                <div className="flex items-start gap-3">
-                  <IconBox tone="green">
-                    <status.icon className="h-4 w-4" />
-                  </IconBox>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold">{status.name}</span>
-                      <Pill tone="green">{status.status}</Pill>
+            {connectionStatuses.map((status) => {
+              const credentialKey = status.credentialKey as ServiceCredentialKey;
+              const configured = Boolean(credentials[credentialKey]);
+              return (
+                <div key={status.name} className={`${subtleCardClass} p-3`}>
+                  <div className="flex items-start gap-3">
+                    <IconBox tone={configured ? "green" : "amber"}>
+                      <status.icon className="h-4 w-4" />
+                    </IconBox>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold">{status.name}</span>
+                        <Pill tone={configured ? "green" : "amber"}>
+                          {configured ? "已配置" : "未配置"}
+                        </Pill>
+                      </div>
+                      <p className="mt-2 text-xs leading-5 text-muted">{status.note}</p>
                     </div>
-                    <p className="mt-2 text-xs leading-5 text-muted">{status.note}</p>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Panel>
         <Panel helper="发布前必须逐项确认。" title="安全门">

@@ -351,21 +351,21 @@ export const publishingRecords = [
 
 export const connectionStatuses = [
   {
+    credentialKey: "draftApiKey",
     name: "撰稿服务",
-    status: "可用",
-    note: "用于生成初稿；前端不展示具体供应商和底层配置。",
+    note: "设置页应用后用于生成初稿；前端不展示具体供应商和底层配置。",
     icon: PenLine
   },
   {
+    credentialKey: "rewriteApiKey",
     name: "改写服务",
-    status: "可用",
-    note: "用于正文人味化和风格修正；仍需人工审阅。",
+    note: "设置页应用后用于正文人味化和风格修正；仍需人工审阅。",
     icon: Wand2
   },
   {
+    credentialKey: "imageApiKey",
     name: "图片服务",
-    status: "可用",
-    note: "用于封面素材生成；标题和文字必须二次复核。",
+    note: "设置页应用后用于封面素材生成；标题和文字必须二次复核。",
     icon: Image
   }
 ];
