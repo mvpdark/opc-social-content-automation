@@ -57,6 +57,13 @@ const pillTone = {
   amber: "border-amber/40 bg-amber/10 text-ink"
 } satisfies Record<string, string>;
 
+const iconToneClass = {
+  amber: "bg-amber/10 text-amber",
+  blue: "bg-steel/10 text-steel",
+  green: "bg-moss/10 text-moss",
+  red: "bg-coral/10 text-coral"
+} satisfies Record<string, string>;
+
 const subtleCardClass = "glass-subtle rounded-md border";
 const formControlClass =
   "glass-control mt-2 w-full rounded-md border px-3 text-sm text-ink outline-none";
@@ -1533,16 +1540,9 @@ function Panel({
   );
 }
 
-function IconBox({ children, tone = "green" }: { children: ReactNode; tone?: "amber" | "blue" | "green" | "red" }) {
-  const toneClass = {
-    amber: "bg-amber/10 text-amber",
-    blue: "bg-steel/10 text-steel",
-    green: "bg-moss/10 text-moss",
-    red: "bg-coral/10 text-coral"
-  };
-
+function IconBox({ children, tone = "green" }: { children: ReactNode; tone?: keyof typeof iconToneClass }) {
   return (
-    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${toneClass[tone]}`}>
+    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${iconToneClass[tone]}`}>
       {children}
     </div>
   );
