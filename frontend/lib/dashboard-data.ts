@@ -31,7 +31,6 @@ export type WorkspaceTab =
   | "research"
   | "knowledge"
   | "content"
-  | "review"
   | "cover"
   | "delivery"
   | "settings";
@@ -41,7 +40,6 @@ export const workspaceTabIds: WorkspaceTab[] = [
   "research",
   "knowledge",
   "content",
-  "review",
   "cover",
   "delivery",
   "settings"
@@ -81,7 +79,7 @@ export const interfaceStyles: Array<{
   {
     id: "graphite",
     label: "夜间石墨",
-    description: "深色磨砂、低眩光，适合夜间审核和长时间工作。"
+    description: "深色磨砂、低眩光，适合夜间确认和长时间工作。"
   },
   {
     id: "cyberpunk",
@@ -136,8 +134,8 @@ export const themeTemplates: Array<{
     style: "cyberpunk"
   },
   {
-    label: "夜间审核",
-    description: "低亮度、少干扰、长时间检查",
+    label: "夜间确认",
+    description: "低亮度、少干扰、适合长时间检查",
     style: "graphite"
   },
   {
@@ -167,10 +165,6 @@ export const tabThemeRecommendations: Record<
     reason: "小红书图文创作更贴近甜感社媒语境。",
     style: "candy"
   },
-  review: {
-    reason: "审核页需要降噪，突出风险和状态。",
-    style: "graphite"
-  },
   cover: {
     reason: "封面方案需要更强的社媒停留感。",
     style: "candy"
@@ -194,7 +188,6 @@ export const navigation: Array<{
   { id: "research", label: "趋势采集", icon: Radar },
   { id: "knowledge", label: "知识库", icon: BookOpenText },
   { id: "content", label: "内容生产", icon: PenLine },
-  { id: "review", label: "审核", icon: ClipboardCheck },
   { id: "cover", label: "封面", icon: Image },
   { id: "delivery", label: "发布交付", icon: Users },
   { id: "settings", label: "设置", icon: Settings }
@@ -215,11 +208,7 @@ export const tabMeta: Record<WorkspaceTab, { title: string; description: string 
   },
   content: {
     title: "内容生产",
-    description: "围绕知识库生成初稿、改写正文，并保留人工审核入口。"
-  },
-  review: {
-    title: "审核工作台",
-    description: "发布前检查事实、风格、来源和平台风险。"
+    description: "围绕知识库生成初稿、改写正文，并保留发布前人工确认边界。"
   },
   cover: {
     title: "封面工作台",
@@ -238,8 +227,8 @@ export const tabMeta: Record<WorkspaceTab, { title: string; description: string 
 export const stats = [
   { label: "趋势素材", value: "0", helper: "公开图文样本", tone: "steel" },
   { label: "知识条目", value: "0", helper: "可检索资产", tone: "moss" },
-  { label: "待审稿件", value: "0", helper: "人工审核前", tone: "coral" },
-  { label: "可交付内容", value: "0", helper: "审核后交付", tone: "amber" }
+  { label: "待确认稿件", value: "0", helper: "发布前确认", tone: "coral" },
+  { label: "可交付内容", value: "0", helper: "确认后交付", tone: "amber" }
 ] as const;
 
 export const pipeline = [
@@ -252,13 +241,13 @@ export const pipeline = [
   {
     title: "知识沉淀",
     state: "可用",
-    description: "审核后的趋势资产进入知识库，供检索和复用。",
+    description: "确认后的趋势资产进入知识库，供检索和复用。",
     icon: BookOpenText
   },
   {
     title: "撰稿生成",
     state: "配置后可用",
-    description: "完成设置后，撰稿服务读取知识库与写作参考，只生成可审核初稿。",
+    description: "完成设置后，撰稿服务读取知识库与写作参考，只生成可确认初稿。",
     icon: PenLine
   },
   {
@@ -268,9 +257,9 @@ export const pipeline = [
     icon: Sparkles
   },
   {
-    title: "人工审核",
+    title: "人工确认",
     state: "强制",
-    description: "发布前必须经过人工审核和风险确认。",
+    description: "发布前必须经过人工确认和风险检查。",
     icon: ShieldCheck
   },
   {
@@ -295,8 +284,8 @@ export const commandFocus = [
     icon: BookOpenText
   },
   {
-    title: "生成前先走审核规则",
-    detail: "初稿、改写、封面都进入待审，不自动发布。",
+    title: "生成后先人工确认",
+    detail: "初稿、改写、封面都不自动发布。",
     state: "强制",
     icon: ShieldCheck
   }
@@ -305,20 +294,20 @@ export const commandFocus = [
 export const nextActions = [
   "测试图文采集任务能否稳定创建",
   "把高赞标题和封面风格整理成写作参考",
-  "用参考生成一篇新草稿并进入审核队列"
+  "用参考生成一篇新草稿并人工确认"
 ];
 
 export const queues = [
   { name: "采集任务", count: 0, owner: "运营", status: "待样本" },
   { name: "知识上传", count: 0, owner: "管理员", status: "等待" },
   { name: "草稿请求", count: 0, owner: "投放", status: "待创建" },
-  { name: "审核队列", count: 0, owner: "负责人", status: "锁定" }
+  { name: "确认清单", count: 0, owner: "负责人", status: "暂停" }
 ];
 
 export const promoterActions = [
   {
     title: "已批准内容",
-    description: "人工审核后进入推广交付池。",
+    description: "人工确认后进入推广交付池。",
     status: "0 条可交付",
     icon: CheckCircle2,
     command: "打开"
@@ -326,7 +315,7 @@ export const promoterActions = [
   {
     title: "导出包",
     description: "Markdown、纯文本或 JSON 交付格式。",
-    status: "审核门控",
+    status: "确认门控",
     icon: Download,
     command: "导出"
   },
@@ -353,7 +342,7 @@ export const publishingRecords = [
     status: "门控"
   },
   {
-    content: "审核通过后生成导出内容",
+    content: "确认后生成导出内容",
     platform: "多平台",
     owner: "工作台",
     status: "待批准"
@@ -384,7 +373,7 @@ export const connectionStatuses = [
 export const draftPreview = {
   title: "硕升博申请第一步，不是先套磁",
   platform: "小红书图文",
-  status: "待人工审核",
+  status: "待人工确认",
   body:
     "不是先套磁，先把问题想清楚。硕升博申请第一步，很多人一上来就急着问：要不要现在群发邮件？如果研究方向、读博动机和导师匹配还没想清楚，先发邮件反而容易浪费第一印象。",
   tags: ["硕升博", "博士申请", "研究方向", "申请规划"]
@@ -468,8 +457,8 @@ export const contentControls = [
     icon: Wand2
   },
   {
-    title: "进入审核",
-    detail: "生成结果只进入待审，不会自动发布。",
+    title: "人工确认",
+    detail: "生成结果不会自动发布，确认流程后续再接入。",
     icon: ShieldCheck
   }
 ];
@@ -496,7 +485,7 @@ export const imageWorkflow = [
 ];
 
 export const reviewQueue = [
-  { title: "硕升博申请顺序", source: "撰稿与改写服务", status: "待审", icon: ClipboardCheck },
+  { title: "硕升博申请顺序", source: "撰稿与改写服务", status: "待确认", icon: ClipboardCheck },
   { title: "封面标题准确性", source: "图片生成服务", status: "需复核", icon: LayoutTemplate },
   { title: "高赞样本参考", source: "公开来源确认", status: "待采集", icon: ExternalLink }
 ];
@@ -504,12 +493,12 @@ export const reviewQueue = [
 export const safetyGates = [
   { label: "采集先于生成", state: "启用", icon: Database },
   { label: "Prompt 独立存放", state: "启用", icon: FileText },
-  { label: "发布需人工审核", state: "强制", icon: ShieldCheck },
+  { label: "发布需人工确认", state: "强制", icon: ShieldCheck },
   { label: "图片标题需复核", state: "提醒", icon: AlertTriangle }
 ];
 
 export const timeline = [
   { label: "采集公开样本", helper: "先看真实内容", icon: Radar },
   { label: "保存知识摘要", helper: "人工确认来源", icon: BookOpenText },
-  { label: "生成并审核", helper: "不自动发布", icon: Clock3 }
+  { label: "生成并确认", helper: "不自动发布", icon: Clock3 }
 ];

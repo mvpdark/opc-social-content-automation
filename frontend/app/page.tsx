@@ -8,6 +8,9 @@ import {
 
 function coerceWorkspaceTab(value: string | string[] | undefined): WorkspaceTab {
   const tab = Array.isArray(value) ? value[0] : value;
+  if (tab === "review") {
+    return "content";
+  }
   return workspaceTabIds.includes(tab as WorkspaceTab) ? (tab as WorkspaceTab) : "dashboard";
 }
 

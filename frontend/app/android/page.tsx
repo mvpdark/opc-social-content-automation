@@ -7,7 +7,6 @@ import {
   BookOpenText,
   CheckCircle2,
   ChevronRight,
-  ClipboardCheck,
   Database,
   Home,
   Image,
@@ -20,13 +19,12 @@ import {
   Sparkles
 } from "lucide-react";
 
-type MobileTab = "home" | "collect" | "create" | "review" | "settings";
+type MobileTab = "home" | "collect" | "create" | "settings";
 
 const bottomTabs: Array<{ id: MobileTab; icon: typeof Home; label: string }> = [
   { id: "home", icon: Home, label: "首页" },
   { id: "collect", icon: Radar, label: "采集" },
   { id: "create", icon: PenLine, label: "创作" },
-  { id: "review", icon: ClipboardCheck, label: "审核" },
   { id: "settings", icon: Settings, label: "设置" }
 ];
 
@@ -54,12 +52,6 @@ const sampleReferences = [
   }
 ];
 
-const reviewCards = [
-  { title: "硕升博申请顺序", helper: "正文已生成，等待人工审核", risk: "事实边界", tone: "amber" },
-  { title: "封面标题准确性", helper: "图片文字需二次确认", risk: "错字风险", tone: "coral" },
-  { title: "高赞样本参考", helper: "来源待人工确认", risk: "来源门控", tone: "steel" }
-];
-
 function getPcReturnHref() {
   if (typeof window === "undefined") {
     return "/";
@@ -84,7 +76,6 @@ export default function AndroidPreviewPage() {
             {activeTab === "home" ? <HomeScreen onChangeTab={setActiveTab} /> : null}
             {activeTab === "collect" ? <CollectScreen /> : null}
             {activeTab === "create" ? <CreateScreen /> : null}
-            {activeTab === "review" ? <ReviewScreen /> : null}
             {activeTab === "settings" ? <SettingsScreen /> : null}
           </section>
           <BottomNav activeTab={activeTab} onChange={setActiveTab} />
@@ -108,7 +99,6 @@ function MobileHeader({ activeTab }: { activeTab: MobileTab }) {
     home: "今日工作台",
     collect: "趋势采集",
     create: "内容创作",
-    review: "人工审核",
     settings: "设置"
   };
 
@@ -175,7 +165,7 @@ function HomeScreen({ onChangeTab }: { onChangeTab: (tab: MobileTab) => void }) 
       <div className="grid grid-cols-3 gap-2">
         <Metric label="趋势素材" value="0" />
         <Metric label="知识条目" value="0" tone="green" />
-        <Metric label="待审" value="0" tone="coral" />
+        <Metric label="待确认" value="0" tone="coral" />
       </div>
 
       <MobilePanel title="今日任务" action="全部">
@@ -190,7 +180,7 @@ function HomeScreen({ onChangeTab }: { onChangeTab: (tab: MobileTab) => void }) 
         <div className="grid grid-cols-3 gap-2">
           <StepTile icon={<Database className="h-4 w-4" />} label="采集" state="当前" />
           <StepTile icon={<BookOpenText className="h-4 w-4" />} label="知识库" state="就绪" />
-          <StepTile icon={<ShieldCheck className="h-4 w-4" />} label="审核" state="强制" />
+          <StepTile icon={<ShieldCheck className="h-4 w-4" />} label="确认" state="暂停" />
         </div>
       </MobilePanel>
     </div>
@@ -318,51 +308,6 @@ function CreateScreen() {
   );
 }
 
-function ReviewScreen() {
-  return (
-    <div className="space-y-4">
-      <MobilePanel title="审核队列" action="3">
-        <div className="space-y-3">
-          {reviewCards.map((item) => (
-            <div key={item.title} className="rounded-md border border-[#d6e8df] bg-white p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-semibold">{item.title}</h3>
-                  <p className="mt-1 text-xs leading-5 text-muted">{item.helper}</p>
-                </div>
-                <span className={["rounded-md px-2 py-1 text-[11px] font-semibold", riskTone(item.tone)].join(" ")}>
-                  {item.risk}
-                </span>
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <button
-                  aria-label="退回，需在 PC 审核工作台处理"
-                  className="h-9 rounded-md border border-[#d6e8df] bg-white text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-55"
-                  disabled
-                  type="button"
-                >
-                  退回
-                </button>
-                <button
-                  aria-label="通过，需在 PC 审核工作台处理"
-                  className="h-9 rounded-md bg-ink text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-55"
-                  disabled
-                  type="button"
-                >
-                  通过
-                </button>
-              </div>
-              <p className="mt-2 text-[11px] leading-5 text-muted">
-                移动端仅展示队列，处理需回 PC。
-              </p>
-            </div>
-          ))}
-        </div>
-      </MobilePanel>
-    </div>
-  );
-}
-
 function SettingsScreen() {
   return (
     <div className="space-y-4">
@@ -380,7 +325,7 @@ function SettingsScreen() {
       <MobilePanel title="安全门">
         <div className="space-y-2">
           <SettingRow label="采集先于生成" state="启用" positive />
-          <SettingRow label="发布需人工审核" state="强制" positive />
+          <SettingRow label="发布需人工确认" state="强制" positive />
           <SettingRow label="图片标题需复核" state="提醒" />
         </div>
       </MobilePanel>
@@ -536,14 +481,4 @@ function SettingRow({ label, positive = false, state }: { label: string; positiv
       <span className="text-xs font-medium text-muted">{state}</span>
     </div>
   );
-}
-
-function riskTone(tone: string) {
-  if (tone === "coral") {
-    return "bg-coral/10 text-coral";
-  }
-  if (tone === "steel") {
-    return "bg-steel/10 text-steel";
-  }
-  return "bg-amber/10 text-amber";
 }

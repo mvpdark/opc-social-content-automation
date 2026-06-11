@@ -99,7 +99,7 @@ export function AppShell({
             </div>
             {showHelperText ? (
               <p className="mt-2 text-xs leading-5 text-muted">
-                所有内容必须先经过人工审核，图片标题需要二次确认。
+                发布前仍需人工确认；单独确认页已暂停，避免误操作。
               </p>
             ) : null}
             <div className="mt-4 border-t border-line pt-4">
@@ -151,7 +151,7 @@ export function AppShell({
                   <div className="hidden xl:flex">
                     <div className="glass-control inline-flex h-8 items-center gap-2 rounded-md border px-2.5 text-xs font-medium text-muted">
                       <ShieldCheck className="h-3.5 w-3.5 text-moss" />
-                      人工审核开启
+                      发布前确认
                     </div>
                   </div>
                 ) : null}
