@@ -95,7 +95,8 @@ def validate_safety_gates() -> int:
             'content.status = "published"',
         ],
         "backend/app/services/image_service.py": [
-            "Only human-approved content can be used for image generation.",
+            "Only draft, rewritten, review-pending, or approved content can be used for image generation.",
+            'status="generated" if content.status == "approved" else "needs_review"',
             "provider_not_configured",
             "load_platform_style_reference",
         ],
@@ -137,8 +138,12 @@ def validate_safety_gates() -> int:
         "backend/app/services/model_router.py": [
             "load_prompt",
             "load_platform_style_reference",
-            "Use the exact title text verbatim",
             "Review model provider is not configured yet.",
+        ],
+        "prompts/image_generation.md": [
+            "primary cover headline must copy the content title verbatim",
+            "High-attraction Xiaohongshu cover formula",
+            "Draft and rewritten content may produce cover previews",
         ],
         "backend/app/services/workspace_service.py": [
             "provider_status_items",

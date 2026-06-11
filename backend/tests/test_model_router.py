@@ -328,7 +328,11 @@ def test_openai_compatible_image_provider_accepts_remote_url(
     assert isinstance(request_json, dict)
     assert request_json["model"] == "gpt-image-2"
     assert request_json["size"] == "1024x1536"
-    assert "Use the exact title text verbatim" in str(request_json["prompt"])
+    assert "primary cover headline must copy the content title verbatim" in str(
+        request_json["prompt"]
+    )
+    assert "High-attraction Xiaohongshu cover formula" in str(request_json["prompt"])
+    assert "real-life visual proof scene" in str(request_json["prompt"])
     assert "Use strong mobile cover hooks." in str(request_json["prompt"])
     assert secret not in str(request_json)
 

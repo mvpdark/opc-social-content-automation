@@ -38,7 +38,9 @@ Trend knowledge digests require `source_reviewed=true`. This gate prevents unrev
 
 The local browser worker stores session state under `.browser-sessions/`, which is ignored by Git. Treat those files like logged-in browser state and do not share them.
 
-Publishing and image generation remain blocked until content has passed human approval.
+Publishing remains blocked until content has passed human approval. Draft, rewritten, or
+review-pending content may generate cover previews, but those image assets must stay in
+`needs_review` status until a human confirms title accuracy, visual claims, and platform fit.
 
 ## API Keys
 

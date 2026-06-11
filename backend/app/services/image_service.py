@@ -9,6 +9,7 @@ from app.schemas.image import ImageGenerateRequest
 from app.services.content_service import PromptPackage, record_generation_log
 from app.services.model_router import load_platform_style_reference, load_prompt, model_router
 
+IMAGE_GENERATABLE_STATUSES = {"draft", "rewritten", "review_pending", "approved"}
 
 COVER_TEMPLATES = [
     {
@@ -53,10 +54,10 @@ def get_content_for_image(db: Session, content_id: int) -> Content:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Content was not found.",
         )
-    if content.status != "approved":
+    if content.status not in IMAGE_GENERATABLE_STATUSES:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Only human-approved content can be used for image generation.",
+            detail="Only draft, rewritten, review-pending, or approved content can be used for image generation.",
         )
     return content
 
@@ -126,7 +127,7 @@ def generate_image_asset(
         image_url=image_url,
         template=payload.template,
         prompt=package.to_log_text(),
-        status="generated",
+        status="generated" if content.status == "approved" else "needs_review",
     )
     db.add(image)
     db.flush()

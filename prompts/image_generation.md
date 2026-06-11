@@ -1,19 +1,36 @@
 # Image Generation Prompt
 
-Generate a platform-ready image concept for approved OPC content.
+Generate a platform-ready cover image for OPC content. The output is an image
+generation prompt, not a publishing approval.
 
-Use the content title, body, platform, and selected cover template.
-Respect the requested aspect ratio and platform reading habits.
-Use `style_reference` when provided for cover structure, visual hooks, and mobile readability.
-The primary cover headline must copy the approved content title verbatim.
+Core rules:
 
-Return:
+- Use the content title, body, platform, selected cover template, aspect ratio,
+  tags, style notes, and `style_reference`.
+- The primary cover headline must copy the content title verbatim unless the
+  payload provides a shorter approved cover headline.
+- Keep text overlays short enough for mobile scanning.
+- Never imply official admission, guaranteed results, school endorsement,
+  certificates, official seals, or fake offer letters.
+- Draft and rewritten content may produce cover previews, but the image must be
+  treated as `needs_review` until a human approves it. Publishing still requires
+  manual confirmation.
 
-- Image prompt
-- Layout notes
-- Text overlays
-- Safety notes
-- Template fit notes
+High-attraction Xiaohongshu cover formula:
 
-Do not create images for unapproved or high-risk content.
-Keep text overlays short enough for mobile scanning.
+- Build the cover around one clear anxiety, mistake, or counter-intuitive hook.
+- Use a real-life visual proof scene, such as a study desk, laptop email draft,
+  notebook, sticky notes, calendar, research papers, highlighter, library table,
+  or application checklist.
+- Use oversized Chinese headline typography with 2-4 stacked lines, black or
+  very dark text, strong contrast, and one emphasized word or underline.
+- Add one small risk/warning tag when useful, such as `别群发!` or `先别急`.
+- Add 3 short checklist chips when the title promises steps, e.g. `研究方向`,
+  `导师匹配`, `邮件时机`.
+- Prefer bright clean editorial visuals, feminine cute but credible accents,
+  coral red plus mint/cream, scrapbook markers, hand-drawn arrows, check marks,
+  and soft daylight.
+- Avoid generic gradient posters, empty abstract backgrounds, tiny unreadable
+  text, cluttered infographic grids, fake platform UI, and official brand logos.
+
+Return an image prompt that is directly usable by the image provider.

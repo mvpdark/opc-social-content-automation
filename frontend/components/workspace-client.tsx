@@ -220,6 +220,9 @@ const expressionOptions = [
 const hiddenXhsStickerToneGuide =
   "隐藏撰稿规则：如果平台是小红书，生成正文时可自然少量使用小红书可识别的表情字符码，优先 [笑哭R]、[哭惹R]、[哇R]、[赞R]、[doge]、[蹲后续H]，每篇 2-5 个即可；字符码要融入正文语气，不要解释字符码，不要列出表情清单。";
 
+const xhsHighAttractionCoverStyle =
+  "小红书高吸引封面：真实学习桌/申请材料场景，大字反常识标题，红色风险标签，3个短清单芯片，女性可爱但可信，奶油底+珊瑚红+薄荷绿，避免官方标志和录取承诺。";
+
 type XhsStickerCategory =
   | "基础情绪"
   | "互动语气"
@@ -721,6 +724,18 @@ type GeneratedContent = {
   title: string;
 };
 
+type GeneratedImageAsset = {
+  content_id: number;
+  created_at: string;
+  created_by: number | null;
+  error: string | null;
+  id: number;
+  image_url: string;
+  prompt: string | null;
+  status: string;
+  template: string | null;
+};
+
 type ProviderStatusItem = {
   configured: boolean;
   model: string | null;
@@ -759,6 +774,14 @@ function formatTagLine(tags: string[] | null) {
 function buildPlatformCopy(content: GeneratedContent) {
   const tagLine = formatTagLine(content.tags);
   return [content.title.trim(), content.body.trim(), tagLine].filter(Boolean).join("\n\n");
+}
+
+function resolveAssetUrl(imageUrl: string) {
+  if (/^https?:\/\//i.test(imageUrl)) {
+    return imageUrl;
+  }
+  const apiUrl = new URL(API_BASE);
+  return `${apiUrl.origin}${imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`}`;
 }
 
 function complianceWarnings(content: GeneratedContent) {
@@ -1640,6 +1663,12 @@ function GenerationLauncher({
     ...item,
     status: providerStatuses.find((statusItem) => statusItem.name === item.name)
   }));
+  const imageProviderStatus = providerStatuses.find(
+    (item) => item.name === "Image generation"
+  );
+  const liveImageProviderReady = Boolean(
+    imageProviderStatus?.configured && imageProviderStatus.provider !== "codex_test"
+  );
 
   function authHeaders() {
     return {
@@ -2020,23 +2049,52 @@ function GenerationLauncher({
               </button>
             ) : null}
             <div className="mt-4 border-l-4 border-amber pl-3 text-xs leading-5 text-muted">
-              封面和发布交付仍保持禁用，等确认流程重新接入后再开放。
+              生成图文后可生成封面预览图；发布交付仍保持人工确认，不会自动发布。
             </div>
           </div>
         </div>
-        {lastContent ? <GeneratedPostExportCard content={lastContent} /> : null}
+        {lastContent ? (
+          <GeneratedPostExportCard
+            content={lastContent}
+            imageProviderReady={liveImageProviderReady}
+            onOpenSettings={onOpenSettings}
+            workspaceToken={workspaceToken}
+          />
+        ) : null}
       </Panel>
     </div>
   );
 }
 
-function GeneratedPostExportCard({ content }: { content: GeneratedContent }) {
+function GeneratedPostExportCard({
+  content,
+  imageProviderReady,
+  onOpenSettings,
+  workspaceToken
+}: {
+  content: GeneratedContent;
+  imageProviderReady: boolean;
+  onOpenSettings: () => void;
+  workspaceToken: string;
+}) {
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const [imageAsset, setImageAsset] = useState<GeneratedImageAsset | null>(null);
+  const [imageBusy, setImageBusy] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
   const warnings = complianceWarnings(content);
   const testDraft = isTestDraft(content);
   const canCopy = !testDraft;
+  const canGenerateImage = canCopy && imageProviderReady && !imageBusy;
   const copyPayload = buildPlatformCopy(content);
   const tagLine = formatTagLine(content.tags);
+  const imagePreviewUrl = imageAsset ? resolveAssetUrl(imageAsset.image_url) : null;
+
+  function authHeaders() {
+    return {
+      "Content-Type": "application/json",
+      ...(workspaceToken ? { Authorization: `Bearer ${workspaceToken}` } : {})
+    };
+  }
 
   async function handleCopy() {
     if (!canCopy) {
@@ -2048,6 +2106,41 @@ function GeneratedPostExportCard({ content }: { content: GeneratedContent }) {
       setCopyState("copied");
     } catch (_error) {
       setCopyState("failed");
+    }
+  }
+
+  async function handleGenerateImage() {
+    if (!canGenerateImage) {
+      setImageError(
+        imageProviderReady
+          ? "当前草稿不可生成封面图。"
+          : "图片服务还没有配置真实 API Key，请先到设置页应用 image2 Key。"
+      );
+      return;
+    }
+
+    setImageBusy(true);
+    setImageError(null);
+    try {
+      const response = await fetch(`${API_BASE}/image/generate`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          aspect_ratio: "3:4",
+          content_id: content.id,
+          style_notes: xhsHighAttractionCoverStyle,
+          template: content.platform === "douyin" ? "douyin-cover" : "xiaohongshu-cover"
+        })
+      });
+      if (!response.ok) {
+        throw new Error(await readApiError(response, "封面图生成失败。"));
+      }
+      const data = (await response.json()) as GeneratedImageAsset;
+      setImageAsset(data);
+    } catch (error) {
+      setImageError(error instanceof Error ? error.message : "封面图生成失败。");
+    } finally {
+      setImageBusy(false);
     }
   }
 
@@ -2120,7 +2213,7 @@ function GeneratedPostExportCard({ content }: { content: GeneratedContent }) {
             </div>
           )}
           <div className="rounded-md border border-line bg-paper p-3">
-            封面图仍需单独生成和人工复核；不要使用假录取通知、校徽或保证录取视觉。
+            封面图生成后仍需人工复核；不要使用假录取通知、校徽或保证录取视觉。
           </div>
           {copyState === "failed" && !testDraft ? (
             <div className="rounded-md border border-coral/40 bg-coral/10 p-3 text-ink">
@@ -2128,6 +2221,77 @@ function GeneratedPostExportCard({ content }: { content: GeneratedContent }) {
             </div>
           ) : null}
         </div>
+      </div>
+
+      <div className={`${subtleCardClass} p-4 xl:col-span-2`}>
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <Image className="h-4 w-4 text-steel" />
+              小红书封面图
+            </div>
+            <p className="mt-2 text-xs leading-5 text-muted">
+              使用高吸引封面公式生成 3:4 竖版图；生成后只是待确认素材，不会自动发布。
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            {!imageProviderReady ? (
+              <button
+                className={`${secondaryButtonClass} h-10 px-4`}
+                onClick={onOpenSettings}
+                type="button"
+              >
+                <Settings className="h-4 w-4" />
+                配置图片服务
+              </button>
+            ) : null}
+            <button
+              className="flex h-10 items-center justify-center gap-2 rounded-md bg-steel px-4 text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-55"
+              disabled={!canGenerateImage}
+              onClick={handleGenerateImage}
+              type="button"
+            >
+              {imageBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Image className="h-4 w-4" />}
+              {imageBusy ? "正在生成封面" : imageAsset ? "重新生成封面" : "生成封面图"}
+            </button>
+          </div>
+        </div>
+        {!imageProviderReady ? (
+          <div className="mt-3 rounded-md border border-amber/40 bg-amber/10 p-3 text-xs leading-5 text-ink">
+            当前未检测到真实图片服务。为避免假图，界面不会调用测试 SVG provider。
+          </div>
+        ) : null}
+        {imageError ? (
+          <div className="mt-3 rounded-md border border-coral/40 bg-coral/10 p-3 text-xs leading-5 text-ink">
+            {imageError}
+          </div>
+        ) : null}
+        {imageAsset && imagePreviewUrl ? (
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-[220px_1fr]">
+            <div className="overflow-hidden rounded-[18px] border border-line bg-paper">
+              <img
+                alt="生成的封面图预览"
+                className="aspect-[3/4] w-full object-cover"
+                src={imagePreviewUrl}
+              />
+            </div>
+            <div className="rounded-md border border-line bg-mist/60 p-4 text-xs leading-6 text-muted">
+              <div className="font-semibold text-ink">图片状态：{imageAsset.status}</div>
+              <div className="mt-2">
+                非已批准内容生成的封面会保持待确认状态。粘贴到小红书前，请确认标题、图中文字、封面暗示和正文一致。
+              </div>
+              <a
+                className="mt-3 inline-flex items-center gap-2 font-semibold text-steel"
+                href={imagePreviewUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                打开原图
+              </a>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -2138,18 +2302,16 @@ function CoverView() {
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,0.9fr)_1fr]">
       <Panel
         action={
-          <button
-            aria-label="生成封面，需确认流程重新接入后启用"
-            className="flex h-9 items-center gap-2 rounded-md bg-ink px-3 text-sm font-medium text-paper disabled:cursor-not-allowed disabled:opacity-55"
-            disabled
-            title="需确认流程重新接入后启用"
-            type="button"
+          <a
+            aria-label="前往内容生产生成封面"
+            className="flex h-9 items-center gap-2 rounded-md bg-ink px-3 text-sm font-medium text-paper"
+            href="/?tab=content"
           >
             <Image className="h-4 w-4" />
-            生成封面
-          </button>
+            去生成封面
+          </a>
         }
-        helper="确认流程重新接入前保持禁用；下方仅展示参考版式，不代表已生成图片。"
+        helper="先在内容生产页生成图文，再在结果卡里生成封面图。下方展示参考版式。"
         title="封面参考版式"
       >
         <CoverReferencePreview />

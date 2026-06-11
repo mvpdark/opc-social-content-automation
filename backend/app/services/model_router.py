@@ -375,27 +375,31 @@ def _image_size(aspect_ratio: str) -> str:
     return mapping.get(aspect_ratio, "1024x1536")
 
 
-def _image_prompt(payload: dict[str, object]) -> str:
+def _image_prompt(prompt_template: str, payload: dict[str, object]) -> str:
     title = str(payload.get("title") or "OPC cover")
     platform = str(payload.get("platform") or "multi")
+    content_status = str(payload.get("content_status") or "draft")
     body = str(payload.get("body") or "")
     tags = " ".join(f"#{tag}" for tag in _string_list(payload.get("tags")))
     style_notes = str(payload.get("style_notes") or "clean, readable, platform-ready")
+    aspect_ratio = str(payload.get("aspect_ratio") or "3:4")
     template = payload.get("template")
     template_name = "cover"
     if isinstance(template, dict):
         template_name = str(template.get("name") or template_name)
+        aspect_ratio = str(template.get("aspect_ratio") or aspect_ratio)
     body_excerpt = body[:500]
     lines = [
-        f"Create a mobile-first social media cover image for {platform}.",
+        prompt_template.strip(),
+        "",
+        "Payload:",
+        f"Platform: {platform}.",
         f"Template: {template_name}.",
+        f"Aspect ratio: {aspect_ratio}.",
+        f"Content status: {content_status}.",
         f"Primary cover headline, copied verbatim: {title}",
-        "Use the exact title text verbatim as the primary cover headline; do not rewrite it.",
         f"Tags: {tags}",
         f"Style notes: {style_notes}",
-        "Use clean editorial layout, strong Chinese headline hierarchy, and no clutter.",
-        "The image must be suitable for postgraduate-to-PhD education content.",
-        "Avoid exaggerated claims, medical/legal/financial advice, and misleading badges.",
         f"Content context: {body_excerpt}",
     ]
     style_reference = str(payload.get("style_reference") or "").strip()
@@ -520,7 +524,7 @@ class ModelRouter:
         return _extract_chat_content("DeepSeek", data)
 
     def image_model(self, prompt_name: str, payload: dict[str, object]) -> str:
-        load_prompt(prompt_name)
+        prompt_template = load_prompt(prompt_name)
         if settings.image_provider == "codex_test":
             return _test_image(payload)
         if settings.image_provider == "openai_compatible":
@@ -536,7 +540,7 @@ class ModelRouter:
             )
             request_payload: dict[str, object] = {
                 "model": settings.image_model,
-                "prompt": _image_prompt(payload),
+                "prompt": _image_prompt(prompt_template, payload),
                 "n": 1,
             }
             request_payload["size"] = settings.image_size or _image_size(

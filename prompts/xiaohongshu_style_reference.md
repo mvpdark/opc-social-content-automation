@@ -23,7 +23,10 @@ Copy structure:
 Cover/image structure:
 
 - Use the exact content title as the primary cover headline. Do not rewrite it.
-- Large Chinese headline, 2-3 lines max, with one emphasized word.
-- Use check/cross marks, circled keywords, numbered checklist, or before/after contrast where suitable.
-- Education visuals can include desk, notebook, research papers, books, laptop, library, or graduation cap.
+- Large Chinese headline, 2-4 stacked lines max, with one emphasized word, red underline, or small warning tag.
+- Make the first visual read a mistake or benefit, not a decorative poster.
+- Use real-life proof scenes: study desk, laptop email draft, notebook, sticky notes, calendar, research papers, books, highlighter, library table, or application checklist.
+- Use check/cross marks, circled keywords, numbered checklist, 3 short chips, or before/after contrast where suitable.
+- Use bright clean editorial visuals with feminine cute but credible accents: cream base, coral red, mint green, soft daylight, light scrapbook stickers, hand-drawn arrows, and clean whitespace.
 - Avoid fake university seals, admission letters, guaranteed-offer badges, or misleading official-looking marks.
+- Avoid official Xiaohongshu/Douyin logos in generated covers unless the user explicitly asks for platform badges outside the cover image.
