@@ -228,6 +228,9 @@ function CollectScreen() {
         >
           打开搜索
         </button>
+        <p className="mt-2 text-[11px] leading-5 text-muted">
+          采集任务需在 PC 工作台创建。
+        </p>
       </MobilePanel>
 
       <MobilePanel title="高赞参考">
@@ -285,6 +288,9 @@ function CreateScreen() {
           <Sparkles className="h-4 w-4" />
           生成图文
         </button>
+        <p className="mt-2 text-[11px] leading-5 text-muted">
+          真实生成请回到 PC 工作台。
+        </p>
       </MobilePanel>
 
       <MobilePanel title="草稿预览">
@@ -345,6 +351,9 @@ function ReviewScreen() {
                   通过
                 </button>
               </div>
+              <p className="mt-2 text-[11px] leading-5 text-muted">
+                移动端仅展示队列，处理需回 PC。
+              </p>
             </div>
           ))}
         </div>

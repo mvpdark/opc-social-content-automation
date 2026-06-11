@@ -872,7 +872,7 @@ function CoverView() {
             生成封面
           </button>
         }
-        helper="标题和封面文字仍需人工复核，避免图片里出现错字或含义偏差。"
+        helper="内容审核通过前保持禁用；标题和封面文字仍需人工复核。"
         title="封面预览"
       >
         <CoverMock />
@@ -908,7 +908,7 @@ function CoverView() {
 function DeliveryView() {
   return (
     <div className="space-y-4">
-      <Panel helper="批准内容、导出包和发布记录集中在这里。" title="交付动作">
+      <Panel helper="无已批准内容前保持禁用；批准后再生成导出包和发布记录。" title="交付动作">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
           {promoterActions.map((action) => (
             <div key={action.title} className={`${subtleCardClass} p-4`}>
