@@ -35,6 +35,7 @@ import {
   queues,
   reviewQueue,
   safetyGates,
+  themeTemplates,
   type InterfaceStyle,
   type WorkspaceTab,
   writingReferences
@@ -169,6 +170,10 @@ function isWorkspaceTab(value: string | null): value is WorkspaceTab {
   return workspaceTabIds.includes(value as WorkspaceTab);
 }
 
+function isInterfaceStyle(value: string | null): value is InterfaceStyle {
+  return interfaceStyles.some((style) => style.id === value);
+}
+
 function readLocalStorage(key: string) {
   try {
     return window.localStorage.getItem(key);
@@ -194,9 +199,17 @@ type GeneratedContent = {
   title: string;
 };
 
-export function WorkspaceClient({ initialTab }: { initialTab: WorkspaceTab }) {
+export function WorkspaceClient({
+  hasInitialTheme,
+  initialStyle,
+  initialTab
+}: {
+  hasInitialTheme: boolean;
+  initialStyle: InterfaceStyle;
+  initialTab: WorkspaceTab;
+}) {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(initialTab);
-  const [interfaceStyle, setInterfaceStyle] = useState<InterfaceStyle>("apple");
+  const [interfaceStyle, setInterfaceStyle] = useState<InterfaceStyle>(initialStyle);
   const [showHelperText, setShowHelperText] = useState(true);
   const [credentialsLoaded, setCredentialsLoaded] = useState(false);
   const [credentials, setCredentials] = useState<CredentialSettings>(emptyCredentials);
@@ -211,11 +224,7 @@ export function WorkspaceClient({ initialTab }: { initialTab: WorkspaceTab }) {
     window.addEventListener("popstate", syncTabFromUrl);
 
     const storedStyle = readLocalStorage(INTERFACE_STYLE_STORAGE_KEY);
-    if (
-      storedStyle === "apple" ||
-      storedStyle === "mint" ||
-      storedStyle === "warm"
-    ) {
+    if (!hasInitialTheme && isInterfaceStyle(storedStyle)) {
       setInterfaceStyle(storedStyle);
     }
 
@@ -231,11 +240,17 @@ export function WorkspaceClient({ initialTab }: { initialTab: WorkspaceTab }) {
     }
 
     return () => window.removeEventListener("popstate", syncTabFromUrl);
-  }, []);
+  }, [hasInitialTheme]);
 
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
+
+  useEffect(() => {
+    if (hasInitialTheme) {
+      setInterfaceStyle(initialStyle);
+    }
+  }, [hasInitialTheme, initialStyle]);
 
   useEffect(() => {
     if (!credentialsLoaded) {
@@ -248,9 +263,21 @@ export function WorkspaceClient({ initialTab }: { initialTab: WorkspaceTab }) {
     writeLocalStorage(INTERFACE_STYLE_STORAGE_KEY, interfaceStyle);
   }, [interfaceStyle]);
 
+  function buildWorkspaceUrl(tab: WorkspaceTab, style = interfaceStyle) {
+    const params = new URLSearchParams();
+    if (tab !== "dashboard") {
+      params.set("tab", tab);
+    }
+    if (style !== "apple") {
+      params.set("theme", style);
+    }
+    const query = params.toString();
+    return query ? `/?${query}` : "/";
+  }
+
   function handleTabChange(nextTab: WorkspaceTab) {
     setActiveTab(nextTab);
-    const nextUrl = nextTab === "dashboard" ? "/" : `/?tab=${nextTab}`;
+    const nextUrl = buildWorkspaceUrl(nextTab);
     if (window.location.pathname + window.location.search !== nextUrl) {
       window.history.pushState(null, "", nextUrl);
     }
@@ -285,7 +312,6 @@ export function WorkspaceClient({ initialTab }: { initialTab: WorkspaceTab }) {
           interfaceStyle={interfaceStyle}
           onCredentialsChange={setCredentials}
           onReset={() => setShowHelperText(true)}
-          onStyleChange={setInterfaceStyle}
           onShowHelperTextChange={setShowHelperText}
           showHelperText={showHelperText}
         />
@@ -923,7 +949,6 @@ function SettingsView({
   onCredentialsChange,
   onReset,
   onShowHelperTextChange,
-  onStyleChange,
   showHelperText
 }: {
   credentials: CredentialSettings;
@@ -931,7 +956,6 @@ function SettingsView({
   onCredentialsChange: (nextCredentials: CredentialSettings) => void;
   onReset: () => void;
   onShowHelperTextChange: (nextValue: boolean) => void;
-  onStyleChange: (nextStyle: InterfaceStyle) => void;
   showHelperText: boolean;
 }) {
   const [credentialStatus, setCredentialStatus] = useState("凭证会保存在当前浏览器本机。");
@@ -1009,6 +1033,10 @@ function SettingsView({
       helper: "正文改写和人味化使用。"
     }
   ];
+
+  function settingsThemeHref(style: InterfaceStyle) {
+    return style === "apple" ? "/?tab=settings" : `/?tab=settings&theme=${style}`;
+  }
 
   return (
     <div className="space-y-4">
@@ -1089,23 +1117,39 @@ function SettingsView({
         >
           <div className="space-y-4">
             <div>
-              <div className="text-xs font-medium text-muted">界面风格</div>
-              <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-3">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-xs font-medium text-muted">界面风格</div>
+                <div className="text-xs text-muted">按运营模板推荐，也可以手动选择。</div>
+              </div>
+              <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2 2xl:grid-cols-3">
+                {themeTemplates.map((template) => (
+                  <a
+                    className="glass-subtle rounded-md border px-3 py-2 text-left transition hover:border-steel/60"
+                    href={settingsThemeHref(template.style)}
+                    key={template.label}
+                  >
+                    <span className="block text-xs font-semibold text-ink">{template.label}</span>
+                    <span className="mt-1 block text-xs leading-5 text-muted">
+                      {template.description}
+                    </span>
+                  </a>
+                ))}
+              </div>
+              <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {interfaceStyles.map((style) => {
                   const selected = style.id === interfaceStyle;
                   return (
-                    <button
-                      aria-pressed={selected}
+                    <a
+                      aria-current={selected ? "page" : undefined}
                       className={[
                         `theme-${style.id}`,
                         "rounded-md border px-4 py-3 text-left transition",
                         selected
                           ? "border-steel bg-mist text-ink"
-                          : "border-line bg-white text-ink hover:border-steel/50"
+                          : "glass-control text-ink hover:border-steel/50"
                       ].join(" ")}
+                      href={settingsThemeHref(style.id)}
                       key={style.id}
-                      onClick={() => onStyleChange(style.id)}
-                      type="button"
                     >
                       <span className="block text-sm font-semibold">{style.label}</span>
                       <span className="mt-1 block text-xs leading-5 text-muted">
@@ -1116,7 +1160,7 @@ function SettingsView({
                         <span className="h-2.5 w-8 rounded-sm bg-moss" />
                         <span className="h-2.5 w-8 rounded-sm bg-coral" />
                       </span>
-                    </button>
+                    </a>
                   );
                 })}
               </div>

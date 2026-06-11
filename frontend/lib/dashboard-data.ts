@@ -36,7 +36,16 @@ export type WorkspaceTab =
   | "delivery"
   | "settings";
 
-export type InterfaceStyle = "apple" | "mint" | "warm";
+export type InterfaceStyle =
+  | "apple"
+  | "mint"
+  | "warm"
+  | "graphite"
+  | "cyberpunk"
+  | "editorial"
+  | "candy"
+  | "ocean"
+  | "brutalist";
 
 export const interfaceStyles: Array<{
   id: InterfaceStyle;
@@ -57,6 +66,73 @@ export const interfaceStyles: Array<{
     id: "warm",
     label: "柔和暖色",
     description: "更亲和，适合运营和推广场景。"
+  },
+  {
+    id: "graphite",
+    label: "夜间石墨",
+    description: "深色磨砂、低眩光，适合夜间审核和长时间工作。"
+  },
+  {
+    id: "cyberpunk",
+    label: "赛博朋克",
+    description: "深色霓虹、强科技感，适合趋势监控和实验模式。"
+  },
+  {
+    id: "editorial",
+    label: "杂志编辑",
+    description: "纸张质感、暖白底，适合文案审稿和知识沉淀。"
+  },
+  {
+    id: "candy",
+    label: "甜感社媒",
+    description: "轻粉和莓果色，更贴近小红书内容运营语境。"
+  },
+  {
+    id: "ocean",
+    label: "海盐蓝",
+    description: "冷静、透明、低压力，适合采集和数据整理。"
+  },
+  {
+    id: "brutalist",
+    label: "粗野黑白",
+    description: "高对比、强边界，适合快速排查问题和压力测试。"
+  }
+];
+
+export const themeTemplates: Array<{
+  description: string;
+  label: string;
+  style: InterfaceStyle;
+}> = [
+  {
+    label: "日常运营",
+    description: "默认工作台、汇总和交付",
+    style: "apple"
+  },
+  {
+    label: "知识沉淀",
+    description: "资料归档、RAG、长期阅读",
+    style: "editorial"
+  },
+  {
+    label: "小红书推广",
+    description: "偏女性、可爱、社媒运营",
+    style: "candy"
+  },
+  {
+    label: "趋势监控",
+    description: "实验模式、科技感、采集看板",
+    style: "cyberpunk"
+  },
+  {
+    label: "夜间审核",
+    description: "低亮度、少干扰、长时间检查",
+    style: "graphite"
+  },
+  {
+    label: "快速排障",
+    description: "强对比、边界清楚、少装饰",
+    style: "brutalist"
   }
 ];
 

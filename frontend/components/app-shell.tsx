@@ -25,7 +25,17 @@ export function AppShell({
   showHelperText
 }: AppShellProps) {
   const activeMeta = tabMeta[activeTab];
-  const tabHref = (tab: WorkspaceTab) => (tab === "dashboard" ? "/" : `/?tab=${tab}`);
+  const tabHref = (tab: WorkspaceTab) => {
+    const params = new URLSearchParams();
+    if (tab !== "dashboard") {
+      params.set("tab", tab);
+    }
+    if (interfaceStyle !== "apple") {
+      params.set("theme", interfaceStyle);
+    }
+    const query = params.toString();
+    return query ? `/?${query}` : "/";
+  };
 
   return (
     <main className={`theme-${interfaceStyle} workspace-shell min-h-screen text-ink`}>
@@ -51,7 +61,7 @@ export function AppShell({
                     "mb-1 flex h-10 min-w-max items-center gap-3 rounded-md px-3 text-sm transition xl:w-full",
                     active
                       ? "glass-selected"
-                      : "text-muted hover:bg-white/55 hover:text-ink"
+                      : "text-muted hover:bg-mist/70 hover:text-ink"
                   ].join(" ")}
                 >
                   <item.icon className="h-4 w-4" />

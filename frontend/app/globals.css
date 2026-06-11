@@ -14,6 +14,14 @@
   --coral: 255 59 48;
   --steel: 0 122 255;
   --amber: 255 159 10;
+  --glass: 255 255 255;
+  --glass-strong: 0.72;
+  --glass-panel: 0.68;
+  --glass-control: 0.58;
+  --glass-subtle: 0.46;
+  --glass-highlight: 255 255 255;
+  --selected-bg: var(--ink);
+  --surface-grid: var(--ink);
 }
 
 .theme-apple {
@@ -26,6 +34,9 @@
   --coral: 255 59 48;
   --steel: 0 122 255;
   --amber: 255 159 10;
+  --glass: 255 255 255;
+  --selected-bg: var(--ink);
+  --surface-grid: var(--ink);
 }
 
 .theme-mint {
@@ -38,6 +49,9 @@
   --coral: 215 101 71;
   --steel: 47 115 167;
   --amber: 201 143 46;
+  --glass: 250 255 252;
+  --selected-bg: 24 76 62;
+  --surface-grid: 52 128 92;
 }
 
 .theme-warm {
@@ -50,6 +64,113 @@
   --coral: 207 96 86;
   --steel: 78 121 158;
   --amber: 190 127 55;
+  --glass: 255 252 248;
+  --selected-bg: 83 56 48;
+  --surface-grid: 190 127 55;
+}
+
+.theme-graphite {
+  --ink: 241 245 249;
+  --paper: 18 20 24;
+  --mist: 34 38 46;
+  --line: 68 76 90;
+  --muted: 165 174 188;
+  --moss: 79 209 150;
+  --coral: 255 118 118;
+  --steel: 118 168 255;
+  --amber: 245 183 77;
+  --glass: 25 29 38;
+  --glass-strong: 0.78;
+  --glass-panel: 0.68;
+  --glass-control: 0.62;
+  --glass-subtle: 0.48;
+  --glass-highlight: 255 255 255;
+  --selected-bg: 118 168 255;
+  --surface-grid: 118 168 255;
+}
+
+.theme-cyberpunk {
+  --ink: 235 250 255;
+  --paper: 9 11 24;
+  --mist: 19 24 44;
+  --line: 69 94 130;
+  --muted: 154 191 214;
+  --moss: 63 255 184;
+  --coral: 255 92 173;
+  --steel: 72 190 255;
+  --amber: 255 214 102;
+  --glass: 11 17 36;
+  --glass-strong: 0.78;
+  --glass-panel: 0.66;
+  --glass-control: 0.58;
+  --glass-subtle: 0.46;
+  --glass-highlight: 105 228 255;
+  --selected-bg: 255 92 173;
+  --surface-grid: 72 190 255;
+}
+
+.theme-editorial {
+  --ink: 35 32 30;
+  --paper: 247 243 236;
+  --mist: 239 232 221;
+  --line: 216 206 192;
+  --muted: 111 101 92;
+  --moss: 95 132 110;
+  --coral: 178 86 70;
+  --steel: 82 111 143;
+  --amber: 170 117 60;
+  --glass: 255 252 245;
+  --selected-bg: 51 43 36;
+  --surface-grid: 170 117 60;
+}
+
+.theme-candy {
+  --ink: 61 36 58;
+  --paper: 253 246 250;
+  --mist: 250 232 242;
+  --line: 231 199 216;
+  --muted: 132 91 119;
+  --moss: 83 166 136;
+  --coral: 223 86 136;
+  --steel: 128 111 214;
+  --amber: 226 151 74;
+  --glass: 255 250 253;
+  --selected-bg: 123 64 113;
+  --surface-grid: 223 86 136;
+}
+
+.theme-ocean {
+  --ink: 22 50 68;
+  --paper: 238 247 250;
+  --mist: 223 240 247;
+  --line: 190 216 228;
+  --muted: 80 112 130;
+  --moss: 54 151 138;
+  --coral: 205 94 90;
+  --steel: 42 126 184;
+  --amber: 199 142 61;
+  --glass: 247 253 255;
+  --selected-bg: 25 82 118;
+  --surface-grid: 42 126 184;
+}
+
+.theme-brutalist {
+  --ink: 16 16 16;
+  --paper: 246 246 240;
+  --mist: 232 232 222;
+  --line: 24 24 24;
+  --muted: 76 76 68;
+  --moss: 40 120 88;
+  --coral: 205 55 55;
+  --steel: 42 88 166;
+  --amber: 180 126 24;
+  --glass: 255 255 248;
+  --glass-strong: 0.88;
+  --glass-panel: 0.82;
+  --glass-control: 0.74;
+  --glass-subtle: 0.66;
+  --selected-bg: 16 16 16;
+  --surface-grid: 16 16 16;
 }
 
 * {
@@ -95,8 +216,8 @@ a {
   pointer-events: none;
   content: "";
   background-image:
-    linear-gradient(rgba(var(--ink), 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(var(--ink), 0.018) 1px, transparent 1px);
+    linear-gradient(rgba(var(--surface-grid), 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--surface-grid), 0.022) 1px, transparent 1px);
   background-size: 44px 44px;
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.65), transparent 76%);
 }
@@ -112,33 +233,56 @@ a {
 
 .glass-sidebar,
 .glass-topbar {
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.62);
+  background: rgba(var(--glass), var(--glass-strong));
+  box-shadow: inset -1px 0 0 rgba(var(--glass-highlight), 0.5);
 }
 
 .glass-panel {
-  background: rgba(255, 255, 255, 0.68);
+  background: rgba(var(--glass), var(--glass-panel));
   border-color: rgba(var(--line), 0.72);
   box-shadow:
     0 18px 45px rgba(var(--ink), 0.055),
-    inset 0 1px 0 rgba(255, 255, 255, 0.76);
+    inset 0 1px 0 rgba(var(--glass-highlight), 0.52);
 }
 
 .glass-control {
-  background: rgba(255, 255, 255, 0.58);
+  background: rgba(var(--glass), var(--glass-control));
   border-color: rgba(var(--line), 0.78);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  box-shadow: inset 0 1px 0 rgba(var(--glass-highlight), 0.44);
 }
 
 .glass-selected {
-  background: rgba(var(--ink), 0.92);
+  background: rgba(var(--selected-bg), 0.92);
   color: white;
   box-shadow:
-    0 10px 26px rgba(var(--ink), 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    0 10px 26px rgba(var(--selected-bg), 0.22),
+    inset 0 1px 0 rgba(var(--glass-highlight), 0.2);
 }
 
 .glass-subtle {
-  background: rgba(255, 255, 255, 0.46);
+  background: rgba(var(--glass), var(--glass-subtle));
   border-color: rgba(var(--line), 0.64);
+}
+
+.theme-graphite .bg-white,
+.theme-cyberpunk .bg-white {
+  background-color: rgba(var(--glass), 0.58) !important;
+}
+
+.theme-graphite input,
+.theme-graphite textarea,
+.theme-graphite select,
+.theme-cyberpunk input,
+.theme-cyberpunk textarea,
+.theme-cyberpunk select {
+  color: rgb(var(--ink));
+  background-color: rgba(var(--glass), 0.7) !important;
+}
+
+.theme-brutalist .glass-panel,
+.theme-brutalist .glass-control,
+.theme-brutalist .glass-subtle {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
 }
