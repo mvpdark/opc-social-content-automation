@@ -1,22 +1,28 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import {
   AlertTriangle,
+  Bookmark,
   CheckCircle2,
   Clipboard,
   Eye,
   EyeOff,
+  Heart,
   Image,
   KeyRound,
   Loader2,
+  MessageCircle,
   PenLine,
   RotateCcw,
   Save,
   Settings,
+  Share2,
   ShieldCheck,
   Terminal,
-  Trash2
+  Trash2,
+  X
 } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
@@ -824,12 +830,18 @@ function ContentView({
   onOpenSettings: () => void;
   workspaceToken: string;
 }) {
+  const [previewContent, setPreviewContent] = useState<GeneratedContent | null>(null);
+
   return (
     <div className="space-y-4">
-      <GenerationLauncher onOpenSettings={onOpenSettings} workspaceToken={workspaceToken} />
+      <GenerationLauncher
+        onGeneratedContent={setPreviewContent}
+        onOpenSettings={onOpenSettings}
+        workspaceToken={workspaceToken}
+      />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
-        <DraftPanel />
+        <DraftPanel content={previewContent} />
         <div className="space-y-4">
           <Panel helper="生成前需要明确输入、改写和确认边界。" title="生产控制">
             <div className="space-y-3">
@@ -860,9 +872,11 @@ function ContentView({
 }
 
 function GenerationLauncher({
+  onGeneratedContent,
   onOpenSettings,
   workspaceToken
 }: {
+  onGeneratedContent: (content: GeneratedContent) => void;
   onOpenSettings: () => void;
   workspaceToken: string;
 }) {
@@ -1048,6 +1062,7 @@ function GenerationLauncher({
       }
       const data = (await response.json()) as GeneratedContent;
       setLastContent(data);
+      onGeneratedContent(data);
       setNeedsProviderSettings(false);
       setStatusText(
         `草稿 #${data.id} 已生成，当前状态：${data.status}。单独确认页已暂停，发布前仍需人工确认。`
@@ -1905,38 +1920,312 @@ function SettingsView({
   );
 }
 
-function DraftPanel() {
+function formatPreviewParagraphs(body: string) {
+  return body
+    .split(/\n{2,}|\r?\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+}
+
+function buildCoverLines(title: string) {
+  const normalizedTitle = title.replace(/\s+/g, " ").trim();
+  if (!normalizedTitle) {
+    return ["小红书", "图文预览"];
+  }
+  if (normalizedTitle.includes("不是先套磁")) {
+    return ["不是先套磁", "先想清楚", "这 3 件事"];
+  }
+
+  const punctuationSegments = normalizedTitle
+    .split(/[，,。！？!?:：、]/)
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+  if (punctuationSegments.length > 1) {
+    return punctuationSegments.slice(0, 3);
+  }
+  if (normalizedTitle.length > 20) {
+    return [
+      normalizedTitle.slice(0, 10),
+      normalizedTitle.slice(10, 20),
+      normalizedTitle.slice(20, 30)
+    ].filter(Boolean);
+  }
+  return [normalizedTitle];
+}
+
+function platformDisplayName(platform: string) {
+  if (platform === "xiaohongshu") {
+    return "小红书图文";
+  }
+  if (platform === "douyin") {
+    return "抖音图文";
+  }
+  return platform;
+}
+
+function DraftPanel({ content }: { content: GeneratedContent | null }) {
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [portalReady, setPortalReady] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const preview = {
+    body: content?.body ?? draftPreview.body,
+    id: content?.id ?? null,
+    platform: content ? platformDisplayName(content.platform) : draftPreview.platform,
+    status: content ? "可预览" : draftPreview.status,
+    tags: content?.tags ?? draftPreview.tags,
+    title: content?.title ?? draftPreview.title
+  };
+  const coverLines = buildCoverLines(preview.title);
+  const paragraphs = formatPreviewParagraphs(preview.body);
+  const tagLine = formatTagLine(preview.tags);
+  const canCopy = Boolean(content && !isTestDraft(content));
+
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
+
+  async function handleCopy() {
+    if (!content || !canCopy) {
+      setCopyState("failed");
+      return;
+    }
+    try {
+      await copyText(buildPlatformCopy(content));
+      setCopyState("copied");
+    } catch (_error) {
+      setCopyState("failed");
+    }
+  }
+
   return (
     <Panel
-      action={<Pill tone="red">{draftPreview.status}</Pill>}
-      helper="选题、正文、人味化和封面需求统一查看。"
+      action={<Pill tone={content ? "green" : "amber"}>{preview.status}</Pill>}
+      helper="按小红书笔记卡片和弹窗预览最终展示效果。"
       title="创作台"
     >
-      <div className="grid grid-cols-1 gap-4 2xl:grid-cols-[1fr_260px]">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-medium text-steel">
-            <PenLine className="h-4 w-4" />
-            {draftPreview.platform}
-          </div>
-          <h3 className="mt-3 text-2xl font-semibold leading-8">{draftPreview.title}</h3>
-          <p className="mt-3 text-sm leading-7 text-ink/80">{draftPreview.body}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {draftPreview.tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-md border border-line bg-mist px-2 py-1 text-xs font-medium text-muted"
-              >
-                #{tag}
+      <div className="grid grid-cols-1 gap-5 2xl:grid-cols-[minmax(280px,360px)_1fr]">
+        <article
+          className="glass-subtle overflow-hidden rounded-[22px] border bg-paper shadow-panel"
+          data-testid="xhs-preview-card"
+        >
+          <button
+            aria-label="打开小红书发布效果预览"
+            className="group block w-full text-left"
+            data-testid="xhs-preview-cover-button"
+            onClick={() => setPreviewOpen(true)}
+            type="button"
+          >
+            <div className="relative aspect-[3/4] overflow-hidden bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.9),transparent_32%),linear-gradient(145deg,#fff7e8_0%,#d9f3e6_46%,#f8cfc0_100%)] p-5">
+              <div className="absolute left-4 top-4 rounded-md bg-white/75 px-2 py-1 text-[11px] font-semibold text-ink/70 shadow-sm">
+                封面预览
+              </div>
+              <div className="absolute inset-x-5 bottom-6">
+                <div className="mb-3 h-1.5 w-12 rounded-full bg-coral" />
+                <div className="space-y-1 text-[2rem] font-black leading-[1.08] text-ink sm:text-[2.35rem]">
+                  {coverLines.map((line) => (
+                    <div key={line}>{line}</div>
+                  ))}
+                </div>
+                <div className="mt-4 grid grid-cols-1 gap-2 text-xs font-semibold text-ink/70">
+                  {coverReferences.slice(0, 3).map((item, index) => (
+                    <div key={item.title} className="rounded-md bg-white/82 px-3 py-2">
+                      {index + 1}. {item.title}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </button>
+          <div className="p-4">
+            <div className="flex items-center justify-between gap-3 text-xs text-muted">
+              <span>{preview.platform}</span>
+              <span>{content ? `草稿 #${preview.id}` : "示例预览"}</span>
+            </div>
+            <button
+              className="mt-2 block w-full text-left text-base font-semibold leading-6 text-ink transition hover:text-coral"
+              data-testid="xhs-preview-title-button"
+              onClick={() => setPreviewOpen(true)}
+              type="button"
+            >
+              {preview.title}
+            </button>
+            <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted">
+              <span className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-coral/12 text-coral">
+                  OPC
+                </span>
+                内容运营中枢
               </span>
-            ))}
+              <span className="flex items-center gap-3">
+                <span className="flex items-center gap-1">
+                  <Heart className="h-4 w-4" />
+                  未发布
+                </span>
+                <Bookmark className="h-4 w-4" />
+              </span>
+            </div>
           </div>
-          <div className="mt-4 grid grid-cols-1 gap-3 text-xs text-muted sm:grid-cols-2">
-            <div className="border-l-4 border-steel pl-3">标题关键词保留</div>
-            <div className="border-l-4 border-moss pl-3">正文仅返回 Body</div>
+        </article>
+
+        <div className="grid content-start gap-4">
+          <div className={`${subtleCardClass} p-4`}>
+            <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+              <PenLine className="h-4 w-4 text-steel" />
+              发布页摘要
+            </div>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-ink/80">
+              {paragraphs[0] ?? preview.body}
+            </p>
+            {tagLine ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {tagLine.split(" ").map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-md border border-line bg-mist px-2 py-1 text-xs font-medium text-muted"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <button
+              className={`${secondaryButtonClass} h-11`}
+              data-testid="xhs-preview-open-button"
+              onClick={() => setPreviewOpen(true)}
+              type="button"
+            >
+              <Eye className="h-4 w-4" />
+              查看发布效果
+            </button>
+            <button
+              className={`${secondaryButtonClass} h-11 disabled:cursor-not-allowed disabled:opacity-55`}
+              disabled={!canCopy}
+              onClick={handleCopy}
+              type="button"
+            >
+              {copyState === "copied" ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <Clipboard className="h-4 w-4" />
+              )}
+              {copyState === "copied" ? "已复制文案" : "复制文案"}
+            </button>
+            <div className={`${subtleCardClass} flex min-h-11 items-center px-3 text-xs leading-5 text-muted`}>
+              {content ? "封面仍是版式预览，真实图片生成后会在这里替换。" : "生成草稿后，这里会自动切换为最新内容。"}
+            </div>
           </div>
         </div>
-        <CoverReferencePreview compact />
       </div>
+
+      {previewOpen && portalReady ? createPortal(
+        <div
+          aria-modal="true"
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-ink/40 p-4 backdrop-blur-md"
+          data-testid="xhs-preview-modal"
+          role="dialog"
+        >
+          <div className="grid max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-[24px] border border-white/40 bg-paper shadow-2xl lg:grid-cols-[minmax(300px,420px)_1fr]">
+            <div className="relative min-h-[420px] bg-[radial-gradient(circle_at_20%_18%,rgba(255,255,255,0.95),transparent_32%),linear-gradient(145deg,#fff7e8_0%,#d9f3e6_48%,#f8cfc0_100%)] p-7">
+              <button
+                aria-label="关闭小红书预览"
+                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-ink shadow-sm"
+                data-testid="xhs-preview-close"
+                onClick={() => setPreviewOpen(false)}
+                type="button"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <div className="rounded-md bg-white/75 px-2 py-1 text-[11px] font-semibold text-ink/70 shadow-sm">
+                小红书封面预览
+              </div>
+              <div className="absolute inset-x-7 bottom-8">
+                <div className="mb-4 h-1.5 w-14 rounded-full bg-coral" />
+                <div className="space-y-1 text-[2.55rem] font-black leading-[1.06] text-ink">
+                  {coverLines.map((line) => (
+                    <div key={line}>{line}</div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex max-h-[90vh] flex-col overflow-y-auto">
+              <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-coral/12 text-sm font-bold text-coral">
+                    OPC
+                  </span>
+                  <div>
+                    <div className="text-sm font-semibold">内容运营中枢</div>
+                    <div className="text-xs text-muted">发布前预览 - {preview.platform}</div>
+                  </div>
+                </div>
+                <Pill tone={content ? "green" : "amber"}>{content ? "最新草稿" : "示例"}</Pill>
+              </div>
+
+              <div className="px-5 py-5">
+                <h3 className="text-xl font-semibold leading-8 text-ink">{preview.title}</h3>
+                <div className="mt-4 space-y-3 text-sm leading-7 text-ink/82">
+                  {paragraphs.map((paragraph) => (
+                    <p key={paragraph}>{paragraph}</p>
+                  ))}
+                </div>
+                {tagLine ? <div className="mt-5 text-sm font-medium leading-6 text-steel">{tagLine}</div> : null}
+
+                <div className="mt-6 flex items-center justify-between border-y border-line py-3 text-sm text-muted">
+                  <span className="flex items-center gap-2">
+                    <Heart className="h-4 w-4" />
+                    未发布
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <MessageCircle className="h-4 w-4" />
+                    评论预览
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <Bookmark className="h-4 w-4" />
+                    收藏
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <Share2 className="h-4 w-4" />
+                    分享
+                  </span>
+                </div>
+
+                <div className="mt-5 rounded-md border border-amber/40 bg-amber/10 p-3 text-xs leading-5 text-ink">
+                  这是发布效果预览，不会自动发布；粘贴到小红书前仍需要人工确认标题、正文、标签和封面。
+                </div>
+                {copyState === "failed" ? (
+                  <div className="mt-3 rounded-md border border-coral/40 bg-coral/10 p-3 text-xs leading-5 text-ink">
+                    当前没有可复制的正式草稿，或浏览器复制被拦截。
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="mt-auto flex flex-col gap-3 border-t border-line px-5 py-4 sm:flex-row sm:items-center sm:justify-end">
+                <button
+                  className={`${secondaryButtonClass} h-10 px-4`}
+                  onClick={() => setPreviewOpen(false)}
+                  type="button"
+                >
+                  关闭预览
+                </button>
+                <button
+                  className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-55"
+                  disabled={!canCopy}
+                  onClick={handleCopy}
+                  type="button"
+                >
+                  <Clipboard className="h-4 w-4" />
+                  {copyState === "copied" ? "已复制" : "复制小红书文案"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      ) : null}
     </Panel>
   );
 }
