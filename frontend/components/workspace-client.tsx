@@ -1129,25 +1129,37 @@ function SettingsView({
                 <div className="text-xs text-muted">按运营模板推荐，也可以手动选择。</div>
               </div>
               <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2 2xl:grid-cols-3">
-                {themeTemplates.map((template) => (
-                  <a
-                    className="glass-subtle rounded-md border px-3 py-2 text-left transition hover:border-steel/60"
-                    href={settingsThemeHref(template.style)}
-                    key={template.label}
-                  >
-                    <span className="block text-xs font-semibold text-ink">{template.label}</span>
-                    <span className="mt-1 block text-xs leading-5 text-muted">
-                      {template.description}
-                    </span>
-                  </a>
-                ))}
+                {themeTemplates.map((template) => {
+                  const selected = template.style === interfaceStyle;
+                  return (
+                    <a
+                      aria-label={`${template.label}${selected ? "，当前推荐风格" : ""}`}
+                      className={[
+                        "rounded-md border px-3 py-2 text-left transition",
+                        selected
+                          ? "border-steel bg-mist text-ink ring-1 ring-steel/25"
+                          : "glass-subtle text-ink hover:border-steel/60"
+                      ].join(" ")}
+                      href={settingsThemeHref(template.style)}
+                      key={template.label}
+                    >
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-semibold">{template.label}</span>
+                        {selected ? <Pill tone="blue">当前</Pill> : null}
+                      </span>
+                      <span className="mt-1 block text-xs leading-5 text-muted">
+                        {template.description}
+                      </span>
+                    </a>
+                  );
+                })}
               </div>
               <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {interfaceStyles.map((style) => {
                   const selected = style.id === interfaceStyle;
                   return (
                     <a
-                      aria-current={selected ? "page" : undefined}
+                      aria-label={`${style.label}${selected ? "，当前界面风格" : ""}`}
                       className={[
                         `theme-${style.id}`,
                         "rounded-md border px-4 py-3 text-left transition",
@@ -1158,7 +1170,10 @@ function SettingsView({
                       href={settingsThemeHref(style.id)}
                       key={style.id}
                     >
-                      <span className="block text-sm font-semibold">{style.label}</span>
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-semibold">{style.label}</span>
+                        {selected ? <Pill tone="blue">当前</Pill> : null}
+                      </span>
                       <span className="mt-1 block text-xs leading-5 text-muted">
                         {style.description}
                       </span>
