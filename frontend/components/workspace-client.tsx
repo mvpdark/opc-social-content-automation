@@ -826,6 +826,19 @@ function isGeneratedContent(value: unknown): value is GeneratedContent {
   );
 }
 
+function isGeneratedImageAsset(value: unknown): value is GeneratedImageAsset {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const image = value as Partial<GeneratedImageAsset>;
+  return (
+    typeof image.content_id === "number" &&
+    typeof image.id === "number" &&
+    typeof image.image_url === "string" &&
+    typeof image.status === "string"
+  );
+}
+
 function loadStoredGeneratedContent() {
   if (typeof window === "undefined") {
     return null;
@@ -1523,10 +1536,12 @@ function ContentView({
   workspaceToken: string;
 }) {
   const [previewContent, setPreviewContent] = useState<GeneratedContent | null>(null);
+  const [previewImageAsset, setPreviewImageAsset] = useState<GeneratedImageAsset | null>(null);
   const [previewLoading, setPreviewLoading] = useState(true);
 
   function handleGeneratedContent(content: GeneratedContent) {
     setPreviewContent(content);
+    setPreviewImageAsset(null);
     saveStoredGeneratedContent(content);
   }
 
@@ -1535,6 +1550,29 @@ function ContentView({
     const storedContent = loadStoredGeneratedContent();
     if (storedContent) {
       setPreviewContent(storedContent);
+    }
+
+    async function loadLatestImage(contentId: number) {
+      try {
+        const response = await fetch(`${API_BASE}/image/list?content_id=${contentId}&limit=1`);
+        if (!response.ok) {
+          return;
+        }
+        const images = (await response.json()) as unknown;
+        if (!Array.isArray(images)) {
+          return;
+        }
+        const latestImage = images.find(isGeneratedImageAsset);
+        if (active && latestImage?.content_id === contentId) {
+          setPreviewImageAsset(latestImage);
+        }
+      } catch (_error) {
+        // Keep the text preview usable when image history is unavailable.
+      }
+    }
+
+    if (storedContent) {
+      void loadLatestImage(storedContent.id);
     }
 
     async function loadLatestContent() {
@@ -1553,6 +1591,7 @@ function ContentView({
         if (active && latestContent) {
           setPreviewContent(latestContent);
           saveStoredGeneratedContent(latestContent);
+          void loadLatestImage(latestContent.id);
         }
       } catch (_error) {
         // Keep the local draft or full example visible when the database/API is not available.
@@ -1574,12 +1613,17 @@ function ContentView({
       <GenerationLauncher
         latestContent={previewContent}
         onGeneratedContent={handleGeneratedContent}
+        onImageGenerated={setPreviewImageAsset}
         onOpenSettings={onOpenSettings}
         workspaceToken={workspaceToken}
       />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
-        <DraftPanel content={previewContent} loading={previewLoading} />
+        <DraftPanel
+          content={previewContent}
+          coverImageAsset={previewImageAsset}
+          loading={previewLoading}
+        />
         <div className="space-y-4">
           <Panel helper="生成前需要明确输入、改写和确认边界。" title="生产控制">
             <div className="space-y-3">
@@ -1612,11 +1656,13 @@ function ContentView({
 function GenerationLauncher({
   latestContent,
   onGeneratedContent,
+  onImageGenerated,
   onOpenSettings,
   workspaceToken
 }: {
   latestContent: GeneratedContent | null;
   onGeneratedContent: (content: GeneratedContent) => void;
+  onImageGenerated: (asset: GeneratedImageAsset) => void;
   onOpenSettings: () => void;
   workspaceToken: string;
 }) {
@@ -2120,8 +2166,10 @@ function GenerationLauncher({
         </div>
         {exportContent ? (
           <GeneratedPostExportCard
+            key={exportContent.id}
             content={exportContent}
             imageProviderReady={liveImageProviderReady}
+            onImageGenerated={onImageGenerated}
             onOpenSettings={onOpenSettings}
             onRefreshProviderStatuses={refreshProviderStatuses}
             workspaceToken={workspaceToken}
@@ -2135,12 +2183,14 @@ function GenerationLauncher({
 function GeneratedPostExportCard({
   content,
   imageProviderReady,
+  onImageGenerated,
   onOpenSettings,
   onRefreshProviderStatuses,
   workspaceToken
 }: {
   content: GeneratedContent;
   imageProviderReady: boolean;
+  onImageGenerated: (asset: GeneratedImageAsset) => void;
   onOpenSettings: () => void;
   onRefreshProviderStatuses: () => Promise<ProviderStatusItem[] | null>;
   workspaceToken: string;
@@ -2223,6 +2273,7 @@ function GeneratedPostExportCard({
       }
       const data = (await response.json()) as GeneratedImageAsset;
       setImageAsset(data);
+      onImageGenerated(data);
     } catch (error) {
       setImageError(error instanceof Error ? error.message : "封面图生成失败。");
     } finally {
@@ -3024,9 +3075,11 @@ function PlatformRecordBadge({ platform }: { platform: string }) {
 
 function DraftPanel({
   content,
+  coverImageAsset,
   loading
 }: {
   content: GeneratedContent | null;
+  coverImageAsset: GeneratedImageAsset | null;
   loading: boolean;
 }) {
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -3046,6 +3099,10 @@ function DraftPanel({
   const paragraphs = formatPreviewParagraphs(preview.body);
   const tagLine = formatTagLine(preview.tags);
   const canCopy = Boolean(content && !isTestDraft(content));
+  const coverImageUrl =
+    content && coverImageAsset?.content_id === content.id
+      ? resolveAssetUrl(coverImageAsset.image_url)
+      : null;
 
   useEffect(() => {
     setPortalReady(true);
@@ -3082,25 +3139,42 @@ function DraftPanel({
             onClick={() => setPreviewOpen(true)}
             type="button"
           >
-            <div className="relative aspect-[3/4] overflow-hidden bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.9),transparent_32%),linear-gradient(145deg,#fff7e8_0%,#d9f3e6_46%,#f8cfc0_100%)] p-5">
-              <div className="absolute left-4 top-4 rounded-md bg-white/75 px-2 py-1 text-[11px] font-semibold text-ink/70 shadow-sm">
-                封面预览
-              </div>
-              <div className="absolute inset-x-5 bottom-6">
-                <div className="mb-3 h-1.5 w-12 rounded-full bg-coral" />
-                <div className="space-y-1 text-[2rem] font-black leading-[1.08] text-ink sm:text-[2.35rem]">
-                  {coverLines.map((line) => (
-                    <div key={line}>{line}</div>
-                  ))}
-                </div>
-                <div className="mt-4 grid grid-cols-1 gap-2 text-xs font-semibold text-ink/70">
-                  {coverReferences.slice(0, 3).map((item, index) => (
-                    <div key={item.title} className="rounded-md bg-white/82 px-3 py-2">
-                      {index + 1}. {item.title}
+            <div
+              className={`relative aspect-[3/4] overflow-hidden ${
+                coverImageUrl
+                  ? "bg-paper"
+                  : "bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.9),transparent_32%),linear-gradient(145deg,#fff7e8_0%,#d9f3e6_46%,#f8cfc0_100%)] p-5"
+              }`}
+            >
+              {coverImageUrl ? (
+                <img
+                  alt="已生成的小红书封面预览"
+                  className="h-full w-full object-cover"
+                  data-testid="xhs-preview-real-cover"
+                  src={coverImageUrl}
+                />
+              ) : (
+                <>
+                  <div className="absolute left-4 top-4 rounded-md bg-white/75 px-2 py-1 text-[11px] font-semibold text-ink/70 shadow-sm">
+                    封面预览
+                  </div>
+                  <div className="absolute inset-x-5 bottom-6">
+                    <div className="mb-3 h-1.5 w-12 rounded-full bg-coral" />
+                    <div className="space-y-1 text-[2rem] font-black leading-[1.08] text-ink sm:text-[2.35rem]">
+                      {coverLines.map((line) => (
+                        <div key={line}>{line}</div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
+                    <div className="mt-4 grid grid-cols-1 gap-2 text-xs font-semibold text-ink/70">
+                      {coverReferences.slice(0, 3).map((item, index) => (
+                        <div key={item.title} className="rounded-md bg-white/82 px-3 py-2">
+                          {index + 1}. {item.title}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </button>
           <div className="p-4">
@@ -3184,7 +3258,9 @@ function DraftPanel({
               {copyState === "copied" ? "已复制文案" : "复制文案"}
             </button>
             <div className={`${subtleCardClass} flex min-h-11 items-center px-3 text-xs leading-5 text-muted`}>
-              {content
+              {content && coverImageUrl
+                ? "已生成真实封面，点击封面可查看发布效果。"
+                : content
                 ? "封面仍是版式预览，真实图片生成后会在这里替换。"
                 : loading
                   ? "正在读取最近生成的全文草稿。"
@@ -3202,7 +3278,13 @@ function DraftPanel({
           role="dialog"
         >
           <div className="grid max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-[24px] border border-white/40 bg-paper shadow-2xl lg:grid-cols-[minmax(300px,420px)_1fr] lg:overflow-hidden">
-            <div className="relative min-h-[320px] bg-[radial-gradient(circle_at_20%_18%,rgba(255,255,255,0.95),transparent_32%),linear-gradient(145deg,#fff7e8_0%,#d9f3e6_48%,#f8cfc0_100%)] p-7 sm:min-h-[420px]">
+            <div
+              className={`relative min-h-[320px] overflow-hidden ${
+                coverImageUrl
+                  ? "bg-paper"
+                  : "bg-[radial-gradient(circle_at_20%_18%,rgba(255,255,255,0.95),transparent_32%),linear-gradient(145deg,#fff7e8_0%,#d9f3e6_48%,#f8cfc0_100%)] p-7"
+              } sm:min-h-[420px]`}
+            >
               <button
                 aria-label={`关闭${previewPlatformLabel}预览`}
                 className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-ink shadow-sm"
@@ -3212,17 +3294,27 @@ function DraftPanel({
               >
                 <X className="h-4 w-4" />
               </button>
-              <div className="rounded-md bg-white/75 px-2 py-1 text-[11px] font-semibold text-ink/70 shadow-sm">
-                {previewPlatformLabel}封面预览
-              </div>
-              <div className="absolute inset-x-7 bottom-8">
-                <div className="mb-4 h-1.5 w-14 rounded-full bg-coral" />
-                <div className="space-y-1 text-[2.55rem] font-black leading-[1.06] text-ink">
-                  {coverLines.map((line) => (
-                    <div key={line}>{line}</div>
-                  ))}
-                </div>
-              </div>
+              {coverImageUrl ? (
+                <img
+                  alt={`已生成的${previewPlatformLabel}封面预览`}
+                  className="h-full min-h-[320px] w-full object-cover sm:min-h-[420px]"
+                  src={coverImageUrl}
+                />
+              ) : (
+                <>
+                  <div className="rounded-md bg-white/75 px-2 py-1 text-[11px] font-semibold text-ink/70 shadow-sm">
+                    {previewPlatformLabel}封面预览
+                  </div>
+                  <div className="absolute inset-x-7 bottom-8">
+                    <div className="mb-4 h-1.5 w-14 rounded-full bg-coral" />
+                    <div className="space-y-1 text-[2.55rem] font-black leading-[1.06] text-ink">
+                      {coverLines.map((line) => (
+                        <div key={line}>{line}</div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="flex flex-col lg:max-h-[90vh] lg:overflow-y-auto">
