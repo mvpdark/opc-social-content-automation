@@ -311,7 +311,7 @@ function DashboardView() {
           title="今日重点"
         >
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_300px]">
-            <div className="flex items-start gap-4 rounded-md bg-mist/70 p-4">
+            <div className="glass-subtle flex items-start gap-4 rounded-md border p-4">
               <IconBox tone="blue">
                 <primaryFocus.icon className="h-4 w-4" />
               </IconBox>
@@ -320,7 +320,7 @@ function DashboardView() {
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">{primaryFocus.detail}</p>
               </div>
             </div>
-            <div className="divide-y divide-line rounded-md border border-line bg-white">
+            <div className="glass-subtle divide-y divide-line rounded-md border">
               {nextActions.map((action, index) => (
                 <div key={action} className="flex items-center gap-3 px-3 py-3">
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-ink text-xs font-semibold text-white">
@@ -1293,7 +1293,7 @@ function ReferencePanel({
 
 function SafetyGateList() {
   return (
-    <div className="grid grid-cols-1 divide-y divide-line rounded-md border border-line bg-white">
+    <div className="glass-subtle grid grid-cols-1 divide-y divide-line rounded-md border">
       {safetyGates.map((gate) => (
         <div key={gate.label} className="flex items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
@@ -1365,8 +1365,8 @@ function Panel({
   title: string;
 }) {
   return (
-    <section className={["rounded-md border border-line bg-white shadow-panel", className].join(" ")}>
-      <div className="flex flex-col gap-3 border-b border-line px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+    <section className={["glass-panel rounded-md border", className].join(" ")}>
+      <div className="flex flex-col gap-3 border-b border-line/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-sm font-semibold leading-5">{title}</h2>
           {helper ? <p className="mt-1 text-xs text-muted">{helper}</p> : null}

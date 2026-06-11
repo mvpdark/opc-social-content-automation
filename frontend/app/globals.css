@@ -58,6 +58,7 @@
 
 html,
 body {
+  min-height: 100vh;
   margin: 0;
   background: rgb(var(--paper));
   color: rgb(var(--ink));
@@ -76,4 +77,68 @@ select {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+.workspace-shell {
+  position: relative;
+  isolation: isolate;
+  background:
+    linear-gradient(135deg, rgba(var(--steel), 0.08), transparent 32%),
+    linear-gradient(220deg, rgba(var(--moss), 0.08), transparent 36%),
+    rgb(var(--paper));
+}
+
+.workspace-shell::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+  background-image:
+    linear-gradient(rgba(var(--ink), 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--ink), 0.018) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.65), transparent 76%);
+}
+
+.glass-sidebar,
+.glass-topbar,
+.glass-panel,
+.glass-control,
+.glass-subtle {
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  backdrop-filter: blur(22px) saturate(150%);
+}
+
+.glass-sidebar,
+.glass-topbar {
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.62);
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.68);
+  border-color: rgba(var(--line), 0.72);
+  box-shadow:
+    0 18px 45px rgba(var(--ink), 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.76);
+}
+
+.glass-control {
+  background: rgba(255, 255, 255, 0.58);
+  border-color: rgba(var(--line), 0.78);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.glass-selected {
+  background: rgba(var(--ink), 0.92);
+  color: white;
+  box-shadow:
+    0 10px 26px rgba(var(--ink), 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.glass-subtle {
+  background: rgba(255, 255, 255, 0.46);
+  border-color: rgba(var(--line), 0.64);
 }

@@ -28,9 +28,9 @@ export function AppShell({
   const tabHref = (tab: WorkspaceTab) => (tab === "dashboard" ? "/" : `/?tab=${tab}`);
 
   return (
-    <main className={`theme-${interfaceStyle} min-h-screen bg-paper text-ink`}>
-      <div className="grid min-h-screen grid-cols-1 xl:grid-cols-[252px_1fr]">
-        <aside className="border-b border-line bg-white/90 backdrop-blur xl:border-b-0 xl:border-r">
+    <main className={`theme-${interfaceStyle} workspace-shell min-h-screen text-ink`}>
+      <div className="relative z-10 grid min-h-screen grid-cols-1 xl:grid-cols-[252px_1fr]">
+        <aside className="glass-sidebar border-b border-line xl:border-b-0 xl:border-r">
           <div className="flex h-[72px] items-center border-b border-line px-5 py-4 xl:px-6">
             <div className="flex h-10 w-10 items-center justify-center rounded-md bg-ink text-white">
               <Command className="h-5 w-5" />
@@ -50,8 +50,8 @@ export function AppShell({
                   className={[
                     "mb-1 flex h-10 min-w-max items-center gap-3 rounded-md px-3 text-sm transition xl:w-full",
                     active
-                      ? "bg-ink text-white shadow-panel"
-                      : "text-muted hover:bg-mist hover:text-ink"
+                      ? "glass-selected"
+                      : "text-muted hover:bg-white/55 hover:text-ink"
                   ].join(" ")}
                 >
                   <item.icon className="h-4 w-4" />
@@ -74,7 +74,7 @@ export function AppShell({
         </aside>
 
         <section className="min-w-0">
-          <header className="border-b border-line bg-white/90 px-5 py-4 backdrop-blur lg:px-6">
+          <header className="glass-topbar border-b border-line px-5 py-4 lg:px-6">
             <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
               <div>
                 <h1 className="text-xl font-semibold leading-7">{activeMeta.title}</h1>
@@ -83,7 +83,7 @@ export function AppShell({
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
                 {showHelperText ? (
                   <div className="hidden xl:flex">
-                    <div className="inline-flex h-8 items-center gap-2 rounded-md border border-line bg-mist px-2.5 text-xs font-medium text-muted">
+                    <div className="glass-control inline-flex h-8 items-center gap-2 rounded-md border px-2.5 text-xs font-medium text-muted">
                       <ShieldCheck className="h-3.5 w-3.5 text-moss" />
                       人工审核开启
                     </div>
@@ -91,14 +91,14 @@ export function AppShell({
                 ) : null}
                 <div className="flex items-center gap-3">
                   <a
-                    className="flex h-9 shrink-0 items-center gap-2 rounded-md border border-line bg-white px-3 text-sm font-medium text-ink"
+                    className="glass-control flex h-9 shrink-0 items-center gap-2 rounded-md border px-3 text-sm font-medium text-ink"
                     href="/android"
                   >
                     <Smartphone className="h-4 w-4" />
                     安卓端
                   </a>
                   <a
-                    className="flex h-9 shrink-0 items-center gap-2 rounded-md bg-ink px-3 text-sm font-medium text-white"
+                    className="glass-selected flex h-9 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-medium"
                     href={tabHref("content")}
                   >
                     <PenLine className="h-4 w-4" />
@@ -106,7 +106,7 @@ export function AppShell({
                   </a>
                   <a
                     aria-label="打开设置"
-                    className="flex h-9 w-9 items-center justify-center rounded-md border border-line bg-white text-muted"
+                    className="glass-control flex h-9 w-9 items-center justify-center rounded-md border text-muted"
                     href={tabHref("settings")}
                   >
                     <Settings className="h-4 w-4" />
