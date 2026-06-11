@@ -157,7 +157,7 @@ const writingStylePresets = [
     label: "女性可爱",
     helper: "亲近、软一点、有陪伴感",
     prompt:
-      "偏女性可爱风，像学姐认真提醒：语气温柔、轻松、有陪伴感，开头要有共鸣，不要像硬广"
+      "偏女性可爱风，像学姐认真提醒：语气温柔、轻松、有陪伴感，可以少量用姐妹/宝子/uu口吻，开头要有共鸣，不要像硬广或官方说明文"
   },
   {
     id: "professional",
@@ -196,19 +196,19 @@ const expressionOptions = [
   {
     key: "emoji",
     label: "轻量表情",
-    enabled: "每 2-3 段可以放 1 个轻量表情，让语气更像真实小红书笔记",
+    enabled: "必须自然放入 2-5 个小红书表情字符码、轻量 emoji 或颜文字，让语气更像真实小红书笔记",
     disabled: "不使用 emoji 或颜文字"
   },
   {
     key: "punctuation",
     label: "活泼标点",
-    enabled: "允许使用 ～、！！、？ 来制造口语节奏，但不要连续堆叠",
+    enabled: "必须自然使用 ～、！！、？、…… 来制造口语节奏，但不要连续堆叠",
     disabled: "标点保持克制"
   },
   {
     key: "meme",
     label: "表情包感",
-    enabled: "可以用短括号吐槽和口语停顿制造表情包感，例如“先别急”“真的别反着来”",
+    enabled: "至少加入 1-2 个短括号吐槽和口语停顿制造表情包感，例如（先别急）（真的别反着来）（会很亏）",
     disabled: "不使用吐槽式表达"
   },
   {
@@ -220,7 +220,7 @@ const expressionOptions = [
 ] as const;
 
 const hiddenXhsStickerToneGuide =
-  "隐藏撰稿规则：如果平台是小红书，生成正文时可自然少量使用小红书可识别的表情字符码，优先 [笑哭R]、[哭惹R]、[哇R]、[赞R]、[doge]、[蹲后续H]，每篇 2-5 个即可；字符码要融入正文语气，不要解释字符码，不要列出表情清单。";
+  "隐藏撰稿规则：如果平台是小红书，生成正文时必须自然少量使用小红书可识别的表情字符码，优先 [笑哭R]、[哭惹R]、[哇R]、[赞R]、[doge]、[蹲后续H]，每篇 2-5 个；字符码要融入正文语气，不要解释字符码，不要列出表情清单。";
 
 const xhsHighAttractionCoverStyle =
   "小红书高吸引封面：真实学习桌/申请材料场景，大字反常识标题，红色风险标签，3个短清单芯片，女性可爱但可信，奶油底+珊瑚红+薄荷绿，避免官方标志和录取承诺。";
@@ -801,11 +801,19 @@ function buildPlatformCopy(content: GeneratedContent) {
 }
 
 function resolveAssetUrl(imageUrl: string) {
-  if (/^https?:\/\//i.test(imageUrl)) {
-    return imageUrl;
+  const normalizedUrl = imageUrl.trim();
+  if (!normalizedUrl) {
+    return "";
+  }
+  if (/^(https?:|data:|blob:|file:)/i.test(normalizedUrl)) {
+    return normalizedUrl;
+  }
+  if (normalizedUrl.startsWith("//")) {
+    const protocol = typeof window !== "undefined" ? window.location.protocol : "http:";
+    return `${protocol}${normalizedUrl}`;
   }
   const apiUrl = new URL(API_BASE);
-  return `${apiUrl.origin}${imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`}`;
+  return `${apiUrl.origin}${normalizedUrl.startsWith("/") ? normalizedUrl : `/${normalizedUrl}`}`;
 }
 
 function complianceWarnings(content: GeneratedContent) {
@@ -880,12 +888,12 @@ function renderXhsExpressionText(text: string) {
     }
     return (
       <span
-        className="mx-0.5 inline-flex translate-y-[2px] items-center gap-1 rounded-md border border-coral/20 bg-coral/10 px-1.5 py-0.5 text-xs font-semibold text-ink"
+        aria-label={`${sticker.name}表情`}
+        className="mx-0.5 inline-flex h-6 min-w-6 translate-y-[3px] items-center justify-center rounded-full border border-coral/20 bg-coral/10 px-1.5 text-base leading-none text-ink shadow-sm"
         key={`${part}-${index}`}
         title={`${part}：${sticker.name}，本地近似预览，复制后仍保留原字符码`}
       >
-        <span aria-hidden="true">{sticker.face}</span>
-        <span>{part}</span>
+        {sticker.face}
       </span>
     );
   });

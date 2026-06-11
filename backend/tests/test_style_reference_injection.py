@@ -7,6 +7,7 @@ from app.services.content_service import (
     build_rewrite_prompt_package,
 )
 from app.services.image_service import build_image_prompt_package
+from app.services.model_router import load_prompt
 
 
 def test_draft_prompt_package_includes_xiaohongshu_style_reference() -> None:
@@ -41,6 +42,22 @@ def test_draft_prompt_package_preserves_detailed_style_guidance() -> None:
     package = build_draft_prompt_package(db=None, payload=payload, current_user=user)  # type: ignore[arg-type]
 
     assert package.payload["tone"] == tone
+
+
+def test_draft_prompt_template_requires_xhs_expression_layer() -> None:
+    prompt = load_prompt("draft_generation")
+    style_reference = load_prompt("xiaohongshu_style_reference")
+
+    assert "[笑哭R]" in prompt
+    assert "表情包" in prompt
+    assert "👉💧" in prompt
+    assert "📍" in prompt
+    assert "🎓" in prompt
+    assert "～" in prompt
+    assert "[哭惹R]" in style_reference
+    assert "结构" in style_reference
+    assert "✅" in style_reference
+    assert "姐妹" in style_reference
 
 
 def test_rewrite_prompt_package_includes_xiaohongshu_style_reference() -> None:

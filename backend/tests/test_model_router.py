@@ -62,6 +62,32 @@ def test_codex_test_draft_provider_does_not_echo_hidden_tone_rules(
     assert "[笑哭R]" not in result
 
 
+def test_codex_test_draft_provider_uses_xhs_expression_layer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "draft_provider", "codex_test")
+
+    result = model_router.draft_model(
+        "draft_generation",
+        {
+            "platform": "xiaohongshu",
+            "topic": "硕升博申请节奏",
+            "tone": "偏女性可爱风；必须有表情包感和活泼标点。",
+        },
+    )
+
+    assert "姐妹们" in result
+    assert "👉" in result
+    assert "👇" in result
+    assert "📍" in result
+    assert "✅" in result
+    assert "🎓" in result
+    assert "😎" in result
+    assert "[哇R]" in result
+    assert "！！" in result
+    assert "（真的会累）" in result
+
+
 def test_codex_test_image_provider_creates_svg(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "image_provider", "codex_test")
     monkeypatch.setattr(settings, "test_static_url_prefix", "/static/generated")
