@@ -58,6 +58,10 @@ const pillTone: Record<string, string> = {
 };
 
 const subtleCardClass = "glass-subtle rounded-md border";
+const formControlClass =
+  "glass-control mt-2 w-full rounded-md border px-3 text-sm text-ink outline-none";
+const secondaryButtonClass =
+  "glass-control flex items-center justify-center gap-2 rounded-md border text-sm font-medium text-ink";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api";
 const CREDENTIAL_STORAGE_KEY = "opc_workspace_credentials_v1";
@@ -652,7 +656,7 @@ function GenerationLauncher({
             <label className="block">
               <span className="text-xs font-medium text-muted">平台</span>
               <select
-                className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+                className={`${formControlClass} h-10`}
                 value={platform}
                 onChange={(event) => setPlatform(event.target.value)}
               >
@@ -660,14 +664,14 @@ function GenerationLauncher({
                 <option value="douyin">抖音图文</option>
               </select>
             </label>
-            <div className="rounded-md border border-line bg-mist px-3 py-2">
+            <div className={`${subtleCardClass} px-3 py-2`}>
               <div className="text-xs font-medium text-muted">工作台令牌</div>
               <div className="mt-1 flex items-center justify-between gap-3">
                 <span className="text-sm font-medium">
                   {workspaceToken ? "已在设置中配置" : "未配置"}
                 </span>
                 <button
-                  className="rounded-md border border-line bg-white px-2 py-1 text-xs font-medium text-ink"
+                  className="glass-control rounded-md border px-2 py-1 text-xs font-medium text-ink"
                   onClick={onOpenSettings}
                   type="button"
                 >
@@ -678,7 +682,7 @@ function GenerationLauncher({
             <label className="block md:col-span-2">
               <span className="text-xs font-medium text-muted">选题</span>
               <input
-                className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+                className={`${formControlClass} h-10`}
                 onChange={(event) => setTopic(event.target.value)}
                 placeholder="输入要生成的图文主题"
                 value={topic}
@@ -687,7 +691,7 @@ function GenerationLauncher({
             <label className="block">
               <span className="text-xs font-medium text-muted">知识检索词</span>
               <input
-                className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+                className={`${formControlClass} h-10`}
                 onChange={(event) => setKnowledgeQuery(event.target.value)}
                 value={knowledgeQuery}
               />
@@ -695,7 +699,7 @@ function GenerationLauncher({
             <label className="block">
               <span className="text-xs font-medium text-muted">目标人群</span>
               <input
-                className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+                className={`${formControlClass} h-10`}
                 onChange={(event) => setTargetAudience(event.target.value)}
                 value={targetAudience}
               />
@@ -711,7 +715,7 @@ function GenerationLauncher({
                       className={`min-h-20 rounded-md border px-3 py-2 text-left transition ${
                         selected
                           ? "border-coral bg-coral/10 text-ink"
-                          : "border-line bg-white text-ink hover:border-coral/50"
+                          : "glass-control text-ink hover:border-coral/50"
                       }`}
                       key={preset.id}
                       onClick={() => applyStylePreset(preset.id)}
@@ -737,7 +741,7 @@ function GenerationLauncher({
                       className={`flex min-h-10 items-center justify-between gap-2 rounded-md border px-3 text-left text-xs font-medium transition ${
                         enabled
                           ? "border-moss bg-moss/10 text-moss"
-                          : "border-line bg-white text-muted"
+                          : "glass-control text-muted"
                       }`}
                       key={option.key}
                       onClick={() => toggleStyleOption(option.key)}
@@ -757,7 +761,7 @@ function GenerationLauncher({
                 <span>{tone.length}/420</span>
               </span>
               <textarea
-                className="mt-2 min-h-24 w-full resize-y rounded-md border border-line bg-white px-3 py-2 text-sm leading-6 outline-none"
+                className={`${formControlClass} min-h-24 resize-y py-2 leading-6`}
                 maxLength={420}
                 onChange={(event) => setTone(event.target.value)}
                 value={tone}
@@ -766,14 +770,14 @@ function GenerationLauncher({
             <label className="block md:col-span-2">
               <span className="text-xs font-medium text-muted">标签</span>
               <input
-                className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+                className={`${formControlClass} h-10`}
                 onChange={(event) => setTagsText(event.target.value)}
                 value={tagsText}
               />
             </label>
           </div>
 
-          <div className="rounded-md border border-line bg-mist/70 p-4">
+          <div className={`${subtleCardClass} p-4`}>
             <div className="text-sm font-semibold">启动状态</div>
             <p className="mt-2 text-sm leading-6 text-muted">{statusText}</p>
             <div className="mt-4 grid grid-cols-1 gap-2">
@@ -791,7 +795,7 @@ function GenerationLauncher({
                 生成图文
               </button>
               <button
-                className="flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-white text-sm font-medium text-ink disabled:cursor-not-allowed disabled:opacity-60"
+                className={`${secondaryButtonClass} h-10 disabled:cursor-not-allowed disabled:opacity-60`}
                 disabled={!canRequestReview}
                 onClick={requestReview}
                 type="button"
@@ -1060,7 +1064,7 @@ function SettingsView({
               <label key={field.keyName} className="block">
                 <span className="text-xs font-medium text-muted">{field.label}</span>
                 <input
-                  className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+                  className={`${formControlClass} h-10`}
                   onChange={(event) => updateCredential(field.keyName, event.target.value)}
                   placeholder={field.placeholder}
                   type="password"
@@ -1071,7 +1075,7 @@ function SettingsView({
             ))}
           </div>
 
-          <div className="rounded-md border border-line bg-mist/70 p-4">
+          <div className={`${subtleCardClass} p-4`}>
             <div className="flex items-center gap-3">
               <IconBox tone="blue">
                 <KeyRound className="h-4 w-4" />
@@ -1092,7 +1096,7 @@ function SettingsView({
                 应用服务 API Key
               </button>
               <button
-                className="flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-white text-sm font-medium text-ink"
+                className={`${secondaryButtonClass} h-10`}
                 onClick={clearCredentials}
                 type="button"
               >
@@ -1191,7 +1195,7 @@ function SettingsView({
             </div>
 
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-              <div className="rounded-md border border-line bg-white p-4">
+              <div className={`${subtleCardClass} p-4`}>
                 <div className="flex items-start gap-3">
                   <IconBox tone={showHelperText ? "green" : "amber"}>
                     {showHelperText ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
@@ -1207,7 +1211,7 @@ function SettingsView({
                       控制顶部副标题和侧边说明的显示，不影响导航、设置入口和主要按钮。
                     </p>
                     <button
-                      className="mt-4 flex h-9 items-center gap-2 rounded-md border border-line bg-white px-3 text-sm font-medium text-ink"
+                      className={`${secondaryButtonClass} mt-4 h-9 px-3`}
                       onClick={() => onShowHelperTextChange(!showHelperText)}
                       type="button"
                     >
@@ -1218,7 +1222,7 @@ function SettingsView({
                 </div>
               </div>
 
-              <div className="rounded-md border border-line bg-mist/70 p-4">
+              <div className={`${subtleCardClass} p-4`}>
                 <div className="flex items-start gap-3">
                   <IconBox tone="blue">
                     <Settings className="h-4 w-4" />
