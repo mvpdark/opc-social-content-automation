@@ -1035,7 +1035,7 @@ function SettingsView({
   ];
 
   function settingsThemeHref(style: InterfaceStyle) {
-    return style === "apple" ? "/?tab=settings" : `/?tab=settings&theme=${style}`;
+    return `/?tab=settings&theme=${style}`;
   }
 
   return (
