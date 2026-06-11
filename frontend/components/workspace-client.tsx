@@ -880,6 +880,7 @@ function ReviewView({ credentials }: { credentials: CredentialSettings }) {
   const selectedContent =
     pendingContents.find((content) => content.id === selectedContentId) ?? pendingContents[0] ?? null;
   const canSubmitReview = Boolean(selectedContent) && reviewBusy === null;
+  const isPendingReviewLoading = reviewBusy === "refresh" && pendingContents.length === 0;
 
   useEffect(() => {
     void loadPendingContents();
@@ -1032,38 +1033,45 @@ function ReviewView({ credentials }: { credentials: CredentialSettings }) {
         ) : (
           <div className="space-y-3">
             <div className={`${subtleCardClass} border-dashed p-4`}>
-              <div className="text-sm font-semibold">暂无可审核草稿</div>
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                {isPendingReviewLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {isPendingReviewLoading ? "正在读取待审草稿" : "暂无可审核草稿"}
+              </div>
               <p className="mt-2 text-sm leading-6 text-muted">{reviewStatus}</p>
-              <a
-                className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-paper"
-                href="/?tab=content"
-              >
-                <PenLine className="h-4 w-4" />
-                去内容生产页
-              </a>
+              {!isPendingReviewLoading ? (
+                <a
+                  className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-paper"
+                  href="/?tab=content"
+                >
+                  <PenLine className="h-4 w-4" />
+                  去内容生产页
+                </a>
+              ) : null}
             </div>
-            <div className="divide-y divide-line rounded-md border">
-              {reviewQueue.map((item) => (
-                <QueueRow
-                  actionLabel={
-                    item.status === "需复核"
-                      ? "去封面页"
-                      : item.status === "待采集"
-                        ? "去知识库"
-                        : "去生产页"
-                  }
-                  href={
-                    item.status === "需复核"
-                      ? "/?tab=cover"
-                      : item.status === "待采集"
-                        ? "/?tab=knowledge"
-                        : "/?tab=content"
-                  }
-                  item={item}
-                  key={item.title}
-                />
-              ))}
-            </div>
+            {!isPendingReviewLoading ? (
+              <div className="divide-y divide-line rounded-md border">
+                {reviewQueue.map((item) => (
+                  <QueueRow
+                    actionLabel={
+                      item.status === "需复核"
+                        ? "去封面页"
+                        : item.status === "待采集"
+                          ? "去知识库"
+                          : "去生产页"
+                    }
+                    href={
+                      item.status === "需复核"
+                        ? "/?tab=cover"
+                        : item.status === "待采集"
+                          ? "/?tab=knowledge"
+                          : "/?tab=content"
+                    }
+                    item={item}
+                    key={item.title}
+                  />
+                ))}
+              </div>
+            ) : null}
           </div>
         )}
       </Panel>
