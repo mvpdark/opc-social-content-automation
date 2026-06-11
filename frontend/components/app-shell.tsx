@@ -112,6 +112,11 @@ export function AppShell({
                   <div className="truncate text-sm font-semibold">
                     {recommendedStyle?.label ?? "苹果风"}
                   </div>
+                  <div className={`theme-${recommendedTheme.style} mt-2 flex gap-1`} aria-hidden="true">
+                    <span className="h-1.5 w-8 rounded-sm bg-steel" />
+                    <span className="h-1.5 w-8 rounded-sm bg-moss" />
+                    <span className="h-1.5 w-8 rounded-sm bg-coral" />
+                  </div>
                   {showHelperText ? (
                     <p className="mt-1 text-xs leading-5 text-muted">{recommendedTheme.reason}</p>
                   ) : null}
@@ -122,6 +127,7 @@ export function AppShell({
                   </span>
                 ) : (
                   <a
+                    aria-label={`切换到${recommendedStyle?.label ?? "推荐"}主题`}
                     className="glass-control shrink-0 rounded-md border px-2 py-1 text-xs font-medium text-ink"
                     href={themeHref(recommendedTheme.style)}
                   >
