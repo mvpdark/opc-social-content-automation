@@ -33,3 +33,4 @@ htmlcov/
 backend/static/generated/
 artifacts/
 .browser-sessions/
+.playwright-cli/
