@@ -101,7 +101,7 @@ export function AppShell({
                     </div>
                   </div>
                 ) : null}
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <a
                     className="glass-control flex h-9 shrink-0 items-center gap-2 rounded-md border px-3 text-sm font-medium text-ink"
                     href={androidHref}
