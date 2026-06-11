@@ -1,6 +1,11 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = BACKEND_ROOT.parent
 
 
 class Settings(BaseSettings):
@@ -29,7 +34,10 @@ class Settings(BaseSettings):
     deepseek_timeout_seconds: float = 60.0
     frontend_origin: str = "http://localhost:3000"
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_file=(PROJECT_ROOT / ".env", BACKEND_ROOT / ".env"),
+        env_file_encoding="utf-8",
+    )
 
     @property
     def cors_origins(self) -> list[str]:

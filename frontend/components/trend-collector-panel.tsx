@@ -16,7 +16,7 @@ type SearchTarget = {
   safety_notes: string[];
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8010/api";
 
 const platformLabels: Record<Platform, string> = {
   xiaohongshu: "小红书",

@@ -26,8 +26,12 @@ alembic upgrade head
 Run the API:
 
 ```bash
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8010
 ```
+
+The frontend defaults to `http://localhost:8010/api`. Port `8000` is often used by
+local AI gateway tooling, so keep the OPC backend on `8010` unless you also update
+`NEXT_PUBLIC_API_BASE_URL`.
 
 ## DeepSeek Rewrite Provider
 
