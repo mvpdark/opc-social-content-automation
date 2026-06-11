@@ -20,7 +20,9 @@ class Settings(BaseSettings):
     embedding_dimensions: int = 1536
     draft_provider: str = "codex_test"
     draft_model: str = "gpt-5.5"
-    draft_timeout_seconds: float = 120.0
+    draft_timeout_seconds: float = 60.0
+    draft_max_tokens: int = 1800
+    draft_temperature: float = 0.7
     image_provider: str = "codex_test"
     image_model: str = "gpt-image-2"
     image_size: str | None = None

@@ -95,6 +95,8 @@ def test_openai_compatible_draft_provider_calls_chat_completion(
     monkeypatch.setattr(settings, "openai_compatible_api_key", secret)
     monkeypatch.setattr(settings, "openai_compatible_base_url", "https://example.test/v1")
     monkeypatch.setattr(settings, "draft_model", "gpt-5.5")
+    monkeypatch.setattr(settings, "draft_max_tokens", 1234)
+    monkeypatch.setattr(settings, "draft_temperature", 0.55)
 
     class FakeResponse:
         status_code = 200
@@ -134,9 +136,50 @@ def test_openai_compatible_draft_provider_calls_chat_completion(
     assert isinstance(request_json, dict)
     assert request_json["model"] == "gpt-5.5"
     assert request_json["store"] is False
+    assert request_json["max_tokens"] == 1234
+    assert request_json["temperature"] == 0.55
     assert "\\u" in str(request_json["messages"])
     assert "硕升博" not in str(request_json["messages"])
     assert secret not in str(request_json)
+
+
+def test_openai_compatible_draft_provider_reports_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    secret = "test-compatible-key"
+    monkeypatch.setattr(settings, "draft_provider", "openai_compatible")
+    monkeypatch.setattr(settings, "openai_compatible_api_key", secret)
+    monkeypatch.setattr(settings, "openai_compatible_base_url", "https://example.test/v1")
+    monkeypatch.setattr(settings, "draft_timeout_seconds", 12.0)
+
+    class FakeClient:
+        def __init__(self, timeout: float) -> None:
+            self.timeout = timeout
+
+        def __enter__(self) -> "FakeClient":
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def post(
+            self,
+            url: str,
+            headers: dict[str, str],
+            json: dict[str, object],
+        ) -> object:
+            request = httpx.Request("POST", url)
+            raise httpx.ReadTimeout("timed out", request=request)
+
+    monkeypatch.setattr("app.services.model_router.httpx.Client", FakeClient)
+
+    with pytest.raises(HTTPException) as exc:
+        model_router.draft_model("draft_generation", {"topic": "test"})
+
+    assert exc.value.status_code == 504
+    assert "响应超时" in exc.value.detail
+    assert "12" in exc.value.detail
+    assert secret not in exc.value.detail
 
 
 def test_openai_compatible_draft_provider_reports_invalid_key(

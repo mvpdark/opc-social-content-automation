@@ -110,7 +110,9 @@ Draft generation can use an OpenAI-compatible Chat Completions provider:
 ```bash
 DRAFT_PROVIDER=openai_compatible
 DRAFT_MODEL=gpt-5.5
-DRAFT_TIMEOUT_SECONDS=120
+DRAFT_TIMEOUT_SECONDS=60
+DRAFT_MAX_TOKENS=1800
+DRAFT_TEMPERATURE=0.7
 OPENAI_COMPATIBLE_BASE_URL=https://your-compatible-provider.example/v1
 OPENAI_COMPATIBLE_API_KEY=your-secret-key
 ```

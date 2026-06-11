@@ -93,6 +93,15 @@ def _redacted_provider_error_from_response(
     return _redacted_provider_error(provider, status_code)
 
 
+def _redacted_provider_timeout(provider: str, timeout_seconds: float) -> str:
+    provider_label = _provider_display_label(provider)
+    timeout_text = f"{timeout_seconds:g}"
+    return (
+        f"{provider_label}响应超时（超过 {timeout_text} 秒）。"
+        "请稍后重试；如果反复出现，请降低输出长度或更换可用模型/中转站。"
+    )
+
+
 def _deepseek_messages(prompt_template: str, payload: dict[str, object]) -> list[dict[str, str]]:
     return [
         {
@@ -179,6 +188,11 @@ def _post_chat_completion(
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=_redacted_provider_error_from_response(provider, exc.response),
+        ) from exc
+    except httpx.TimeoutException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail=_redacted_provider_timeout(provider, timeout_seconds),
         ) from exc
     except (httpx.HTTPError, ValueError) as exc:
         raise HTTPException(
@@ -460,6 +474,8 @@ class ModelRouter:
                 "messages": _chat_messages(prompt_template, payload),
                 "stream": False,
                 "store": False,
+                "temperature": settings.draft_temperature,
+                "max_tokens": settings.draft_max_tokens,
             }
             data = _post_chat_completion(
                 provider="OpenAI-compatible draft provider",
