@@ -1278,7 +1278,9 @@ function GenerationLauncher({
                 </p>
               ) : null}
               <button
+                aria-label="检测撰稿连接"
                 className={`${secondaryButtonClass} mt-3 h-9 w-full disabled:cursor-not-allowed disabled:opacity-60`}
+                data-testid="draft-provider-check-button"
                 disabled={draftCheckBusy || busyAction !== null}
                 onClick={checkDraftProviderFromLauncher}
                 type="button"
