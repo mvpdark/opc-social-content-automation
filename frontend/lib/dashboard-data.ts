@@ -308,7 +308,7 @@ export const promoterActions = [
   {
     title: "已批准内容",
     description: "人工审核后进入推广交付池。",
-    status: "0 条就绪",
+    status: "0 条可交付",
     icon: CheckCircle2,
     command: "打开"
   },
@@ -342,10 +342,10 @@ export const publishingRecords = [
     status: "门控"
   },
   {
-    content: "批准后生成导出内容",
+    content: "审核通过后生成导出内容",
     platform: "多平台",
     owner: "工作台",
-    status: "就绪"
+    status: "待批准"
   }
 ];
 
