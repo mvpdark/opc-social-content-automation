@@ -4,6 +4,7 @@ import { ExternalLink, Loader2, Play, Save, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { PlatformLabel } from "@/components/platform-icon";
+import { getApiBase } from "@/lib/api-base";
 
 type Platform = "xiaohongshu" | "douyin";
 
@@ -39,7 +40,7 @@ type LinkImportTarget = {
   safety_notes: string[];
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8010/api";
+const API_BASE = getApiBase();
 const XHS_URL_PATTERN = /https?:\/\/[^\s<>'"，。；、)）】]+/gi;
 const SUPPORTED_XHS_HOSTS = new Set([
   "xiaohongshu.com",

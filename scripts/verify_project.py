@@ -38,6 +38,7 @@ def validate_required_files() -> int:
         ROOT / "backend" / "alembic" / "versions" / "0007_trend_collection_jobs.py",
         ROOT / "frontend" / "app" / "page.tsx",
         ROOT / "frontend" / "middleware.ts",
+        ROOT / "frontend" / "lib" / "api-base.ts",
         ROOT / "docs" / "RUNBOOK.md",
         ROOT / "docs" / "SECURITY_NOTES.md",
         ROOT / "scripts" / "run_trend_collection_job.py",
@@ -154,6 +155,28 @@ def validate_safety_gates() -> int:
             "settings.auth_required",
             "PLANNER_TEST_USER",
             "Missing bearer token.",
+        ],
+        "backend/app/main.py": [
+            "allow_origin_regex=settings.cors_origin_regex",
+        ],
+        "backend/app/core/config.py": [
+            "cors_origin_regex",
+            "192\\.168",
+            "10\\.",
+            "172\\.",
+        ],
+        "frontend/lib/api-base.ts": [
+            "NEXT_PUBLIC_API_BASE_URL",
+            "NEXT_PUBLIC_API_PORT",
+            "window.location",
+            "hostname",
+        ],
+        "frontend/package.json": [
+            '"dev:lan": "next dev -H 0.0.0.0"',
+        ],
+        "scripts/setup_local.py": [
+            "--host 0.0.0.0",
+            "npm run dev:lan",
         ],
     }
     total = 0

@@ -37,6 +37,7 @@ import {
   type PlatformId
 } from "@/components/platform-icon";
 import { TrendCollectorPanel } from "@/components/trend-collector-panel";
+import { getApiBase } from "@/lib/api-base";
 import {
   connectionStatuses,
   contentControls,
@@ -101,7 +102,7 @@ const externalSkillStatusTone = {
   候选服务: "amber"
 } satisfies Record<(typeof externalSkillCandidates)[number]["status"], keyof typeof pillTone>;
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8010/api";
+const API_BASE = getApiBase();
 const CREDENTIAL_STORAGE_KEY = "opc_workspace_credentials_v1";
 const INTERFACE_STYLE_STORAGE_KEY = "opc_interface_style_v1";
 const LAST_GENERATED_CONTENT_STORAGE_KEY = "opc_latest_generated_content_v1";

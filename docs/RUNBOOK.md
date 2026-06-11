@@ -53,12 +53,21 @@ When using local PostgreSQL, prefer a reachable host such as `127.0.0.1` if
 Run the API:
 
 ```bash
-uvicorn app.main:app --reload --port 8010
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8010
 ```
 
-The frontend defaults to `http://localhost:8010/api`. Port `8000` is often used by
-local AI gateway tooling, so keep the OPC backend on `8010` unless you also update
-`NEXT_PUBLIC_API_BASE_URL`.
+Run the frontend for LAN/mobile testing:
+
+```bash
+cd frontend
+npm run dev:lan
+```
+
+The frontend derives its API base from the current browser hostname by default.
+For example, opening `http://192.168.10.88:3000` makes browser requests go to
+`http://192.168.10.88:8010/api`. Port `8000` is often used by local AI gateway
+tooling, so keep the OPC backend on `8010` unless you also update
+`NEXT_PUBLIC_API_BASE_URL` or `NEXT_PUBLIC_API_PORT`.
 
 During planner-stage testing, `AUTH_REQUIRED=false` disables the workspace bearer
 token gate and uses a local planner test user for protected operations. Set

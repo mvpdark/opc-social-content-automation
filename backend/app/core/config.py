@@ -38,6 +38,14 @@ class Settings(BaseSettings):
     deepseek_rewrite_model: str = "deepseek-v4-pro"
     deepseek_timeout_seconds: float = 60.0
     frontend_origin: str = "http://localhost:3000"
+    cors_origin_regex: str | None = (
+        r"^https?://("
+        r"localhost|127\.0\.0\.1|"
+        r"10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
+        r"192\.168\.\d{1,3}\.\d{1,3}|"
+        r"172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}"
+        r")(:\d+)?$"
+    )
 
     model_config = SettingsConfigDict(
         env_file=(PROJECT_ROOT / ".env", BACKEND_ROOT / ".env"),
