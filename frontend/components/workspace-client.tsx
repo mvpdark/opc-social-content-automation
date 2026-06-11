@@ -549,33 +549,22 @@ function GenerationLauncher({
   const [statusText, setStatusText] = useState("填写主题后，点击“生成图文”创建草稿。");
   const [lastContent, setLastContent] = useState<GeneratedContent | null>(null);
 
-  const hasWorkspaceToken = workspaceToken.trim().length > 0;
   const hasTopic = topic.trim().length > 0;
-  const canGenerate = hasWorkspaceToken && hasTopic && busyAction === null;
-  const canRequestReview = hasWorkspaceToken && lastContent !== null && busyAction === null;
-  const generateButtonLabel = !hasWorkspaceToken
-    ? "先配置令牌"
-    : !hasTopic
+  const canGenerate = hasTopic && busyAction === null;
+  const canRequestReview = lastContent !== null && busyAction === null;
+  const generateButtonLabel = !hasTopic
       ? "先填写选题"
       : "生成图文";
   const reviewButtonLabel = !lastContent
     ? "先生成草稿"
-    : !hasWorkspaceToken
-      ? "先配置令牌"
-      : "提交审核";
-  const generateButtonTitle = !hasWorkspaceToken
-    ? "生成图文前需要在设置里填写工作台令牌"
-    : !hasTopic
+    : "提交审核";
+  const generateButtonTitle = !hasTopic
       ? "先填写选题，再生成图文"
       : undefined;
   const reviewButtonTitle = !lastContent
     ? "先生成草稿，再提交人工审核"
-    : !hasWorkspaceToken
-      ? "提交审核前需要工作台令牌"
-      : undefined;
-  const launchStatusText = !hasWorkspaceToken
-    ? "先到设置里填写工作台令牌，后端才会创建真实草稿。"
-    : !hasTopic
+    : undefined;
+  const launchStatusText = !hasTopic
       ? "先填写选题，再生成图文。"
       : statusText;
 
@@ -605,10 +594,6 @@ function GenerationLauncher({
   async function generateDraft() {
     if (!topic.trim()) {
       setStatusText("先填写选题，再生成图文。");
-      return;
-    }
-    if (!workspaceToken.trim()) {
-      setStatusText("先到设置里填写工作台令牌，后端才会创建真实草稿。");
       return;
     }
 
@@ -647,10 +632,6 @@ function GenerationLauncher({
   async function requestReview() {
     if (!lastContent) {
       setStatusText("先生成草稿，再提交审核。");
-      return;
-    }
-    if (!workspaceToken.trim()) {
-      setStatusText("先到设置里填写工作台令牌，才能提交审核。");
       return;
     }
 
@@ -699,13 +680,13 @@ function GenerationLauncher({
               </select>
             </label>
             <div className={`${subtleCardClass} px-3 py-2`}>
-              <div className="text-xs font-medium text-muted">工作台令牌</div>
+              <div className="text-xs font-medium text-muted">登录门控</div>
               <div className="mt-1 flex items-center justify-between gap-3">
                 <span className="text-sm font-medium">
-                  {workspaceToken ? "已在设置中配置" : "未配置"}
+                  {workspaceToken ? "令牌已配置" : "策划师测试模式免令牌"}
                 </span>
                 <button
-                  aria-label="打开设置配置工作台令牌"
+                  aria-label="打开设置查看登录令牌"
                   className="glass-control rounded-md border px-2 py-1 text-xs font-medium text-ink"
                   onClick={onOpenSettings}
                   type="button"
@@ -1024,8 +1005,8 @@ function SettingsView({
   const [credentialStatus, setCredentialStatus] = useState("凭证会保存在当前浏览器本机。");
   const [credentialBusy, setCredentialBusy] = useState(false);
   const hasWorkspaceToken = credentials.workspaceToken.trim().length > 0;
-  const canApplyProviderKeys = hasWorkspaceToken && !credentialBusy;
-  const providerApplyLabel = hasWorkspaceToken ? "应用服务 API Key" : "先填工作台令牌";
+  const canApplyProviderKeys = !credentialBusy;
+  const providerApplyLabel = "应用服务 API Key";
 
   function updateCredential(key: keyof CredentialSettings, value: string) {
     onCredentialsChange({ ...credentials, [key]: value });
@@ -1037,10 +1018,6 @@ function SettingsView({
   }
 
   async function applyProviderKeys() {
-    if (!credentials.workspaceToken.trim()) {
-      setCredentialStatus("先填写工作台令牌，再应用服务 API Key 到后端。");
-      return;
-    }
     setCredentialBusy(true);
     setCredentialStatus("正在应用服务 API Key 到后端运行时。");
     try {
@@ -1048,7 +1025,9 @@ function SettingsView({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${credentials.workspaceToken}`
+          ...(credentials.workspaceToken
+            ? { Authorization: `Bearer ${credentials.workspaceToken}` }
+            : {})
         },
         body: JSON.stringify({
           draft_api_key: credentials.draftApiKey,
@@ -1075,9 +1054,9 @@ function SettingsView({
   }> = [
     {
       keyName: "workspaceToken",
-      label: "工作台令牌",
-      placeholder: "Bearer token",
-      helper: "采集、生成、审核等工作台请求统一使用。"
+      label: "登录令牌（可选）",
+      placeholder: "策划师测试模式下不用填写",
+      helper: "当前测试阶段已免登录；以后恢复正式登录时再填写 Bearer token。"
     },
     {
       keyName: "draftApiKey",
@@ -1107,7 +1086,7 @@ function SettingsView({
     <div className="space-y-4">
       <Panel
         action={<Pill tone="blue">集中管理</Pill>}
-        helper="所有令牌和服务 API Key 都在这里填写；其他页面只读取这里的配置状态。"
+        helper="服务 API Key 集中填写；策划师测试阶段不再要求工作台登录令牌。"
         title="API Key 与令牌"
       >
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
@@ -1143,7 +1122,6 @@ function SettingsView({
                 className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-paper disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={!canApplyProviderKeys}
                 onClick={applyProviderKeys}
-                title={hasWorkspaceToken ? undefined : "应用服务 API Key 前需要工作台令牌"}
                 type="button"
               >
                 {credentialBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
@@ -1160,7 +1138,7 @@ function SettingsView({
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
               <Pill tone={credentials.workspaceToken ? "green" : "amber"}>
-                工作台 {credentials.workspaceToken ? "已填" : "未填"}
+                登录 {credentials.workspaceToken ? "已填" : "测试免填"}
               </Pill>
               <Pill tone={credentials.draftApiKey ? "green" : "amber"}>
                 撰稿 {credentials.draftApiKey ? "已填" : "未填"}

@@ -68,36 +68,27 @@ export function TrendCollectorPanel({
   const [busyAction, setBusyAction] = useState<"target" | "job" | "digest" | null>(null);
 
   const canSubmit = useMemo(() => keyword.trim().length > 0, [keyword]);
-  const hasWorkspaceToken = workspaceToken.trim().length > 0;
   const canOpenSearch = canSubmit && busyAction === null;
-  const canCreateJob = canSubmit && hasWorkspaceToken && busyAction === null;
-  const canSaveDigest = canSubmit && sourcesReviewed && hasWorkspaceToken && busyAction === null;
+  const canCreateJob = canSubmit && busyAction === null;
+  const canSaveDigest = canSubmit && sourcesReviewed && busyAction === null;
   const openSearchLabel = canSubmit ? "打开搜索" : "先填关键词";
   const createJobLabel = !canSubmit
     ? "先填关键词"
-    : !hasWorkspaceToken
-      ? "先配置令牌"
-      : "创建任务";
+    : "创建任务";
   const saveDigestLabel = !canSubmit
     ? "先填关键词"
     : !sourcesReviewed
       ? "先确认来源"
-      : !hasWorkspaceToken
-        ? "先配置令牌"
-        : "保存摘要";
+      : "保存摘要";
   const openSearchTitle = canSubmit ? undefined : "先填写关键词，再打开公开搜索页";
   const createJobTitle = !canSubmit
     ? "先填写关键词，再创建采集任务"
-    : !hasWorkspaceToken
-      ? "创建采集任务前需要工作台令牌"
-      : undefined;
+    : undefined;
   const saveDigestTitle = !canSubmit
     ? "先填写关键词，再保存知识摘要"
     : !sourcesReviewed
       ? "保存摘要前需要人工确认来源"
-      : !hasWorkspaceToken
-        ? "保存知识摘要前需要工作台令牌"
-        : undefined;
+      : undefined;
 
   async function loadSearchTarget(): Promise<SearchTarget> {
     const params = new URLSearchParams({ platform, keyword: keyword.trim() });
@@ -141,10 +132,6 @@ export function TrendCollectorPanel({
       setStatusText("先填写关键词，再创建采集任务。");
       return;
     }
-    if (!workspaceToken.trim()) {
-      setStatusText("先到设置里填写工作台令牌，再创建采集任务。");
-      return;
-    }
     setBusyAction("job");
     try {
       const response = await fetch(`${API_BASE}/trends/jobs`, {
@@ -165,7 +152,7 @@ export function TrendCollectorPanel({
         })
       });
       if (!response.ok) {
-        throw new Error("创建采集任务需要有效的工作台登录令牌。");
+        throw new Error("采集任务创建失败；如果已恢复正式登录，请检查登录令牌。");
       }
       const data = (await response.json()) as { id: number; status: string };
       setStatusText(`采集任务 #${data.id} 当前状态：${data.status}。`);
@@ -183,10 +170,6 @@ export function TrendCollectorPanel({
     }
     if (!sourcesReviewed) {
       setStatusText("保存知识摘要前，需要先确认已人工看过图文来源。");
-      return;
-    }
-    if (!workspaceToken.trim()) {
-      setStatusText("先到设置里填写工作台令牌，再保存知识摘要。");
       return;
     }
     setBusyAction("digest");
@@ -291,13 +274,13 @@ export function TrendCollectorPanel({
           </div>
 
           <div className="glass-subtle mt-3 rounded-md border px-3 py-3">
-            <div className={fieldLabelClass}>工作台令牌</div>
+            <div className={fieldLabelClass}>登录门控</div>
             <div className="mt-2 flex items-center justify-between gap-3">
               <span className="text-sm font-medium text-ink">
-                {workspaceToken ? "已在设置中配置" : "未配置"}
+                {workspaceToken ? "令牌已配置" : "策划师测试模式免令牌"}
               </span>
               <button
-                aria-label="打开设置配置工作台令牌"
+                aria-label="打开设置查看登录令牌"
                 className="glass-control rounded-md border px-2 py-1 text-xs font-medium text-ink"
                 onClick={onOpenSettings}
                 type="button"

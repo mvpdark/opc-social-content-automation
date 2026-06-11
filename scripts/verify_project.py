@@ -144,6 +144,11 @@ def validate_safety_gates() -> int:
             "provider_status_items",
             "missing_key",
         ],
+        "backend/app/api/deps.py": [
+            "settings.auth_required",
+            "PLANNER_TEST_USER",
+            "Missing bearer token.",
+        ],
     }
     total = 0
     for rel_path, snippets in checks.items():

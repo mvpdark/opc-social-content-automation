@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     jwt_secret_key: str = "replace-with-a-long-random-secret"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440
+    auth_required: bool = False
     embedding_dimensions: int = 1536
     draft_provider: str = "codex_test"
     draft_model: str = "gpt-5.5"

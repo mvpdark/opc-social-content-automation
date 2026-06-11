@@ -368,10 +368,10 @@ function SettingsScreen() {
     <div className="space-y-4">
       <MobilePanel title="配置状态" action="只读">
         <p className="mb-3 text-xs leading-5 text-muted">
-          移动端预览不读取密钥状态，真实配置请回 PC 设置页查看。
+          移动端预览不读取密钥状态；策划师测试阶段免登录，真实配置请回 PC 设置页查看。
         </p>
         <div className="space-y-2">
-          <SettingRow label="工作台令牌" state="回 PC 查看" />
+          <SettingRow label="登录门控" state="测试免填" positive />
           <SettingRow label="撰稿服务" state="PC 配置" />
           <SettingRow label="图片服务" state="PC 配置" />
           <SettingRow label="改写服务" state="PC 配置" />

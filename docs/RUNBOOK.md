@@ -39,6 +39,10 @@ The frontend defaults to `http://localhost:8010/api`. Port `8000` is often used 
 local AI gateway tooling, so keep the OPC backend on `8010` unless you also update
 `NEXT_PUBLIC_API_BASE_URL`.
 
+During planner-stage testing, `AUTH_REQUIRED=false` disables the workspace bearer
+token gate and uses a local planner test user for protected operations. Set
+`AUTH_REQUIRED=true` before restoring formal login and multi-user permissions.
+
 ## DeepSeek Rewrite Provider
 
 The humanization rewrite path uses DeepSeek's official OpenAI-compatible Chat Completion API.
