@@ -2127,8 +2127,8 @@ function DraftPanel({ content }: { content: GeneratedContent | null }) {
           data-testid="xhs-preview-modal"
           role="dialog"
         >
-          <div className="grid max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-[24px] border border-white/40 bg-paper shadow-2xl lg:grid-cols-[minmax(300px,420px)_1fr]">
-            <div className="relative min-h-[420px] bg-[radial-gradient(circle_at_20%_18%,rgba(255,255,255,0.95),transparent_32%),linear-gradient(145deg,#fff7e8_0%,#d9f3e6_48%,#f8cfc0_100%)] p-7">
+          <div className="grid max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-[24px] border border-white/40 bg-paper shadow-2xl lg:grid-cols-[minmax(300px,420px)_1fr] lg:overflow-hidden">
+            <div className="relative min-h-[320px] bg-[radial-gradient(circle_at_20%_18%,rgba(255,255,255,0.95),transparent_32%),linear-gradient(145deg,#fff7e8_0%,#d9f3e6_48%,#f8cfc0_100%)] p-7 sm:min-h-[420px]">
               <button
                 aria-label="关闭小红书预览"
                 className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-ink shadow-sm"
@@ -2151,7 +2151,7 @@ function DraftPanel({ content }: { content: GeneratedContent | null }) {
               </div>
             </div>
 
-            <div className="flex max-h-[90vh] flex-col overflow-y-auto">
+            <div className="flex flex-col lg:max-h-[90vh] lg:overflow-y-auto">
               <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
                 <div className="flex items-center gap-3">
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-coral/12 text-sm font-bold text-coral">
