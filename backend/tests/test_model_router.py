@@ -1,3 +1,4 @@
+import httpx
 import pytest
 from fastapi import HTTPException
 
@@ -134,6 +135,61 @@ def test_openai_compatible_draft_provider_calls_chat_completion(
     assert request_json["model"] == "gpt-5.5"
     assert request_json["store"] is False
     assert secret not in str(request_json)
+
+
+def test_openai_compatible_draft_provider_reports_invalid_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    secret = "test-compatible-key"
+    monkeypatch.setattr(settings, "draft_provider", "openai_compatible")
+    monkeypatch.setattr(settings, "openai_compatible_api_key", secret)
+    monkeypatch.setattr(settings, "openai_compatible_base_url", "https://example.test/v1")
+
+    class FakeResponse:
+        status_code = 401
+
+        def raise_for_status(self) -> None:
+            request = httpx.Request("POST", "https://example.test/v1/chat/completions")
+            response = httpx.Response(
+                401,
+                request=request,
+                json={"code": "INVALID_API_KEY", "message": "Invalid API key"},
+            )
+            raise httpx.HTTPStatusError(
+                "invalid api key",
+                request=request,
+                response=response,
+            )
+
+        def json(self) -> dict[str, object]:
+            return {}
+
+    class FakeClient:
+        def __init__(self, timeout: float) -> None:
+            self.timeout = timeout
+
+        def __enter__(self) -> "FakeClient":
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def post(
+            self,
+            url: str,
+            headers: dict[str, str],
+            json: dict[str, object],
+        ) -> FakeResponse:
+            return FakeResponse()
+
+    monkeypatch.setattr("app.services.model_router.httpx.Client", FakeClient)
+
+    with pytest.raises(HTTPException) as exc:
+        model_router.draft_model("draft_generation", {"topic": "test"})
+
+    assert exc.value.status_code == 502
+    assert "API Key 无效" in exc.value.detail
+    assert secret not in exc.value.detail
 
 
 def test_openai_compatible_image_provider_requires_key(

@@ -53,6 +53,46 @@ def _redacted_provider_error(provider: str, status_code: int | None = None) -> s
     return f"{provider_label}请求失败，请检查服务配置和网络。"
 
 
+def _provider_display_label(provider: str) -> str:
+    return {
+        "OpenAI-compatible draft provider": "撰稿服务",
+        "OpenAI-compatible image provider": "图片服务",
+        "DeepSeek": "改写服务",
+    }.get(provider, "模型服务")
+
+
+def _redacted_provider_error_from_response(
+    provider: str,
+    response: httpx.Response,
+) -> str:
+    provider_label = _provider_display_label(provider)
+    status_code = response.status_code
+    error_code = ""
+    error_message = ""
+
+    try:
+        data = response.json()
+    except ValueError:
+        data = None
+
+    if isinstance(data, dict):
+        raw_code = data.get("code")
+        raw_message = data.get("message")
+        raw_error = data.get("error")
+        if isinstance(raw_error, dict):
+            raw_code = raw_code or raw_error.get("code") or raw_error.get("type")
+            raw_message = raw_message or raw_error.get("message")
+        error_code = str(raw_code or "").upper()
+        error_message = str(raw_message or "").lower()
+
+    if status_code in {401, 403} and (
+        "INVALID_API_KEY" in error_code or "invalid api key" in error_message
+    ):
+        return f"{provider_label} API Key 无效，请在设置页更换有效 Key 后重新检测。"
+
+    return _redacted_provider_error(provider, status_code)
+
+
 def _deepseek_messages(prompt_template: str, payload: dict[str, object]) -> list[dict[str, str]]:
     return [
         {
@@ -129,7 +169,7 @@ def _post_chat_completion(
     except httpx.HTTPStatusError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=_redacted_provider_error(provider, exc.response.status_code),
+            detail=_redacted_provider_error_from_response(provider, exc.response),
         ) from exc
     except (httpx.HTTPError, ValueError) as exc:
         raise HTTPException(
@@ -167,7 +207,7 @@ def _post_image_generation(
     except httpx.HTTPStatusError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=_redacted_provider_error(provider, exc.response.status_code),
+            detail=_redacted_provider_error_from_response(provider, exc.response),
         ) from exc
     except (httpx.HTTPError, ValueError) as exc:
         raise HTTPException(
