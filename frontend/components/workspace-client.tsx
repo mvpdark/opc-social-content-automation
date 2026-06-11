@@ -673,6 +673,16 @@ function isWorkspaceTab(value: string | null): value is WorkspaceTab {
   return workspaceTabIds.includes(value as WorkspaceTab);
 }
 
+function coerceWorkspaceTabAlias(value: string | null): WorkspaceTab | null {
+  if (value === "review") {
+    return "content";
+  }
+  if (value === "publish" || value === "publishing") {
+    return "delivery";
+  }
+  return isWorkspaceTab(value) ? value : null;
+}
+
 function isInterfaceStyle(value: string | null): value is InterfaceStyle {
   return interfaceStyles.some((style) => style.id === value);
 }
@@ -858,13 +868,14 @@ export function WorkspaceClient({
       const params = new URLSearchParams(window.location.search);
       const tab = params.get("tab");
       const theme = params.get("theme");
+      const normalizedTab = coerceWorkspaceTabAlias(tab);
 
-      if (tab === "review") {
-        params.set("tab", "content");
+      if (normalizedTab && tab !== normalizedTab) {
+        params.set("tab", normalizedTab);
         window.history.replaceState(null, "", `/?${params.toString()}`);
-        setActiveTab("content");
+        setActiveTab(normalizedTab);
       } else {
-        setActiveTab(isWorkspaceTab(tab) ? tab : "dashboard");
+        setActiveTab(normalizedTab ?? "dashboard");
       }
       if (isInterfaceStyle(theme)) {
         setInterfaceStyle(theme);
@@ -2717,6 +2728,39 @@ function platformIdForPreview(platform: string): PlatformId {
   return isPlatformId(platform) ? platform : "xiaohongshu";
 }
 
+function PlatformRecordBadge({ platform }: { platform: string }) {
+  if (platform.includes("小红书")) {
+    return (
+      <PlatformLabel
+        className="font-medium text-ink"
+        iconSize="sm"
+        platform="xiaohongshu"
+      />
+    );
+  }
+  if (platform.includes("抖音")) {
+    return (
+      <PlatformLabel
+        className="font-medium text-ink"
+        iconSize="sm"
+        platform="douyin"
+      />
+    );
+  }
+  if (platform.includes("多平台")) {
+    return (
+      <span className="inline-flex items-center gap-2 font-medium text-ink">
+        <span className="inline-flex -space-x-1.5">
+          <PlatformIcon platform="xiaohongshu" size="sm" />
+          <PlatformIcon platform="douyin" size="sm" />
+        </span>
+        多平台
+      </span>
+    );
+  }
+  return <span className="text-muted">{platform}</span>;
+}
+
 function DraftPanel({
   content,
   loading
@@ -3019,7 +3063,9 @@ function PublishingTable() {
             {publishingRecords.map((record) => (
               <tr key={record.content}>
                 <td className="px-4 py-3 font-medium">{record.content}</td>
-                <td className="px-4 py-3 text-muted">{record.platform}</td>
+                <td className="px-4 py-3">
+                  <PlatformRecordBadge platform={record.platform} />
+                </td>
                 <td className="px-4 py-3 text-muted">{record.owner}</td>
                 <td className="px-4 py-3">
                   <Pill>{record.status}</Pill>

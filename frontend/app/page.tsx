@@ -11,6 +11,9 @@ function coerceWorkspaceTab(value: string | string[] | undefined): WorkspaceTab 
   if (tab === "review") {
     return "content";
   }
+  if (tab === "publish" || tab === "publishing") {
+    return "delivery";
+  }
   return workspaceTabIds.includes(tab as WorkspaceTab) ? (tab as WorkspaceTab) : "dashboard";
 }
 

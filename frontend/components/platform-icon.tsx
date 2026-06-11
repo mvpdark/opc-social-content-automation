@@ -6,16 +6,14 @@ export type PlatformId = "xiaohongshu" | "douyin";
 
 const platformMeta = {
   xiaohongshu: {
-    accentClass: "bg-[#ff2442]",
     iconSrc: "/platform-icons/xiaohongshu.ico",
     label: "小红书"
   },
   douyin: {
-    accentClass: "bg-[#111111]",
     iconSrc: "/platform-icons/douyin.ico",
     label: "抖音"
   }
-} satisfies Record<PlatformId, { accentClass: string; iconSrc: string; label: string }>;
+} satisfies Record<PlatformId, { iconSrc: string; label: string }>;
 
 const iconSizeClass = {
   sm: "h-5 w-5 rounded-[6px]",
@@ -25,10 +23,6 @@ const iconSizeClass = {
 
 export function isPlatformId(platform: string): platform is PlatformId {
   return platform === "xiaohongshu" || platform === "douyin";
-}
-
-export function getPlatformLabel(platform: string) {
-  return isPlatformId(platform) ? platformMeta[platform].label : platform;
 }
 
 export function PlatformIcon({
@@ -79,14 +73,5 @@ export function PlatformLabel({
       <PlatformIcon className={iconClassName} platform={platform} size={iconSize} />
       <span>{children ?? `${meta.label}${suffix}`}</span>
     </span>
-  );
-}
-
-export function PlatformDot({ platform }: { platform: PlatformId }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={["inline-flex h-2 w-2 rounded-full", platformMeta[platform].accentClass].join(" ")}
-    />
   );
 }
