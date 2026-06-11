@@ -904,10 +904,10 @@ function CoverView() {
             生成封面
           </button>
         }
-        helper="内容审核通过前保持禁用；标题和封面文字仍需人工复核。"
-        title="封面预览"
+        helper="内容审核通过前保持禁用；下方仅展示参考版式，不代表已生成图片。"
+        title="封面参考版式"
       >
-        <CoverMock />
+        <CoverReferencePreview />
       </Panel>
 
       <div className="space-y-4">
@@ -1366,7 +1366,7 @@ function DraftPanel() {
             <div className="border-l-4 border-moss pl-3">正文仅返回 Body</div>
           </div>
         </div>
-        <CoverMock compact />
+        <CoverReferencePreview compact />
       </div>
     </Panel>
   );
@@ -1471,7 +1471,7 @@ function QueueRow({
   );
 }
 
-function CoverMock({ compact = false }: { compact?: boolean }) {
+function CoverReferencePreview({ compact = false }: { compact?: boolean }) {
   return (
     <div
       className={[
@@ -1479,7 +1479,12 @@ function CoverMock({ compact = false }: { compact?: boolean }) {
         compact ? "min-h-[300px]" : "mx-auto min-h-[520px] max-w-[390px]"
       ].join(" ")}
     >
-      <div className="text-xs font-medium text-steel">小红书封面</div>
+      <div className="flex items-center justify-between gap-3 text-xs font-medium text-steel">
+        <span>小红书封面参考</span>
+        <span className="rounded-md bg-white/75 px-2 py-1 text-[11px] text-ink/70">
+          非生成结果
+        </span>
+      </div>
       <div className={["font-black leading-tight text-ink", compact ? "mt-5 text-3xl" : "mt-10 text-5xl"].join(" ")}>
         不是先套磁
         <br />
