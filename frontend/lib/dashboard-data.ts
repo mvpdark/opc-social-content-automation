@@ -396,6 +396,75 @@ export const connectionStatuses = [
   }
 ] as const;
 
+export const externalSkillCandidates = [
+  {
+    title: "XiaohongshuSkills",
+    source: "white0dew/XiaohongshuSkills",
+    href: "https://github.com/white0dew/XiaohongshuSkills",
+    module: "采集 / 发布流程参考",
+    status: "优先试点",
+    license: "MIT",
+    summary: "支持检索、详情、发布和评论相关 Skill，适合拆出只读搜索与发布前填充流程。",
+    guardrail: "需要真实登录态和网页选择器；默认只接只读检索，发布仍需人工确认。",
+    icon: Search
+  },
+  {
+    title: "Guizang Social Card Skill",
+    source: "op7418/guizang-social-card-skill",
+    href: "https://github.com/op7418/guizang-social-card-skill",
+    module: "小红书组图 / 封面",
+    status: "可选外部调用",
+    license: "AGPL-3.0",
+    summary: "提供 1080x1440 小红书卡片、版式骨架、主题和 Playwright 渲染 PNG。",
+    guardrail: "AGPL 不直接复制进闭源产品；可作为外部工具或视觉参考。",
+    icon: LayoutTemplate
+  },
+  {
+    title: "xhs-cover-skill",
+    source: "Vivixiao980/xhs-cover-skill",
+    href: "https://github.com/Vivixiao980/xhs-cover-skill",
+    module: "封面生成",
+    status: "优先试点",
+    license: "需确认",
+    summary: "Codex Skill 形式的小红书封面生成器，覆盖多种风格，贴近当前封面工作台。",
+    guardrail: "先确认许可证和生成素材归属，再决定是否接入为可选能力。",
+    icon: Image
+  },
+  {
+    title: "xiaohongshu-ops-skill",
+    source: "Xiangyu-CAS/xiaohongshu-ops-skill",
+    href: "https://github.com/Xiangyu-CAS/xiaohongshu-ops-skill",
+    module: "选题 / 知识库 / 复盘",
+    status: "可选接入",
+    license: "需确认",
+    summary: "包含推荐流分析、账号分析、选题灵感、知识库和爆款复刻思路。",
+    guardrail: "自动发布和自动回复不默认启用，只吸收分析与知识沉淀流程。",
+    icon: Radar
+  },
+  {
+    title: "XHS-Downloader",
+    source: "JoeanAmier/XHS-Downloader",
+    href: "https://github.com/JoeanAmier/XHS-Downloader",
+    module: "链接解析 / 素材归档",
+    status: "只做外部工具",
+    license: "GPL-3.0",
+    summary: "成熟的作品信息、图片和视频下载工具，支持 API/MCP，适合用户主动提供链接后的资料归档。",
+    guardrail: "GPL 项目不复制实现；只可作为独立进程、可选工具或接口设计参考。",
+    icon: Download
+  },
+  {
+    title: "SocialDataX XHS MCP",
+    source: "devinchen2014/xiaohongshu-xhs-rednote-mcp",
+    href: "https://github.com/devinchen2014/xiaohongshu-xhs-rednote-mcp",
+    module: "只读社媒情报",
+    status: "候选服务",
+    license: "MIT 文档 / 托管服务",
+    summary: "托管 MCP，支持搜索、热榜、笔记详情、评论和博主信息，适合低频只读调研。",
+    guardrail: "需要第三方 API Key；接入前确认数据来源、费用和隐私条款。",
+    icon: ShieldCheck
+  }
+] as const;
+
 export const draftPreview = {
   title: "硕升博申请第一步，不是先套磁",
   platform: "小红书图文",

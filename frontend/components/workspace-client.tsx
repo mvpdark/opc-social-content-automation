@@ -9,6 +9,7 @@ import {
   Clipboard,
   Eye,
   EyeOff,
+  ExternalLink,
   Heart,
   Image,
   KeyRound,
@@ -35,6 +36,7 @@ import {
   coverReferences,
   dashboardActionLinks,
   draftPreview,
+  externalSkillCandidates,
   imageWorkflow,
   interfaceStyles,
   knowledgeAssets,
@@ -93,6 +95,14 @@ const dependencyStatusLabel = {
   outdated: "需升级",
   warning: "提醒"
 } satisfies Record<string, string>;
+
+const externalSkillStatusTone = {
+  优先试点: "green",
+  可选接入: "blue",
+  可选外部调用: "blue",
+  只做外部工具: "amber",
+  候选服务: "amber"
+} satisfies Record<(typeof externalSkillCandidates)[number]["status"], keyof typeof pillTone>;
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8010/api";
 const CREDENTIAL_STORAGE_KEY = "opc_workspace_credentials_v1";
@@ -2442,6 +2452,8 @@ function SettingsView({
         </div>
       </Panel>
 
+      <ExternalSkillRadarPanel />
+
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
         <Panel
           action={<Pill tone="green">设置入口固定保留</Pill>}
@@ -2612,6 +2624,60 @@ function SettingsView({
       </div>
     </div>
     </div>
+  );
+}
+
+function ExternalSkillRadarPanel() {
+  return (
+    <Panel
+      action={<Pill tone="blue">只读调研</Pill>}
+      helper="把 GitHub 上适合本项目的 Skill/MCP 候选沉淀在这里；接入前先看许可证、登录态和发布风险。"
+      title="外部技能接入雷达"
+    >
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+        {externalSkillCandidates.map((candidate) => (
+          <article className={`${subtleCardClass} p-4`} key={candidate.source}>
+            <div className="flex items-start gap-3">
+              <IconBox tone={candidate.status === "优先试点" ? "green" : "blue"}>
+                <candidate.icon className="h-4 w-4" />
+              </IconBox>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-semibold leading-5">{candidate.title}</h3>
+                    <p className="mt-1 truncate text-xs text-muted">{candidate.source}</p>
+                  </div>
+                  <Pill tone={externalSkillStatusTone[candidate.status]}>
+                    {candidate.status}
+                  </Pill>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                  <span className="rounded-md border border-line bg-mist px-2 py-1 text-muted">
+                    {candidate.module}
+                  </span>
+                  <span className="rounded-md border border-line bg-mist px-2 py-1 text-muted">
+                    {candidate.license}
+                  </span>
+                </div>
+                <p className="mt-3 text-xs leading-5 text-ink/80">{candidate.summary}</p>
+                <p className="mt-2 border-l-2 border-amber/60 pl-2 text-xs leading-5 text-muted">
+                  {candidate.guardrail}
+                </p>
+                <a
+                  className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-steel hover:text-ink"
+                  href={candidate.href}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  打开 GitHub
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </Panel>
   );
 }
 
