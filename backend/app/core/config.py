@@ -10,6 +10,7 @@ PROJECT_ROOT = BACKEND_ROOT.parent
 
 class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/opc"
+    database_connect_timeout_seconds: int = 2
     redis_url: str = "redis://localhost:6379/0"
     jwt_secret_key: str = "replace-with-a-long-random-secret"
     jwt_algorithm: str = "HS256"

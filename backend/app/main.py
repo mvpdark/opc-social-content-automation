@@ -1,8 +1,10 @@
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.exc import OperationalError
 
 from app.api.v1.router import api_router
 from app.core.config import settings
@@ -30,6 +32,19 @@ def create_app() -> FastAPI:
     @app.get("/health", tags=["system"])
     def health() -> dict[str, str]:
         return {"status": "ok", "service": "opc-backend"}
+
+    @app.exception_handler(OperationalError)
+    async def database_unavailable(
+        _request: Request,
+        _exc: OperationalError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": "database_unavailable",
+                "message": "Database is not reachable. Check DATABASE_URL and local PostgreSQL service status.",
+            },
+        )
 
     STATIC_ROOT.mkdir(parents=True, exist_ok=True)
     app.mount("/static", StaticFiles(directory=STATIC_ROOT), name="static")

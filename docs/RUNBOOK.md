@@ -23,6 +23,12 @@ cd backend
 alembic upgrade head
 ```
 
+If `/health` is healthy but workspace or content endpoints time out, check that
+PostgreSQL and Redis are actually reachable. Database-backed endpoints use
+`DATABASE_CONNECT_TIMEOUT_SECONDS` to fail fast while local services are down.
+When using local PostgreSQL, prefer a reachable host such as `127.0.0.1` if
+`localhost` resolves to an unavailable IPv6 address first.
+
 Run the API:
 
 ```bash

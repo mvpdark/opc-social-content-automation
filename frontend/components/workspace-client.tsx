@@ -91,6 +91,11 @@ type CredentialSettings = {
   rewriteApiKey: string;
 };
 
+type ApiErrorBody = {
+  detail?: string;
+  message?: string;
+};
+
 const emptyCredentials: CredentialSettings = {
   workspaceToken: "",
   draftApiKey: "",
@@ -201,6 +206,14 @@ function writeLocalStorage(key: string, value: string) {
   } catch (_error) {
     // Some embedded browsers disable localStorage. The workspace must keep working without it.
   }
+}
+
+async function readApiError(response: Response, fallback: string) {
+  const errorBody = (await response.json().catch(() => null)) as ApiErrorBody | null;
+  if (errorBody?.detail === "database_unavailable") {
+    return errorBody.message ?? "数据库暂时不可用，请检查 PostgreSQL 服务和 DATABASE_URL。";
+  }
+  return errorBody?.message ?? errorBody?.detail ?? fallback;
 }
 
 type GeneratedContent = {
@@ -628,8 +641,7 @@ function GenerationLauncher({
         })
       });
       if (!response.ok) {
-        const errorBody = await response.json().catch(() => null);
-        throw new Error(errorBody?.detail ?? "图文草稿生成失败。");
+        throw new Error(await readApiError(response, "图文草稿生成失败。"));
       }
       const data = (await response.json()) as GeneratedContent;
       setLastContent(data);
@@ -659,8 +671,7 @@ function GenerationLauncher({
         headers: authHeaders()
       });
       if (!response.ok) {
-        const errorBody = await response.json().catch(() => null);
-        throw new Error(errorBody?.detail ?? "提交审核失败。");
+        throw new Error(await readApiError(response, "提交审核失败。"));
       }
       const data = (await response.json()) as GeneratedContent;
       setLastContent(data);
@@ -1055,8 +1066,7 @@ function SettingsView({
         })
       });
       if (!response.ok) {
-        const errorBody = await response.json().catch(() => null);
-        throw new Error(errorBody?.detail ?? "服务 API Key 应用失败。");
+        throw new Error(await readApiError(response, "服务 API Key 应用失败。"));
       }
       setCredentialStatus("服务 API Key 已应用到当前后端运行时，响应未回显密钥。");
     } catch (error) {
