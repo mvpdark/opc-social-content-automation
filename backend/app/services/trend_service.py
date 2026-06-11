@@ -47,12 +47,12 @@ def build_platform_search_target(platform: str, keyword: str) -> PlatformSearchT
     normalized_keyword = keyword.strip()
     if normalized_platform not in SUPPORTED_PLATFORMS:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="platform must be xiaohongshu or douyin.",
         )
     if not normalized_keyword:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="keyword is required.",
         )
 
@@ -83,12 +83,12 @@ def build_platform_search_target(platform: str, keyword: str) -> PlatformSearchT
 def build_safety_profile(payload: TrendCollectionJobCreate) -> dict[str, object]:
     if payload.min_delay_seconds >= payload.max_delay_seconds:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="min_delay_seconds must be lower than max_delay_seconds.",
         )
     if payload.content_kind != "image_text":
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=VIDEO_COLLECTION_DISABLED_DETAIL,
         )
 

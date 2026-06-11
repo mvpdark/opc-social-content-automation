@@ -23,6 +23,16 @@ const platformLabels: Record<Platform, string> = {
   douyin: "抖音"
 };
 
+const fieldLabelClass = "text-xs font-medium text-muted";
+const inputClass =
+  "glass-control mt-2 h-10 w-full rounded-md border px-3 text-sm text-ink outline-none";
+const inlineInputClass =
+  "glass-control h-10 w-full rounded-md border px-3 text-sm text-ink outline-none";
+const secondaryButtonClass =
+  "glass-control flex h-10 items-center justify-center gap-2 rounded-md border text-sm font-medium text-ink disabled:cursor-not-allowed disabled:opacity-60";
+const primaryButtonClass =
+  "flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60";
+
 function buildLocalSearchTarget(platform: Platform, keyword: string): SearchTarget {
   const encodedKeyword = encodeURIComponent(keyword.trim());
   return {
@@ -180,10 +190,10 @@ export function TrendCollectorPanel({
   }
 
   return (
-    <section className="rounded-md border border-line bg-white shadow-panel">
-      <div className="border-b border-line px-4 py-3">
+    <section className="glass-panel rounded-md border">
+      <div className="border-b border-line/70 px-4 py-3">
         <h2 className="text-sm font-semibold leading-5">平台研究采集</h2>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted">
           公开优先、图文限定、人工确认后再入知识库。
         </p>
       </div>
@@ -192,9 +202,9 @@ export function TrendCollectorPanel({
         <div className="px-4 py-4">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="block">
-              <span className="text-xs font-medium text-slate-500">平台</span>
+              <span className={fieldLabelClass}>平台</span>
               <select
-                className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+                className={inputClass}
                 value={platform}
                 onChange={(event) => setPlatform(event.target.value as Platform)}
               >
@@ -204,9 +214,9 @@ export function TrendCollectorPanel({
             </label>
 
             <label className="block">
-              <span className="text-xs font-medium text-slate-500">关键词</span>
+              <span className={fieldLabelClass}>关键词</span>
               <input
-                className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+                className={inputClass}
                 value={keyword}
                 onChange={(event) => setKeyword(event.target.value)}
                 placeholder="硕升博"
@@ -214,9 +224,9 @@ export function TrendCollectorPanel({
             </label>
 
             <label className="block">
-              <span className="text-xs font-medium text-slate-500">最大条数</span>
+              <span className={fieldLabelClass}>最大条数</span>
               <input
-                className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+                className={inputClass}
                 max={100}
                 min={1}
                 type="number"
@@ -226,11 +236,11 @@ export function TrendCollectorPanel({
             </label>
 
             <label className="block">
-              <span className="text-xs font-medium text-slate-500">采集间隔</span>
+              <span className={fieldLabelClass}>采集间隔</span>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <input
                   aria-label="Minimum delay seconds"
-                  className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+                  className={inlineInputClass}
                   max={60}
                   min={2}
                   type="number"
@@ -239,7 +249,7 @@ export function TrendCollectorPanel({
                 />
                 <input
                   aria-label="Maximum delay seconds"
-                  className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none"
+                  className={inlineInputClass}
                   max={120}
                   min={3}
                   type="number"
@@ -250,14 +260,14 @@ export function TrendCollectorPanel({
             </label>
           </div>
 
-          <div className="mt-3 rounded-md border border-line bg-paper px-3 py-3">
-            <div className="text-xs font-medium text-slate-500">工作台令牌</div>
+          <div className="glass-subtle mt-3 rounded-md border px-3 py-3">
+            <div className={fieldLabelClass}>工作台令牌</div>
             <div className="mt-2 flex items-center justify-between gap-3">
               <span className="text-sm font-medium text-ink">
                 {workspaceToken ? "已在设置中配置" : "未配置"}
               </span>
               <button
-                className="rounded-md border border-line bg-white px-2 py-1 text-xs font-medium text-ink"
+                className="glass-control rounded-md border px-2 py-1 text-xs font-medium text-ink"
                 onClick={onOpenSettings}
                 type="button"
               >
@@ -266,7 +276,7 @@ export function TrendCollectorPanel({
             </div>
           </div>
 
-          <label className="mt-3 flex items-start gap-3 rounded-md border border-line bg-paper px-3 py-3 text-sm">
+          <label className="glass-subtle mt-3 flex items-start gap-3 rounded-md border px-3 py-3 text-sm">
             <input
               checked={sourcesReviewed}
               className="mt-1 h-4 w-4"
@@ -274,16 +284,16 @@ export function TrendCollectorPanel({
               type="checkbox"
             />
             <span>
-                <span className="block font-medium text-ink">来源已人工确认</span>
-                <span className="mt-1 block leading-5 text-slate-600">
-                  保存知识摘要前，需要确认采集来源是真实公开图文。
-                </span>
+              <span className="block font-medium text-ink">来源已人工确认</span>
+              <span className="mt-1 block leading-5 text-muted">
+                保存知识摘要前，需要确认采集来源是真实公开图文。
+              </span>
             </span>
           </label>
 
           <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
             <button
-              className="flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-white text-sm font-medium text-ink"
+              className={secondaryButtonClass}
               disabled={busyAction !== null}
               onClick={openSearchPage}
               type="button"
@@ -296,7 +306,7 @@ export function TrendCollectorPanel({
               打开搜索
             </button>
             <button
-              className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-white"
+              className={primaryButtonClass}
               disabled={busyAction !== null}
               onClick={createCollectionJob}
               type="button"
@@ -309,7 +319,7 @@ export function TrendCollectorPanel({
               创建任务
             </button>
             <button
-              className="flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-paper text-sm font-medium text-ink"
+              className={secondaryButtonClass}
               disabled={busyAction !== null}
               onClick={summarizeCollectedAssets}
               type="button"
@@ -326,42 +336,42 @@ export function TrendCollectorPanel({
 
         <div className="px-4 py-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-paper text-steel">
+            <div className="glass-subtle flex h-10 w-10 items-center justify-center rounded-md border text-steel">
               <Search className="h-5 w-5" />
             </div>
             <div className="min-w-0">
               <div className="text-sm font-semibold">采集状态</div>
-              <p className="mt-1 text-sm leading-5 text-slate-600">{statusText}</p>
+              <p className="mt-1 text-sm leading-5 text-muted">{statusText}</p>
             </div>
           </div>
 
           <div className="mt-5 divide-y divide-line border-y border-line text-sm">
             <div className="flex items-center justify-between gap-3 py-3">
-              <span className="text-slate-500">内容类型</span>
+              <span className="text-muted">内容类型</span>
               <span className="font-medium">
                 {target?.content_kind === "image_text" ? "仅图文" : "未准备"}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3 py-3">
-              <span className="text-slate-500">视频采集</span>
+              <span className="text-muted">视频采集</span>
               <span className="font-medium">
                 {target?.video_collection_enabled ? "已启用" : "已禁用"}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3 py-3">
-              <span className="text-slate-500">目标链接</span>
+              <span className="text-muted">目标链接</span>
               <span className="min-w-0 truncate text-right font-medium">
                 {target?.search_url ?? "未准备"}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3 py-3">
-              <span className="text-slate-500">登录门槛</span>
+              <span className="text-muted">登录门槛</span>
               <span className="font-medium">
                 {target?.requires_manual_login === false ? "公开优先" : "需人工处理"}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3 py-3">
-              <span className="text-slate-500">自动化模式</span>
+              <span className="text-muted">自动化模式</span>
               <span className="font-medium">
                 {target?.automation_mode ?? "可见浏览器"}
               </span>
