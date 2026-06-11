@@ -211,6 +211,17 @@ a {
   text-decoration: none;
 }
 
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p,
+li {
+  text-wrap: pretty;
+}
+
 :where(a, button, input, select, textarea):focus-visible {
   outline: 2px solid rgb(var(--steel) / 0.9);
   outline-offset: 2px;
@@ -240,6 +251,7 @@ a {
     linear-gradient(rgb(var(--surface-grid) / 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgb(var(--surface-grid) / 0.022) 1px, transparent 1px);
   background-size: 44px 44px;
+  -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.65), transparent 76%);
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.65), transparent 76%);
 }
 
