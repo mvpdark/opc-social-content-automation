@@ -208,6 +208,11 @@ def validate_frontend_design_contract() -> int:
         "/content/rewrite",
         "Humanization rewrite",
         "本次未走 DeepSeek",
+        "DEFAULT_WRITING_STYLE_STORAGE_KEY",
+        "defaultWritingStyle={defaultWritingStyle}",
+        "onDefaultWritingStyleChange={setDefaultWritingStyle}",
+        'data-testid={`dashboard-writing-style-${style.id}`}',
+        "setStylePreset(defaultWritingStyle)",
     ]
     for snippet in generation_flow_snippets:
         if snippet not in workspace_text:

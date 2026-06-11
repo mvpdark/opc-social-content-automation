@@ -105,6 +105,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8010/
 const CREDENTIAL_STORAGE_KEY = "opc_workspace_credentials_v1";
 const INTERFACE_STYLE_STORAGE_KEY = "opc_interface_style_v1";
 const LAST_GENERATED_CONTENT_STORAGE_KEY = "opc_latest_generated_content_v1";
+const DEFAULT_WRITING_STYLE_STORAGE_KEY = "opc_default_writing_style_v1";
 
 type CredentialSettings = {
   workspaceToken: string;
@@ -693,6 +694,10 @@ function isInterfaceStyle(value: string | null): value is InterfaceStyle {
   return interfaceStyles.some((style) => style.id === value);
 }
 
+function isWritingStylePresetId(value: string | null): value is WritingStylePresetId {
+  return writingStylePresets.some((style) => style.id === value);
+}
+
 function readLocalStorage(key: string) {
   try {
     return window.localStorage.getItem(key);
@@ -913,6 +918,8 @@ export function WorkspaceClient({
 }) {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(initialTab);
   const [interfaceStyle, setInterfaceStyle] = useState<InterfaceStyle>(initialStyle);
+  const [defaultWritingStyle, setDefaultWritingStyle] =
+    useState<WritingStylePresetId>("warm_cute");
   const [showHelperText, setShowHelperText] = useState(true);
   const [credentialsLoaded, setCredentialsLoaded] = useState(false);
   const [credentials, setCredentials] = useState<CredentialSettings>(emptyCredentials);
@@ -943,6 +950,10 @@ export function WorkspaceClient({
     const storedStyle = readLocalStorage(INTERFACE_STYLE_STORAGE_KEY);
     if (!hasInitialTheme && !isInterfaceStyle(params.get("theme")) && isInterfaceStyle(storedStyle)) {
       setInterfaceStyle(storedStyle);
+    }
+    const storedWritingStyle = readLocalStorage(DEFAULT_WRITING_STYLE_STORAGE_KEY);
+    if (isWritingStylePresetId(storedWritingStyle)) {
+      setDefaultWritingStyle(storedWritingStyle);
     }
 
     try {
@@ -980,6 +991,10 @@ export function WorkspaceClient({
     writeLocalStorage(INTERFACE_STYLE_STORAGE_KEY, interfaceStyle);
   }, [interfaceStyle]);
 
+  useEffect(() => {
+    writeLocalStorage(DEFAULT_WRITING_STYLE_STORAGE_KEY, defaultWritingStyle);
+  }, [defaultWritingStyle]);
+
   function buildWorkspaceUrl(tab: WorkspaceTab, style = interfaceStyle) {
     const params = new URLSearchParams();
     if (tab !== "dashboard") {
@@ -1004,7 +1019,12 @@ export function WorkspaceClient({
       interfaceStyle={interfaceStyle}
       showHelperText={showHelperText}
     >
-      {activeTab === "dashboard" ? <DashboardView /> : null}
+      {activeTab === "dashboard" ? (
+        <DashboardView
+          defaultWritingStyle={defaultWritingStyle}
+          onDefaultWritingStyleChange={setDefaultWritingStyle}
+        />
+      ) : null}
       {activeTab === "research" ? (
         <ResearchView
           onOpenSettings={() => handleTabChange("settings")}
@@ -1014,6 +1034,7 @@ export function WorkspaceClient({
       {activeTab === "knowledge" ? <KnowledgeView /> : null}
       {activeTab === "content" ? (
         <ContentView
+          defaultWritingStyle={defaultWritingStyle}
           onOpenSettings={() => handleTabChange("settings")}
           workspaceToken={credentials.workspaceToken}
         />
@@ -1034,7 +1055,13 @@ export function WorkspaceClient({
   );
 }
 
-function DashboardView() {
+function DashboardView({
+  defaultWritingStyle,
+  onDefaultWritingStyleChange
+}: {
+  defaultWritingStyle: WritingStylePresetId;
+  onDefaultWritingStyleChange: (nextStyle: WritingStylePresetId) => void;
+}) {
   const coverLines = buildCoverLines(draftPreview.title);
   const statusLanes = [
     {
@@ -1113,19 +1140,26 @@ function DashboardView() {
                   <span className="text-[11px] text-muted">可在内容生产页细调</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-                  {["女性可爱", "专业清爽", "学姐经验", "高赞钩子"].map((style, index) => (
-                    <div
-                      className={[
-                        "rounded-md border px-3 py-2 text-sm font-medium",
-                        index === 0
-                          ? "border-steel/50 bg-steel/10 text-ink"
-                          : "border-line bg-mist/50 text-muted"
-                      ].join(" ")}
-                      key={style}
-                    >
-                      {style}
-                    </div>
-                  ))}
+                  {writingStylePresets.map((style) => {
+                    const selected = style.id === defaultWritingStyle;
+                    return (
+                      <button
+                        aria-pressed={selected}
+                        className={[
+                          "rounded-md border px-3 py-2 text-left text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-steel/45",
+                          selected
+                            ? "border-steel/50 bg-steel/10 text-ink"
+                            : "border-line bg-mist/50 text-muted hover:border-steel/40 hover:bg-steel/5 hover:text-ink"
+                        ].join(" ")}
+                        data-testid={`dashboard-writing-style-${style.id}`}
+                        key={style.id}
+                        onClick={() => onDefaultWritingStyleChange(style.id)}
+                        type="button"
+                      >
+                        {style.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -1529,9 +1563,11 @@ function KnowledgeView() {
 }
 
 function ContentView({
+  defaultWritingStyle,
   onOpenSettings,
   workspaceToken
 }: {
+  defaultWritingStyle: WritingStylePresetId;
   onOpenSettings: () => void;
   workspaceToken: string;
 }) {
@@ -1611,6 +1647,7 @@ function ContentView({
   return (
     <div className="space-y-4">
       <GenerationLauncher
+        defaultWritingStyle={defaultWritingStyle}
         latestContent={previewContent}
         onGeneratedContent={handleGeneratedContent}
         onImageGenerated={setPreviewImageAsset}
@@ -1654,12 +1691,14 @@ function ContentView({
 }
 
 function GenerationLauncher({
+  defaultWritingStyle,
   latestContent,
   onGeneratedContent,
   onImageGenerated,
   onOpenSettings,
   workspaceToken
 }: {
+  defaultWritingStyle: WritingStylePresetId;
   latestContent: GeneratedContent | null;
   onGeneratedContent: (content: GeneratedContent) => void;
   onImageGenerated: (asset: GeneratedImageAsset) => void;
@@ -1670,11 +1709,11 @@ function GenerationLauncher({
   const [topic, setTopic] = useState("硕升博申请第一步，不是先套磁");
   const [knowledgeQuery, setKnowledgeQuery] = useState("硕升博 高赞图文 写作参考");
   const [targetAudience, setTargetAudience] = useState("准备硕升博申请的学生");
-  const [stylePreset, setStylePreset] = useState<WritingStylePresetId>("warm_cute");
+  const [stylePreset, setStylePreset] = useState<WritingStylePresetId>(defaultWritingStyle);
   const [styleOptions, setStyleOptions] =
     useState<Record<ExpressionOptionKey, boolean>>(defaultExpressionOptions);
   const [tone, setTone] = useState(() =>
-    buildWritingTone("warm_cute", defaultExpressionOptions)
+    buildWritingTone(defaultWritingStyle, defaultExpressionOptions)
   );
   const [tagsText, setTagsText] = useState("硕升博,博士申请,研究方向,申请规划");
   const [busyAction, setBusyAction] = useState<"draft" | null>(null);
@@ -1743,6 +1782,12 @@ function GenerationLauncher({
       ...(workspaceToken ? { Authorization: `Bearer ${workspaceToken}` } : {})
     };
   }
+
+  useEffect(() => {
+    setStylePreset(defaultWritingStyle);
+    setStyleOptions(defaultExpressionOptions);
+    setTone(buildWritingTone(defaultWritingStyle, defaultExpressionOptions));
+  }, [defaultWritingStyle]);
 
   async function refreshProviderStatuses() {
     try {
