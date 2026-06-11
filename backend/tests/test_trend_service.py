@@ -62,6 +62,22 @@ def test_build_xhs_link_import_target_handles_profile_and_h_suffix_punctuation()
     assert target.links[0].note_id == "note456"
 
 
+def test_build_xhs_link_import_target_rejects_incomplete_xhs_urls() -> None:
+    target = build_xhs_link_import_target(
+        TrendLinkImportRequest(
+            raw_text="短链首页 https://xhslink.com 和不完整主页 https://www.xiaohongshu.com/user/profile",
+            max_links=5,
+        )
+    )
+
+    assert target.extracted_count == 2
+    assert target.accepted_count == 0
+    assert target.links[0].accepted is False
+    assert "share code" in (target.links[0].reason or "")
+    assert target.links[1].accepted is False
+    assert "user id" in (target.links[1].reason or "")
+
+
 def test_build_safety_profile_defaults_to_account_safety() -> None:
     payload = TrendCollectionJobCreate(platform="xiaohongshu", keyword="硕升博")
 

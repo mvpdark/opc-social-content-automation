@@ -74,6 +74,15 @@ def _classify_xhs_url(url: str) -> TrendLinkCandidate:
         )
 
     if host in {"xhslink.com", "www.xhslink.com"}:
+        if not parts:
+            return TrendLinkCandidate(
+                original_url=url,
+                normalized_url=url,
+                link_type="short_link",
+                accepted=False,
+                requires_resolution=False,
+                reason="Short links must include a share code.",
+            )
         return TrendLinkCandidate(
             original_url=url,
             normalized_url=url,
@@ -105,6 +114,15 @@ def _classify_xhs_url(url: str) -> TrendLinkCandidate:
 
     if len(parts) >= 2 and parts[:2] == ["user", "profile"]:
         user_id = parts[2] if len(parts) >= 3 else None
+        if not user_id:
+            return TrendLinkCandidate(
+                original_url=url,
+                normalized_url=url,
+                link_type="profile",
+                accepted=False,
+                requires_resolution=False,
+                reason="Profile links must include a user id.",
+            )
         note_id = parts[3] if len(parts) >= 4 else None
         normalized_path = f"user/profile/{user_id}/{note_id}" if note_id else f"user/profile/{user_id}"
         return TrendLinkCandidate(

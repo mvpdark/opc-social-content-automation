@@ -38,6 +38,14 @@ type LinkImportTarget = {
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8010/api";
+const XHS_URL_PATTERN = /https?:\/\/[^\s<>'"，。；、)）】]+/gi;
+const SUPPORTED_XHS_HOSTS = new Set([
+  "xiaohongshu.com",
+  "www.xiaohongshu.com",
+  "xhslink.com",
+  "www.xhslink.com"
+]);
+const TRAILING_URL_PUNCTUATION = ".,;:!?，。；：！？、)]）】\"'";
 
 const platformLabels: Record<Platform, string> = {
   xiaohongshu: "小红书",
@@ -71,6 +79,161 @@ function buildLocalSearchTarget(platform: Platform, keyword: string): SearchTarg
   };
 }
 
+function cleanImportUrl(url: string) {
+  let cleaned = url.trim();
+  while (cleaned && TRAILING_URL_PUNCTUATION.includes(cleaned[cleaned.length - 1] ?? "")) {
+    cleaned = cleaned.slice(0, -1);
+  }
+  return cleaned;
+}
+
+function buildLocalXhsLinkCandidate(rawUrl: string): LinkCandidate {
+  const originalUrl = cleanImportUrl(rawUrl);
+
+  try {
+    const parsed = new URL(originalUrl);
+    const host = parsed.hostname.toLowerCase();
+    const parts = parsed.pathname.split("/").filter(Boolean);
+
+    if (!SUPPORTED_XHS_HOSTS.has(host)) {
+      return {
+        original_url: originalUrl,
+        normalized_url: originalUrl,
+        link_type: "unsupported",
+        accepted: false,
+        requires_resolution: false,
+        note_id: null,
+        reason: "只接受 xiaohongshu.com 和 xhslink.com 链接。"
+      };
+    }
+
+    if (host === "xhslink.com" || host === "www.xhslink.com") {
+      if (!parts.length) {
+        return {
+          original_url: originalUrl,
+          normalized_url: originalUrl,
+          link_type: "short_link",
+          accepted: false,
+          requires_resolution: false,
+          note_id: null,
+          reason: "短链需要包含分享码。"
+        };
+      }
+      return {
+        original_url: originalUrl,
+        normalized_url: originalUrl,
+        link_type: "short_link",
+        accepted: true,
+        requires_resolution: true,
+        note_id: null,
+        reason: "短链需要后续由授权采集器解析详情。"
+      };
+    }
+
+    if (parts.length >= 2 && parts[0] === "explore") {
+      return {
+        original_url: originalUrl,
+        normalized_url: `https://www.xiaohongshu.com/explore/${parts[1]}`,
+        link_type: "note_detail",
+        accepted: true,
+        requires_resolution: false,
+        note_id: parts[1],
+        reason: null
+      };
+    }
+
+    if (parts.length >= 3 && parts[0] === "discovery" && parts[1] === "item") {
+      return {
+        original_url: originalUrl,
+        normalized_url: `https://www.xiaohongshu.com/discovery/item/${parts[2]}`,
+        link_type: "note_detail",
+        accepted: true,
+        requires_resolution: false,
+        note_id: parts[2],
+        reason: null
+      };
+    }
+
+    if (parts.length >= 2 && parts[0] === "user" && parts[1] === "profile") {
+      const userId = parts[2];
+      const noteId = parts[3] ?? null;
+      if (!userId) {
+        return {
+          original_url: originalUrl,
+          normalized_url: originalUrl,
+          link_type: "profile",
+          accepted: false,
+          requires_resolution: false,
+          note_id: null,
+          reason: "主页链接需要包含用户 ID。"
+        };
+      }
+      const normalizedPath = noteId ? `user/profile/${userId}/${noteId}` : `user/profile/${userId}`;
+      return {
+        original_url: originalUrl,
+        normalized_url: `https://www.xiaohongshu.com/${normalizedPath}`,
+        link_type: noteId ? "profile_note" : "profile",
+        accepted: true,
+        requires_resolution: false,
+        note_id: noteId,
+        reason: noteId ? null : "主页链接需要后续进入笔记列表采集。"
+      };
+    }
+
+    if (parts[0] === "search_result") {
+      return {
+        original_url: originalUrl,
+        normalized_url: "https://www.xiaohongshu.com/search_result",
+        link_type: "search_result",
+        accepted: true,
+        requires_resolution: false,
+        note_id: null,
+        reason: "搜索结果页可作为上下文，但不是单篇笔记。"
+      };
+    }
+
+    return {
+      original_url: originalUrl,
+      normalized_url: originalUrl,
+      link_type: "xiaohongshu_other",
+      accepted: false,
+      requires_resolution: false,
+      note_id: null,
+      reason: "暂不支持这种小红书链接形态。"
+    };
+  } catch {
+    return {
+      original_url: originalUrl,
+      normalized_url: originalUrl,
+      link_type: "invalid",
+      accepted: false,
+      requires_resolution: false,
+      note_id: null,
+      reason: "链接格式无法识别。"
+    };
+  }
+}
+
+function buildLocalXhsLinkImportTarget(rawText: string): LinkImportTarget {
+  const rawUrls = Array.from(rawText.matchAll(XHS_URL_PATTERN), (match) => cleanImportUrl(match[0]));
+  const dedupedUrls = Array.from(new Set(rawUrls)).slice(0, 10);
+  const links = dedupedUrls.map(buildLocalXhsLinkCandidate);
+
+  return {
+    platform: "xiaohongshu",
+    extracted_count: links.length,
+    accepted_count: links.filter((link) => link.accepted).length,
+    import_mode: "frontend_preparse_only",
+    download_media_enabled: false,
+    cookie_persistence: false,
+    links,
+    safety_notes: [
+      "本地预解析只识别链接形态，不抓取小红书页面内容。",
+      "后续入库前仍需人工确认来源和内容。"
+    ]
+  };
+}
+
 export function TrendCollectorPanel({
   onOpenSettings,
   workspaceToken
@@ -94,7 +257,8 @@ export function TrendCollectorPanel({
   const canOpenSearch = canSubmit && busyAction === null;
   const canCreateJob = canSubmit && busyAction === null;
   const canSaveDigest = canSubmit && sourcesReviewed && busyAction === null;
-  const canParseLinks = linkImportText.trim().length > 0 && busyAction === null;
+  const canParseLinks =
+    platform === "xiaohongshu" && linkImportText.trim().length > 0 && busyAction === null;
   const openSearchLabel = canSubmit ? "打开搜索" : "先填关键词";
   const createJobLabel = !canSubmit
     ? "先填关键词"
@@ -104,6 +268,12 @@ export function TrendCollectorPanel({
     : !sourcesReviewed
       ? "先确认来源"
       : "保存摘要";
+  const parseLinksLabel =
+    platform !== "xiaohongshu"
+      ? "仅小红书"
+      : linkImportText.trim()
+        ? "解析链接"
+        : "先粘贴链接";
   const openSearchTitle = canSubmit ? undefined : "先填写关键词，再打开公开搜索页";
   const createJobTitle = !canSubmit
     ? "先填写关键词，再创建采集任务"
@@ -188,12 +358,17 @@ export function TrendCollectorPanel({
   }
 
   async function parseXhsLinks() {
+    if (platform !== "xiaohongshu") {
+      setStatusText("链接导入器目前只支持小红书；抖音仍走公开搜索采集。");
+      return;
+    }
     if (!linkImportText.trim()) {
       setStatusText("先粘贴小红书分享文本或链接。");
       return;
     }
     setBusyAction("link");
     try {
+      const fallbackTarget = buildLocalXhsLinkImportTarget(linkImportText);
       const response = await fetch(`${API_BASE}/trends/link-import-target`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -205,7 +380,14 @@ export function TrendCollectorPanel({
         })
       });
       if (!response.ok) {
-        throw new Error("链接解析失败，请检查是否粘贴了完整的小红书链接。");
+        if (response.status === 404 && fallbackTarget.extracted_count > 0) {
+          setLinkImportTarget(fallbackTarget);
+          setStatusText(
+            `后端链接导入接口还未加载，已先完成本地预解析：${fallbackTarget.accepted_count}/${fallbackTarget.extracted_count} 个链接可作为导入目标。`
+          );
+          return;
+        }
+        throw new Error(`链接解析接口返回 ${response.status}，请稍后重试或检查后端服务。`);
       }
       const data = (await response.json()) as LinkImportTarget;
       setLinkImportTarget(data);
@@ -213,7 +395,16 @@ export function TrendCollectorPanel({
         `已解析 ${data.extracted_count} 个链接，其中 ${data.accepted_count} 个可作为小红书导入目标。`
       );
     } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "链接解析失败。");
+      const fallbackTarget = buildLocalXhsLinkImportTarget(linkImportText);
+      if (fallbackTarget.extracted_count > 0) {
+        setLinkImportTarget(fallbackTarget);
+        setStatusText(
+          `暂时无法连接链接解析接口，已先完成本地预解析：${fallbackTarget.accepted_count}/${fallbackTarget.extracted_count} 个链接可作为导入目标。`
+        );
+      } else {
+        setLinkImportTarget(null);
+        setStatusText(error instanceof Error ? error.message : "链接解析失败。");
+      }
     } finally {
       setBusyAction(null);
     }
@@ -442,7 +633,7 @@ export function TrendCollectorPanel({
                 ) : (
                   <Search className="h-4 w-4" />
                 )}
-                {busyAction === "link" ? "正在解析" : "解析链接"}
+                {busyAction === "link" ? "正在解析" : parseLinksLabel}
               </button>
             </div>
             {linkImportTarget ? (
