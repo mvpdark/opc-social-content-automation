@@ -188,7 +188,7 @@ const expressionOptions = [
     key: "emoji",
     label: "轻量表情",
     enabled:
-      "每 2-3 段可以放 1 个通用 emoji，必要时可使用小红书表情字符码，例如 [笑哭R]、[哭惹R]、[哇R]",
+      "每 2-3 段可以放 1 个通用 emoji；必要时可使用公开样本出现过的小红书表情字符码，例如 [笑哭R]、[哭惹R]、[哇R]、[鄙视R]",
     disabled: "不使用 emoji、颜文字或小红书表情字符码"
   },
   {
@@ -259,6 +259,14 @@ const xhsStyleStickers = [
     face: "😏",
     label: "轻松收尾",
     manualHint: "复制文案保留 [doge]，预览按近似表情显示"
+  },
+  {
+    accent: "bg-steel/12 text-steel",
+    code: "[鄙视R]",
+    cue: "适合轻微吐槽，但营销文案里要少用",
+    face: "🙄",
+    label: "轻微吐槽",
+    manualHint: "复制文案保留 [鄙视R]，预览按近似表情显示"
   }
 ] as const;
 
@@ -1605,14 +1613,19 @@ function XhsStyleStickerTray({ compact = false }: { compact?: boolean }) {
         <div>
           <div className="text-sm font-semibold text-ink">红书风原创表情展示</div>
           <p className="mt-1 text-xs leading-5 text-muted">
-            按小红书表情字符码做本地近似预览；复制时保留字符码，发布后由平台识别显示。
+            按公开样本出现过的 RedNote 表情字符码做本地近似预览；复制时保留字符码，发布前请在小红书输入框实测。
           </p>
         </div>
-        <Pill tone="blue">字符码对照</Pill>
+        <Pill tone="blue">样本核验</Pill>
       </div>
       <div className="mt-3 rounded-md border border-coral/20 bg-coral/10 px-3 py-2 text-xs leading-6 text-ink">
         效果示例：{renderXhsExpressionText("先别急 [笑哭R] 先把方向想清楚 [点赞R]")}
       </div>
+      {!compact ? (
+        <div className="mt-2 text-[11px] leading-5 text-muted">
+          说明：这里不使用官方表情包图片资产；本地只做近似视觉预览，最终以小红书发布页识别结果为准。
+        </div>
+      ) : null}
       <div
         className={[
           "mt-3 grid gap-2",
