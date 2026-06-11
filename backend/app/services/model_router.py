@@ -37,8 +37,20 @@ def load_platform_style_reference(platform: object) -> str:
 
 
 def _redacted_provider_error(provider: str, status_code: int | None = None) -> str:
-    suffix = f" HTTP {status_code}" if status_code is not None else ""
-    return f"{provider} request failed{suffix}. Check provider configuration and logs."
+    provider_label = {
+        "OpenAI-compatible draft provider": "撰稿服务",
+        "OpenAI-compatible image provider": "图片服务",
+        "DeepSeek": "改写服务",
+    }.get(provider, "模型服务")
+    if status_code in {401, 403}:
+        return f"{provider_label}授权失败，请检查设置里的 API Key 和中转站地址。"
+    if status_code == 404:
+        return f"{provider_label}模型或接口地址不可用，请检查模型名和中转站地址。"
+    if status_code == 429:
+        return f"{provider_label}请求过于频繁或额度不足，请稍后重试或检查账户额度。"
+    if status_code is not None:
+        return f"{provider_label}请求失败（HTTP {status_code}），请检查服务配置。"
+    return f"{provider_label}请求失败，请检查服务配置和网络。"
 
 
 def _deepseek_messages(prompt_template: str, payload: dict[str, object]) -> list[dict[str, str]]:

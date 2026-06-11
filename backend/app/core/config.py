@@ -45,6 +45,14 @@ class Settings(BaseSettings):
     def cors_origins(self) -> list[str]:
         return [self.frontend_origin, "http://127.0.0.1:3000"]
 
+    @property
+    def is_sqlite(self) -> bool:
+        return self.database_url.startswith("sqlite")
+
+    @property
+    def is_postgresql(self) -> bool:
+        return self.database_url.startswith("postgresql")
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -8,6 +8,7 @@ from sqlalchemy.exc import OperationalError
 
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.db.session import initialize_local_database
 
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
@@ -15,6 +16,8 @@ STATIC_ROOT = BACKEND_ROOT / "static"
 
 
 def create_app() -> FastAPI:
+    initialize_local_database()
+
     app = FastAPI(
         title="OPC Social Content Automation API",
         version="0.1.0",

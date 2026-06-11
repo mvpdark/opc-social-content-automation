@@ -1,6 +1,7 @@
 from sqlalchemy import Select, desc, or_, select
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.knowledge_base import KnowledgeBase
 from app.schemas.knowledge import KnowledgeSearchResult, KnowledgeUploadRequest
 from app.services.model_router import model_router
@@ -43,6 +44,9 @@ def vector_search(
     category: str | None,
     limit: int,
 ) -> list[KnowledgeSearchResult]:
+    if not settings.is_postgresql:
+        return keyword_search(db, query, category, limit)
+
     query_embedding = model_router.embedding_model(query)
     distance = KnowledgeBase.embedding.cosine_distance(query_embedding).label("distance")
     statement = select(KnowledgeBase, distance).where(KnowledgeBase.embedding.is_not(None))
