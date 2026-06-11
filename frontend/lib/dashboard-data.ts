@@ -449,7 +449,7 @@ export const imageWorkflow = [
 export const reviewQueue = [
   { title: "硕升博申请顺序", source: "撰稿与改写服务", status: "待审", icon: ClipboardCheck },
   { title: "封面标题准确性", source: "图片生成服务", status: "需复核", icon: LayoutTemplate },
-  { title: "高赞样本参考", source: "小红书登录态", status: "待采集", icon: ExternalLink }
+  { title: "高赞样本参考", source: "公开来源确认", status: "待采集", icon: ExternalLink }
 ];
 
 export const safetyGates = [

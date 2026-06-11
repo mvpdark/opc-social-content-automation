@@ -131,7 +131,7 @@ export function TrendCollectorPanel({
           min_delay_seconds: minDelay,
           max_delay_seconds: maxDelay,
           persist_session: true,
-          persist_cookies: true
+          persist_cookies: false
         })
       });
       if (!response.ok) {
@@ -371,6 +371,10 @@ export function TrendCollectorPanel({
               </span>
             </div>
             <div className="flex items-center justify-between gap-3 py-3">
+              <span className="text-muted">Cookie 保存</span>
+              <span className="font-medium text-moss">默认关闭</span>
+            </div>
+            <div className="flex items-center justify-between gap-3 py-3">
               <span className="text-muted">自动化模式</span>
               <span className="font-medium">
                 {target?.automation_mode ?? "可见浏览器"}
@@ -379,7 +383,7 @@ export function TrendCollectorPanel({
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
-            <div className="border-l-4 border-moss pl-3">先试公开搜索，再考虑人工登录。</div>
+            <div className="border-l-4 border-moss pl-3">先试公开搜索，人工登录只作兜底。</div>
             <div className="border-l-4 border-steel pl-3">采集素材先审核，再进入知识摘要。</div>
           </div>
         </div>

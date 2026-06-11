@@ -28,7 +28,7 @@ class TrendCollectionJobCreate(BaseModel):
     max_delay_seconds: int = Field(default=12, ge=3, le=120)
     session_label: str | None = Field(default=None, max_length=120)
     persist_session: bool = True
-    persist_cookies: bool = True
+    persist_cookies: bool = False
 
 
 class PlatformSearchTarget(BaseModel):
