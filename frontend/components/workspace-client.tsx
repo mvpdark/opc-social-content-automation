@@ -42,19 +42,19 @@ import {
 } from "@/lib/dashboard-data";
 
 const stateTone: Record<string, string> = {
-  当前重点: "border-steel bg-steel/10 text-steel",
-  可用: "border-moss bg-moss/10 text-moss",
-  已接入: "border-moss bg-moss/10 text-moss",
-  强制: "border-coral bg-coral/10 text-coral",
-  追踪: "border-amber bg-amber/10 text-amber"
+  当前重点: "border-steel bg-steel/10 text-ink",
+  可用: "border-moss bg-moss/10 text-ink",
+  已接入: "border-moss bg-moss/10 text-ink",
+  强制: "border-coral bg-coral/10 text-ink",
+  追踪: "border-amber bg-amber/10 text-ink"
 };
 
 const pillTone: Record<string, string> = {
   neutral: "border-line bg-mist text-muted",
-  green: "border-moss/40 bg-moss/10 text-moss",
-  blue: "border-steel/40 bg-steel/10 text-steel",
-  red: "border-coral/40 bg-coral/10 text-coral",
-  amber: "border-amber/40 bg-amber/10 text-amber"
+  green: "border-moss/40 bg-moss/10 text-ink",
+  blue: "border-steel/40 bg-steel/10 text-ink",
+  red: "border-coral/40 bg-coral/10 text-ink",
+  amber: "border-amber/40 bg-amber/10 text-ink"
 };
 
 const subtleCardClass = "glass-subtle rounded-md border";
@@ -738,7 +738,7 @@ function GenerationLauncher({
                       aria-checked={enabled}
                       className={`flex min-h-10 items-center justify-between gap-2 rounded-md border px-3 text-left text-xs font-medium transition ${
                         enabled
-                          ? "border-moss bg-moss/10 text-moss"
+                          ? "border-moss bg-moss/10 text-ink"
                           : "glass-control text-muted"
                       }`}
                       key={option.key}
@@ -1197,8 +1197,8 @@ function SettingsView({
                         `theme-${style.id}`,
                         "rounded-md border px-4 py-3 text-left transition",
                         selected
-                          ? "border-steel bg-mist text-ink"
-                          : "glass-control text-ink hover:border-steel/50"
+                          ? "border-steel bg-mist text-ink ring-1 ring-steel/25"
+                          : "border-line bg-paper text-ink shadow-panel hover:border-steel/50"
                       ].join(" ")}
                       href={settingsThemeHref(style.id)}
                       key={style.id}

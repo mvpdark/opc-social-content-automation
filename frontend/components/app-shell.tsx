@@ -122,7 +122,7 @@ export function AppShell({
                   ) : null}
                 </div>
                 {usingRecommendedTheme ? (
-                  <span className="glass-control shrink-0 rounded-md border px-2 py-1 text-xs font-medium text-moss">
+                  <span className="glass-control shrink-0 rounded-md border px-2 py-1 text-xs font-medium text-ink">
                     已使用
                   </span>
                 ) : (
