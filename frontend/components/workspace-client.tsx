@@ -528,6 +528,9 @@ function DependencyDoctorPanel() {
         : "正常";
   const attentionItems =
     dependencyReport?.items.filter((item) => item.status !== "ok").slice(0, 8) ?? [];
+  const hasDependencyIssues = Boolean(
+    dependencyReport && (dependencyReport.status !== "ok" || attentionItems.length > 0)
+  );
   const primaryRepairStep = dependencyReport?.repair_steps[0] ?? "python scripts/setup_local.py";
 
   return (
@@ -582,15 +585,31 @@ function DependencyDoctorPanel() {
           </div>
           <button
             className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-md bg-ink text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={!dependencyReport}
-            onClick={() => setShowRepairPlan((current) => !current)}
+            disabled={!dependencyReport || !hasDependencyIssues}
+            onClick={() => {
+              if (hasDependencyIssues) {
+                setShowRepairPlan((current) => !current);
+              }
+            }}
             type="button"
           >
-            <Terminal className="h-4 w-4" />
-            查看一键修复命令
+            {dependencyReport && !hasDependencyIssues ? (
+              <CheckCircle2 className="h-4 w-4" />
+            ) : (
+              <Terminal className="h-4 w-4" />
+            )}
+            {dependencyReport && !hasDependencyIssues ? "无需修复" : "查看修复命令"}
           </button>
           <p className="mt-2 text-[11px] leading-5 text-muted">
-            优先命令：<span className="font-mono text-ink">{primaryRepairStep}</span>
+            {hasDependencyIssues ? (
+              <>
+                优先命令：<span className="font-mono text-ink">{primaryRepairStep}</span>
+              </>
+            ) : dependencyReport ? (
+              "当前环境满足运行要求。"
+            ) : (
+              "检测后会显示需要处理的修复建议。"
+            )}
           </p>
         </div>
 
@@ -634,7 +653,7 @@ function DependencyDoctorPanel() {
                 核心依赖满足当前项目要求
               </div>
               <p className="mt-2 text-xs leading-5 text-muted">
-                后续仍可通过修复方案里的 outdated 命令检查最新版本。
+                普通安装包模式无需额外安装系统组件；后续切换电脑时重新检测即可。
               </p>
             </div>
           ) : (
@@ -643,7 +662,7 @@ function DependencyDoctorPanel() {
             </div>
           )}
 
-          {showRepairPlan && dependencyReport ? (
+          {showRepairPlan && dependencyReport && hasDependencyIssues ? (
             <div className={`${subtleCardClass} p-4`}>
               <div className="text-sm font-semibold">修复方案</div>
               <div className="mt-3 space-y-2">
