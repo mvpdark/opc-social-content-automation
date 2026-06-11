@@ -210,6 +210,16 @@ a {
   text-decoration: none;
 }
 
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid rgb(var(--steel) / 0.9);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgb(var(--steel) / 0.16);
+}
+
+:where(input, select, textarea):focus-visible {
+  border-color: rgb(var(--steel) / 0.86);
+}
+
 .workspace-shell {
   position: relative;
   isolation: isolate;
