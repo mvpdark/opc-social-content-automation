@@ -360,7 +360,7 @@ function DashboardView() {
             <div className="glass-subtle divide-y divide-line rounded-md border">
               {nextActions.map((action, index) => (
                 <div key={action} className="flex items-center gap-3 px-3 py-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-ink text-xs font-semibold text-white">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-ink text-xs font-semibold text-paper">
                     {index + 1}
                   </div>
                   <span className="text-sm font-medium leading-5">{action}</span>
@@ -780,7 +780,7 @@ function GenerationLauncher({
             <p className="mt-2 text-sm leading-6 text-muted">{statusText}</p>
             <div className="mt-4 grid grid-cols-1 gap-2">
               <button
-                className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-paper disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={!canGenerate}
                 onClick={generateDraft}
                 type="button"
@@ -863,7 +863,7 @@ function CoverView() {
         action={
           <button
             aria-label="生成封面，需审核通过后启用"
-            className="flex h-9 items-center gap-2 rounded-md bg-ink px-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-55"
+            className="flex h-9 items-center gap-2 rounded-md bg-ink px-3 text-sm font-medium text-paper disabled:cursor-not-allowed disabled:opacity-55"
             disabled
             title="需审核通过后启用"
             type="button"
@@ -1091,7 +1091,7 @@ function SettingsView({
             </div>
             <div className="mt-4 grid grid-cols-1 gap-2">
               <button
-                className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-paper disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={credentialBusy}
                 onClick={applyProviderKeys}
                 type="button"
@@ -1269,7 +1269,7 @@ function SettingsView({
       <div className="space-y-4">
         <Panel helper="如果界面被收得太干净，可以一键恢复说明文字。" title="恢复">
           <button
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-white"
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-paper"
             onClick={onReset}
             type="button"
           >

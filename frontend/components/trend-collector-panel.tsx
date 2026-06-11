@@ -31,7 +31,7 @@ const inlineInputClass =
 const secondaryButtonClass =
   "glass-control flex h-10 items-center justify-center gap-2 rounded-md border text-sm font-medium text-ink disabled:cursor-not-allowed disabled:opacity-60";
 const primaryButtonClass =
-  "flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60";
+  "flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-paper disabled:cursor-not-allowed disabled:opacity-60";
 
 function buildLocalSearchTarget(platform: Platform, keyword: string): SearchTarget {
   const encodedKeyword = encodeURIComponent(keyword.trim());

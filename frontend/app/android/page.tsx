@@ -148,7 +148,7 @@ function MobileHeader({ activeTab }: { activeTab: MobileTab }) {
 function HomeScreen({ onChangeTab }: { onChangeTab: (tab: MobileTab) => void }) {
   return (
     <div className="space-y-4">
-      <section className="rounded-md bg-ink p-4 text-white">
+      <section className="rounded-md bg-ink p-4 text-paper">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-xs text-white/70">今天优先级</div>
@@ -223,7 +223,7 @@ function CollectScreen() {
         </div>
         <button
           aria-label="打开搜索，需连接采集任务后启用"
-          className="mt-3 h-11 w-full rounded-md bg-ink text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-55"
+          className="mt-3 h-11 w-full rounded-md bg-ink text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-55"
           disabled
           type="button"
         >
@@ -282,7 +282,7 @@ function CreateScreen() {
         </div>
         <button
           aria-label="生成图文，需回到 PC 工作台执行"
-          className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-md bg-ink text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-55"
+          className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-md bg-ink text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-55"
           disabled
           type="button"
         >
@@ -345,7 +345,7 @@ function ReviewScreen() {
                 </button>
                 <button
                   aria-label="通过，需在 PC 审核工作台处理"
-                  className="h-9 rounded-md bg-ink text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-55"
+                  className="h-9 rounded-md bg-ink text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-55"
                   disabled
                   type="button"
                 >

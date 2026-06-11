@@ -60,7 +60,7 @@ export function AppShell({
       <div className="relative z-10 grid min-h-screen grid-cols-1 xl:grid-cols-[252px_1fr]">
         <aside className="glass-sidebar border-b border-line xl:border-b-0 xl:border-r">
           <div className="flex h-[72px] items-center border-b border-line px-5 py-4 xl:px-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-ink text-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-ink text-paper">
               <Command className="h-5 w-5" />
             </div>
             <div className="ml-3">
