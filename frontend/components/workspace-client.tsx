@@ -41,13 +41,13 @@ import {
   writingReferences
 } from "@/lib/dashboard-data";
 
-const stateTone: Record<string, string> = {
+const stateTone = {
   当前重点: "border-steel bg-steel/10 text-ink",
   可用: "border-moss bg-moss/10 text-ink",
   配置后可用: "border-amber bg-amber/10 text-ink",
   强制: "border-coral bg-coral/10 text-ink",
   追踪: "border-amber bg-amber/10 text-ink"
-};
+} satisfies Record<(typeof pipeline)[number]["state"], string>;
 
 const pillTone: Record<string, string> = {
   neutral: "border-line bg-mist text-muted",
@@ -392,7 +392,7 @@ function DashboardView() {
                 <span
                   className={[
                     "rounded-md border px-2 py-1 text-xs font-medium",
-                    stateTone[step.state] ?? pillTone.neutral
+                    stateTone[step.state]
                   ].join(" ")}
                 >
                   {step.state}

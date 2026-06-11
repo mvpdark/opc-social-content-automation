@@ -268,7 +268,7 @@ export const pipeline = [
     description: "图片服务生成素材，人工复核后交付发布。",
     icon: Send
   }
-];
+] as const;
 
 export const commandFocus = [
   {
