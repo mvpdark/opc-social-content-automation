@@ -136,6 +136,44 @@ export const themeTemplates: Array<{
   }
 ];
 
+export const tabThemeRecommendations: Record<
+  WorkspaceTab,
+  { reason: string; style: InterfaceStyle }
+> = {
+  dashboard: {
+    reason: "日常总览保持清爽，少干扰。",
+    style: "apple"
+  },
+  research: {
+    reason: "公开采集和素材整理更适合低压力冷色。",
+    style: "ocean"
+  },
+  knowledge: {
+    reason: "长文阅读、归档和摘要更接近编辑台。",
+    style: "editorial"
+  },
+  content: {
+    reason: "小红书图文创作更贴近甜感社媒语境。",
+    style: "candy"
+  },
+  review: {
+    reason: "审核页需要降噪，突出风险和状态。",
+    style: "graphite"
+  },
+  cover: {
+    reason: "封面方案需要更强的社媒停留感。",
+    style: "candy"
+  },
+  delivery: {
+    reason: "交付和推广协作更适合柔和暖色。",
+    style: "warm"
+  },
+  settings: {
+    reason: "配置页保持中性、稳定、易读。",
+    style: "apple"
+  }
+};
+
 export const navigation: Array<{
   id: WorkspaceTab;
   label: string;

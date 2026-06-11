@@ -3,13 +3,21 @@
 import type React from "react";
 import {
   Command,
+  Palette,
   PenLine,
   Settings,
   ShieldCheck,
   Smartphone
 } from "lucide-react";
 
-import { navigation, tabMeta, type InterfaceStyle, type WorkspaceTab } from "@/lib/dashboard-data";
+import {
+  interfaceStyles,
+  navigation,
+  tabMeta,
+  tabThemeRecommendations,
+  type InterfaceStyle,
+  type WorkspaceTab
+} from "@/lib/dashboard-data";
 
 type AppShellProps = {
   activeTab: WorkspaceTab;
@@ -34,7 +42,18 @@ export function AppShell({
     const query = params.toString();
     return query ? `/?${query}` : "/";
   };
+  const themeHref = (style: InterfaceStyle) => {
+    const params = new URLSearchParams();
+    if (activeTab !== "dashboard") {
+      params.set("tab", activeTab);
+    }
+    params.set("theme", style);
+    return `/?${params.toString()}`;
+  };
   const androidHref = `/android?from=${encodeURIComponent(tabHref(activeTab))}`;
+  const recommendedTheme = tabThemeRecommendations[activeTab];
+  const recommendedStyle = interfaceStyles.find((style) => style.id === recommendedTheme.style);
+  const usingRecommendedTheme = recommendedTheme.style === interfaceStyle;
 
   return (
     <main className={`theme-${interfaceStyle} workspace-shell min-h-screen text-ink`}>
@@ -83,6 +102,34 @@ export function AppShell({
                 所有内容必须先经过人工审核，图片标题需要二次确认。
               </p>
             ) : null}
+            <div className="mt-4 border-t border-line pt-4">
+              <div className="flex items-center gap-2 text-xs font-medium text-muted">
+                <Palette className="h-4 w-4 text-steel" />
+                当前页推荐
+              </div>
+              <div className="mt-2 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold">
+                    {recommendedStyle?.label ?? "苹果风"}
+                  </div>
+                  {showHelperText ? (
+                    <p className="mt-1 text-xs leading-5 text-muted">{recommendedTheme.reason}</p>
+                  ) : null}
+                </div>
+                {usingRecommendedTheme ? (
+                  <span className="glass-control shrink-0 rounded-md border px-2 py-1 text-xs font-medium text-moss">
+                    已使用
+                  </span>
+                ) : (
+                  <a
+                    className="glass-control shrink-0 rounded-md border px-2 py-1 text-xs font-medium text-ink"
+                    href={themeHref(recommendedTheme.style)}
+                  >
+                    切换
+                  </a>
+                )}
+              </div>
+            </div>
           </div>
         </aside>
 
