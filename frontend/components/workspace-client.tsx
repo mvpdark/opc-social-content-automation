@@ -258,6 +258,15 @@ type GeneratedContent = {
   title: string;
 };
 
+type ProviderStatusItem = {
+  configured: boolean;
+  model: string | null;
+  name: string;
+  note: string;
+  provider: string;
+  status: string;
+};
+
 const blockedPublishTerms = [
   "保录",
   "包过",
@@ -865,17 +874,27 @@ function GenerationLauncher({
   const [statusText, setStatusText] = useState("填写选题后，点击“开始生产图文”创建草稿。");
   const [lastContent, setLastContent] = useState<GeneratedContent | null>(null);
   const [needsProviderSettings, setNeedsProviderSettings] = useState(false);
+  const [providerStatuses, setProviderStatuses] = useState<ProviderStatusItem[]>([]);
+  const [providerStatusError, setProviderStatusError] = useState<string | null>(null);
 
   const hasTopic = topic.trim().length > 0;
-  const canGenerate = hasTopic && busyAction === null;
+  const draftProviderStatus = providerStatuses.find((item) => item.name === "Draft generation");
+  const draftProviderMissing = Boolean(providerStatuses.length && !draftProviderStatus?.configured);
+  const canGenerate = hasTopic && busyAction === null && !draftProviderMissing;
   const generateButtonLabel = !hasTopic
       ? "先填写选题"
+      : draftProviderMissing
+        ? "先配置撰稿服务"
       : "开始生产图文";
   const generateButtonTitle = !hasTopic
       ? "先填写选题，再开始生产图文"
+      : draftProviderMissing
+        ? "去设置里填写并应用撰稿 API Key"
       : undefined;
   const launchStatusText = !hasTopic
       ? "先填写选题，再开始生产图文。"
+      : draftProviderMissing
+        ? "撰稿服务缺少 API Key，先去设置页填写并应用。"
       : statusText;
   const primaryGenerateLabel =
     busyAction === "draft"
@@ -883,6 +902,14 @@ function GenerationLauncher({
       : lastContent
         ? "重新生产草稿"
         : generateButtonLabel;
+  const providerDisplayItems = [
+    { label: "撰稿", name: "Draft generation" },
+    { label: "改写", name: "Humanization rewrite" },
+    { label: "图片", name: "Image generation" }
+  ].map((item) => ({
+    ...item,
+    status: providerStatuses.find((statusItem) => statusItem.name === item.name)
+  }));
 
   function authHeaders() {
     return {
@@ -890,6 +917,33 @@ function GenerationLauncher({
       ...(workspaceToken ? { Authorization: `Bearer ${workspaceToken}` } : {})
     };
   }
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadProviderStatuses() {
+      try {
+        const response = await fetch(`${API_BASE}/workspace/provider-status`);
+        if (!response.ok) {
+          throw new Error(await readApiError(response, "服务状态读取失败。"));
+        }
+        const data = (await response.json()) as ProviderStatusItem[];
+        if (active) {
+          setProviderStatuses(data);
+          setProviderStatusError(null);
+        }
+      } catch (error) {
+        if (active) {
+          setProviderStatusError(error instanceof Error ? error.message : "服务状态读取失败。");
+        }
+      }
+    }
+
+    void loadProviderStatuses();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function applyStylePreset(nextPreset: WritingStylePresetId) {
     setStylePreset(nextPreset);
@@ -1128,6 +1182,39 @@ function GenerationLauncher({
           <div className={`${subtleCardClass} p-4`}>
             <div className="text-sm font-semibold">启动状态</div>
             <p className="mt-2 text-sm leading-6 text-muted">{launchStatusText}</p>
+            <div className="mt-4 rounded-md border border-line bg-mist/60 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-xs font-semibold text-ink">服务状态</div>
+                <span className="text-[11px] text-muted">已填写不代表授权通过</span>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {providerStatusError ? (
+                  <Pill tone="red">读取失败</Pill>
+                ) : providerDisplayItems.some((item) => item.status) ? (
+                  providerDisplayItems.map((item) => {
+                    const isDraft = item.name === "Draft generation";
+                    const configured = Boolean(item.status?.configured);
+                    const tone = needsProviderSettings && isDraft ? "red" : configured ? "green" : "amber";
+                    const label =
+                      needsProviderSettings && isDraft
+                        ? "授权失败"
+                        : configured
+                          ? "已填写"
+                          : "未填写";
+                    return (
+                      <Pill key={item.name} tone={tone}>
+                        {item.label} {label}
+                      </Pill>
+                    );
+                  })
+                ) : (
+                  <Pill tone="neutral">读取中</Pill>
+                )}
+              </div>
+              {providerStatusError ? (
+                <p className="mt-2 text-xs leading-5 text-muted">{providerStatusError}</p>
+              ) : null}
+            </div>
             {needsProviderSettings ? (
               <button
                 className={`${secondaryButtonClass} mt-4 h-10 w-full`}
