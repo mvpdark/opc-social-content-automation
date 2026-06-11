@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import {
   AlertTriangle,
   Bookmark,
+  BookOpenText,
   CheckCircle2,
   Clipboard,
   Eye,
@@ -16,8 +17,10 @@ import {
   Loader2,
   MessageCircle,
   PenLine,
+  Radar,
   RotateCcw,
   Save,
+  Search,
   Settings,
   Share2,
   ShieldCheck,
@@ -27,20 +30,16 @@ import {
 } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
-import { StatStrip } from "@/components/stat-strip";
 import { TrendCollectorPanel } from "@/components/trend-collector-panel";
 import {
-  commandFocus,
   connectionStatuses,
   contentControls,
   coverReferences,
-  dashboardActionLinks,
   draftPreview,
   externalSkillCandidates,
   imageWorkflow,
   interfaceStyles,
   knowledgeAssets,
-  nextActions,
   pipeline,
   promoterActions,
   publishingRecords,
@@ -52,14 +51,6 @@ import {
   type WorkspaceTab,
   writingReferences
 } from "@/lib/dashboard-data";
-
-const stateTone = {
-  当前重点: "border-steel bg-steel/10 text-ink",
-  可用: "border-moss bg-moss/10 text-ink",
-  配置后可用: "border-amber bg-amber/10 text-ink",
-  强制: "border-coral bg-coral/10 text-ink",
-  追踪: "border-amber bg-amber/10 text-ink"
-} satisfies Record<(typeof pipeline)[number]["state"], string>;
 
 const pillTone = {
   neutral: "border-line bg-mist text-muted",
@@ -973,97 +964,221 @@ export function WorkspaceClient({
 }
 
 function DashboardView() {
-  const primaryFocus = commandFocus[0];
+  const coverLines = buildCoverLines(draftPreview.title);
+  const statusLanes = [
+    {
+      title: "素材参考",
+      description: "先补 3-5 条公开高赞图文，再进入知识库。",
+      action: "去采集",
+      href: "/?tab=research",
+      icon: Radar,
+      tone: "blue" as const,
+      value: "待补充"
+    },
+    {
+      title: "知识库",
+      description: "只沉淀人工确认过的标题、开头、封面结构。",
+      action: "看资产",
+      href: "/?tab=knowledge",
+      icon: BookOpenText,
+      tone: "green" as const,
+      value: "可接入"
+    },
+    {
+      title: "安全检查",
+      description: "生成后人工确认，避免保录、包过和虚假承诺。",
+      action: "看规则",
+      href: "/?tab=settings",
+      icon: ShieldCheck,
+      tone: "red" as const,
+      value: "强制"
+    }
+  ];
 
   return (
-    <div className="space-y-4">
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <Panel
-          action={
-            <Pill tone="blue">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              公开采集优先
-            </Pill>
-          }
-          helper="首页只保留当前最重要的动作，细节进入对应标签页处理。"
-          title="今日重点"
-        >
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_300px]">
-            <div className="glass-subtle flex items-start gap-4 rounded-md border p-4">
-              <IconBox tone="blue">
-                <primaryFocus.icon className="h-4 w-4" />
-              </IconBox>
+    <div className="space-y-5">
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="glass-panel overflow-hidden rounded-[24px] border shadow-panel">
+          <div className="flex flex-col gap-5 p-5 lg:p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <div className="text-lg font-semibold leading-7">{primaryFocus.title}</div>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">{primaryFocus.detail}</p>
+                <div className="flex flex-wrap gap-2">
+                  <Pill tone="blue">采集优先</Pill>
+                  <Pill tone="green">本地预览</Pill>
+                  <Pill tone="amber">人工确认</Pill>
+                </div>
+                <h2 className="mt-4 text-2xl font-semibold leading-tight text-ink">
+                  今天要生产什么？
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+                  选择平台、主题和风格，一键生成可复制的小红书图文草稿。发布前仍需要人工确认。
+                </p>
+              </div>
+              <div className="hidden rounded-[18px] border border-line bg-mist/60 px-3 py-2 text-xs leading-5 text-muted md:block">
+                普通用户入口
+                <div className="font-medium text-ink">先生成，再确认，再复制</div>
               </div>
             </div>
-            <div className="glass-subtle divide-y divide-line rounded-md border">
-              {nextActions.map((action, index) => (
-                <div key={action} className="flex items-center gap-3 px-3 py-3">
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-ink text-xs font-semibold text-paper">
-                    {index + 1}
-                  </div>
-                  <span className="text-sm font-medium leading-5">{action}</span>
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[160px_1fr]">
+              <div className="rounded-[18px] border border-line bg-paper/65 p-4">
+                <div className="text-xs font-medium text-muted">平台</div>
+                <div className="mt-2 text-lg font-semibold text-ink">小红书图文</div>
+              </div>
+              <div className="rounded-[18px] border border-line bg-paper/65 p-4">
+                <div className="text-xs font-medium text-muted">主题</div>
+                <div className="mt-2 text-lg font-semibold leading-6 text-ink">
+                  硕升博申请第一步
                 </div>
-              ))}
+              </div>
+              <div className="rounded-[18px] border border-line bg-paper/65 p-4 md:col-span-2">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="text-xs font-medium text-muted">默认风格</div>
+                  <span className="text-[11px] text-muted">可在内容生产页细调</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+                  {["女性可爱", "专业清爽", "学姐经验", "高赞钩子"].map((style, index) => (
+                    <div
+                      className={[
+                        "rounded-md border px-3 py-2 text-sm font-medium",
+                        index === 0
+                          ? "border-steel/50 bg-steel/10 text-ink"
+                          : "border-line bg-mist/50 text-muted"
+                      ].join(" ")}
+                      key={style}
+                    >
+                      {style}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <a
+                className="flex h-12 items-center justify-center gap-2 rounded-[14px] bg-steel px-5 text-sm font-semibold text-paper shadow-soft transition hover:translate-y-[-1px] hover:shadow-panel active:translate-y-0"
+                href="/?tab=content"
+              >
+                <PenLine className="h-4 w-4" />
+                生成小红书图文
+              </a>
+              <a
+                className={`${secondaryButtonClass} h-12 px-4`}
+                href="/?tab=research"
+              >
+                <Search className="h-4 w-4" />
+                先补素材参考
+              </a>
+              <span className="text-xs leading-5 text-muted">
+                不会自动发布；复制前仍需人工看一遍标题、正文、标签和封面。
+              </span>
             </div>
           </div>
-        </Panel>
+        </div>
 
-        <Panel helper="首页只放能直接进入的动作。" title="继续推进">
-          <div className="grid grid-cols-1 gap-3">
-            {dashboardActionLinks.map((item) => (
-              <a
-                className="glass-subtle flex items-start gap-3 rounded-md border p-3 transition hover:border-coral/50 hover:bg-mist/70"
-                href={item.href}
-                key={item.title}
-              >
-                <IconBox tone={item.status === "当前重点" ? "blue" : "green"}>
-                  <item.icon className="h-4 w-4" />
-                </IconBox>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold leading-5">{item.title}</div>
-                  <p className="mt-1 text-xs leading-5 text-muted">{item.detail}</p>
+        <aside className="glass-panel overflow-hidden rounded-[24px] border shadow-panel">
+          <div className="border-b border-line px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold text-ink">发布前预览</div>
+                <p className="mt-1 text-xs text-muted">模拟小红书图文卡片，不自动发布。</p>
+              </div>
+              <Pill tone="green">草稿</Pill>
+            </div>
+          </div>
+          <div className="p-4">
+            <div className="overflow-hidden rounded-[22px] border border-line bg-paper/70">
+              <div className="relative min-h-[260px] bg-[radial-gradient(circle_at_20%_18%,rgba(255,255,255,0.95),transparent_32%),linear-gradient(145deg,#fff7e8_0%,#d9f3e6_50%,#f8cfc0_100%)] p-5">
+                <div className="absolute bottom-5 left-5 right-5">
+                  <div className="mb-4 h-1.5 w-14 rounded-full bg-coral" />
+                  <div className="space-y-1 text-[2.15rem] font-black leading-[1.06] text-ink">
+                    {coverLines.map((line) => (
+                      <div key={line}>{line}</div>
+                    ))}
+                  </div>
                 </div>
-                <span className="shrink-0 rounded-md border border-line px-2 py-1 text-xs font-medium text-ink">
-                  {item.command}
-                </span>
+              </div>
+              <div className="p-4">
+                <div className="text-base font-semibold leading-6 text-ink">
+                  {draftPreview.title}
+                </div>
+                <p className="mt-2 line-clamp-3 text-sm leading-6 text-muted">
+                  不是先套磁，先把问题想清楚。申请第一步要先确认研究方向、匹配导师项目，再定制套磁内容。
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium text-steel">
+                  <span>#硕升博</span>
+                  <span>#博士申请</span>
+                  <span>#申请规划</span>
+                </div>
+                <a
+                  className={`${secondaryButtonClass} mt-4 h-10 w-full`}
+                  href="/?tab=content"
+                >
+                  <Clipboard className="h-4 w-4" />
+                  一键复制文案
+                </a>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        {statusLanes.map((lane) => (
+          <div className="glass-panel rounded-[20px] border p-4" key={lane.title}>
+            <div className="flex items-start justify-between gap-3">
+              <IconBox tone={lane.tone}>
+                <lane.icon className="h-4 w-4" />
+              </IconBox>
+              <Pill tone={lane.tone}>{lane.value}</Pill>
+            </div>
+            <div className="mt-4 text-sm font-semibold leading-5 text-ink">{lane.title}</div>
+            <p className="mt-2 min-h-10 text-xs leading-5 text-muted">{lane.description}</p>
+            <a
+              className="mt-4 inline-flex h-9 items-center justify-center rounded-md border border-line bg-paper/60 px-3 text-xs font-medium text-ink transition hover:border-steel/50 hover:bg-mist"
+              href={lane.href}
+            >
+              {lane.action}
+            </a>
+          </div>
+        ))}
+      </section>
+
+      <section className="glass-panel rounded-[20px] border px-4 py-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="text-sm font-semibold text-ink">生产流程</div>
+            <p className="mt-1 text-xs leading-5 text-muted">
+              数据先确认，再生成；发布动作不在自动流程里。
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {pipeline.slice(0, 5).map((step, index) => (
+              <a
+                className="group flex items-center gap-2 rounded-md border border-line bg-paper/55 px-3 py-2 text-xs font-medium text-ink"
+                href={
+                  index === 0
+                    ? "/?tab=research"
+                    : index === 1
+                      ? "/?tab=knowledge"
+                      : index === 2 || index === 3
+                        ? "/?tab=content"
+                        : "/?tab=settings"
+                }
+                key={step.title}
+              >
+                <step.icon className="h-3.5 w-3.5 text-steel transition group-hover:text-ink" />
+                {step.title}
               </a>
             ))}
+            <span className="rounded-md border border-coral/30 bg-coral/10 px-3 py-2 text-xs font-medium text-ink">
+              人工确认后再发布
+            </span>
           </div>
-        </Panel>
+        </div>
       </section>
 
       <DependencyDoctorPanel />
-
-      <StatStrip />
-
-      <Panel helper="完整流程保留，但首页只展示状态概览。" title="MVP 生产线">
-        <div className="grid grid-cols-1 divide-y divide-line md:grid-cols-2 md:divide-x md:divide-y-0 lg:grid-cols-3 xl:grid-cols-6">
-          {pipeline.map((step, index) => (
-            <div key={step.title} className="px-3 py-3 md:first:pl-0 xl:px-3">
-              <div className="flex items-center justify-between gap-3">
-                <IconBox tone={index === 0 ? "blue" : step.state === "强制" ? "red" : "green"}>
-                  <step.icon className="h-4 w-4" />
-                </IconBox>
-                <span
-                  className={[
-                    "rounded-md border px-2 py-1 text-xs font-medium",
-                    stateTone[step.state]
-                  ].join(" ")}
-                >
-                  {step.state}
-                </span>
-              </div>
-              <div className="mt-3 text-sm font-semibold leading-5">{step.title}</div>
-              <p className="mt-2 text-xs leading-5 text-muted xl:hidden 2xl:block">
-                {step.description}
-              </p>
-            </div>
-          ))}
-        </div>
-      </Panel>
     </div>
   );
 }
