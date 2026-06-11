@@ -228,8 +228,8 @@ export const stats = [
   { label: "趋势素材", value: "0", helper: "公开图文样本", tone: "steel" },
   { label: "知识条目", value: "0", helper: "可检索资产", tone: "moss" },
   { label: "待审稿件", value: "0", helper: "人工审核前", tone: "coral" },
-  { label: "可交付内容", value: "0", helper: "批准后发布", tone: "amber" }
-];
+  { label: "可交付内容", value: "0", helper: "审核后交付", tone: "amber" }
+] as const;
 
 export const pipeline = [
   {

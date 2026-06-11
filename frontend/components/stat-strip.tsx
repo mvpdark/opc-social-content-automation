@@ -1,12 +1,11 @@
 import { stats } from "@/lib/dashboard-data";
 
-const toneClass: Record<string, string> = {
+const toneClass = {
   steel: "border-steel text-steel bg-steel/5",
   moss: "border-moss text-moss bg-moss/5",
   coral: "border-coral text-coral bg-coral/5",
-  ink: "border-ink text-ink bg-ink/5",
   amber: "border-amber text-amber bg-amber/10"
-};
+} satisfies Record<(typeof stats)[number]["tone"], string>;
 
 export function StatStrip() {
   return (
