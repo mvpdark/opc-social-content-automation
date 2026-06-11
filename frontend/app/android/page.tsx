@@ -39,17 +39,17 @@ const workItems = [
 const sampleReferences = [
   {
     title: "不是先套磁，先确认这 3 件事",
-    meta: "小红书图文 · 高互动标题",
+    meta: "写作参考 · 来源待 PC 确认",
     cue: "反常识开头 + 三点清单"
   },
   {
     title: "硕升博申请别急着群发邮件",
-    meta: "公开样本 · 评论区问题多",
+    meta: "结构参考 · 非采集结果",
     cue: "先打断误区，再给动作"
   },
   {
     title: "导师匹配前要做的方向自查",
-    meta: "同类笔记 · 收藏意图强",
+    meta: "封面参考 · 待人工复核",
     cue: "步骤化封面 + 低噪正文"
   }
 ];
@@ -261,7 +261,7 @@ function CreateScreen() {
 
   return (
     <div className="space-y-4">
-      <MobilePanel title="生成图文" action="草稿">
+      <MobilePanel title="创作参考" action="需 PC 生成">
         <label className="block">
           <span className="text-xs font-medium text-muted">选题</span>
           <div className="mt-2 rounded-md border border-[#d6e8df] bg-white px-3 py-3 text-sm font-medium">
@@ -294,7 +294,7 @@ function CreateScreen() {
         </p>
       </MobilePanel>
 
-      <MobilePanel title="草稿预览">
+      <MobilePanel title="草稿参考版式" action="非生成结果">
         <div className="rounded-md border border-[#d6e8df] bg-white p-3">
           <div className="text-xs font-medium text-steel">
             {contentMode === "xiaohongshu" ? "小红书图文" : "短段正文"}
@@ -313,7 +313,7 @@ function CreateScreen() {
         </div>
       </MobilePanel>
 
-      <CoverPreview />
+      <CoverReferenceBrief />
     </div>
   );
 }
@@ -366,12 +366,15 @@ function ReviewScreen() {
 function SettingsScreen() {
   return (
     <div className="space-y-4">
-      <MobilePanel title="服务状态">
+      <MobilePanel title="配置状态" action="只读">
+        <p className="mb-3 text-xs leading-5 text-muted">
+          移动端预览不读取密钥状态，真实配置请回 PC 设置页查看。
+        </p>
         <div className="space-y-2">
-          <SettingRow label="工作台令牌" state="未配置" />
-          <SettingRow label="撰稿服务" state="已配置" positive />
-          <SettingRow label="图片服务" state="已配置" positive />
-          <SettingRow label="改写服务" state="已配置" positive />
+          <SettingRow label="工作台令牌" state="回 PC 查看" />
+          <SettingRow label="撰稿服务" state="PC 配置" />
+          <SettingRow label="图片服务" state="PC 配置" />
+          <SettingRow label="改写服务" state="PC 配置" />
         </div>
       </MobilePanel>
       <MobilePanel title="安全门">
@@ -497,11 +500,14 @@ function ModeChip({
   );
 }
 
-function CoverPreview() {
+function CoverReferenceBrief() {
   return (
     <section className="overflow-hidden rounded-md border border-[#d6e8df] bg-[linear-gradient(160deg,#fff7df,#d9f1e5_48%,#f7cdbf)] p-4">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-steel">封面 brief</span>
+        <span className="text-xs font-semibold text-steel">封面参考 brief</span>
+        <span className="rounded-md bg-white/75 px-2 py-1 text-[11px] font-semibold text-ink/70">
+          非生成结果
+        </span>
         <Layers3 className="h-4 w-4 text-steel" />
       </div>
       <div className="mt-5 text-3xl font-black leading-tight text-ink">
