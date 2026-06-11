@@ -977,6 +977,9 @@ function SettingsView({
 }) {
   const [credentialStatus, setCredentialStatus] = useState("凭证会保存在当前浏览器本机。");
   const [credentialBusy, setCredentialBusy] = useState(false);
+  const hasWorkspaceToken = credentials.workspaceToken.trim().length > 0;
+  const canApplyProviderKeys = hasWorkspaceToken && !credentialBusy;
+  const providerApplyLabel = hasWorkspaceToken ? "应用服务 API Key" : "先填工作台令牌";
 
   function updateCredential(key: keyof CredentialSettings, value: string) {
     onCredentialsChange({ ...credentials, [key]: value });
@@ -1091,13 +1094,15 @@ function SettingsView({
             </div>
             <div className="mt-4 grid grid-cols-1 gap-2">
               <button
+                aria-label={providerApplyLabel}
                 className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-paper disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={credentialBusy}
+                disabled={!canApplyProviderKeys}
                 onClick={applyProviderKeys}
+                title={hasWorkspaceToken ? undefined : "应用服务 API Key 前需要工作台令牌"}
                 type="button"
               >
                 {credentialBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                应用服务 API Key
+                {credentialBusy ? "正在应用" : providerApplyLabel}
               </button>
               <button
                 className={`${secondaryButtonClass} h-10`}
