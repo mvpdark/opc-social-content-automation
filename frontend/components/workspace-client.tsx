@@ -44,7 +44,7 @@ import {
 const stateTone: Record<string, string> = {
   当前重点: "border-steel bg-steel/10 text-ink",
   可用: "border-moss bg-moss/10 text-ink",
-  已接入: "border-moss bg-moss/10 text-ink",
+  配置后可用: "border-amber bg-amber/10 text-ink",
   强制: "border-coral bg-coral/10 text-ink",
   追踪: "border-amber bg-amber/10 text-ink"
 };

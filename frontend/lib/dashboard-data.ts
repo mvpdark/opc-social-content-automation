@@ -246,14 +246,14 @@ export const pipeline = [
   },
   {
     title: "撰稿生成",
-    state: "已接入",
-    description: "撰稿服务读取知识库与写作参考，生成可审核初稿。",
+    state: "配置后可用",
+    description: "完成设置后，撰稿服务读取知识库与写作参考，只生成可审核初稿。",
     icon: PenLine
   },
   {
     title: "人味化",
-    state: "已接入",
-    description: "改写服务压低模板感，保留关键词和事实边界。",
+    state: "配置后可用",
+    description: "完成设置后，改写服务压低模板感，保留关键词和事实边界。",
     icon: Sparkles
   },
   {
