@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
+  Clipboard,
   Eye,
   EyeOff,
   Image,
@@ -256,6 +257,56 @@ type GeneratedContent = {
   tags: string[] | null;
   title: string;
 };
+
+const blockedPublishTerms = [
+  "保录",
+  "包过",
+  "百分百",
+  "100%",
+  "内部名额",
+  "官方录取",
+  "保证录取",
+  "保证套磁成功",
+  "必上岸"
+];
+
+function formatTagLine(tags: string[] | null) {
+  const cleanTags = (tags ?? [])
+    .map((tag) => tag.trim().replace(/^#+/, ""))
+    .filter(Boolean);
+  return cleanTags.map((tag) => `#${tag}`).join(" ");
+}
+
+function buildPlatformCopy(content: GeneratedContent) {
+  const tagLine = formatTagLine(content.tags);
+  return [content.title.trim(), content.body.trim(), tagLine].filter(Boolean).join("\n\n");
+}
+
+function complianceWarnings(content: GeneratedContent) {
+  const text = `${content.title}\n${content.body}\n${formatTagLine(content.tags)}`;
+  return blockedPublishTerms.filter((term) => text.includes(term));
+}
+
+function isTestDraft(content: GeneratedContent) {
+  return content.body.includes("codex_test") || content.body.includes("【测试草稿】");
+}
+
+async function copyText(text: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
+}
 
 export function WorkspaceClient({
   hasInitialTheme,
@@ -813,6 +864,7 @@ function GenerationLauncher({
   const [busyAction, setBusyAction] = useState<"draft" | null>(null);
   const [statusText, setStatusText] = useState("填写选题后，点击“开始生产图文”创建草稿。");
   const [lastContent, setLastContent] = useState<GeneratedContent | null>(null);
+  const [needsProviderSettings, setNeedsProviderSettings] = useState(false);
 
   const hasTopic = topic.trim().length > 0;
   const canGenerate = hasTopic && busyAction === null;
@@ -862,6 +914,7 @@ function GenerationLauncher({
     }
 
     setBusyAction("draft");
+    setNeedsProviderSettings(false);
     setStatusText("正在生成图文草稿，生成后不会自动发布。");
     try {
       const response = await fetch(`${API_BASE}/content/generate`, {
@@ -885,11 +938,19 @@ function GenerationLauncher({
       }
       const data = (await response.json()) as GeneratedContent;
       setLastContent(data);
+      setNeedsProviderSettings(false);
       setStatusText(
         `草稿 #${data.id} 已生成，当前状态：${data.status}。单独确认页已暂停，发布前仍需人工确认。`
       );
     } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "图文草稿生成失败。");
+      const message = error instanceof Error ? error.message : "图文草稿生成失败。";
+      setNeedsProviderSettings(
+        message.includes("授权失败") ||
+          message.includes("模型") ||
+          message.includes("接口") ||
+          message.includes("API Key")
+      );
+      setStatusText(message);
     } finally {
       setBusyAction(null);
     }
@@ -1067,12 +1128,126 @@ function GenerationLauncher({
           <div className={`${subtleCardClass} p-4`}>
             <div className="text-sm font-semibold">启动状态</div>
             <p className="mt-2 text-sm leading-6 text-muted">{launchStatusText}</p>
+            {needsProviderSettings ? (
+              <button
+                className={`${secondaryButtonClass} mt-4 h-10 w-full`}
+                onClick={onOpenSettings}
+                type="button"
+              >
+                <Settings className="h-4 w-4" />
+                去设置检查撰稿 API Key
+              </button>
+            ) : null}
             <div className="mt-4 border-l-4 border-amber pl-3 text-xs leading-5 text-muted">
               封面和发布交付仍保持禁用，等确认流程重新接入后再开放。
             </div>
           </div>
         </div>
+        {lastContent ? <GeneratedPostExportCard content={lastContent} /> : null}
       </Panel>
+    </div>
+  );
+}
+
+function GeneratedPostExportCard({ content }: { content: GeneratedContent }) {
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const warnings = complianceWarnings(content);
+  const testDraft = isTestDraft(content);
+  const canCopy = !testDraft;
+  const copyPayload = buildPlatformCopy(content);
+  const tagLine = formatTagLine(content.tags);
+
+  async function handleCopy() {
+    if (!canCopy) {
+      setCopyState("failed");
+      return;
+    }
+    try {
+      await copyText(copyPayload);
+      setCopyState("copied");
+    } catch (_error) {
+      setCopyState("failed");
+    }
+  }
+
+  return (
+    <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
+      <div className={`${subtleCardClass} p-4`}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Pill tone="green">已生成</Pill>
+              <Pill tone={content.status === "draft" ? "amber" : "green"}>
+                {content.status}
+              </Pill>
+            </div>
+            <h3 className="mt-3 text-xl font-semibold leading-7">{content.title}</h3>
+          </div>
+          <button
+            className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={!canCopy}
+            onClick={handleCopy}
+            type="button"
+          >
+            {copyState === "copied" ? (
+              <CheckCircle2 className="h-4 w-4" />
+            ) : (
+              <Clipboard className="h-4 w-4" />
+            )}
+            {testDraft
+              ? "测试草稿不可复制"
+              : copyState === "copied"
+                ? "已复制"
+                : "一键复制小红书文案"}
+          </button>
+        </div>
+
+        <div className="mt-4 rounded-md border border-line bg-mist/70 p-4">
+          <div className="whitespace-pre-wrap text-sm leading-7 text-ink">{content.body}</div>
+          {tagLine ? (
+            <div className="mt-4 text-sm font-medium leading-6 text-steel">{tagLine}</div>
+          ) : null}
+        </div>
+
+        <p className="mt-3 text-xs leading-5 text-muted">
+          复制内容包含标题、正文和话题标签；不会自动发布，粘贴到小红书前仍需人工看一遍。
+        </p>
+      </div>
+
+      <div className={`${subtleCardClass} p-4`}>
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          {warnings.length || testDraft ? (
+            <AlertTriangle className="h-4 w-4 text-amber" />
+          ) : (
+            <CheckCircle2 className="h-4 w-4 text-moss" />
+          )}
+          发布前检查
+        </div>
+        <div className="mt-3 space-y-2 text-xs leading-5 text-muted">
+          {testDraft ? (
+            <div className="rounded-md border border-amber/40 bg-amber/10 p-3 text-ink">
+              当前是流程联调用测试草稿，不可直接发布。
+            </div>
+          ) : null}
+          {warnings.length ? (
+            <div className="rounded-md border border-amber/40 bg-amber/10 p-3 text-ink">
+              发现高风险词：{warnings.join("、")}。请改完再复制。
+            </div>
+          ) : (
+            <div className="rounded-md border border-moss/40 bg-moss/10 p-3 text-ink">
+              未发现保录、包过、内部名额等高风险承诺词。
+            </div>
+          )}
+          <div className="rounded-md border border-line bg-paper p-3">
+            封面图仍需单独生成和人工复核；不要使用假录取通知、校徽或保证录取视觉。
+          </div>
+          {copyState === "failed" && !testDraft ? (
+            <div className="rounded-md border border-coral/40 bg-coral/10 p-3 text-ink">
+              浏览器复制失败，请手动选中正文复制。
+            </div>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
