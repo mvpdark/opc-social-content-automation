@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  ClipboardCheck,
   Eye,
   EyeOff,
   Image,
@@ -24,6 +23,7 @@ import {
   connectionStatuses,
   contentControls,
   coverReferences,
+  dashboardActionLinks,
   draftPreview,
   imageWorkflow,
   interfaceStyles,
@@ -33,7 +33,6 @@ import {
   promoterActions,
   publishingRecords,
   queues,
-  reviewQueue,
   safetyGates,
   themeTemplates,
   workspaceTabIds,
@@ -387,10 +386,25 @@ function DashboardView() {
           </div>
         </Panel>
 
-        <Panel helper="发布前必须处理的卡点。" title="待处理">
-          <div className="divide-y divide-line">
-            {reviewQueue.map((item) => (
-              <QueueRow key={item.title} item={item} />
+        <Panel helper="首页只放能直接进入的动作。" title="继续推进">
+          <div className="grid grid-cols-1 gap-3">
+            {dashboardActionLinks.map((item) => (
+              <a
+                className="glass-subtle flex items-start gap-3 rounded-md border p-3 transition hover:border-coral/50 hover:bg-mist/70"
+                href={item.href}
+                key={item.title}
+              >
+                <IconBox tone={item.status === "当前重点" ? "blue" : "green"}>
+                  <item.icon className="h-4 w-4" />
+                </IconBox>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold leading-5">{item.title}</div>
+                  <p className="mt-1 text-xs leading-5 text-muted">{item.detail}</p>
+                </div>
+                <span className="shrink-0 rounded-md border border-line px-2 py-1 text-xs font-medium text-ink">
+                  {item.command}
+                </span>
+              </a>
             ))}
           </div>
         </Panel>
@@ -1374,53 +1388,6 @@ function SafetyGateList() {
           <span className="text-xs font-medium text-muted">{gate.state}</span>
         </div>
       ))}
-    </div>
-  );
-}
-
-function QueueRow({
-  actionLabel,
-  href,
-  item
-}: {
-  actionLabel?: string;
-  href?: string;
-  item: { icon: typeof ClipboardCheck; source: string; status: string; title: string };
-}) {
-  const rowContent = (
-    <>
-      <IconBox tone="blue">
-        <item.icon className="h-4 w-4" />
-      </IconBox>
-      <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium leading-5">{item.title}</div>
-        <div className="mt-1 text-xs text-muted">{item.source}</div>
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <Pill tone={item.status === "需复核" ? "red" : "neutral"}>{item.status}</Pill>
-        {actionLabel ? (
-          <span className="rounded-md border border-line px-2 py-1 text-xs font-medium text-ink">
-            {actionLabel}
-          </span>
-        ) : null}
-      </div>
-    </>
-  );
-
-  if (href) {
-    return (
-      <a
-        className="flex items-start gap-3 px-3 py-3 transition hover:bg-mist/70 first:pt-3 last:pb-3"
-        href={href}
-      >
-        {rowContent}
-      </a>
-    );
-  }
-
-  return (
-    <div className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-      {rowContent}
     </div>
   );
 }

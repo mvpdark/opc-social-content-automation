@@ -3,7 +3,6 @@ import {
   BarChart3,
   BookOpenText,
   CheckCircle2,
-  ClipboardCheck,
   Clock3,
   Database,
   Download,
@@ -297,6 +296,33 @@ export const nextActions = [
   "用参考生成一篇新草稿并人工确认"
 ];
 
+export const dashboardActionLinks = [
+  {
+    title: "补高赞图文参考",
+    detail: "先采集公开图文和标题结构。",
+    href: "/?tab=research",
+    command: "去采集",
+    status: "当前重点",
+    icon: Radar
+  },
+  {
+    title: "沉淀写作参考",
+    detail: "把确认过的样本整理进知识库。",
+    href: "/?tab=knowledge",
+    command: "去知识库",
+    status: "待补充",
+    icon: BookOpenText
+  },
+  {
+    title: "生成营销图文",
+    detail: "进入内容生产页创建草稿。",
+    href: "/?tab=content",
+    command: "去生产",
+    status: "可开始",
+    icon: PenLine
+  }
+];
+
 export const queues = [
   { name: "采集任务", count: 0, owner: "运营", status: "待样本" },
   { name: "知识上传", count: 0, owner: "管理员", status: "等待" },
@@ -480,14 +506,8 @@ export const imageWorkflow = [
     title: "人工复核",
     detail: "检查文字、事实、平台适配和是否需要重新出图。",
     status: "强制",
-    icon: ClipboardCheck
+    icon: ShieldCheck
   }
-];
-
-export const reviewQueue = [
-  { title: "硕升博申请顺序", source: "撰稿与改写服务", status: "待确认", icon: ClipboardCheck },
-  { title: "封面标题准确性", source: "图片生成服务", status: "需复核", icon: LayoutTemplate },
-  { title: "高赞样本参考", source: "公开来源确认", status: "待采集", icon: ExternalLink }
 ];
 
 export const safetyGates = [
