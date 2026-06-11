@@ -562,6 +562,11 @@ function GenerationLauncher({
     : !hasWorkspaceToken
       ? "提交审核前需要工作台令牌"
       : undefined;
+  const launchStatusText = !hasWorkspaceToken
+    ? "先到设置里填写工作台令牌，后端才会创建真实草稿。"
+    : !hasTopic
+      ? "先填写选题，再生成图文。"
+      : statusText;
 
   function authHeaders() {
     return {
@@ -800,7 +805,7 @@ function GenerationLauncher({
 
           <div className={`${subtleCardClass} p-4`}>
             <div className="text-sm font-semibold">启动状态</div>
-            <p className="mt-2 text-sm leading-6 text-muted">{statusText}</p>
+            <p className="mt-2 text-sm leading-6 text-muted">{launchStatusText}</p>
             <div className="mt-4 grid grid-cols-1 gap-2">
               <button
                 aria-label={generateButtonLabel}
