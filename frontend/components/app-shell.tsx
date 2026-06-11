@@ -109,7 +109,6 @@ export function AppShell({
                     安卓端
                   </a>
                   <a
-                    aria-current={activeTab === "content" ? "page" : undefined}
                     className={[
                       "flex h-9 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-medium",
                       activeTab === "content"

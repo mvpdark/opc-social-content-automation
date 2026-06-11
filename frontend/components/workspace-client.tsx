@@ -57,6 +57,8 @@ const pillTone: Record<string, string> = {
   amber: "border-amber/40 bg-amber/10 text-amber"
 };
 
+const subtleCardClass = "glass-subtle rounded-md border";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api";
 const CREDENTIAL_STORAGE_KEY = "opc_workspace_credentials_v1";
 const INTERFACE_STYLE_STORAGE_KEY = "opc_interface_style_v1";
@@ -438,7 +440,7 @@ function KnowledgeView() {
       <Panel helper="先保存来源、摘要、标签和人工确认状态，再进入可检索资产。" title="知识资产">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {knowledgeAssets.map((asset) => (
-            <div key={asset.title} className="rounded-md border border-line bg-white p-4">
+            <div key={asset.title} className={`${subtleCardClass} p-4`}>
               <div className="flex items-start gap-3">
                 <IconBox tone="green">
                   <asset.icon className="h-4 w-4" />
@@ -461,7 +463,7 @@ function KnowledgeView() {
           <SafetyGateList />
         </Panel>
         <Panel helper="当前知识库还没有真实图文样本，下一步应从趋势采集页补齐。" title="当前状态">
-          <div className="rounded-md border border-line bg-mist px-4 py-4 text-sm leading-6 text-muted">
+          <div className={`${subtleCardClass} px-4 py-4 text-sm leading-6 text-muted`}>
             公开样本、内部资料、Prompt 模板和来源链接已经拆成独立入口，等采集任务完成后即可沉淀为知识条目。
           </div>
         </Panel>
@@ -487,7 +489,7 @@ function ContentView({
           <Panel helper="生成前需要明确输入、改写和审核边界。" title="生产控制">
             <div className="space-y-3">
               {contentControls.map((control) => (
-                <div key={control.title} className="rounded-md border border-line bg-white p-3">
+                <div key={control.title} className={`${subtleCardClass} p-3`}>
                   <div className="flex items-center gap-3">
                     <IconBox tone="blue">
                       <control.icon className="h-4 w-4" />
@@ -827,7 +829,7 @@ function ReviewView() {
         <Panel helper="前端只展示能力状态，不暴露供应商和底层配置。" title="服务状态">
           <div className="space-y-3">
             {connectionStatuses.map((status) => (
-              <div key={status.name} className="rounded-md border border-line bg-white p-3">
+              <div key={status.name} className={`${subtleCardClass} p-3`}>
                 <div className="flex items-start gap-3">
                   <IconBox tone="green">
                     <status.icon className="h-4 w-4" />
@@ -875,7 +877,7 @@ function CoverView() {
         <Panel helper="从 brief 到复核的图片流程。" title="图片流程">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             {imageWorkflow.map((step) => (
-              <div key={step.title} className="rounded-md border border-line bg-white p-4">
+              <div key={step.title} className={`${subtleCardClass} p-4`}>
                 <IconBox tone={step.status === "强制" ? "red" : "blue"}>
                   <step.icon className="h-4 w-4" />
                 </IconBox>
@@ -904,7 +906,7 @@ function DeliveryView() {
       <Panel helper="批准内容、导出包和发布记录集中在这里。" title="交付动作">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
           {promoterActions.map((action) => (
-            <div key={action.title} className="rounded-md border border-line bg-white p-4">
+            <div key={action.title} className={`${subtleCardClass} p-4`}>
               <IconBox tone="green">
                 <action.icon className="h-4 w-4" />
               </IconBox>
@@ -913,7 +915,7 @@ function DeliveryView() {
               <div className="mt-3 flex items-center justify-between gap-3">
                 <span className="text-xs font-medium text-muted">{action.status}</span>
                 <button
-                  className="flex h-8 items-center gap-2 rounded-md border border-line bg-white px-2 text-xs font-medium text-ink"
+                  className="glass-control flex h-8 items-center gap-2 rounded-md border px-2 text-xs font-medium text-ink"
                   type="button"
                 >
                   <action.icon className="h-3.5 w-3.5" />
@@ -929,7 +931,7 @@ function DeliveryView() {
         <Panel helper="当前运营 lane 的积压状态。" title="工作队列">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {queues.map((queue) => (
-              <div key={queue.name} className="rounded-md border border-line bg-white px-4 py-3">
+              <div key={queue.name} className={`${subtleCardClass} px-4 py-3`}>
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="text-sm font-semibold">{queue.name}</div>
@@ -1306,7 +1308,7 @@ function PublishingTable() {
               <th className="px-4 py-3 font-medium">状态</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-line bg-white">
+          <tbody className="glass-subtle divide-y divide-line">
             {publishingRecords.map((record) => (
               <tr key={record.content}>
                 <td className="px-4 py-3 font-medium">{record.content}</td>
@@ -1337,7 +1339,7 @@ function ReferencePanel({
     <Panel helper={helper} title={title}>
       <div className="grid grid-cols-1 gap-3">
         {items.map((item) => (
-          <div key={item.title} className="rounded-md border border-line bg-white p-4">
+          <div key={item.title} className={`${subtleCardClass} p-4`}>
             <div className="flex items-start gap-3">
               <IconBox tone="amber">
                 <item.icon className="h-4 w-4" />
