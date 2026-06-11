@@ -21,6 +21,7 @@
   --glass-subtle: 0.46;
   --glass-highlight: 255 255 255;
   --selected-bg: var(--ink);
+  --selected-text: 255 255 255;
   --surface-grid: var(--ink);
 }
 
@@ -36,6 +37,7 @@
   --amber: 255 159 10;
   --glass: 255 255 255;
   --selected-bg: var(--ink);
+  --selected-text: 255 255 255;
   --surface-grid: var(--ink);
 }
 
@@ -51,6 +53,7 @@
   --amber: 201 143 46;
   --glass: 250 255 252;
   --selected-bg: 24 76 62;
+  --selected-text: 255 255 255;
   --surface-grid: 52 128 92;
 }
 
@@ -66,6 +69,7 @@
   --amber: 190 127 55;
   --glass: 255 252 248;
   --selected-bg: 83 56 48;
+  --selected-text: 255 255 255;
   --surface-grid: 190 127 55;
 }
 
@@ -86,6 +90,7 @@
   --glass-subtle: 0.48;
   --glass-highlight: 255 255 255;
   --selected-bg: 118 168 255;
+  --selected-text: 18 20 24;
   --surface-grid: 118 168 255;
 }
 
@@ -106,6 +111,7 @@
   --glass-subtle: 0.46;
   --glass-highlight: 105 228 255;
   --selected-bg: 255 92 173;
+  --selected-text: 9 11 24;
   --surface-grid: 72 190 255;
 }
 
@@ -121,6 +127,7 @@
   --amber: 170 117 60;
   --glass: 255 252 245;
   --selected-bg: 51 43 36;
+  --selected-text: 255 252 245;
   --surface-grid: 170 117 60;
 }
 
@@ -135,7 +142,8 @@
   --steel: 128 111 214;
   --amber: 226 151 74;
   --glass: 255 250 253;
-  --selected-bg: 123 64 113;
+  --selected-bg: 250 232 242;
+  --selected-text: 61 36 58;
   --surface-grid: 223 86 136;
 }
 
@@ -151,6 +159,7 @@
   --amber: 199 142 61;
   --glass: 247 253 255;
   --selected-bg: 25 82 118;
+  --selected-text: 255 255 255;
   --surface-grid: 42 126 184;
 }
 
@@ -170,6 +179,7 @@
   --glass-control: 0.74;
   --glass-subtle: 0.66;
   --selected-bg: 16 16 16;
+  --selected-text: 246 246 240;
   --surface-grid: 16 16 16;
 }
 
@@ -204,8 +214,8 @@ a {
   position: relative;
   isolation: isolate;
   background:
-    linear-gradient(135deg, rgba(var(--steel), 0.08), transparent 32%),
-    linear-gradient(220deg, rgba(var(--moss), 0.08), transparent 36%),
+    linear-gradient(135deg, rgb(var(--steel) / 0.08), transparent 32%),
+    linear-gradient(220deg, rgb(var(--moss) / 0.08), transparent 36%),
     rgb(var(--paper));
 }
 
@@ -216,8 +226,8 @@ a {
   pointer-events: none;
   content: "";
   background-image:
-    linear-gradient(rgba(var(--surface-grid), 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(var(--surface-grid), 0.022) 1px, transparent 1px);
+    linear-gradient(rgb(var(--surface-grid) / 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--surface-grid) / 0.022) 1px, transparent 1px);
   background-size: 44px 44px;
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.65), transparent 76%);
 }
@@ -233,40 +243,40 @@ a {
 
 .glass-sidebar,
 .glass-topbar {
-  background: rgba(var(--glass), var(--glass-strong));
-  box-shadow: inset -1px 0 0 rgba(var(--glass-highlight), 0.5);
+  background: rgb(var(--glass) / var(--glass-strong));
+  box-shadow: inset -1px 0 0 rgb(var(--glass-highlight) / 0.5);
 }
 
 .glass-panel {
-  background: rgba(var(--glass), var(--glass-panel));
-  border-color: rgba(var(--line), 0.72);
+  background: rgb(var(--glass) / var(--glass-panel));
+  border-color: rgb(var(--line) / 0.72);
   box-shadow:
-    0 18px 45px rgba(var(--ink), 0.055),
-    inset 0 1px 0 rgba(var(--glass-highlight), 0.52);
+    0 18px 45px rgb(var(--ink) / 0.055),
+    inset 0 1px 0 rgb(var(--glass-highlight) / 0.52);
 }
 
 .glass-control {
-  background: rgba(var(--glass), var(--glass-control));
-  border-color: rgba(var(--line), 0.78);
-  box-shadow: inset 0 1px 0 rgba(var(--glass-highlight), 0.44);
+  background: rgb(var(--glass) / var(--glass-control));
+  border-color: rgb(var(--line) / 0.78);
+  box-shadow: inset 0 1px 0 rgb(var(--glass-highlight) / 0.44);
 }
 
 .glass-selected {
-  background: rgba(var(--selected-bg), 0.92);
-  color: white;
+  background: rgb(var(--selected-bg) / 0.92);
+  color: rgb(var(--selected-text));
   box-shadow:
-    0 10px 26px rgba(var(--selected-bg), 0.22),
-    inset 0 1px 0 rgba(var(--glass-highlight), 0.2);
+    0 10px 26px rgb(var(--selected-bg) / 0.22),
+    inset 0 1px 0 rgb(var(--glass-highlight) / 0.2);
 }
 
 .glass-subtle {
-  background: rgba(var(--glass), var(--glass-subtle));
-  border-color: rgba(var(--line), 0.64);
+  background: rgb(var(--glass) / var(--glass-subtle));
+  border-color: rgb(var(--line) / 0.64);
 }
 
 .theme-graphite .bg-white,
 .theme-cyberpunk .bg-white {
-  background-color: rgba(var(--glass), 0.58) !important;
+  background-color: rgb(var(--glass) / 0.58) !important;
 }
 
 .theme-graphite input,
@@ -276,7 +286,7 @@ a {
 .theme-cyberpunk textarea,
 .theme-cyberpunk select {
   color: rgb(var(--ink));
-  background-color: rgba(var(--glass), 0.7) !important;
+  background-color: rgb(var(--glass) / 0.7) !important;
 }
 
 .theme-brutalist .glass-panel,
