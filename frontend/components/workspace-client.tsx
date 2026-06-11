@@ -211,7 +211,7 @@ function writeLocalStorage(key: string, value: string) {
 async function readApiError(response: Response, fallback: string) {
   const errorBody = (await response.json().catch(() => null)) as ApiErrorBody | null;
   if (errorBody?.detail === "database_unavailable") {
-    return errorBody.message ?? "数据库暂时不可用，请检查 PostgreSQL 服务和 DATABASE_URL。";
+    return "数据库暂时不可用，请检查 PostgreSQL 服务和 DATABASE_URL。";
   }
   return errorBody?.message ?? errorBody?.detail ?? fallback;
 }

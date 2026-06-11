@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/next-with-dist.mjs build",
     "lint": "npm run typecheck",
+    "start": "node scripts/next-with-dist.mjs start",
     "typecheck": "tsc --noEmit",
     "verify": "npm run typecheck && npm run build"
   },
