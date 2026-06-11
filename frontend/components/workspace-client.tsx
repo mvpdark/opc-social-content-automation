@@ -1669,9 +1669,13 @@ function GenerationLauncher({
   const imageProviderStatus = providerStatuses.find(
     (item) => item.name === "Image generation"
   );
+  const rewriteProviderStatus = providerStatuses.find(
+    (item) => item.name === "Humanization rewrite"
+  );
   const liveImageProviderReady = Boolean(
     imageProviderStatus?.configured && imageProviderStatus.provider !== "codex_test"
   );
+  const rewriteProviderReady = Boolean(rewriteProviderStatus?.configured);
 
   function authHeaders() {
     return {
@@ -1768,7 +1772,7 @@ function GenerationLauncher({
 
     setBusyAction("draft");
     setNeedsProviderSettings(false);
-    setStatusText("正在生成图文草稿，生成后不会自动发布。");
+    setStatusText("正在生成图文初稿，生成后会尝试进入改写服务。");
     try {
       const response = await fetch(`${API_BASE}/content/generate`, {
         method: "POST",
@@ -1793,9 +1797,45 @@ function GenerationLauncher({
       setLastContent(data);
       onGeneratedContent(data);
       setNeedsProviderSettings(false);
-      setStatusText(
-        `草稿 #${data.id} 已生成，当前状态：${data.status}。单独确认页已暂停，发布前仍需人工确认。`
-      );
+      if (!rewriteProviderReady) {
+        setStatusText(
+          `草稿 #${data.id} 已生成，当前状态：${data.status}。改写服务未配置或尚未确认，本次未走 DeepSeek。`
+        );
+        return;
+      }
+
+      setStatusText(`草稿 #${data.id} 已生成，正在调用改写服务做人味化处理。`);
+      try {
+        const rewriteResponse = await fetch(`${API_BASE}/content/rewrite`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({
+            content_id: data.id,
+            instruction:
+              "按当前选题和风格做人味化改写，保留事实边界、关键词、标签语境和合规限制，不制造录取承诺。"
+          })
+        });
+        if (!rewriteResponse.ok) {
+          throw new Error(await readApiError(rewriteResponse, "DeepSeek 改写失败。"));
+        }
+        const rewrittenContent = (await rewriteResponse.json()) as GeneratedContent;
+        setLastContent(rewrittenContent);
+        onGeneratedContent(rewrittenContent);
+        setStatusText(
+          `草稿 #${rewrittenContent.id} 已生成并完成改写，当前状态：${rewrittenContent.status}。发布前仍需人工确认。`
+        );
+      } catch (rewriteError) {
+        const rewriteMessage =
+          rewriteError instanceof Error ? rewriteError.message : "DeepSeek 改写失败。";
+        setNeedsProviderSettings(
+          rewriteMessage.includes("DeepSeek") ||
+            rewriteMessage.includes("授权失败") ||
+            rewriteMessage.includes("API Key")
+        );
+        setStatusText(
+          `草稿 #${data.id} 已生成，但 DeepSeek 改写未完成：${rewriteMessage}`
+        );
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "图文草稿生成失败。";
       setNeedsProviderSettings(

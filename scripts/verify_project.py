@@ -175,6 +175,9 @@ def _extract_ts_array(name: str, text: str) -> list[str]:
 def validate_frontend_design_contract() -> int:
     data_text = (ROOT / "frontend" / "lib" / "dashboard-data.ts").read_text(encoding="utf-8")
     css_text = (ROOT / "frontend" / "app" / "globals.css").read_text(encoding="utf-8")
+    workspace_text = (
+        ROOT / "frontend" / "components" / "workspace-client.tsx"
+    ).read_text(encoding="utf-8")
 
     tab_ids = _extract_ts_array("workspaceTabIds", data_text)
     style_ids = [
@@ -200,7 +203,17 @@ def validate_frontend_design_contract() -> int:
         if object_key_count < 2:
             raise SystemExit(f"Missing tab metadata or theme recommendation for tab {tab_id}")
 
-    return len(tab_ids) + len(style_ids) + len(referenced_styles)
+    generation_flow_snippets = [
+        "/content/generate",
+        "/content/rewrite",
+        "Humanization rewrite",
+        "本次未走 DeepSeek",
+    ]
+    for snippet in generation_flow_snippets:
+        if snippet not in workspace_text:
+            raise SystemExit(f"Missing frontend generation flow snippet: {snippet}")
+
+    return len(tab_ids) + len(style_ids) + len(referenced_styles) + len(generation_flow_snippets)
 
 
 def clean_pycache() -> int:
