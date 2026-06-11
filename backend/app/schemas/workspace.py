@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -61,3 +63,22 @@ class ProviderKeyUpdateRequest(BaseModel):
     draft_api_key: str | None = Field(default=None, max_length=500)
     image_api_key: str | None = Field(default=None, max_length=500)
     deepseek_api_key: str | None = Field(default=None, max_length=500)
+
+
+class DependencyStatusItem(BaseModel):
+    name: str
+    category: str
+    required: bool
+    status: str
+    detected: str | None
+    minimum: str | None
+    message: str
+    fix: str | None
+
+
+class DependencyReport(BaseModel):
+    generated_at: datetime
+    status: str
+    summary: dict[str, int]
+    items: list[DependencyStatusItem]
+    repair_steps: list[str]

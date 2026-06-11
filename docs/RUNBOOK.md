@@ -1,5 +1,19 @@
 # OPC Runbook
 
+## New Machine Setup
+
+Run the local setup helper from the repository root:
+
+```bash
+python scripts/setup_local.py
+```
+
+The helper creates `.venv`, installs backend and frontend packages, prepares
+`artifacts/dev`, and creates a SQLite-backed `.env` when no `.env` exists. It
+does not install system-level tools such as Python, Node.js, Git, or Docker; the
+command center dependency doctor will detect those versions and list the manual
+upgrade steps.
+
 ## Local Services
 
 Start PostgreSQL with pgvector and Redis:

@@ -10,6 +10,7 @@ from app.models.publish_record import PublishRecord
 from app.models.trend_content import TrendContent
 from app.models.user import User
 from app.schemas.workspace import (
+    DependencyReport,
     ExportRequest,
     ExportResponse,
     PublishRecordCreate,
@@ -18,6 +19,7 @@ from app.schemas.workspace import (
     ProviderStatusItem,
     WorkspaceContentItem,
 )
+from app.services.dependency_service import dependency_report
 from app.services.workspace_service import (
     apply_provider_key_settings,
     approved_content_items,
@@ -64,6 +66,11 @@ def dashboard(db: Session = Depends(get_db)) -> dict[str, object]:
 @router.get("/provider-status", response_model=list[ProviderStatusItem])
 def get_provider_status() -> list[ProviderStatusItem]:
     return provider_status_items()
+
+
+@router.get("/dependencies", response_model=DependencyReport)
+def get_dependency_report() -> DependencyReport:
+    return DependencyReport.model_validate(dependency_report())
 
 
 @router.post("/provider-keys", response_model=list[ProviderStatusItem])

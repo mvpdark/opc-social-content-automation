@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import {
+  AlertTriangle,
+  CheckCircle2,
   Eye,
   EyeOff,
   Image,
@@ -12,6 +14,7 @@ import {
   Save,
   Settings,
   ShieldCheck,
+  Terminal,
   Trash2
 } from "lucide-react";
 
@@ -70,6 +73,20 @@ const formControlClass =
 const secondaryButtonClass =
   "glass-control flex items-center justify-center gap-2 rounded-md border text-sm font-medium text-ink";
 
+const dependencyTone = {
+  missing: "red",
+  ok: "green",
+  outdated: "red",
+  warning: "amber"
+} satisfies Record<string, keyof typeof pillTone>;
+
+const dependencyStatusLabel = {
+  missing: "缺失",
+  ok: "正常",
+  outdated: "需升级",
+  warning: "提醒"
+} satisfies Record<string, string>;
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8010/api";
 const CREDENTIAL_STORAGE_KEY = "opc_workspace_credentials_v1";
 const INTERFACE_STYLE_STORAGE_KEY = "opc_interface_style_v1";
@@ -84,6 +101,30 @@ type CredentialSettings = {
 type ApiErrorBody = {
   detail?: string;
   message?: string;
+};
+
+type DependencyItem = {
+  category: string;
+  detected: string | null;
+  fix: string | null;
+  message: string;
+  minimum: string | null;
+  name: string;
+  required: boolean;
+  status: "ok" | "warning" | "missing" | "outdated";
+};
+
+type DependencyReport = {
+  generated_at: string;
+  items: DependencyItem[];
+  repair_steps: string[];
+  status: "ok" | "attention" | "blocked";
+  summary: {
+    blocking: number;
+    ok: number;
+    total: number;
+    warning: number;
+  };
 };
 
 const emptyCredentials: CredentialSettings = {
@@ -410,6 +451,8 @@ function DashboardView() {
         </Panel>
       </section>
 
+      <DependencyDoctorPanel />
+
       <StatStrip />
 
       <Panel helper="完整流程保留，但首页只展示状态概览。" title="MVP 生产线">
@@ -438,6 +481,189 @@ function DashboardView() {
         </div>
       </Panel>
     </div>
+  );
+}
+
+function DependencyDoctorPanel() {
+  const [dependencyReport, setDependencyReport] = useState<DependencyReport | null>(null);
+  const [dependencyBusy, setDependencyBusy] = useState(false);
+  const [dependencyError, setDependencyError] = useState<string | null>(null);
+  const [showRepairPlan, setShowRepairPlan] = useState(false);
+
+  useEffect(() => {
+    void loadDependencyReport();
+  }, []);
+
+  async function loadDependencyReport() {
+    setDependencyBusy(true);
+    setDependencyError(null);
+    try {
+      const response = await fetch(`${API_BASE}/workspace/dependencies`);
+      if (!response.ok) {
+        throw new Error(await readApiError(response, "依赖检测失败。"));
+      }
+      const data = (await response.json()) as DependencyReport;
+      setDependencyReport(data);
+    } catch (error) {
+      setDependencyError(error instanceof Error ? error.message : "依赖检测失败。");
+    } finally {
+      setDependencyBusy(false);
+    }
+  }
+
+  const blockedCount = dependencyReport?.summary.blocking ?? 0;
+  const warningCount = dependencyReport?.summary.warning ?? 0;
+  const totalCount = dependencyReport?.summary.total ?? 0;
+  const reportTone =
+    dependencyReport?.status === "blocked"
+      ? "red"
+      : dependencyReport?.status === "attention"
+        ? "amber"
+        : "green";
+  const reportLabel =
+    dependencyReport?.status === "blocked"
+      ? "需处理"
+      : dependencyReport?.status === "attention"
+        ? "有提醒"
+        : "正常";
+  const attentionItems =
+    dependencyReport?.items.filter((item) => item.status !== "ok").slice(0, 8) ?? [];
+  const primaryRepairStep = dependencyReport?.repair_steps[0] ?? "python scripts/setup_local.py";
+
+  return (
+    <Panel
+      action={
+        <button
+          aria-label="检测依赖"
+          className={`${secondaryButtonClass} h-9 px-3 text-xs disabled:cursor-not-allowed disabled:opacity-60`}
+          disabled={dependencyBusy}
+          onClick={loadDependencyReport}
+          type="button"
+        >
+          {dependencyBusy ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <RotateCcw className="h-3.5 w-3.5" />
+          )}
+          检测依赖
+        </button>
+      }
+      helper="换电脑安装时先看这里：检测版本、定位缺失项，并给出本机修复命令。"
+      title="环境检测与一键修复"
+    >
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[280px_1fr]">
+        <div className={`${subtleCardClass} p-4`}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold">依赖状态</div>
+              <p className="mt-1 text-xs leading-5 text-muted">
+                {dependencyReport
+                  ? `已检测 ${totalCount} 项`
+                  : dependencyBusy
+                    ? "正在检测本机环境"
+                    : "尚未完成检测"}
+              </p>
+            </div>
+            <Pill tone={dependencyReport ? reportTone : "neutral"}>{dependencyReport ? reportLabel : "待检测"}</Pill>
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-md border border-line bg-mist px-2 py-2">
+              <div className="text-lg font-semibold">{blockedCount}</div>
+              <div className="text-[11px] text-muted">阻塞</div>
+            </div>
+            <div className="rounded-md border border-line bg-mist px-2 py-2">
+              <div className="text-lg font-semibold">{warningCount}</div>
+              <div className="text-[11px] text-muted">提醒</div>
+            </div>
+            <div className="rounded-md border border-line bg-mist px-2 py-2">
+              <div className="text-lg font-semibold">{totalCount}</div>
+              <div className="text-[11px] text-muted">总项</div>
+            </div>
+          </div>
+          <button
+            className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-md bg-ink text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={!dependencyReport}
+            onClick={() => setShowRepairPlan((current) => !current)}
+            type="button"
+          >
+            <Terminal className="h-4 w-4" />
+            查看一键修复命令
+          </button>
+          <p className="mt-2 text-[11px] leading-5 text-muted">
+            优先命令：<span className="font-mono text-ink">{primaryRepairStep}</span>
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {dependencyError ? (
+            <div className={`${subtleCardClass} border-coral/40 p-4 text-sm text-coral`}>
+              {dependencyError}
+            </div>
+          ) : null}
+          {attentionItems.length > 0 ? (
+            <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">
+              {attentionItems.map((item) => (
+                <div className={`${subtleCardClass} p-3`} key={`${item.category}-${item.name}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        {item.status === "missing" || item.status === "outdated" ? (
+                          <AlertTriangle className="h-4 w-4 text-coral" />
+                        ) : (
+                          <CheckCircle2 className="h-4 w-4 text-amber" />
+                        )}
+                        <span className="text-sm font-semibold">{item.name}</span>
+                      </div>
+                      <p className="mt-2 text-xs leading-5 text-muted">{item.message}</p>
+                      <p className="mt-1 text-[11px] leading-5 text-muted">
+                        当前：{item.detected || "未检测到"}
+                        {item.minimum ? ` · 要求：${item.minimum}+` : ""}
+                      </p>
+                    </div>
+                    <Pill tone={dependencyTone[item.status]}>
+                      {dependencyStatusLabel[item.status]}
+                    </Pill>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : dependencyReport ? (
+            <div className={`${subtleCardClass} p-4`}>
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <CheckCircle2 className="h-4 w-4 text-moss" />
+                核心依赖满足当前项目要求
+              </div>
+              <p className="mt-2 text-xs leading-5 text-muted">
+                后续仍可通过修复方案里的 outdated 命令检查最新版本。
+              </p>
+            </div>
+          ) : (
+            <div className={`${subtleCardClass} p-4 text-sm text-muted`}>
+              点击“检测依赖”查看本机环境。
+            </div>
+          )}
+
+          {showRepairPlan && dependencyReport ? (
+            <div className={`${subtleCardClass} p-4`}>
+              <div className="text-sm font-semibold">修复方案</div>
+              <div className="mt-3 space-y-2">
+                {dependencyReport.repair_steps.map((step, index) => (
+                  <div
+                    className="rounded-md border border-line bg-ink px-3 py-2 font-mono text-xs leading-5 text-paper"
+                    key={`${step}-${index}`}
+                  >
+                    {step}
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-xs leading-5 text-muted">
+                当前按钮只生成修复命令，不直接执行系统安装；项目内依赖可运行第一条命令自动安装，Node、Git、Docker 等系统级组件仍需人工确认。
+              </p>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </Panel>
   );
 }
 

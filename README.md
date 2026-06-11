@@ -58,3 +58,7 @@ Data collection -> Knowledge base -> Draft generation -> Humanization -> Review 
 - GitHub Actions runs backend verification, backend tests, and frontend typecheck.
 - Local release checks are documented in `docs/RUNBOOK.md`.
 - Dependency audit notes are tracked in `docs/SECURITY_NOTES.md`.
+- New machines can run `python scripts/setup_local.py` to create the local
+  virtual environment, install backend/frontend packages, and prepare SQLite
+  planner-stage storage. The command center also exposes an environment doctor
+  that checks dependency versions and highlights upgrades.
