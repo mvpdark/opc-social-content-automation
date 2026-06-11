@@ -1871,7 +1871,7 @@ function SettingsScreen({
       if (!Object.keys(payload).length) {
         const statuses = await fetchProviderStatuses();
         onProviderStatusesChange(statuses);
-        onAction("后端默认 Key 已绑定；没有填写新 Key，不会覆盖。");
+        onAction("已刷新后端绑定状态；没有填写新 Key，不会覆盖。");
         setCheckStatus(null);
         return;
       }
@@ -1940,21 +1940,21 @@ function SettingsScreen({
     {
       keyName: "draftApiKey",
       label: "撰稿 API Key",
-      placeholder: "后端已默认绑定，测试阶段免填",
+      placeholder: "留空则不覆盖后端现有配置",
       testId: "mobile-draft-key",
       backendBound: providerBindings.draft
     },
     {
       keyName: "imageApiKey",
       label: "图片 API Key",
-      placeholder: "后端已默认绑定，测试阶段免填",
+      placeholder: "留空则不覆盖后端现有配置",
       testId: "mobile-image-key",
       backendBound: providerBindings.image
     },
     {
       keyName: "rewriteApiKey",
       label: "改写 API Key",
-      placeholder: "后端已默认绑定，测试阶段免填",
+      placeholder: "留空则不覆盖后端现有配置",
       testId: "mobile-rewrite-key",
       backendBound: providerBindings.rewrite
     }

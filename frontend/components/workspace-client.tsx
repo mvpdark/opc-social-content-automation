@@ -2682,7 +2682,7 @@ function SettingsView({
     try {
       if (!Object.keys(payload).length) {
         await refreshProviderStatuses();
-        setCredentialStatus("后端默认 Key 已绑定；没有填写新 Key，不会覆盖。");
+        setCredentialStatus("已刷新后端绑定状态；没有填写新 Key，不会覆盖。");
         setProviderCheckStatus(null);
         return;
       }
@@ -2759,22 +2759,22 @@ function SettingsView({
     {
       keyName: "draftApiKey",
       label: "撰稿 API Key",
-      placeholder: "后端已默认绑定，测试阶段免填",
-      helper: "撰稿服务已由后端默认绑定；只有更换 Key 时才需要填写。",
+      placeholder: "留空则不覆盖后端现有配置",
+      helper: "撰稿服务使用；只有更换 Key 时才需要填写。",
       backendBound: providerBindings.draft
     },
     {
       keyName: "imageApiKey",
       label: "图片 API Key",
-      placeholder: "后端已默认绑定，测试阶段免填",
-      helper: "图片生成服务已由后端默认绑定；封面生成走服务端。",
+      placeholder: "留空则不覆盖后端现有配置",
+      helper: "图片生成服务使用；封面生成走服务端。",
       backendBound: providerBindings.image
     },
     {
       keyName: "rewriteApiKey",
       label: "改写 API Key",
-      placeholder: "后端已默认绑定，测试阶段免填",
-      helper: "改写和人味化服务已由后端默认绑定；响应不会回显密钥。",
+      placeholder: "留空则不覆盖后端现有配置",
+      helper: "改写和人味化服务使用；响应不会回显密钥。",
       backendBound: providerBindings.rewrite
     }
   ];
