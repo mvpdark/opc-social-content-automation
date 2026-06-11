@@ -568,9 +568,11 @@ function GenerationLauncher({
       ? "先填写选题，再开始生产图文。"
       : statusText;
   const primaryGenerateLabel =
-    busyAction === "draft" ? "正在生产草稿" : generateButtonLabel;
-  const secondaryGenerateLabel =
-    lastContent && busyAction !== "draft" ? "重新生产草稿" : primaryGenerateLabel;
+    busyAction === "draft"
+      ? "正在生产草稿"
+      : lastContent
+        ? "重新生产草稿"
+        : generateButtonLabel;
 
   function authHeaders() {
     return {
@@ -832,22 +834,6 @@ function GenerationLauncher({
             <div className="text-sm font-semibold">启动状态</div>
             <p className="mt-2 text-sm leading-6 text-muted">{launchStatusText}</p>
             <div className="mt-4 grid grid-cols-1 gap-2">
-              <button
-                aria-label={secondaryGenerateLabel}
-                className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-paper disabled:cursor-not-allowed disabled:opacity-60"
-                data-testid="secondary-production-button"
-                disabled={!canGenerate}
-                onClick={generateDraft}
-                title={generateButtonTitle}
-                type="button"
-              >
-                {busyAction === "draft" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <PenLine className="h-4 w-4" />
-                )}
-                {secondaryGenerateLabel}
-              </button>
               <button
                 aria-label={reviewButtonLabel}
                 className={`${secondaryButtonClass} h-10 disabled:cursor-not-allowed disabled:opacity-60`}
