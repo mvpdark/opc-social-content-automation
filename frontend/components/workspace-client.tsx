@@ -209,12 +209,21 @@ async function readApiError(response: Response, fallback: string) {
 
 type GeneratedContent = {
   body: string;
+  created_at?: string;
   id: number;
   platform: string;
   status: string;
   tags: string[] | null;
   title: string;
 };
+
+type HumanReviewDecision = "approved" | "changes_requested" | "rejected";
+
+const humanReviewLabels = {
+  approved: "通过审核",
+  changes_requested: "退回修改",
+  rejected: "驳回"
+} satisfies Record<HumanReviewDecision, string>;
 
 export function WorkspaceClient({
   hasInitialTheme,
@@ -861,17 +870,296 @@ function GenerationLauncher({
 }
 
 function ReviewView({ credentials }: { credentials: CredentialSettings }) {
+  const [pendingContents, setPendingContents] = useState<GeneratedContent[]>([]);
+  const [selectedContentId, setSelectedContentId] = useState<number | null>(null);
+  const [reviewBusy, setReviewBusy] = useState<"refresh" | HumanReviewDecision | null>("refresh");
+  const [reviewStatus, setReviewStatus] = useState("正在读取待审草稿。");
+  const [reviewNotes, setReviewNotes] = useState("已检查事实、风格、风险和发布前置条件。");
+  const [reviewScore, setReviewScore] = useState(90);
+
+  const selectedContent =
+    pendingContents.find((content) => content.id === selectedContentId) ?? pendingContents[0] ?? null;
+  const canSubmitReview = Boolean(selectedContent) && reviewBusy === null;
+
+  useEffect(() => {
+    void loadPendingContents();
+  }, [credentials.workspaceToken]);
+
+  function authHeaders() {
+    return {
+      "Content-Type": "application/json",
+      ...(credentials.workspaceToken ? { Authorization: `Bearer ${credentials.workspaceToken}` } : {})
+    };
+  }
+
+  async function loadPendingContents() {
+    setReviewBusy("refresh");
+    setReviewStatus("正在读取待审草稿。");
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 5000);
+    try {
+      const response = await fetch(`${API_BASE}/content/list?status=review_pending`, {
+        headers: authHeaders(),
+        signal: controller.signal
+      });
+      if (!response.ok) {
+        throw new Error(await readApiError(response, "待审草稿读取失败。"));
+      }
+      const data = (await response.json()) as GeneratedContent[];
+      setPendingContents(data);
+      setSelectedContentId((currentId) => {
+        if (data.some((content) => content.id === currentId)) {
+          return currentId;
+        }
+        return data[0]?.id ?? null;
+      });
+      setReviewStatus(
+        data.length > 0
+          ? `已读取 ${data.length} 篇待审草稿。`
+          : "当前没有待审草稿。先到内容生产页生成草稿，并点击“提交审核”。"
+      );
+    } catch (error) {
+      setPendingContents([]);
+      setSelectedContentId(null);
+      if (error instanceof Error && error.name === "AbortError") {
+        setReviewStatus("待审草稿读取超时，请确认后端、PostgreSQL 和 Redis 已启动。");
+      } else {
+        setReviewStatus(error instanceof Error ? error.message : "待审草稿读取失败。");
+      }
+    } finally {
+      window.clearTimeout(timeoutId);
+      setReviewBusy(null);
+    }
+  }
+
+  async function submitHumanReview(decision: HumanReviewDecision) {
+    if (!selectedContent) {
+      setReviewStatus("先从左侧选择一篇待审草稿。");
+      return;
+    }
+
+    setReviewBusy(decision);
+    setReviewStatus(`正在记录“${humanReviewLabels[decision]}”。`);
+    try {
+      const response = await fetch(`${API_BASE}/content/${selectedContent.id}/reviews`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          decision,
+          score: reviewScore,
+          notes: reviewNotes.trim() || undefined,
+          risk_flags: decision === "approved" ? [] : ["needs_operator_followup"]
+        })
+      });
+      if (!response.ok) {
+        throw new Error(await readApiError(response, "审核提交失败。"));
+      }
+      setPendingContents((currentItems) =>
+        currentItems.filter((content) => content.id !== selectedContent.id)
+      );
+      setSelectedContentId(null);
+      setReviewStatus(`草稿 #${selectedContent.id} 已记录为“${humanReviewLabels[decision]}”。`);
+    } catch (error) {
+      setReviewStatus(error instanceof Error ? error.message : "审核提交失败。");
+    } finally {
+      setReviewBusy(null);
+    }
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
-      <Panel helper="所有内容在发布前都先进入这里。" title="审核队列">
-        <div className="divide-y divide-line">
-          {reviewQueue.map((item) => (
-            <QueueRow key={item.title} item={item} />
-          ))}
-        </div>
+      <Panel
+        action={
+          <button
+            aria-label="刷新待审草稿"
+            className={`${secondaryButtonClass} h-9 px-3 text-xs disabled:cursor-not-allowed disabled:opacity-60`}
+            disabled={reviewBusy !== null}
+            onClick={loadPendingContents}
+            type="button"
+          >
+            {reviewBusy === "refresh" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RotateCcw className="h-3.5 w-3.5" />
+            )}
+            刷新
+          </button>
+        }
+        helper="先选择待审草稿，再在右侧记录通过、退回或驳回。"
+        title="待审草稿"
+      >
+        {pendingContents.length > 0 ? (
+          <div className="space-y-3">
+            {pendingContents.map((content) => {
+              const selected = selectedContent?.id === content.id;
+              return (
+                <button
+                  aria-pressed={selected}
+                  className={[
+                    "w-full rounded-md border p-4 text-left transition",
+                    selected ? "border-coral bg-coral/10" : "glass-subtle hover:border-coral/50"
+                  ].join(" ")}
+                  key={content.id}
+                  onClick={() => setSelectedContentId(content.id)}
+                  type="button"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold leading-5">{content.title}</div>
+                      <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted">
+                        {content.body}
+                      </p>
+                    </div>
+                    <Pill tone="amber">待审</Pill>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className="rounded-md bg-mist px-2 py-1 text-xs text-muted">
+                      #{content.id}
+                    </span>
+                    <span className="rounded-md bg-mist px-2 py-1 text-xs text-muted">
+                      {content.platform}
+                    </span>
+                    {(content.tags ?? []).slice(0, 3).map((tag) => (
+                      <span className="rounded-md bg-mist px-2 py-1 text-xs text-muted" key={tag}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className={`${subtleCardClass} border-dashed p-4`}>
+              <div className="text-sm font-semibold">暂无可审核草稿</div>
+              <p className="mt-2 text-sm leading-6 text-muted">{reviewStatus}</p>
+              <a
+                className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-paper"
+                href="/?tab=content"
+              >
+                <PenLine className="h-4 w-4" />
+                去内容生产页
+              </a>
+            </div>
+            <div className="divide-y divide-line rounded-md border">
+              {reviewQueue.map((item) => (
+                <QueueRow
+                  actionLabel={
+                    item.status === "需复核"
+                      ? "去封面页"
+                      : item.status === "待采集"
+                        ? "去知识库"
+                        : "去生产页"
+                  }
+                  href={
+                    item.status === "需复核"
+                      ? "/?tab=cover"
+                      : item.status === "待采集"
+                        ? "/?tab=knowledge"
+                        : "/?tab=content"
+                  }
+                  item={item}
+                  key={item.title}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </Panel>
 
       <div className="space-y-4">
+        <Panel
+          action={<Pill tone={selectedContent ? "amber" : "neutral"}>{selectedContent ? "可审核" : "未选择"}</Pill>}
+          helper="这里才是审核按钮所在位置。"
+          title="审核操作"
+        >
+          {selectedContent ? (
+            <div className="space-y-4">
+              <div className={`${subtleCardClass} p-4`}>
+                <div className="text-xs font-medium text-muted">当前草稿</div>
+                <h3 className="mt-2 text-base font-semibold leading-6">{selectedContent.title}</h3>
+                <p className="mt-2 line-clamp-4 text-sm leading-6 text-muted">
+                  {selectedContent.body}
+                </p>
+              </div>
+              <label className="block">
+                <span className="text-xs font-medium text-muted">审核意见</span>
+                <textarea
+                  className={`${formControlClass} min-h-24 resize-y py-2 leading-6`}
+                  onChange={(event) => setReviewNotes(event.target.value)}
+                  value={reviewNotes}
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium text-muted">审核分数</span>
+                <input
+                  className={`${formControlClass} h-10`}
+                  max={100}
+                  min={1}
+                  onChange={(event) => {
+                    const nextScore = Number(event.target.value);
+                    if (Number.isFinite(nextScore)) {
+                      setReviewScore(Math.min(100, Math.max(1, nextScore)));
+                    }
+                  }}
+                  type="number"
+                  value={reviewScore}
+                />
+              </label>
+              <div className="grid grid-cols-1 gap-2">
+                <button
+                  className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={!canSubmitReview}
+                  onClick={() => submitHumanReview("approved")}
+                  type="button"
+                >
+                  {reviewBusy === "approved" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ShieldCheck className="h-4 w-4" />
+                  )}
+                  通过审核
+                </button>
+                <button
+                  className={`${secondaryButtonClass} h-10 disabled:cursor-not-allowed disabled:opacity-60`}
+                  disabled={!canSubmitReview}
+                  onClick={() => submitHumanReview("changes_requested")}
+                  type="button"
+                >
+                  {reviewBusy === "changes_requested" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <PenLine className="h-4 w-4" />
+                  )}
+                  退回修改
+                </button>
+                <button
+                  className={`${secondaryButtonClass} h-10 border-coral/40 text-coral disabled:cursor-not-allowed disabled:opacity-60`}
+                  disabled={!canSubmitReview}
+                  onClick={() => submitHumanReview("rejected")}
+                  type="button"
+                >
+                  {reviewBusy === "rejected" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  驳回
+                </button>
+              </div>
+              <p className="text-xs leading-5 text-muted">{reviewStatus}</p>
+            </div>
+          ) : (
+            <div className={`${subtleCardClass} p-4`}>
+              <div className="text-sm font-semibold">先选择待审草稿</div>
+              <p className="mt-2 text-sm leading-6 text-muted">
+                {reviewStatus}
+              </p>
+            </div>
+          )}
+        </Panel>
+
         <Panel helper="读取设置页的本机配置状态，不暴露具体供应商和底层配置。" title="服务状态">
           <div className="space-y-3">
             {connectionStatuses.map((status) => {
@@ -1466,12 +1754,16 @@ function SafetyGateList() {
 }
 
 function QueueRow({
+  actionLabel,
+  href,
   item
 }: {
+  actionLabel?: string;
+  href?: string;
   item: { icon: typeof ClipboardCheck; source: string; status: string; title: string };
 }) {
-  return (
-    <div className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+  const rowContent = (
+    <>
       <IconBox tone="blue">
         <item.icon className="h-4 w-4" />
       </IconBox>
@@ -1479,7 +1771,31 @@ function QueueRow({
         <div className="text-sm font-medium leading-5">{item.title}</div>
         <div className="mt-1 text-xs text-muted">{item.source}</div>
       </div>
-      <Pill tone={item.status === "需复核" ? "red" : "neutral"}>{item.status}</Pill>
+      <div className="flex shrink-0 items-center gap-2">
+        <Pill tone={item.status === "需复核" ? "red" : "neutral"}>{item.status}</Pill>
+        {actionLabel ? (
+          <span className="rounded-md border border-line px-2 py-1 text-xs font-medium text-ink">
+            {actionLabel}
+          </span>
+        ) : null}
+      </div>
+    </>
+  );
+
+  if (href) {
+    return (
+      <a
+        className="flex items-start gap-3 px-3 py-3 transition hover:bg-mist/70 first:pt-3 last:pb-3"
+        href={href}
+      >
+        {rowContent}
+      </a>
+    );
+  }
+
+  return (
+    <div className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+      {rowContent}
     </div>
   );
 }
