@@ -194,6 +194,7 @@ body {
   background: rgb(var(--paper));
   color: rgb(var(--ink));
   font-family: var(--apple-font-stack) !important;
+  font-variant-numeric: tabular-nums;
   letter-spacing: 0;
 }
 
