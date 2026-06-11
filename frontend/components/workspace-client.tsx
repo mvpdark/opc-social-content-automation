@@ -1267,17 +1267,26 @@ function SettingsView({
         </Panel>
 
       <div className="space-y-4">
-        <Panel helper="如果界面被收得太干净，可以一键恢复说明文字。" title="恢复">
+        <Panel
+          helper={
+            showHelperText
+              ? "辅助说明已经显示；设置入口会始终保留。"
+              : "如果隐藏了说明文字，可以在这里重新打开，不会重置主题或凭证。"
+          }
+          title="说明文字"
+        >
           <button
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-paper"
+            aria-label={showHelperText ? "说明文字已经显示" : "显示说明文字"}
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-paper disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={showHelperText}
             onClick={onReset}
             type="button"
           >
             <RotateCcw className="h-4 w-4" />
-            恢复默认界面
+            {showHelperText ? "说明已显示" : "显示说明文字"}
           </button>
           <p className="mt-3 text-xs leading-5 text-muted">
-            恢复后，顶部页面说明和侧边安全门说明会重新显示。
+            只恢复顶部页面说明和侧边安全门说明，不会修改主题、凭证或内容。
           </p>
         </Panel>
 
