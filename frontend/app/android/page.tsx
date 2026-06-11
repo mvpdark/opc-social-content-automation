@@ -60,6 +60,17 @@ const reviewCards = [
   { title: "高赞样本参考", helper: "来源待人工确认", risk: "来源门控", tone: "steel" }
 ];
 
+function getPcReturnHref() {
+  if (typeof window === "undefined") {
+    return "/";
+  }
+  const from = new URLSearchParams(window.location.search).get("from");
+  if (from && from.startsWith("/") && !from.startsWith("//")) {
+    return from;
+  }
+  return "/";
+}
+
 export default function AndroidPreviewPage() {
   const [activeTab, setActiveTab] = useState<MobileTab>("home");
 
@@ -108,7 +119,7 @@ function MobileHeader({ activeTab }: { activeTab: MobileTab }) {
           aria-label="返回 PC 工作台"
           className="flex h-9 w-9 items-center justify-center rounded-md border border-[#d6e8df] bg-[#f6fbf6] text-ink"
           onClick={() => {
-            window.location.href = "/";
+            window.location.href = getPcReturnHref();
           }}
           type="button"
         >

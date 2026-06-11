@@ -36,6 +36,7 @@ export function AppShell({
     const query = params.toString();
     return query ? `/?${query}` : "/";
   };
+  const androidHref = `/android?from=${encodeURIComponent(tabHref(activeTab))}`;
 
   return (
     <main className={`theme-${interfaceStyle} workspace-shell min-h-screen text-ink`}>
@@ -103,7 +104,7 @@ export function AppShell({
                 <div className="flex items-center gap-3">
                   <a
                     className="glass-control flex h-9 shrink-0 items-center gap-2 rounded-md border px-3 text-sm font-medium text-ink"
-                    href="/android"
+                    href={androidHref}
                   >
                     <Smartphone className="h-4 w-4" />
                     安卓端
