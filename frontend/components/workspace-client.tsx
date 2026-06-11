@@ -2037,15 +2037,10 @@ function GeneratedPostExportCard({ content }: { content: GeneratedContent }) {
   );
 }
 
-function XhsStyleStickerTray({ compact = false }: { compact?: boolean }) {
-  const displayStickers = compact ? xhsFeaturedStickers.slice(0, 6) : xhsFeaturedStickers;
-
+function XhsStyleStickerTray() {
   return (
     <div
-      className={[
-        "rounded-md border border-line bg-mist/50",
-        compact ? "mt-5 p-3" : "mt-3 p-4"
-      ].join(" ")}
+      className="mt-3 rounded-md border border-line bg-mist/50 p-4"
       data-testid="xhs-sticker-tray"
     >
       <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -2060,18 +2055,11 @@ function XhsStyleStickerTray({ compact = false }: { compact?: boolean }) {
       <div className="mt-3 rounded-md border border-coral/20 bg-coral/10 px-3 py-2 text-xs leading-6 text-ink">
         效果示例：{renderXhsExpressionText("先别急 [笑哭R] 先把方向想清楚 [赞R]，我在这蹲后续 [蹲后续H]")}
       </div>
-      {!compact ? (
-        <div className="mt-2 text-[11px] leading-5 text-muted">
-          说明：这里不复制官方图片资产；本地只做近似视觉预览，最终以小红书发布框识别结果为准。
-        </div>
-      ) : null}
-      <div
-        className={[
-          "mt-3 grid gap-2",
-          compact ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2 lg:grid-cols-3"
-        ].join(" ")}
-      >
-        {displayStickers.map((sticker) => (
+      <div className="mt-2 text-[11px] leading-5 text-muted">
+        说明：这里不复制官方图片资产；本地只做近似视觉预览，最终以小红书发布框识别结果为准。
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-3">
+        {xhsFeaturedStickers.map((sticker) => (
           <div
             className="glass-subtle rounded-md border px-3 py-3"
             key={sticker.code}
@@ -2088,47 +2076,43 @@ function XhsStyleStickerTray({ compact = false }: { compact?: boolean }) {
                 <div className="mt-0.5 font-mono text-[11px] leading-4 text-coral">{sticker.code}</div>
               </div>
             </div>
-            {!compact ? (
-              <div className="mt-2 border-l-2 border-coral/40 pl-2 text-[11px] leading-4 text-muted">
-                {sticker.cue}。复制文案保留 {sticker.code}，预览按近似表情显示。
-              </div>
-            ) : null}
+            <div className="mt-2 border-l-2 border-coral/40 pl-2 text-[11px] leading-4 text-muted">
+              {sticker.cue}。复制文案保留 {sticker.code}，预览按近似表情显示。
+            </div>
           </div>
         ))}
       </div>
-      {!compact ? (
-        <div className="mt-4 rounded-md border border-line bg-paper/55 p-3">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <span className="text-xs font-semibold text-ink">完整 RedNote 名录</span>
-            <span className="text-[11px] text-muted">复制正文时字符码会原样保留</span>
-          </div>
-          <div className="space-y-3">
-            {xhsStickerCatalog.map((group) => (
-              <div key={group.category}>
-                <div className="mb-1 text-[11px] font-medium text-muted">{group.category}</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {group.names.map((name) => {
-                    const sticker = xhsStickerByName.get(name);
-                    if (!sticker) {
-                      return null;
-                    }
-                    return (
-                      <span
-                        className="inline-flex items-center gap-1 rounded-md border border-line bg-mist/60 px-2 py-1 font-mono text-[11px] leading-4 text-ink"
-                        key={sticker.code}
-                        title={`${sticker.name}：${sticker.code}`}
-                      >
-                        <span aria-hidden="true">{sticker.face}</span>
-                        <span>{sticker.code}</span>
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
+      <div className="mt-4 rounded-md border border-line bg-paper/55 p-3">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <span className="text-xs font-semibold text-ink">完整 RedNote 名录</span>
+          <span className="text-[11px] text-muted">复制正文时字符码会原样保留</span>
         </div>
-      ) : null}
+        <div className="space-y-3">
+          {xhsStickerCatalog.map((group) => (
+            <div key={group.category}>
+              <div className="mb-1 text-[11px] font-medium text-muted">{group.category}</div>
+              <div className="flex flex-wrap gap-1.5">
+                {group.names.map((name) => {
+                  const sticker = xhsStickerByName.get(name);
+                  if (!sticker) {
+                    return null;
+                  }
+                  return (
+                    <span
+                      className="inline-flex items-center gap-1 rounded-md border border-line bg-mist/60 px-2 py-1 font-mono text-[11px] leading-4 text-ink"
+                      key={sticker.code}
+                      title={`${sticker.name}：${sticker.code}`}
+                    >
+                      <span aria-hidden="true">{sticker.face}</span>
+                      <span>{sticker.code}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
