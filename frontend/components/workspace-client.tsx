@@ -546,7 +546,7 @@ function GenerationLauncher({
   );
   const [tagsText, setTagsText] = useState("硕升博,博士申请,研究方向,申请规划");
   const [busyAction, setBusyAction] = useState<"draft" | "review" | null>(null);
-  const [statusText, setStatusText] = useState("填写主题后，点击“生成图文”创建草稿。");
+  const [statusText, setStatusText] = useState("填写选题后，点击“开始生产图文”创建草稿。");
   const [lastContent, setLastContent] = useState<GeneratedContent | null>(null);
 
   const hasTopic = topic.trim().length > 0;
@@ -554,19 +554,23 @@ function GenerationLauncher({
   const canRequestReview = lastContent !== null && busyAction === null;
   const generateButtonLabel = !hasTopic
       ? "先填写选题"
-      : "生成图文";
+      : "开始生产图文";
   const reviewButtonLabel = !lastContent
     ? "先生成草稿"
     : "提交审核";
   const generateButtonTitle = !hasTopic
-      ? "先填写选题，再生成图文"
+      ? "先填写选题，再开始生产图文"
       : undefined;
   const reviewButtonTitle = !lastContent
     ? "先生成草稿，再提交人工审核"
     : undefined;
   const launchStatusText = !hasTopic
-      ? "先填写选题，再生成图文。"
+      ? "先填写选题，再开始生产图文。"
       : statusText;
+  const primaryGenerateLabel =
+    busyAction === "draft" ? "正在生产草稿" : generateButtonLabel;
+  const secondaryGenerateLabel =
+    lastContent && busyAction !== "draft" ? "重新生产草稿" : primaryGenerateLabel;
 
   function authHeaders() {
     return {
@@ -593,7 +597,7 @@ function GenerationLauncher({
 
   async function generateDraft() {
     if (!topic.trim()) {
-      setStatusText("先填写选题，再生成图文。");
+      setStatusText("先填写选题，再开始生产图文。");
       return;
     }
 
@@ -659,13 +663,57 @@ function GenerationLauncher({
     <div data-testid="generation-launcher">
       <Panel
         action={
-          <Pill tone={lastContent ? "green" : "blue"}>
-            {lastContent ? `草稿 #${lastContent.id}` : "主入口"}
-          </Pill>
+          <button
+            aria-label={primaryGenerateLabel}
+            className="flex h-9 shrink-0 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-60"
+            data-testid="start-production-header-button"
+            disabled={!canGenerate}
+            onClick={generateDraft}
+            title={generateButtonTitle}
+            type="button"
+          >
+            {busyAction === "draft" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <PenLine className="h-4 w-4" />
+            )}
+            {primaryGenerateLabel}
+          </button>
         }
-        helper="这里是启动生成图文的入口；生成只创建草稿，不跳过人工审核。"
-        title="生成图文"
+        helper="生成只创建草稿，不会自动发布；通过人工审核后才进入封面和交付。"
+        title="开始生产图文"
       >
+        <div className="mb-4 rounded-md border border-steel/40 bg-steel/10 p-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <Pill tone={lastContent ? "green" : "blue"}>
+                {lastContent ? `草稿 #${lastContent.id}` : "生产入口"}
+              </Pill>
+              <h3 className="mt-3 text-lg font-semibold leading-6 text-ink">
+                选题确认后，点这里开始生产
+              </h3>
+              <p className="mt-1 text-sm leading-6 text-muted">
+                当前会生成一篇营销图文草稿，后续仍需人工审核。
+              </p>
+            </div>
+            <button
+              aria-label={primaryGenerateLabel}
+              className="flex h-12 min-w-44 items-center justify-center gap-2 rounded-md bg-ink px-5 text-sm font-semibold text-paper shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+              data-testid="start-production-button"
+              disabled={!canGenerate}
+              onClick={generateDraft}
+              title={generateButtonTitle}
+              type="button"
+            >
+              {busyAction === "draft" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <PenLine className="h-4 w-4" />
+              )}
+              {primaryGenerateLabel}
+            </button>
+          </div>
+        </div>
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="block">
@@ -798,8 +846,9 @@ function GenerationLauncher({
             <p className="mt-2 text-sm leading-6 text-muted">{launchStatusText}</p>
             <div className="mt-4 grid grid-cols-1 gap-2">
               <button
-                aria-label={generateButtonLabel}
+                aria-label={secondaryGenerateLabel}
                 className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-paper disabled:cursor-not-allowed disabled:opacity-60"
+                data-testid="secondary-production-button"
                 disabled={!canGenerate}
                 onClick={generateDraft}
                 title={generateButtonTitle}
@@ -810,7 +859,7 @@ function GenerationLauncher({
                 ) : (
                   <PenLine className="h-4 w-4" />
                 )}
-                {busyAction === "draft" ? "正在生成" : generateButtonLabel}
+                {secondaryGenerateLabel}
               </button>
               <button
                 aria-label={reviewButtonLabel}

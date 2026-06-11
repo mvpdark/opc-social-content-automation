@@ -173,7 +173,7 @@ export function AppShell({
                     href={tabHref("content")}
                   >
                     <PenLine className="h-4 w-4" />
-                    生成图文
+                    内容生产页
                   </a>
                   <a
                     aria-label="打开设置"
