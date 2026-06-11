@@ -65,6 +65,17 @@ class ProviderKeyUpdateRequest(BaseModel):
     deepseek_api_key: str | None = Field(default=None, max_length=500)
 
 
+class ProviderConnectionCheckRequest(BaseModel):
+    target: str = Field(pattern="^draft$")
+
+
+class ProviderConnectionCheckResponse(BaseModel):
+    target: str
+    configured: bool
+    status: str
+    message: str
+
+
 class DependencyStatusItem(BaseModel):
     name: str
     category: str

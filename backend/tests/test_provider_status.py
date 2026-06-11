@@ -1,6 +1,12 @@
+from fastapi import HTTPException
+
 from app.core.config import settings
-from app.schemas.workspace import ProviderKeyUpdateRequest
-from app.services.workspace_service import apply_provider_key_settings, provider_status_items
+from app.schemas.workspace import ProviderConnectionCheckRequest, ProviderKeyUpdateRequest
+from app.services.workspace_service import (
+    apply_provider_key_settings,
+    check_provider_connection,
+    provider_status_items,
+)
 
 
 def test_provider_status_does_not_expose_secret_values(monkeypatch) -> None:
@@ -50,3 +56,34 @@ def test_apply_provider_keys_updates_runtime_without_exposing_values(monkeypatch
     assert draft_secret not in text
     assert image_secret not in text
     assert deepseek_secret not in text
+
+
+def test_provider_connection_check_reports_missing_draft_key(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "draft_provider", "openai_compatible")
+    monkeypatch.setattr(settings, "openai_compatible_api_key", None)
+
+    result = check_provider_connection(ProviderConnectionCheckRequest(target="draft"))
+
+    assert result.status == "missing_key"
+    assert result.configured is False
+
+
+def test_provider_connection_check_redacts_provider_errors(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "draft_provider", "openai_compatible")
+    monkeypatch.setattr(settings, "openai_compatible_api_key", "secret-draft-key")
+
+    def fail_draft(prompt_name: str, payload: dict[str, object]) -> str:
+        raise HTTPException(status_code=502, detail="撰稿服务授权失败，请检查设置里的 API Key 和中转站地址。")
+
+    monkeypatch.setattr(
+        "app.services.workspace_service.model_router.draft_model",
+        fail_draft,
+    )
+
+    result = check_provider_connection(ProviderConnectionCheckRequest(target="draft"))
+    text = result.model_dump_json()
+
+    assert result.status == "failed"
+    assert result.configured is True
+    assert "授权失败" in result.message
+    assert "secret-draft-key" not in text

@@ -12,9 +12,12 @@ from app.schemas.workspace import (
     ExportItem,
     ExportRequest,
     ExportResponse,
+    ProviderConnectionCheckRequest,
+    ProviderConnectionCheckResponse,
     ProviderKeyUpdateRequest,
     ProviderStatusItem,
 )
+from app.services.model_router import model_router
 
 
 EXPORTABLE_STATUSES = {"approved", "published"}
@@ -182,3 +185,62 @@ def apply_provider_key_settings(payload: ProviderKeyUpdateRequest) -> list[Provi
     if payload.deepseek_api_key is not None:
         settings.deepseek_api_key = payload.deepseek_api_key.strip() or None
     return provider_status_items()
+
+
+def check_provider_connection(
+    payload: ProviderConnectionCheckRequest,
+) -> ProviderConnectionCheckResponse:
+    if payload.target != "draft":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only draft provider checks are available.",
+        )
+
+    configured = settings.draft_provider == "codex_test" or bool(
+        settings.openai_compatible_api_key
+    )
+    if not configured:
+        return ProviderConnectionCheckResponse(
+            target=payload.target,
+            configured=False,
+            status="missing_key",
+            message="撰稿服务还没有填写 API Key。",
+        )
+
+    try:
+        result = model_router.draft_model(
+            "draft_generation",
+            {
+                "platform": "xiaohongshu",
+                "topic": "服务连接检测",
+                "tags": ["连接检测"],
+                "tone": "简短、明确、合规",
+                "target_audience": "系统管理员",
+                "knowledge_query": "服务连接检测",
+                "knowledge_context": [],
+                "style_reference": "",
+                "user": {"id": None, "role": "system_check"},
+            },
+        )
+    except HTTPException as exc:
+        return ProviderConnectionCheckResponse(
+            target=payload.target,
+            configured=True,
+            status="failed",
+            message=str(exc.detail),
+        )
+
+    if not result.strip():
+        return ProviderConnectionCheckResponse(
+            target=payload.target,
+            configured=True,
+            status="failed",
+            message="撰稿服务返回为空，请检查模型或中转站配置。",
+        )
+
+    return ProviderConnectionCheckResponse(
+        target=payload.target,
+        configured=True,
+        status="ok",
+        message="撰稿服务连接成功，可以回到内容生产页开始生成。",
+    )

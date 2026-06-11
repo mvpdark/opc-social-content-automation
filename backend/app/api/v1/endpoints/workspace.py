@@ -16,6 +16,8 @@ from app.schemas.workspace import (
     PublishRecordCreate,
     PublishRecordRead,
     ProviderKeyUpdateRequest,
+    ProviderConnectionCheckRequest,
+    ProviderConnectionCheckResponse,
     ProviderStatusItem,
     WorkspaceContentItem,
 )
@@ -23,6 +25,7 @@ from app.services.dependency_service import dependency_report
 from app.services.workspace_service import (
     apply_provider_key_settings,
     approved_content_items,
+    check_provider_connection,
     create_export_package,
     list_publish_records,
     provider_status_items,
@@ -80,6 +83,15 @@ def update_provider_keys(
 ) -> list[ProviderStatusItem]:
     _ = current_user
     return apply_provider_key_settings(payload)
+
+
+@router.post("/provider-check", response_model=ProviderConnectionCheckResponse)
+def check_provider(
+    payload: ProviderConnectionCheckRequest,
+    current_user: User = Depends(get_current_user),
+) -> ProviderConnectionCheckResponse:
+    _ = current_user
+    return check_provider_connection(payload)
 
 
 @router.get("/approved-content", response_model=list[WorkspaceContentItem])

@@ -267,6 +267,13 @@ type ProviderStatusItem = {
   status: string;
 };
 
+type ProviderCheckResult = {
+  configured: boolean;
+  message: string;
+  status: string;
+  target: string;
+};
+
 const blockedPublishTerms = [
   "保录",
   "包过",
@@ -1460,8 +1467,11 @@ function SettingsView({
 }) {
   const [credentialStatus, setCredentialStatus] = useState("凭证会保存在当前浏览器本机。");
   const [credentialBusy, setCredentialBusy] = useState(false);
+  const [providerCheckStatus, setProviderCheckStatus] = useState<string | null>(null);
+  const [providerCheckBusy, setProviderCheckBusy] = useState(false);
   const hasWorkspaceToken = credentials.workspaceToken.trim().length > 0;
   const canApplyProviderKeys = !credentialBusy;
+  const canCheckProvider = !credentialBusy && !providerCheckBusy;
   const providerApplyLabel = "应用服务 API Key";
 
   function updateCredential(key: keyof CredentialSettings, value: string) {
@@ -1495,10 +1505,42 @@ function SettingsView({
         throw new Error(await readApiError(response, "服务 API Key 应用失败。"));
       }
       setCredentialStatus("服务 API Key 已应用到当前后端运行时，响应未回显密钥。");
+      setProviderCheckStatus(null);
     } catch (error) {
       setCredentialStatus(error instanceof Error ? error.message : "服务 API Key 应用失败。");
     } finally {
       setCredentialBusy(false);
+    }
+  }
+
+  async function checkDraftProvider() {
+    setProviderCheckBusy(true);
+    setProviderCheckStatus("正在检测撰稿服务连接。");
+    try {
+      const response = await fetch(`${API_BASE}/workspace/provider-check`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(credentials.workspaceToken
+            ? { Authorization: `Bearer ${credentials.workspaceToken}` }
+            : {})
+        },
+        body: JSON.stringify({ target: "draft" })
+      });
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error("服务检测接口暂不可用，请重启后端服务后再试。");
+        }
+        throw new Error(await readApiError(response, "撰稿服务检测失败。"));
+      }
+      const data = (await response.json()) as ProviderCheckResult;
+      setProviderCheckStatus(
+        data.status === "ok" ? data.message : `检测未通过：${data.message}`
+      );
+    } catch (error) {
+      setProviderCheckStatus(error instanceof Error ? error.message : "撰稿服务检测失败。");
+    } finally {
+      setProviderCheckBusy(false);
     }
   }
 
@@ -1516,19 +1558,19 @@ function SettingsView({
     },
     {
       keyName: "draftApiKey",
-      label: "GPT-5.5 API Key",
+      label: "撰稿 API Key",
       placeholder: "sk-...",
       helper: "撰稿服务使用；应用到后端后由服务端调用。"
     },
     {
       keyName: "imageApiKey",
-      label: "image2 API Key",
+      label: "图片 API Key",
       placeholder: "sk-...",
       helper: "图片生成服务使用；封面生成走服务端。"
     },
     {
       keyName: "rewriteApiKey",
-      label: "DeepSeek API Key",
+      label: "改写 API Key",
       placeholder: "sk-...",
       helper: "正文改写和人味化使用。"
     }
@@ -1570,6 +1612,9 @@ function SettingsView({
               <div>
                 <div className="text-sm font-semibold">凭证状态</div>
                 <p className="mt-1 text-xs leading-5 text-muted">{credentialStatus}</p>
+                {providerCheckStatus ? (
+                  <p className="mt-2 text-xs leading-5 text-muted">{providerCheckStatus}</p>
+                ) : null}
               </div>
             </div>
             <div className="mt-4 grid grid-cols-1 gap-2">
@@ -1582,6 +1627,16 @@ function SettingsView({
               >
                 {credentialBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 {credentialBusy ? "正在应用" : providerApplyLabel}
+              </button>
+              <button
+                aria-label="检测撰稿连接"
+                className={`${secondaryButtonClass} h-10 disabled:cursor-not-allowed disabled:opacity-60`}
+                disabled={!canCheckProvider}
+                onClick={checkDraftProvider}
+                type="button"
+              >
+                {providerCheckBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                {providerCheckBusy ? "正在检测" : "检测撰稿连接"}
               </button>
               <button
                 className={`${secondaryButtonClass} h-10`}

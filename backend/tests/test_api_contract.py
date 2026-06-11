@@ -33,6 +33,7 @@ def test_documented_api_paths_are_registered() -> None:
         "/api/workspace/dependencies",
         "/api/workspace/provider-status",
         "/api/workspace/provider-keys",
+        "/api/workspace/provider-check",
         "/api/workspace/approved-content",
         "/api/workspace/export",
         "/api/workspace/publish-record",
