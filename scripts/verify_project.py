@@ -3,12 +3,13 @@ from __future__ import annotations
 import argparse
 import json
 import py_compile
+import re
 import shutil
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SKIP_DIRS = {".git", ".venv", "node_modules", ".next"}
+SKIP_DIRS = {".git", ".venv", "node_modules", ".next", ".next-build"}
 
 
 def compile_backend() -> int:
@@ -154,6 +155,44 @@ def validate_safety_gates() -> int:
     return total
 
 
+def _extract_ts_array(name: str, text: str) -> list[str]:
+    match = re.search(rf"export const {name}[^=]*=\s*\[(.*?)\];", text, re.S)
+    if not match:
+        raise SystemExit(f"Could not find frontend array {name}")
+    return re.findall(r'"([^"]+)"', match.group(1))
+
+
+def validate_frontend_design_contract() -> int:
+    data_text = (ROOT / "frontend" / "lib" / "dashboard-data.ts").read_text(encoding="utf-8")
+    css_text = (ROOT / "frontend" / "app" / "globals.css").read_text(encoding="utf-8")
+
+    tab_ids = _extract_ts_array("workspaceTabIds", data_text)
+    style_ids = [
+        style_id
+        for style_id in _extract_ts_array("interfaceStyles", data_text)
+        if style_id.isascii()
+    ]
+    css_theme_ids = set(re.findall(r"\.theme-([a-z-]+)\s*\{", css_text))
+    referenced_styles = set(re.findall(r'style: "([^"]+)"', data_text))
+
+    missing_theme_classes = sorted(set(style_ids) - css_theme_ids)
+    if missing_theme_classes:
+        raise SystemExit("Missing CSS theme classes: " + ", ".join(missing_theme_classes))
+
+    unknown_referenced_styles = sorted(referenced_styles - set(style_ids))
+    if unknown_referenced_styles:
+        raise SystemExit("Unknown referenced interface styles: " + ", ".join(unknown_referenced_styles))
+
+    for tab_id in tab_ids:
+        if f'{{ id: "{tab_id}"' not in data_text:
+            raise SystemExit(f"Missing navigation entry for tab {tab_id}")
+        object_key_count = len(re.findall(rf"\n  {re.escape(tab_id)}: \{{", data_text))
+        if object_key_count < 2:
+            raise SystemExit(f"Missing tab metadata or theme recommendation for tab {tab_id}")
+
+    return len(tab_ids) + len(style_ids) + len(referenced_styles)
+
+
 def clean_pycache() -> int:
     count = 0
     for cache_dir in ROOT.rglob("__pycache__"):
@@ -178,6 +217,7 @@ def main() -> None:
         "required_files_present": validate_required_files(),
         "migration_chain_checked": validate_migration_chain(),
         "safety_gates_checked": validate_safety_gates(),
+        "frontend_design_contract_checked": validate_frontend_design_contract(),
     }
     if not args.keep_cache:
         results["removed_pycache_dirs"] = clean_pycache()

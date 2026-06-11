@@ -36,6 +36,17 @@ export type WorkspaceTab =
   | "delivery"
   | "settings";
 
+export const workspaceTabIds: WorkspaceTab[] = [
+  "dashboard",
+  "research",
+  "knowledge",
+  "content",
+  "review",
+  "cover",
+  "delivery",
+  "settings"
+];
+
 export type InterfaceStyle =
   | "apple"
   | "mint"

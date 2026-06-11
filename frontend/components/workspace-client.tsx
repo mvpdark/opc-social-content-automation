@@ -36,6 +36,7 @@ import {
   reviewQueue,
   safetyGates,
   themeTemplates,
+  workspaceTabIds,
   type InterfaceStyle,
   type WorkspaceTab,
   writingReferences
@@ -73,16 +74,6 @@ const secondaryButtonClass =
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8010/api";
 const CREDENTIAL_STORAGE_KEY = "opc_workspace_credentials_v1";
 const INTERFACE_STYLE_STORAGE_KEY = "opc_interface_style_v1";
-const workspaceTabIds: WorkspaceTab[] = [
-  "dashboard",
-  "research",
-  "knowledge",
-  "content",
-  "review",
-  "cover",
-  "delivery",
-  "settings"
-];
 
 type CredentialSettings = {
   workspaceToken: string;

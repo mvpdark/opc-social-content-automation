@@ -1,16 +1,10 @@
 import { WorkspaceClient } from "@/components/workspace-client";
-import { interfaceStyles, type InterfaceStyle, type WorkspaceTab } from "@/lib/dashboard-data";
-
-const workspaceTabIds: WorkspaceTab[] = [
-  "dashboard",
-  "research",
-  "knowledge",
-  "content",
-  "review",
-  "cover",
-  "delivery",
-  "settings"
-];
+import {
+  interfaceStyles,
+  workspaceTabIds,
+  type InterfaceStyle,
+  type WorkspaceTab
+} from "@/lib/dashboard-data";
 
 function coerceWorkspaceTab(value: string | string[] | undefined): WorkspaceTab {
   const tab = Array.isArray(value) ? value[0] : value;
