@@ -1133,16 +1133,20 @@ function SettingsView({
           title="界面显示"
         >
           <div className="space-y-4">
-            <div>
+            <section>
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-xs font-medium text-muted">界面风格</div>
-                <div className="text-xs text-muted">按运营模板推荐，也可以手动选择。</div>
+                <div>
+                  <div className="text-sm font-semibold">运营模板</div>
+                  <div className="mt-1 text-xs text-muted">按工作场景快速套用合适风格。</div>
+                </div>
+                <div className="text-xs text-muted">不影响导航和功能状态。</div>
               </div>
               <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2 2xl:grid-cols-3">
                 {themeTemplates.map((template) => {
                   const selected = template.style === interfaceStyle;
                   return (
                     <a
+                      aria-current={selected ? "true" : undefined}
                       aria-label={`${template.label}${selected ? "，当前推荐风格" : ""}`}
                       className={[
                         "rounded-md border px-3 py-2 text-left transition",
@@ -1160,15 +1164,34 @@ function SettingsView({
                       <span className="mt-1 block text-xs leading-5 text-muted">
                         {template.description}
                       </span>
+                      <span
+                        aria-hidden="true"
+                        className={`theme-${template.style} mt-2 flex gap-1`}
+                      >
+                        <span className="h-1.5 w-7 rounded-sm bg-steel" />
+                        <span className="h-1.5 w-7 rounded-sm bg-moss" />
+                        <span className="h-1.5 w-7 rounded-sm bg-coral" />
+                      </span>
                     </a>
                   );
                 })}
+              </div>
+            </section>
+
+            <section>
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="text-sm font-semibold">全部主题</div>
+                  <div className="mt-1 text-xs text-muted">用于审稿、创作、采集和排障的完整视觉库。</div>
+                </div>
+                <div className="text-xs text-muted">当前共 {interfaceStyles.length} 种。</div>
               </div>
               <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {interfaceStyles.map((style) => {
                   const selected = style.id === interfaceStyle;
                   return (
                     <a
+                      aria-current={selected ? "true" : undefined}
                       aria-label={`${style.label}${selected ? "，当前界面风格" : ""}`}
                       className={[
                         `theme-${style.id}`,
@@ -1196,7 +1219,7 @@ function SettingsView({
                   );
                 })}
               </div>
-            </div>
+            </section>
 
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
               <div className={`${subtleCardClass} p-4`}>
