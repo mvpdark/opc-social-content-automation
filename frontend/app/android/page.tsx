@@ -87,7 +87,7 @@ function StatusBar() {
   return (
     <div className="flex h-8 items-center justify-between px-5 text-[11px] font-semibold text-ink">
       <span>9:41</span>
-      <span className="tracking-[2px]">5G  82%</span>
+      <span>5G  82%</span>
     </div>
   );
 }
@@ -115,7 +115,7 @@ function MobileHeader({ activeTab }: { activeTab: MobileTab }) {
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div className="min-w-0 flex-1">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#34805c]">
+          <div className="text-[11px] font-semibold text-moss">
             OPC Mobile
           </div>
           <h1 className="truncate text-lg font-semibold leading-6">{titles[activeTab]}</h1>
