@@ -3,6 +3,8 @@
 import { ExternalLink, Loader2, Play, Save, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { PlatformLabel } from "@/components/platform-icon";
+
 type Platform = "xiaohongshu" | "douyin";
 
 type SearchTarget = {
@@ -462,7 +464,14 @@ export function TrendCollectorPanel({
         <div className="px-4 py-4">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="block">
-              <span className={fieldLabelClass}>平台</span>
+              <span className="flex items-center justify-between gap-3">
+                <span className={fieldLabelClass}>平台</span>
+                <PlatformLabel
+                  className="text-xs font-semibold text-ink"
+                  iconSize="sm"
+                  platform={platform}
+                />
+              </span>
               <select
                 className={inputClass}
                 value={platform}

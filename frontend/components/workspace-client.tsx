@@ -30,6 +30,12 @@ import {
 } from "lucide-react";
 
 import { AppShell } from "@/components/app-shell";
+import {
+  isPlatformId,
+  PlatformIcon,
+  PlatformLabel,
+  type PlatformId
+} from "@/components/platform-icon";
 import { TrendCollectorPanel } from "@/components/trend-collector-panel";
 import {
   connectionStatuses,
@@ -1023,7 +1029,12 @@ function DashboardView() {
             <div className="grid grid-cols-1 gap-3 md:grid-cols-[160px_1fr]">
               <div className="rounded-[18px] border border-line bg-paper/65 p-4">
                 <div className="text-xs font-medium text-muted">平台</div>
-                <div className="mt-2 text-lg font-semibold text-ink">小红书图文</div>
+                <PlatformLabel
+                  className="mt-2 text-lg font-semibold text-ink"
+                  iconSize="lg"
+                  platform="xiaohongshu"
+                  suffix="图文"
+                />
               </div>
               <div className="rounded-[18px] border border-line bg-paper/65 p-4">
                 <div className="text-xs font-medium text-muted">主题</div>
@@ -1059,7 +1070,7 @@ function DashboardView() {
                 className="flex h-12 items-center justify-center gap-2 rounded-[14px] bg-steel px-5 text-sm font-semibold text-paper shadow-soft transition hover:translate-y-[-1px] hover:shadow-panel active:translate-y-0"
                 href="/?tab=content"
               >
-                <PenLine className="h-4 w-4" />
+                <PlatformIcon className="ring-white/55" platform="xiaohongshu" size="sm" />
                 生成小红书图文
               </a>
               <a
@@ -1081,7 +1092,10 @@ function DashboardView() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="text-sm font-semibold text-ink">发布前预览</div>
-                <p className="mt-1 text-xs text-muted">模拟小红书图文卡片，不自动发布。</p>
+                <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">
+                  <PlatformIcon platform="xiaohongshu" size="sm" />
+                  模拟小红书图文卡片，不自动发布。
+                </p>
               </div>
               <Pill tone="green">草稿</Pill>
             </div>
@@ -1571,6 +1585,7 @@ function GenerationLauncher({
   const [draftCheckStatus, setDraftCheckStatus] = useState<ProviderCheckResult | null>(null);
   const [draftCheckBusy, setDraftCheckBusy] = useState(false);
 
+  const selectedPlatform: PlatformId = platform === "douyin" ? "douyin" : "xiaohongshu";
   const hasTopic = topic.trim().length > 0;
   const draftProviderStatus = providerStatuses.find((item) => item.name === "Draft generation");
   const draftProviderMissing = Boolean(providerStatuses.length && !draftProviderStatus?.configured);
@@ -1797,7 +1812,15 @@ function GenerationLauncher({
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="block">
-              <span className="text-xs font-medium text-muted">平台</span>
+              <span className="flex items-center justify-between gap-3 text-xs font-medium text-muted">
+                <span>平台</span>
+                <PlatformLabel
+                  className="font-semibold text-ink"
+                  iconSize="sm"
+                  platform={selectedPlatform}
+                  suffix="图文"
+                />
+              </span>
               <select
                 className={`${formControlClass} h-10`}
                 value={platform}
@@ -2690,6 +2713,10 @@ function platformDisplayName(platform: string) {
   return platform;
 }
 
+function platformIdForPreview(platform: string): PlatformId {
+  return isPlatformId(platform) ? platform : "xiaohongshu";
+}
+
 function DraftPanel({
   content,
   loading
@@ -2700,6 +2727,7 @@ function DraftPanel({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [portalReady, setPortalReady] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const previewPlatformId = platformIdForPreview(content?.platform ?? "xiaohongshu");
   const preview = {
     body: content?.body ?? draftPreview.body,
     id: content?.id ?? null,
@@ -2771,7 +2799,12 @@ function DraftPanel({
           </button>
           <div className="p-4">
             <div className="flex items-center justify-between gap-3 text-xs text-muted">
-              <span>{preview.platform}</span>
+              <PlatformLabel
+                className="font-semibold text-ink"
+                iconSize="sm"
+                platform={previewPlatformId}
+                suffix="图文"
+              />
               <span>{content ? `草稿 #${preview.id}` : loading ? "正在读取最近草稿" : "示例预览"}</span>
             </div>
             <button
@@ -2784,9 +2817,7 @@ function DraftPanel({
             </button>
             <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted">
               <span className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-coral/12 text-coral">
-                  OPC
-                </span>
+                <PlatformIcon platform={previewPlatformId} size="md" />
                 内容运营中枢
               </span>
               <span className="flex items-center gap-3">
@@ -2891,9 +2922,7 @@ function DraftPanel({
             <div className="flex flex-col lg:max-h-[90vh] lg:overflow-y-auto">
               <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-coral/12 text-sm font-bold text-coral">
-                    OPC
-                  </span>
+                  <PlatformIcon platform={previewPlatformId} size="lg" />
                   <div>
                     <div className="text-sm font-semibold">内容运营中枢</div>
                     <div className="text-xs text-muted">发布前预览 - {preview.platform}</div>

@@ -19,6 +19,8 @@ import {
   Sparkles
 } from "lucide-react";
 
+import { PlatformIcon, PlatformLabel } from "@/components/platform-icon";
+
 type MobileTab = "home" | "collect" | "create" | "settings";
 
 const bottomTabs: Array<{ id: MobileTab; icon: typeof Home; label: string }> = [
@@ -202,12 +204,22 @@ function CollectScreen() {
         <div className="mt-3 grid grid-cols-2 gap-2">
           <ModeChip
             active={platform === "xiaohongshu"}
-            label="小红书"
+            label={
+              <span className="flex items-center justify-center gap-2">
+                <PlatformIcon platform="xiaohongshu" size="sm" />
+                小红书
+              </span>
+            }
             onClick={() => setPlatform("xiaohongshu")}
           />
           <ModeChip
             active={platform === "douyin"}
-            label="抖音图文"
+            label={
+              <span className="flex items-center justify-center gap-2">
+                <PlatformIcon platform="douyin" size="sm" />
+                抖音图文
+              </span>
+            }
             onClick={() => setPlatform("douyin")}
           />
         </div>
@@ -261,7 +273,14 @@ function CreateScreen() {
         <div className="mt-3 grid grid-cols-2 gap-2">
           <ModeChip
             active={contentMode === "xiaohongshu"}
-            label="小红书图文"
+            label={
+              <PlatformLabel
+                className="justify-center"
+                iconSize="sm"
+                platform="xiaohongshu"
+                suffix="图文"
+              />
+            }
             onClick={() => setContentMode("xiaohongshu")}
           />
           <ModeChip
@@ -286,9 +305,16 @@ function CreateScreen() {
 
       <MobilePanel title="草稿参考版式" action="非生成结果">
         <div className="rounded-md border border-[#d6e8df] bg-white p-3">
-          <div className="text-xs font-medium text-steel">
-            {contentMode === "xiaohongshu" ? "小红书图文" : "短段正文"}
-          </div>
+          {contentMode === "xiaohongshu" ? (
+            <PlatformLabel
+              className="text-xs font-semibold text-steel"
+              iconSize="sm"
+              platform="xiaohongshu"
+              suffix="图文"
+            />
+          ) : (
+            <div className="text-xs font-medium text-steel">短段正文</div>
+          )}
           <h2 className="mt-2 text-lg font-semibold leading-6">不是先套磁，先想清楚这 3 件事</h2>
           <p className="mt-2 text-sm leading-6 text-muted">
             很多人一上来就急着群发邮件，但研究方向、读博动机和导师匹配没想清楚，反而容易浪费第一印象。
@@ -427,7 +453,7 @@ function ModeChip({
   onClick
 }: {
   active?: boolean;
-  label: string;
+  label: ReactNode;
   onClick: () => void;
 }) {
   return (
