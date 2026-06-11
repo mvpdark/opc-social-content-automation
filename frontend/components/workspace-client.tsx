@@ -862,7 +862,10 @@ function CoverView() {
       <Panel
         action={
           <button
-            className="flex h-9 items-center gap-2 rounded-md bg-ink px-3 text-sm font-medium text-white"
+            aria-label="生成封面，需审核通过后启用"
+            className="flex h-9 items-center gap-2 rounded-md bg-ink px-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-55"
+            disabled
+            title="需审核通过后启用"
             type="button"
           >
             <Image className="h-4 w-4" />
@@ -917,7 +920,10 @@ function DeliveryView() {
               <div className="mt-3 flex items-center justify-between gap-3">
                 <span className="text-xs font-medium text-muted">{action.status}</span>
                 <button
-                  className="glass-control flex h-8 items-center gap-2 rounded-md border px-2 text-xs font-medium text-ink"
+                  aria-label={`${action.command}，需有已批准内容后启用`}
+                  className="glass-control flex h-8 items-center gap-2 rounded-md border px-2 text-xs font-medium text-ink disabled:cursor-not-allowed disabled:opacity-55"
+                  disabled
+                  title="需有已批准内容后启用"
                   type="button"
                 >
                   <action.icon className="h-3.5 w-3.5" />

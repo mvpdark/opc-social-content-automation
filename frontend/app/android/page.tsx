@@ -220,7 +220,12 @@ function CollectScreen() {
             onClick={() => setPlatform("douyin")}
           />
         </div>
-        <button className="mt-3 h-11 w-full rounded-md bg-ink text-sm font-semibold text-white" type="button">
+        <button
+          aria-label="打开搜索，需连接采集任务后启用"
+          className="mt-3 h-11 w-full rounded-md bg-ink text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-55"
+          disabled
+          type="button"
+        >
           打开搜索
         </button>
       </MobilePanel>
@@ -271,7 +276,12 @@ function CreateScreen() {
             onClick={() => setContentMode("short")}
           />
         </div>
-        <button className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-md bg-ink text-sm font-semibold text-white" type="button">
+        <button
+          aria-label="生成图文，需回到 PC 工作台执行"
+          className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-md bg-ink text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-55"
+          disabled
+          type="button"
+        >
           <Sparkles className="h-4 w-4" />
           生成图文
         </button>
@@ -318,10 +328,20 @@ function ReviewScreen() {
                 </span>
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <button className="h-9 rounded-md border border-[#d6e8df] bg-white text-sm font-semibold text-ink" type="button">
+                <button
+                  aria-label="退回，需在 PC 审核工作台处理"
+                  className="h-9 rounded-md border border-[#d6e8df] bg-white text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-55"
+                  disabled
+                  type="button"
+                >
                   退回
                 </button>
-                <button className="h-9 rounded-md bg-ink text-sm font-semibold text-white" type="button">
+                <button
+                  aria-label="通过，需在 PC 审核工作台处理"
+                  className="h-9 rounded-md bg-ink text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-55"
+                  disabled
+                  type="button"
+                >
                   通过
                 </button>
               </div>
