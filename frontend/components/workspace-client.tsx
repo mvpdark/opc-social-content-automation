@@ -188,7 +188,7 @@ const expressionOptions = [
     key: "emoji",
     label: "轻量表情",
     enabled:
-      "每 2-3 段可以放 1 个通用 emoji；必要时可使用公开样本出现过的小红书表情字符码，例如 [笑哭R]、[哭惹R]、[哇R]、[鄙视R]",
+      "每 2-3 段可以放 1 个通用 emoji；必要时可使用 RedNote / 小红书表情字符码，例如 [笑哭R]、[哭惹R]、[哇R]、[赞R]、[doge]",
     disabled: "不使用 emoji、颜文字或小红书表情字符码"
   },
   {
@@ -211,67 +211,494 @@ const expressionOptions = [
   }
 ] as const;
 
-const xhsStyleStickers = [
+type XhsStickerCategory =
+  | "基础情绪"
+  | "互动语气"
+  | "反应吐槽"
+  | "生活种草"
+  | "薯系角色"
+  | "露营户外"
+  | "运动骑行"
+  | "手势互动"
+  | "人群角色"
+  | "发布场景"
+  | "节日符号"
+  | "自然食物"
+  | "爱心文字";
+
+type XhsSticker = {
+  accent: string;
+  aliases?: readonly string[];
+  category: XhsStickerCategory;
+  code: string;
+  cue: string;
+  face: string;
+  label: string;
+  name: string;
+};
+
+const xhsStickerCatalog: readonly {
+  category: XhsStickerCategory;
+  names: readonly string[];
+}[] = [
   {
-    accent: "bg-coral/12 text-coral",
-    code: "[笑哭R]",
-    cue: "适合开头吐槽、轻松化解焦虑",
-    face: "😂",
-    label: "笑哭一下",
-    manualHint: "复制文案保留 [笑哭R]，预览按近似表情显示"
+    category: "基础情绪",
+    names: [
+      "微笑",
+      "害羞",
+      "失望",
+      "汗颜",
+      "哇",
+      "偷笑",
+      "大笑",
+      "哭惹",
+      "笑哭",
+      "笑哭了",
+      "可怜",
+      "皱眉",
+      "生气",
+      "惊恐",
+      "捂脸",
+      "抽泣",
+      "睡觉"
+    ]
   },
   {
-    accent: "bg-amber/14 text-amber",
-    code: "[哭惹R]",
-    cue: "适合提醒读者先别急、先稳住",
-    face: "🥺",
-    label: "软软提醒",
-    manualHint: "复制文案保留 [哭惹R]，预览按近似表情显示"
+    category: "互动语气",
+    names: [
+      "赞",
+      "棒",
+      "超喜欢",
+      "亲一个",
+      "飞吻",
+      "吧唧",
+      "萌萌哒",
+      "心心眼",
+      "嘻嘻",
+      "得意"
+    ]
   },
   {
-    accent: "bg-steel/12 text-steel",
-    code: "[汗颜R]",
-    cue: "适合清单、步骤、重点提示",
-    face: "😅",
-    label: "汗颜提醒",
-    manualHint: "复制文案保留 [汗颜R]，预览按近似表情显示"
+    category: "反应吐槽",
+    names: [
+      "doge",
+      "鄙视",
+      "斜眼",
+      "抓狂",
+      "抠鼻",
+      "尬住",
+      "呃",
+      "叹气",
+      "扶额",
+      "扶墙",
+      "扯脸",
+      "石化",
+      "捂嘴笑",
+      "暗中观察",
+      "再见",
+      "坏笑"
+    ]
   },
   {
-    accent: "bg-moss/12 text-moss",
-    code: "[点赞R]",
-    cue: "适合正向鼓励、给行动建议",
-    face: "👍",
-    label: "点头通过",
-    manualHint: "复制文案保留 [点赞R]，预览按近似表情显示"
+    category: "生活种草",
+    names: [
+      "买爆",
+      "种草",
+      "拔草",
+      "吃瓜",
+      "喝奶茶",
+      "自拍",
+      "冰淇淋",
+      "棒棒糖",
+      "吃粽子",
+      "吐舌头",
+      "派对",
+      "蹲后续"
+    ]
   },
   {
-    accent: "bg-coral/12 text-coral",
-    code: "[哇R]",
-    cue: "适合学姐口吻、经验复盘",
-    face: "😮",
-    label: "哇一下",
-    manualHint: "复制文案保留 [哇R]，预览按近似表情显示"
+    category: "薯系角色",
+    names: ["黄金薯", "黑薯问号", "变猪猪", "完啦", "泪崩", "色色"]
   },
   {
-    accent: "bg-amber/14 text-amber",
-    code: "[doge]",
-    cue: "适合结尾收藏、转发、备用",
-    face: "😏",
-    label: "轻松收尾",
-    manualHint: "复制文案保留 [doge]，预览按近似表情显示"
+    category: "露营户外",
+    names: ["天幕", "卡式炉", "折叠椅", "营地车", "露营灯", "露营", "渔夫帽", "登山鞋", "背包", "马甲"]
   },
   {
-    accent: "bg-steel/12 text-steel",
-    code: "[鄙视R]",
-    cue: "适合轻微吐槽，但营销文案里要少用",
-    face: "🙄",
-    label: "轻微吐槽",
-    manualHint: "复制文案保留 [鄙视R]，预览按近似表情显示"
+    category: "运动骑行",
+    names: ["骑行服", "手套", "头盔", "风镜", "公路车", "折叠车", "飞盘", "冲浪板", "双翘滑板", "陆冲板", "长板"]
+  },
+  {
+    category: "手势互动",
+    names: ["点赞", "向右", "合十", "ok", "加油", "握手", "鼓掌", "弱", "耶", "抱拳", "勾引", "拳头", "拥抱", "举手"]
+  },
+  {
+    category: "人群角色",
+    names: ["猪头", "老虎", "集美", "仙女", "红书"]
+  },
+  {
+    category: "发布场景",
+    names: [
+      "开箱",
+      "探店",
+      "ootd",
+      "同款",
+      "打卡",
+      "飞机",
+      "拍立得",
+      "薯券",
+      "优惠券",
+      "购物车",
+      "kiss",
+      "礼物",
+      "生日蛋糕",
+      "私信",
+      "请文明",
+      "请友好",
+      "氛围感",
+      "清单",
+      "电影",
+      "学生党"
+    ]
+  },
+  {
+    category: "节日符号",
+    names: [
+      "彩虹",
+      "爆炸",
+      "炸弹",
+      "火",
+      "啤酒",
+      "咖啡",
+      "钱袋",
+      "流汗",
+      "发",
+      "红包",
+      "福",
+      "鞭炮",
+      "庆祝",
+      "烟花",
+      "气球",
+      "看",
+      "新月",
+      "满月",
+      "大便",
+      "太阳",
+      "晚安",
+      "星"
+    ]
+  },
+  {
+    category: "自然食物",
+    names: ["玫瑰", "凋谢", "郁金香", "樱花", "海豚", "放大镜", "刀", "辣椒", "黄瓜", "葡萄", "草莓", "桃子", "红薯", "栗子"]
+  },
+  {
+    category: "爱心文字",
+    names: [
+      "红色心形",
+      "黄色心形",
+      "绿色心形",
+      "蓝色心形",
+      "紫色心形",
+      "爱心",
+      "两颗心",
+      "浅肤色",
+      "中浅肤色",
+      "中等肤色",
+      "中深肤色",
+      "有",
+      "可",
+      "蹲",
+      "零",
+      "一",
+      "二",
+      "三",
+      "四",
+      "五",
+      "六",
+      "七",
+      "八",
+      "九",
+      "加一",
+      "满",
+      "禁"
+    ]
   }
 ] as const;
 
-const xhsStickerByCode = new Map<string, (typeof xhsStyleStickers)[number]>(
-  xhsStyleStickers.map((sticker) => [sticker.code, sticker])
+const xhsStickerAccentByCategory: Record<XhsStickerCategory, string> = {
+  基础情绪: "bg-coral/12 text-coral",
+  互动语气: "bg-moss/12 text-moss",
+  反应吐槽: "bg-steel/12 text-steel",
+  生活种草: "bg-amber/14 text-amber",
+  薯系角色: "bg-blue/12 text-blue",
+  露营户外: "bg-moss/12 text-moss",
+  运动骑行: "bg-blue/12 text-blue",
+  手势互动: "bg-coral/12 text-coral",
+  人群角色: "bg-amber/14 text-amber",
+  发布场景: "bg-steel/12 text-steel",
+  节日符号: "bg-coral/12 text-coral",
+  自然食物: "bg-moss/12 text-moss",
+  爱心文字: "bg-blue/12 text-blue"
+};
+
+const xhsStickerFaceByName: Record<string, string> = {
+  doge: "😏",
+  买爆: "🛍️",
+  亲一个: "😘",
+  偷笑: "🤭",
+  再见: "👋",
+  冰淇淋: "🍦",
+  变猪猪: "🐽",
+  可怜: "🥺",
+  叹气: "😮‍💨",
+  吃瓜: "🍉",
+  吃粽子: "🍙",
+  吐舌头: "😛",
+  吧唧: "😚",
+  呃: "😶",
+  哇: "😮",
+  哭惹: "🥺",
+  喝奶茶: "🧋",
+  嘻嘻: "😁",
+  坏笑: "😈",
+  大笑: "😆",
+  失望: "😞",
+  完啦: "😵",
+  害羞: "☺️",
+  尬住: "😬",
+  得意: "😌",
+  微笑: "🙂",
+  心心眼: "😍",
+  惊恐: "😱",
+  扯脸: "🫠",
+  扶墙: "🫨",
+  扶额: "🤦",
+  抓狂: "😫",
+  抠鼻: "🙄",
+  抽泣: "😢",
+  拔草: "🌱",
+  捂嘴笑: "🤭",
+  捂脸: "🤦",
+  斜眼: "😒",
+  暗中观察: "👀",
+  棒: "👌",
+  棒棒糖: "🍭",
+  汗颜: "😅",
+  泪崩: "😭",
+  派对: "🥳",
+  生气: "😠",
+  皱眉: "😟",
+  睡觉: "😴",
+  石化: "🪨",
+  种草: "🌿",
+  笑哭: "😂",
+  笑哭了: "🤣",
+  自拍: "🤳",
+  色色: "😍",
+  萌萌哒: "🥰",
+  赞: "👍",
+  超喜欢: "💗",
+  蹲后续: "🪑",
+  鄙视: "🙄",
+  飞吻: "😘",
+  黄金薯: "🥔",
+  黑薯问号: "❓",
+  天幕: "⛺",
+  卡式炉: "🍳",
+  折叠椅: "🪑",
+  营地车: "🛒",
+  露营灯: "🏮",
+  露营: "⛺",
+  渔夫帽: "👒",
+  登山鞋: "🥾",
+  背包: "🎒",
+  马甲: "🦺",
+  骑行服: "🚴",
+  手套: "🧤",
+  头盔: "🪖",
+  风镜: "🥽",
+  公路车: "🚲",
+  折叠车: "🚲",
+  飞盘: "🥏",
+  冲浪板: "🏄",
+  双翘滑板: "🛹",
+  陆冲板: "🛹",
+  长板: "🛹",
+  点赞: "👍",
+  向右: "👉",
+  合十: "🙏",
+  ok: "👌",
+  加油: "💪",
+  握手: "🤝",
+  鼓掌: "👏",
+  弱: "👎",
+  耶: "✌️",
+  抱拳: "🙏",
+  勾引: "👆",
+  拳头: "✊",
+  拥抱: "🤗",
+  举手: "🙋",
+  猪头: "🐷",
+  老虎: "🐯",
+  集美: "👭",
+  仙女: "🧚",
+  红书: "📕",
+  开箱: "📦",
+  探店: "🏬",
+  ootd: "👗",
+  同款: "🧩",
+  打卡: "📍",
+  飞机: "✈️",
+  拍立得: "📸",
+  薯券: "🎫",
+  优惠券: "🎟️",
+  购物车: "🛒",
+  kiss: "💋",
+  礼物: "🎁",
+  生日蛋糕: "🎂",
+  私信: "💌",
+  请文明: "🛡️",
+  请友好: "🤝",
+  氛围感: "✨",
+  清单: "📝",
+  电影: "🎬",
+  学生党: "🎓",
+  彩虹: "🌈",
+  爆炸: "💥",
+  炸弹: "💣",
+  火: "🔥",
+  啤酒: "🍺",
+  咖啡: "☕",
+  钱袋: "💰",
+  流汗: "💦",
+  发: "🧧",
+  红包: "🧧",
+  福: "🧧",
+  鞭炮: "🧨",
+  庆祝: "🎉",
+  烟花: "🎆",
+  气球: "🎈",
+  看: "👀",
+  新月: "🌙",
+  满月: "🌕",
+  大便: "💩",
+  太阳: "☀️",
+  晚安: "🌙",
+  星: "⭐",
+  玫瑰: "🌹",
+  凋谢: "🥀",
+  郁金香: "🌷",
+  樱花: "🌸",
+  海豚: "🐬",
+  放大镜: "🔍",
+  刀: "🔪",
+  辣椒: "🌶️",
+  黄瓜: "🥒",
+  葡萄: "🍇",
+  草莓: "🍓",
+  桃子: "🍑",
+  红薯: "🍠",
+  栗子: "🌰",
+  红色心形: "❤️",
+  黄色心形: "💛",
+  绿色心形: "💚",
+  蓝色心形: "💙",
+  紫色心形: "💜",
+  爱心: "♥️",
+  两颗心: "💕",
+  浅肤色: "🏻",
+  中浅肤色: "🏼",
+  中等肤色: "🏽",
+  中深肤色: "🏾",
+  有: "有",
+  可: "可",
+  蹲: "蹲",
+  零: "0",
+  一: "1",
+  二: "2",
+  三: "3",
+  四: "4",
+  五: "5",
+  六: "6",
+  七: "7",
+  八: "8",
+  九: "9",
+  加一: "+1",
+  满: "满",
+  禁: "禁"
+};
+
+const xhsStickerCueByName: Record<string, string> = {
+  doge: "轻松收尾、开玩笑、降低营销感",
+  买爆: "种草强烈、适合福利和清单结尾",
+  可怜: "软化催促、降低距离感",
+  哇: "经验复盘、发现感、惊喜感",
+  哭惹: "提醒读者先别急、先稳住",
+  喝奶茶: "生活化过渡，适合女性可爱风",
+  大笑: "轻松吐槽，适合反常识开头",
+  汗颜: "清单、步骤、避坑提醒",
+  笑哭: "开头吐槽、轻松化解焦虑",
+  笑哭了: "更强的吐槽节奏，少量使用",
+  赞: "正向鼓励、行动建议、收藏提示",
+  蹲后续: "引导评论和关注后续",
+  鄙视: "轻微吐槽，营销文案里谨慎使用",
+  暗中观察: "制造悬念，适合案例预告",
+  种草: "推荐、清单、服务卖点引出",
+  超喜欢: "可爱夸张的好感表达"
+};
+
+const xhsStickerCodeByName: Record<string, string> = {
+  doge: "[doge]",
+  蹲后续: "[蹲后续H]",
+  吐舌头: "[吐舌头H]",
+  扯脸: "[扯脸H]"
+};
+
+const xhsStickerAliasesByName: Record<string, readonly string[]> = {
+  蹲后续: ["[蹲后续R]"]
+};
+
+const xhsFeaturedStickerNames = [
+  "笑哭",
+  "哭惹",
+  "哇",
+  "汗颜",
+  "赞",
+  "doge",
+  "买爆",
+  "种草",
+  "喝奶茶",
+  "暗中观察",
+  "蹲后续",
+  "鄙视"
+] as const;
+
+const xhsStyleStickers: XhsSticker[] = xhsStickerCatalog.flatMap((group) =>
+  group.names.map((name) => ({
+    accent: xhsStickerAccentByCategory[group.category],
+    aliases: xhsStickerAliasesByName[name],
+    category: group.category,
+    code: xhsStickerCodeByName[name] ?? `[${name}R]`,
+    cue: xhsStickerCueByName[name] ?? `${group.category}类 RedNote 表情字符码`,
+    face: xhsStickerFaceByName[name] ?? "💬",
+    label: name,
+    name
+  }))
+);
+
+const xhsFeaturedStickers = xhsFeaturedStickerNames
+  .map((name) => xhsStyleStickers.find((sticker) => sticker.name === name))
+  .filter(Boolean) as XhsSticker[];
+
+const xhsStickerByName = new Map<string, XhsSticker>(
+  xhsStyleStickers.map((sticker) => [sticker.name, sticker])
+);
+
+const xhsStickerByCode = new Map<string, XhsSticker>(
+  xhsStyleStickers.flatMap((sticker) =>
+    [sticker.code, ...(sticker.aliases ?? [])].map((code) => [code, sticker] as const)
+  )
 );
 
 function buildWritingTone(
@@ -430,10 +857,10 @@ function renderXhsExpressionText(text: string) {
       <span
         className="mx-0.5 inline-flex translate-y-[2px] items-center gap-1 rounded-md border border-coral/20 bg-coral/10 px-1.5 py-0.5 text-xs font-semibold text-ink"
         key={`${part}-${index}`}
-        title={`${part}：本地近似预览，复制后仍保留原字符码`}
+        title={`${part}：${sticker.name}，本地近似预览，复制后仍保留原字符码`}
       >
         <span aria-hidden="true">{sticker.face}</span>
-        <span>{sticker.code}</span>
+        <span>{part}</span>
       </span>
     );
   });
@@ -1601,6 +2028,8 @@ function GeneratedPostExportCard({ content }: { content: GeneratedContent }) {
 }
 
 function XhsStyleStickerTray({ compact = false }: { compact?: boolean }) {
+  const displayStickers = compact ? xhsFeaturedStickers.slice(0, 6) : xhsFeaturedStickers;
+
   return (
     <div
       className={[
@@ -1611,19 +2040,19 @@ function XhsStyleStickerTray({ compact = false }: { compact?: boolean }) {
     >
       <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="text-sm font-semibold text-ink">红书风原创表情展示</div>
+          <div className="text-sm font-semibold text-ink">小红书表情字符码</div>
           <p className="mt-1 text-xs leading-5 text-muted">
-            按公开样本出现过的 RedNote 表情字符码做本地近似预览；复制时保留字符码，发布前请在小红书输入框实测。
+            按 RedNote / 小红书公开短码和表情图片目录整理；复制时保留字符码，粘贴到小红书后由小红书识别成表情。
           </p>
         </div>
-        <Pill tone="blue">样本核验</Pill>
+        <Pill tone="blue">{xhsStickerByCode.size} 个码</Pill>
       </div>
       <div className="mt-3 rounded-md border border-coral/20 bg-coral/10 px-3 py-2 text-xs leading-6 text-ink">
-        效果示例：{renderXhsExpressionText("先别急 [笑哭R] 先把方向想清楚 [点赞R]")}
+        效果示例：{renderXhsExpressionText("先别急 [笑哭R] 先把方向想清楚 [赞R]，我在这蹲后续 [蹲后续H]")}
       </div>
       {!compact ? (
         <div className="mt-2 text-[11px] leading-5 text-muted">
-          说明：这里不使用官方表情包图片资产；本地只做近似视觉预览，最终以小红书发布页识别结果为准。
+          说明：这里不复制官方图片资产；本地只做近似视觉预览，最终以小红书发布框识别结果为准。
         </div>
       ) : null}
       <div
@@ -1632,10 +2061,10 @@ function XhsStyleStickerTray({ compact = false }: { compact?: boolean }) {
           compact ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2 lg:grid-cols-3"
         ].join(" ")}
       >
-        {xhsStyleStickers.map((sticker) => (
+        {displayStickers.map((sticker) => (
           <div
             className="glass-subtle rounded-md border px-3 py-3"
-            key={sticker.label}
+            key={sticker.code}
           >
             <div className="flex items-center gap-3">
               <span
@@ -1651,12 +2080,45 @@ function XhsStyleStickerTray({ compact = false }: { compact?: boolean }) {
             </div>
             {!compact ? (
               <div className="mt-2 border-l-2 border-coral/40 pl-2 text-[11px] leading-4 text-muted">
-                {sticker.cue}。{sticker.manualHint}
+                {sticker.cue}。复制文案保留 {sticker.code}，预览按近似表情显示。
               </div>
             ) : null}
           </div>
         ))}
       </div>
+      {!compact ? (
+        <div className="mt-4 rounded-md border border-line bg-paper/55 p-3">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <span className="text-xs font-semibold text-ink">完整 RedNote 名录</span>
+            <span className="text-[11px] text-muted">点进预览后复制正文，字符码会原样保留</span>
+          </div>
+          <div className="space-y-3">
+            {xhsStickerCatalog.map((group) => (
+              <div key={group.category}>
+                <div className="mb-1 text-[11px] font-medium text-muted">{group.category}</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {group.names.map((name) => {
+                    const sticker = xhsStickerByName.get(name);
+                    if (!sticker) {
+                      return null;
+                    }
+                    return (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-md border border-line bg-mist/60 px-2 py-1 font-mono text-[11px] leading-4 text-ink"
+                        key={sticker.code}
+                        title={`${sticker.name}：${sticker.code}`}
+                      >
+                        <span aria-hidden="true">{sticker.face}</span>
+                        <span>{sticker.code}</span>
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
