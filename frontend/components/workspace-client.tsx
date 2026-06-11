@@ -755,6 +755,21 @@ type ProviderCheckResult = {
   target: string;
 };
 
+async function fetchProviderStatuses() {
+  const response = await fetch(`${API_BASE}/workspace/provider-status`);
+  if (!response.ok) {
+    throw new Error(await readApiError(response, "服务状态读取失败。"));
+  }
+  return (await response.json()) as ProviderStatusItem[];
+}
+
+function hasLiveImageProvider(statuses: ProviderStatusItem[]) {
+  const imageProviderStatus = statuses.find((item) => item.name === "Image generation");
+  return Boolean(
+    imageProviderStatus?.configured && imageProviderStatus.provider !== "codex_test"
+  );
+}
+
 const blockedPublishTerms = [
   "保录",
   "包过",
@@ -1557,6 +1572,7 @@ function ContentView({
   return (
     <div className="space-y-4">
       <GenerationLauncher
+        latestContent={previewContent}
         onGeneratedContent={handleGeneratedContent}
         onOpenSettings={onOpenSettings}
         workspaceToken={workspaceToken}
@@ -1594,10 +1610,12 @@ function ContentView({
 }
 
 function GenerationLauncher({
+  latestContent,
   onGeneratedContent,
   onOpenSettings,
   workspaceToken
 }: {
+  latestContent: GeneratedContent | null;
   onGeneratedContent: (content: GeneratedContent) => void;
   onOpenSettings: () => void;
   workspaceToken: string;
@@ -1631,6 +1649,7 @@ function GenerationLauncher({
   );
   const draftProviderBlocked = draftProviderMissing || draftProviderCheckFailed;
   const canGenerate = hasTopic && busyAction === null && !draftProviderBlocked;
+  const exportContent = lastContent ?? latestContent;
   const generateButtonLabel = !hasTopic
       ? "先填写选题"
       : draftProviderMissing
@@ -1655,7 +1674,7 @@ function GenerationLauncher({
   const primaryGenerateLabel =
     busyAction === "draft"
       ? "正在生产草稿"
-      : lastContent
+      : exportContent
         ? "重新生产草稿"
         : generateButtonLabel;
   const providerDisplayItems = [
@@ -1666,15 +1685,10 @@ function GenerationLauncher({
     ...item,
     status: providerStatuses.find((statusItem) => statusItem.name === item.name)
   }));
-  const imageProviderStatus = providerStatuses.find(
-    (item) => item.name === "Image generation"
-  );
   const rewriteProviderStatus = providerStatuses.find(
     (item) => item.name === "Humanization rewrite"
   );
-  const liveImageProviderReady = Boolean(
-    imageProviderStatus?.configured && imageProviderStatus.provider !== "codex_test"
-  );
+  const liveImageProviderReady = hasLiveImageProvider(providerStatuses);
   const rewriteProviderReady = Boolean(rewriteProviderStatus?.configured);
 
   function authHeaders() {
@@ -1684,16 +1698,24 @@ function GenerationLauncher({
     };
   }
 
+  async function refreshProviderStatuses() {
+    try {
+      const data = await fetchProviderStatuses();
+      setProviderStatuses(data);
+      setProviderStatusError(null);
+      return data;
+    } catch (error) {
+      setProviderStatusError(error instanceof Error ? error.message : "服务状态读取失败。");
+      return null;
+    }
+  }
+
   useEffect(() => {
     let active = true;
 
     async function loadProviderStatuses() {
       try {
-        const response = await fetch(`${API_BASE}/workspace/provider-status`);
-        if (!response.ok) {
-          throw new Error(await readApiError(response, "服务状态读取失败。"));
-        }
-        const data = (await response.json()) as ProviderStatusItem[];
+        const data = await fetchProviderStatuses();
         if (active) {
           setProviderStatuses(data);
           setProviderStatusError(null);
@@ -1854,8 +1876,8 @@ function GenerationLauncher({
     <div data-testid="generation-launcher">
       <Panel
         action={
-          <Pill tone={lastContent ? "green" : "blue"}>
-            {lastContent ? `草稿 #${lastContent.id}` : "主入口"}
+          <Pill tone={exportContent ? "green" : "blue"}>
+            {exportContent ? `草稿 #${exportContent.id}` : "主入口"}
           </Pill>
         }
         helper="生成只创建草稿，不会自动发布；单独确认页暂时隐藏，发布前仍需人工确认。"
@@ -1864,8 +1886,8 @@ function GenerationLauncher({
         <div className="mb-4 rounded-md border border-steel/40 bg-steel/10 p-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <Pill tone={lastContent ? "green" : "blue"}>
-                {lastContent ? `草稿 #${lastContent.id}` : "生产入口"}
+              <Pill tone={exportContent ? "green" : "blue"}>
+                {exportContent ? `草稿 #${exportContent.id}` : "生产入口"}
               </Pill>
               <h3 className="mt-3 text-lg font-semibold leading-6 text-ink">
                 选题确认后，点这里开始生产
@@ -2096,11 +2118,12 @@ function GenerationLauncher({
             </div>
           </div>
         </div>
-        {lastContent ? (
+        {exportContent ? (
           <GeneratedPostExportCard
-            content={lastContent}
+            content={exportContent}
             imageProviderReady={liveImageProviderReady}
             onOpenSettings={onOpenSettings}
+            onRefreshProviderStatuses={refreshProviderStatuses}
             workspaceToken={workspaceToken}
           />
         ) : null}
@@ -2113,11 +2136,13 @@ function GeneratedPostExportCard({
   content,
   imageProviderReady,
   onOpenSettings,
+  onRefreshProviderStatuses,
   workspaceToken
 }: {
   content: GeneratedContent;
   imageProviderReady: boolean;
   onOpenSettings: () => void;
+  onRefreshProviderStatuses: () => Promise<ProviderStatusItem[] | null>;
   workspaceToken: string;
 }) {
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
@@ -2127,7 +2152,7 @@ function GeneratedPostExportCard({
   const warnings = complianceWarnings(content);
   const testDraft = isTestDraft(content);
   const canCopy = !testDraft;
-  const canGenerateImage = canCopy && imageProviderReady && !imageBusy;
+  const canGenerateImage = canCopy && !imageBusy;
   const copyPayload = buildPlatformCopy(content);
   const tagLine = formatTagLine(content.tags);
   const imagePreviewUrl = imageAsset ? resolveAssetUrl(imageAsset.image_url) : null;
@@ -2138,6 +2163,13 @@ function GeneratedPostExportCard({
     ? douyinHighAttractionCoverStyle
     : xhsHighAttractionCoverStyle;
   const coverTemplate = isDouyinPost ? "douyin-cover" : "xiaohongshu-cover";
+  const imageButtonLabel = imageBusy
+    ? "正在生成封面"
+    : imageAsset
+      ? "重新生成封面"
+      : imageProviderReady
+        ? "生成封面图"
+        : "检测并生成封面";
 
   function authHeaders() {
     return {
@@ -2160,18 +2192,22 @@ function GeneratedPostExportCard({
   }
 
   async function handleGenerateImage() {
-    if (!canGenerateImage) {
-      setImageError(
-        imageProviderReady
-          ? "当前草稿不可生成封面图。"
-          : "图片服务还没有配置真实 API Key，请先到设置页应用 image2 Key。"
-      );
+    if (!canCopy) {
+      setImageError("测试草稿不可生成封面图，请先生成一篇真实草稿。");
       return;
     }
 
     setImageBusy(true);
     setImageError(null);
     try {
+      const refreshedStatuses = imageProviderReady
+        ? null
+        : await onRefreshProviderStatuses();
+      const refreshedImageProviderReady = imageProviderReady ||
+        hasLiveImageProvider(refreshedStatuses ?? []);
+      if (!refreshedImageProviderReady) {
+        throw new Error("图片服务还没有通过真实配置检测，请先到设置页应用 image2 Key 后再点生成封面图。");
+      }
       const response = await fetch(`${API_BASE}/image/generate`, {
         method: "POST",
         headers: authHeaders(),
@@ -2207,23 +2243,35 @@ function GeneratedPostExportCard({
             </div>
             <h3 className="mt-3 text-xl font-semibold leading-7">{content.title}</h3>
           </div>
-          <button
-            className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={!canCopy}
-            onClick={handleCopy}
-            type="button"
-          >
-            {copyState === "copied" ? (
-              <CheckCircle2 className="h-4 w-4" />
-            ) : (
-              <Clipboard className="h-4 w-4" />
-            )}
-            {testDraft
-              ? "测试草稿不可复制"
-              : copyState === "copied"
-                ? "已复制"
-                : `一键复制${platformLabel}文案`}
-          </button>
+          <div className="flex shrink-0 flex-col gap-2 sm:min-w-48">
+            <button
+              className="flex h-10 items-center justify-center gap-2 rounded-md bg-steel px-4 text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-55"
+              data-testid="cover-generate-button"
+              disabled={!canGenerateImage}
+              onClick={handleGenerateImage}
+              type="button"
+            >
+              {imageBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Image className="h-4 w-4" />}
+              {imageButtonLabel}
+            </button>
+            <button
+              className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={!canCopy}
+              onClick={handleCopy}
+              type="button"
+            >
+              {copyState === "copied" ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <Clipboard className="h-4 w-4" />
+              )}
+              {testDraft
+                ? "测试草稿不可复制"
+                : copyState === "copied"
+                  ? "已复制"
+                  : `一键复制${platformLabel}文案`}
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 rounded-md border border-line bg-mist/70 p-4">
@@ -2297,18 +2345,19 @@ function GeneratedPostExportCard({
             ) : null}
             <button
               className="flex h-10 items-center justify-center gap-2 rounded-md bg-steel px-4 text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-55"
+              data-testid="cover-generate-button-secondary"
               disabled={!canGenerateImage}
               onClick={handleGenerateImage}
               type="button"
             >
               {imageBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Image className="h-4 w-4" />}
-              {imageBusy ? "正在生成封面" : imageAsset ? "重新生成封面" : "生成封面图"}
+              {imageButtonLabel}
             </button>
           </div>
         </div>
         {!imageProviderReady ? (
           <div className="mt-3 rounded-md border border-amber/40 bg-amber/10 p-3 text-xs leading-5 text-ink">
-            当前未检测到真实图片服务。为避免假图，界面不会调用测试 SVG provider。
+            点击生成时会重新检测真实图片服务；检测未通过不会创建假图。
           </div>
         ) : null}
         {imageError ? (
