@@ -462,6 +462,72 @@ export const externalSkillCandidates = [
     summary: "托管 MCP，支持搜索、热榜、笔记详情、评论和博主信息，适合低频只读调研。",
     guardrail: "需要第三方 API Key；接入前确认数据来源、费用和隐私条款。",
     icon: ShieldCheck
+  },
+  {
+    title: "RedNote MCP",
+    source: "MilesCool/rednote-mcp",
+    href: "https://github.com/MilesCool/rednote-mcp",
+    module: "只读检索 / 竞品素材",
+    status: "优先试点",
+    license: "MIT",
+    summary: "MCP 形式的小红书搜索与内容提取工具，返回标题、正文、作者、互动数、图片和标签。",
+    guardrail: "首次需要人工登录；只接只读搜索和详情抽取，不允许默认评论、点赞或发布。",
+    icon: Search
+  },
+  {
+    title: "xiaohongshu-text-image",
+    source: "buptweixin/xiaohongshu_skills",
+    href: "https://github.com/buptweixin/xiaohongshu_skills",
+    module: "封面 / 轮播卡片",
+    status: "可选接入",
+    license: "需确认",
+    summary: "面向小红书封面、标题卡、轮播页和 CTA 卡的文本图生成 Skill，输出 SVG/PNG/JPG。",
+    guardrail: "PNG/JPG 依赖 macOS Swift；Windows 安装包阶段优先借鉴 JSON 规格和 SVG 渲染思路。",
+    icon: LayoutTemplate
+  },
+  {
+    title: "xhs-cover-mcp",
+    source: "xwchris/xhs-cover-mcp",
+    href: "https://github.com/xwchris/xhs-cover-mcp",
+    module: "封面 MCP",
+    status: "候选服务",
+    license: "需确认",
+    summary: "MCP Server 形式的小红书封面生成器，可用 npx 启动，适合做封面工作台的外部渲染器候选。",
+    guardrail: "先确认许可证、字体素材、图片输出归属和 Windows 打包方式；不要替代人工复核。",
+    icon: Image
+  },
+  {
+    title: "xhs-skill",
+    source: "leeguooooo/xhs-skill",
+    href: "https://github.com/leeguooooo/xhs-skill",
+    module: "发布门禁 / 登录流程参考",
+    status: "只做外部工具",
+    license: "MIT",
+    summary: "强调二维码登录、Cookie 归一化、发布前门禁校验和内容审核，适合参考发布安全链路。",
+    guardrail: "当前不接自动发布；只吸收 payload 校验、真实话题池、发布前人工确认等门禁设计。",
+    icon: ShieldCheck
+  },
+  {
+    title: "139 Xiaohongshu Skills",
+    source: "vivy-yi/xiaohongshu-skills",
+    href: "https://github.com/vivy-yi/xiaohongshu-skills",
+    module: "运营技能库参考",
+    status: "可选接入",
+    license: "需确认",
+    summary: "覆盖内容创作、账号运营、互动运营、数据分析、电商转化、规则、工具生态和增长策略。",
+    guardrail: "先当运营知识目录和 prompt 结构参考；逐项确认质量与许可证后再拆分接入。",
+    icon: BookOpenText
+  },
+  {
+    title: "skills CLI",
+    source: "vercel-labs/skills",
+    href: "https://github.com/vercel-labs/skills",
+    module: "技能发现 / 安装工具",
+    status: "可选外部调用",
+    license: "需确认",
+    summary: "开放 Agent Skills 安装与使用工具，支持 Codex、Claude Code、OpenCode、Cursor 等环境。",
+    guardrail: "只用于列出和拉取候选 Skill；接入前仍需人工审查来源、许可证和脚本权限。",
+    icon: Sparkles
   }
 ] as const;
 
