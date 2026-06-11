@@ -663,22 +663,9 @@ function GenerationLauncher({
     <div data-testid="generation-launcher">
       <Panel
         action={
-          <button
-            aria-label={primaryGenerateLabel}
-            className="flex h-9 shrink-0 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-60"
-            data-testid="start-production-header-button"
-            disabled={!canGenerate}
-            onClick={generateDraft}
-            title={generateButtonTitle}
-            type="button"
-          >
-            {busyAction === "draft" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <PenLine className="h-4 w-4" />
-            )}
-            {primaryGenerateLabel}
-          </button>
+          <Pill tone={lastContent ? "green" : "blue"}>
+            {lastContent ? `草稿 #${lastContent.id}` : "主入口"}
+          </Pill>
         }
         helper="生成只创建草稿，不会自动发布；通过人工审核后才进入封面和交付。"
         title="开始生产图文"
