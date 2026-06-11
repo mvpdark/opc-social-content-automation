@@ -208,6 +208,15 @@ npm run dev
 
 ## Verification
 
+Run the full local release gate before committing or pushing code changes:
+
+```bash
+python scripts/verify_release.py
+```
+
+This runs project contracts, backend tests, and the frontend typecheck/build.
+For urgent backend-only checks, use the focused commands below.
+
 Project structure and safety checks:
 
 ```bash
@@ -220,11 +229,11 @@ Backend tests:
 python -m pytest backend/tests
 ```
 
-Frontend typecheck:
+Frontend typecheck and production build:
 
 ```bash
 cd frontend
-npm run typecheck
+npm run verify
 ```
 
 ## Safety Rules

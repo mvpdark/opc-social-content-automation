@@ -216,6 +216,63 @@ def validate_frontend_design_contract() -> int:
     return len(tab_ids) + len(style_ids) + len(referenced_styles) + len(generation_flow_snippets)
 
 
+def validate_content_production_contract() -> int:
+    workspace_text = (
+        ROOT / "frontend" / "components" / "workspace-client.tsx"
+    ).read_text(encoding="utf-8")
+    image_service_text = (
+        ROOT / "backend" / "app" / "services" / "image_service.py"
+    ).read_text(encoding="utf-8")
+
+    frontend_contract_snippets = [
+        "latestContent={previewContent}",
+        "const exportContent = lastContent ?? latestContent;",
+        "onImageGenerated={onImageGenerated}",
+        "onRefreshProviderStatuses={refreshProviderStatuses}",
+        "fetchProviderStatuses",
+        "hasLiveImageProvider",
+        'data-testid="cover-generate-button"',
+        'data-testid="cover-generate-button-secondary"',
+        'data-testid="xhs-preview-real-cover"',
+        "const canGenerateImage = canCopy && !imageBusy;",
+        "检测并生成封面",
+        "/image/generate",
+        "/image/list?content_id=",
+        "coverImageAsset",
+        "isGeneratedImageAsset",
+        "/content/rewrite",
+        "Humanization rewrite",
+        "本次未走 DeepSeek",
+    ]
+    backend_contract_snippets = [
+        'IMAGE_GENERATABLE_STATUSES = {"draft", "rewritten", "review_pending", "approved"}',
+        'status="generated" if content.status == "approved" else "needs_review"',
+        "model_router.image_model",
+    ]
+
+    total = 0
+    for snippet in frontend_contract_snippets:
+        total += 1
+        if snippet not in workspace_text:
+            raise SystemExit(f"Missing content production frontend contract: {snippet}")
+    for snippet in backend_contract_snippets:
+        total += 1
+        if snippet not in image_service_text:
+            raise SystemExit(f"Missing content production backend contract: {snippet}")
+
+    stale_gate_snippets = [
+        "Only human-approved content can be used for image generation.",
+        "canCopy && imageProviderReady && !imageBusy",
+        "封面仍是版式预览，真实图片生成后会在这里替换。\" :",
+    ]
+    for snippet in stale_gate_snippets:
+        total += 1
+        if snippet in workspace_text or snippet in image_service_text:
+            raise SystemExit(f"Stale content production gate still present: {snippet}")
+
+    return total
+
+
 def clean_pycache() -> int:
     count = 0
     for cache_dir in ROOT.rglob("__pycache__"):
@@ -241,6 +298,7 @@ def main() -> None:
         "migration_chain_checked": validate_migration_chain(),
         "safety_gates_checked": validate_safety_gates(),
         "frontend_design_contract_checked": validate_frontend_design_contract(),
+        "content_production_contract_checked": validate_content_production_contract(),
     }
     if not args.keep_cache:
         results["removed_pycache_dirs"] = clean_pycache()
