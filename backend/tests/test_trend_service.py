@@ -3,8 +3,10 @@ from fastapi import HTTPException
 
 from app.models.trend_content import TrendContent
 from app.schemas.trend import TrendCollectionJobCreate
+from app.schemas.trend import TrendLinkImportRequest
 from app.schemas.trend import TrendKnowledgeDigestRequest
 from app.services.trend_service import (
+    build_xhs_link_import_target,
     build_platform_search_target,
     build_safety_profile,
     ensure_trend_sources_reviewed,
@@ -21,6 +23,43 @@ def test_build_platform_search_target_encodes_keyword() -> None:
     assert target.requires_manual_login is False
     assert target.automation_mode == "public_first_visible_browser"
     assert any("Do not bypass" in note for note in target.safety_notes)
+
+
+def test_build_xhs_link_import_target_extracts_supported_links() -> None:
+    target = build_xhs_link_import_target(
+        TrendLinkImportRequest(
+            raw_text=(
+                "看看这篇 https://www.xiaohongshu.com/explore/abc123?xsec_token=token "
+                "还有短链 https://xhslink.com/a/b，其他 https://example.com/skip"
+            )
+        )
+    )
+
+    assert target.platform == "xiaohongshu"
+    assert target.extracted_count == 3
+    assert target.accepted_count == 2
+    assert target.download_media_enabled is False
+    assert target.cookie_persistence is False
+    assert target.links[0].link_type == "note_detail"
+    assert target.links[0].note_id == "abc123"
+    assert target.links[1].link_type == "short_link"
+    assert target.links[1].requires_resolution is True
+    assert target.links[2].accepted is False
+    assert "clean-room" in " ".join(target.safety_notes)
+
+
+def test_build_xhs_link_import_target_handles_profile_and_h_suffix_punctuation() -> None:
+    target = build_xhs_link_import_target(
+        TrendLinkImportRequest(
+            raw_text="用户主页笔记：https://www.xiaohongshu.com/user/profile/user123/note456。",
+            max_links=3,
+        )
+    )
+
+    assert target.accepted_count == 1
+    assert target.links[0].normalized_url == "https://www.xiaohongshu.com/user/profile/user123/note456"
+    assert target.links[0].link_type == "profile_note"
+    assert target.links[0].note_id == "note456"
 
 
 def test_build_safety_profile_defaults_to_account_safety() -> None:

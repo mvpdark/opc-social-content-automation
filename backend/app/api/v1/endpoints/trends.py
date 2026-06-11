@@ -12,6 +12,8 @@ from app.schemas.trend import (
     TrendCollectRequest,
     TrendCollectionJobCreate,
     TrendCollectionJobRead,
+    TrendLinkImportRequest,
+    TrendLinkImportTarget,
     TrendKnowledgeDigestRequest,
     TrendKnowledgeDigestResponse,
     TrendRead,
@@ -19,6 +21,7 @@ from app.schemas.trend import (
 from app.services.trend_service import (
     analyze_keywords,
     build_platform_search_target,
+    build_xhs_link_import_target,
     create_collection_job,
     create_trend_knowledge_digest,
     create_trend_asset,
@@ -62,6 +65,11 @@ def get_platform_search_target(
     keyword: str = Query(min_length=1, max_length=120),
 ) -> PlatformSearchTarget:
     return build_platform_search_target(platform=platform, keyword=keyword)
+
+
+@router.post("/link-import-target", response_model=TrendLinkImportTarget)
+def get_link_import_target(payload: TrendLinkImportRequest) -> TrendLinkImportTarget:
+    return build_xhs_link_import_target(payload)
 
 
 @router.post("/jobs", response_model=TrendCollectionJobRead)

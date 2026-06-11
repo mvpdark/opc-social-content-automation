@@ -31,6 +31,34 @@ class TrendCollectionJobCreate(BaseModel):
     persist_cookies: bool = False
 
 
+class TrendLinkImportRequest(BaseModel):
+    raw_text: str = Field(min_length=1, max_length=4000)
+    max_links: int = Field(default=10, ge=1, le=30)
+    download_media: bool = False
+    persist_cookies: bool = False
+
+
+class TrendLinkCandidate(BaseModel):
+    original_url: str
+    normalized_url: str
+    link_type: str
+    accepted: bool
+    requires_resolution: bool
+    note_id: str | None = None
+    reason: str | None = None
+
+
+class TrendLinkImportTarget(BaseModel):
+    platform: str
+    extracted_count: int
+    accepted_count: int
+    import_mode: str
+    download_media_enabled: bool
+    cookie_persistence: bool
+    links: list[TrendLinkCandidate]
+    safety_notes: list[str]
+
+
 class PlatformSearchTarget(BaseModel):
     platform: str
     keyword: str

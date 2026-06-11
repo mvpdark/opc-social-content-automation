@@ -1,6 +1,6 @@
 import re
 from collections import Counter, defaultdict
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 from fastapi import HTTPException, status
 from sqlalchemy import desc, func, select
@@ -16,6 +16,9 @@ from app.schemas.trend import (
     PlatformSearchTarget,
     TrendCollectRequest,
     TrendCollectionJobCreate,
+    TrendLinkCandidate,
+    TrendLinkImportRequest,
+    TrendLinkImportTarget,
     TrendKnowledgeDigestRequest,
     TrendKnowledgeDigestResponse,
 )
@@ -40,6 +43,129 @@ SUPPORTED_PLATFORMS = {"xiaohongshu", "douyin"}
 VIDEO_COLLECTION_DISABLED_DETAIL = (
     "Video collection is disabled until a separate transcript and rights review workflow is implemented."
 )
+URL_RE = re.compile(r"https?://[^\s<>'\"，。；、)）】]+", re.IGNORECASE)
+SUPPORTED_XHS_HOSTS = {
+    "xiaohongshu.com",
+    "www.xiaohongshu.com",
+    "xhslink.com",
+    "www.xhslink.com",
+}
+TRAILING_URL_PUNCTUATION = ".,;:!?，。；：！？、)]）】\"'"
+
+
+def _clean_import_url(url: str) -> str:
+    return url.strip().rstrip(TRAILING_URL_PUNCTUATION)
+
+
+def _classify_xhs_url(url: str) -> TrendLinkCandidate:
+    parsed = urlparse(url)
+    host = parsed.netloc.lower()
+    path = parsed.path.strip("/")
+    parts = [part for part in path.split("/") if part]
+
+    if host not in SUPPORTED_XHS_HOSTS:
+        return TrendLinkCandidate(
+            original_url=url,
+            normalized_url=url,
+            link_type="unsupported",
+            accepted=False,
+            requires_resolution=False,
+            reason="Only xiaohongshu.com and xhslink.com URLs are accepted.",
+        )
+
+    if host in {"xhslink.com", "www.xhslink.com"}:
+        return TrendLinkCandidate(
+            original_url=url,
+            normalized_url=url,
+            link_type="short_link",
+            accepted=True,
+            requires_resolution=True,
+            reason="Short links must be resolved by the authorized collector before details are available.",
+        )
+
+    if len(parts) >= 2 and parts[0] == "explore":
+        return TrendLinkCandidate(
+            original_url=url,
+            normalized_url=f"https://www.xiaohongshu.com/explore/{parts[1]}",
+            link_type="note_detail",
+            accepted=True,
+            requires_resolution=False,
+            note_id=parts[1],
+        )
+
+    if len(parts) >= 3 and parts[:2] == ["discovery", "item"]:
+        return TrendLinkCandidate(
+            original_url=url,
+            normalized_url=f"https://www.xiaohongshu.com/discovery/item/{parts[2]}",
+            link_type="note_detail",
+            accepted=True,
+            requires_resolution=False,
+            note_id=parts[2],
+        )
+
+    if len(parts) >= 2 and parts[:2] == ["user", "profile"]:
+        user_id = parts[2] if len(parts) >= 3 else None
+        note_id = parts[3] if len(parts) >= 4 else None
+        normalized_path = f"user/profile/{user_id}/{note_id}" if note_id else f"user/profile/{user_id}"
+        return TrendLinkCandidate(
+            original_url=url,
+            normalized_url=f"https://www.xiaohongshu.com/{normalized_path}",
+            link_type="profile_note" if note_id else "profile",
+            accepted=True,
+            requires_resolution=False,
+            note_id=note_id,
+            reason=None if note_id else "Profile links need a follow-up note-list import step.",
+        )
+
+    if parts and parts[0] == "search_result":
+        return TrendLinkCandidate(
+            original_url=url,
+            normalized_url=f"https://www.xiaohongshu.com/search_result",
+            link_type="search_result",
+            accepted=True,
+            requires_resolution=False,
+            reason="Search result links are accepted as context but do not identify a single note.",
+        )
+
+    return TrendLinkCandidate(
+        original_url=url,
+        normalized_url=url,
+        link_type="xiaohongshu_other",
+        accepted=False,
+        requires_resolution=False,
+        reason="This Xiaohongshu URL shape is not supported yet.",
+    )
+
+
+def build_xhs_link_import_target(payload: TrendLinkImportRequest) -> TrendLinkImportTarget:
+    seen: set[str] = set()
+    links: list[TrendLinkCandidate] = []
+    for match in URL_RE.findall(payload.raw_text):
+        cleaned = _clean_import_url(match)
+        if not cleaned or cleaned in seen:
+            continue
+        seen.add(cleaned)
+        links.append(_classify_xhs_url(cleaned))
+        if len(links) >= payload.max_links:
+            break
+
+    accepted_count = sum(1 for item in links if item.accepted)
+    return TrendLinkImportTarget(
+        platform="xiaohongshu",
+        extracted_count=len(links),
+        accepted_count=accepted_count,
+        import_mode="link_detail_pending_authorized_collector",
+        download_media_enabled=False,
+        cookie_persistence=False,
+        links=links,
+        safety_notes=[
+            "This endpoint only extracts and classifies links; it does not fetch note details or media.",
+            "Resolve xhslink.com short links only through an operator-authorized visible browser or compliant collector.",
+            "Do not download media by default; store note metadata first and require human review before knowledge-base ingestion.",
+            "Cookie persistence is disabled in the app integration unless the operator explicitly enables a future authorized collector.",
+            "GPL-licensed XHS-Downloader was used only as product/architecture reference; this implementation is clean-room code.",
+        ],
+    )
 
 
 def build_platform_search_target(platform: str, keyword: str) -> PlatformSearchTarget:
