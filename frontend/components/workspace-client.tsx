@@ -187,8 +187,9 @@ const expressionOptions = [
   {
     key: "emoji",
     label: "轻量表情",
-    enabled: "每 2-3 段可以放 1 个 emoji 或颜文字",
-    disabled: "不使用 emoji 或颜文字"
+    enabled:
+      "每 2-3 段可以放 1 个通用 emoji，必要时可使用小红书表情字符码，例如 [笑哭R]、[哭惹R]、[哇R]",
+    disabled: "不使用 emoji、颜文字或小红书表情字符码"
   },
   {
     key: "punctuation",
@@ -209,6 +210,61 @@ const expressionOptions = [
     disabled: "结尾只给中性建议"
   }
 ] as const;
+
+const xhsStyleStickers = [
+  {
+    accent: "bg-coral/12 text-coral",
+    code: "[笑哭R]",
+    cue: "适合开头吐槽、轻松化解焦虑",
+    face: "😂",
+    label: "笑哭一下",
+    manualHint: "复制文案保留 [笑哭R]，预览按近似表情显示"
+  },
+  {
+    accent: "bg-amber/14 text-amber",
+    code: "[哭惹R]",
+    cue: "适合提醒读者先别急、先稳住",
+    face: "🥺",
+    label: "软软提醒",
+    manualHint: "复制文案保留 [哭惹R]，预览按近似表情显示"
+  },
+  {
+    accent: "bg-steel/12 text-steel",
+    code: "[汗颜R]",
+    cue: "适合清单、步骤、重点提示",
+    face: "😅",
+    label: "汗颜提醒",
+    manualHint: "复制文案保留 [汗颜R]，预览按近似表情显示"
+  },
+  {
+    accent: "bg-moss/12 text-moss",
+    code: "[点赞R]",
+    cue: "适合正向鼓励、给行动建议",
+    face: "👍",
+    label: "点头通过",
+    manualHint: "复制文案保留 [点赞R]，预览按近似表情显示"
+  },
+  {
+    accent: "bg-coral/12 text-coral",
+    code: "[哇R]",
+    cue: "适合学姐口吻、经验复盘",
+    face: "😮",
+    label: "哇一下",
+    manualHint: "复制文案保留 [哇R]，预览按近似表情显示"
+  },
+  {
+    accent: "bg-amber/14 text-amber",
+    code: "[doge]",
+    cue: "适合结尾收藏、转发、备用",
+    face: "😏",
+    label: "轻松收尾",
+    manualHint: "复制文案保留 [doge]，预览按近似表情显示"
+  }
+] as const;
+
+const xhsStickerByCode = new Map<string, (typeof xhsStyleStickers)[number]>(
+  xhsStyleStickers.map((sticker) => [sticker.code, sticker])
+);
 
 function buildWritingTone(
   presetId: WritingStylePresetId,
@@ -354,6 +410,25 @@ function saveStoredGeneratedContent(content: GeneratedContent) {
   } catch (_error) {
     // Browser storage can be unavailable in restricted modes; the backend list still remains source of truth.
   }
+}
+
+function renderXhsExpressionText(text: string) {
+  return text.split(/(\[[^\[\]]+\])/g).map((part, index) => {
+    const sticker = xhsStickerByCode.get(part);
+    if (!sticker) {
+      return part;
+    }
+    return (
+      <span
+        className="mx-0.5 inline-flex translate-y-[2px] items-center gap-1 rounded-md border border-coral/20 bg-coral/10 px-1.5 py-0.5 text-xs font-semibold text-ink"
+        key={`${part}-${index}`}
+        title={`${part}：本地近似预览，复制后仍保留原字符码`}
+      >
+        <span aria-hidden="true">{sticker.face}</span>
+        <span>{sticker.code}</span>
+      </span>
+    );
+  });
 }
 
 async function copyText(text: string) {
@@ -1315,6 +1390,7 @@ function GenerationLauncher({
                   );
                 })}
               </div>
+              <XhsStyleStickerTray />
             </div>
             <label className="block md:col-span-2">
               <span className="flex items-center justify-between gap-3 text-xs font-medium text-muted">
@@ -1511,6 +1587,62 @@ function GeneratedPostExportCard({ content }: { content: GeneratedContent }) {
             </div>
           ) : null}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function XhsStyleStickerTray({ compact = false }: { compact?: boolean }) {
+  return (
+    <div
+      className={[
+        "rounded-md border border-line bg-mist/50",
+        compact ? "mt-5 p-3" : "mt-3 p-4"
+      ].join(" ")}
+      data-testid="xhs-sticker-tray"
+    >
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="text-sm font-semibold text-ink">红书风原创表情展示</div>
+          <p className="mt-1 text-xs leading-5 text-muted">
+            按小红书表情字符码做本地近似预览；复制时保留字符码，发布后由平台识别显示。
+          </p>
+        </div>
+        <Pill tone="blue">字符码对照</Pill>
+      </div>
+      <div className="mt-3 rounded-md border border-coral/20 bg-coral/10 px-3 py-2 text-xs leading-6 text-ink">
+        效果示例：{renderXhsExpressionText("先别急 [笑哭R] 先把方向想清楚 [点赞R]")}
+      </div>
+      <div
+        className={[
+          "mt-3 grid gap-2",
+          compact ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2 lg:grid-cols-3"
+        ].join(" ")}
+      >
+        {xhsStyleStickers.map((sticker) => (
+          <div
+            className="glass-subtle rounded-md border px-3 py-3"
+            key={sticker.label}
+          >
+            <div className="flex items-center gap-3">
+              <span
+                aria-hidden="true"
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] text-xl ${sticker.accent}`}
+              >
+                {sticker.face}
+              </span>
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold text-ink">{sticker.label}</div>
+                <div className="mt-0.5 font-mono text-[11px] leading-4 text-coral">{sticker.code}</div>
+              </div>
+            </div>
+            {!compact ? (
+              <div className="mt-2 border-l-2 border-coral/40 pl-2 text-[11px] leading-4 text-muted">
+                {sticker.cue}。{sticker.manualHint}
+              </div>
+            ) : null}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -2273,7 +2405,7 @@ function DraftPanel({
                   data-testid="xhs-preview-full-body"
                 >
                   {paragraphs.map((paragraph) => (
-                    <p key={paragraph}>{paragraph}</p>
+                    <p key={paragraph}>{renderXhsExpressionText(paragraph)}</p>
                   ))}
                 </div>
                 {tagLine ? <div className="mt-5 text-sm font-medium leading-6 text-steel">{tagLine}</div> : null}
@@ -2300,6 +2432,7 @@ function DraftPanel({
                 <div className="mt-5 rounded-md border border-amber/40 bg-amber/10 p-3 text-xs leading-5 text-ink">
                   这是发布效果预览，不会自动发布；粘贴到小红书前仍需要人工确认标题、正文、标签和封面。
                 </div>
+                <XhsStyleStickerTray compact />
                 {copyState === "failed" ? (
                   <div className="mt-3 rounded-md border border-coral/40 bg-coral/10 p-3 text-xs leading-5 text-ink">
                     当前没有可复制的正式草稿，或浏览器复制被拦截。
