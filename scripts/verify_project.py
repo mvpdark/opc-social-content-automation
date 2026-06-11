@@ -37,6 +37,7 @@ def validate_required_files() -> int:
         ROOT / "backend" / "app" / "main.py",
         ROOT / "backend" / "alembic" / "versions" / "0007_trend_collection_jobs.py",
         ROOT / "frontend" / "app" / "page.tsx",
+        ROOT / "frontend" / "middleware.ts",
         ROOT / "docs" / "RUNBOOK.md",
         ROOT / "docs" / "SECURITY_NOTES.md",
         ROOT / "scripts" / "run_trend_collection_job.py",
@@ -178,6 +179,7 @@ def validate_frontend_design_contract() -> int:
     workspace_text = (
         ROOT / "frontend" / "components" / "workspace-client.tsx"
     ).read_text(encoding="utf-8")
+    middleware_text = (ROOT / "frontend" / "middleware.ts").read_text(encoding="utf-8")
 
     tab_ids = _extract_ts_array("workspaceTabIds", data_text)
     style_ids = [
@@ -218,7 +220,26 @@ def validate_frontend_design_contract() -> int:
         if snippet not in workspace_text:
             raise SystemExit(f"Missing frontend generation flow snippet: {snippet}")
 
-    return len(tab_ids) + len(style_ids) + len(referenced_styles) + len(generation_flow_snippets)
+    terminal_routing_snippets = [
+        "mobileUserAgentPattern",
+        'request.nextUrl.pathname !== "/"',
+        'nextUrl.pathname = "/android"',
+        "sec-ch-ua-mobile",
+        'forcedTerminal === "pc"',
+        'forcedTerminal === "android"',
+        'matcher: ["/"]',
+    ]
+    for snippet in terminal_routing_snippets:
+        if snippet not in middleware_text:
+            raise SystemExit(f"Missing terminal routing snippet: {snippet}")
+
+    return (
+        len(tab_ids)
+        + len(style_ids)
+        + len(referenced_styles)
+        + len(generation_flow_snippets)
+        + len(terminal_routing_snippets)
+    )
 
 
 def validate_content_production_contract() -> int:
