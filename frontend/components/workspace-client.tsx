@@ -2100,7 +2100,7 @@ function XhsStyleStickerTray({ compact = false }: { compact?: boolean }) {
         <div className="mt-4 rounded-md border border-line bg-paper/55 p-3">
           <div className="mb-2 flex items-center justify-between gap-3">
             <span className="text-xs font-semibold text-ink">完整 RedNote 名录</span>
-            <span className="text-[11px] text-muted">点进预览后复制正文，字符码会原样保留</span>
+            <span className="text-[11px] text-muted">复制正文时字符码会原样保留</span>
           </div>
           <div className="space-y-3">
             {xhsStickerCatalog.map((group) => (
@@ -2973,7 +2973,6 @@ function DraftPanel({
                 <div className="mt-5 rounded-md border border-amber/40 bg-amber/10 p-3 text-xs leading-5 text-ink">
                   这是发布效果预览，不会自动发布；粘贴到小红书前仍需要人工确认标题、正文、标签和封面。
                 </div>
-                <XhsStyleStickerTray compact />
                 {copyState === "failed" ? (
                   <div className="mt-3 rounded-md border border-coral/40 bg-coral/10 p-3 text-xs leading-5 text-ink">
                     当前没有可复制的正式草稿，或浏览器复制被拦截。
