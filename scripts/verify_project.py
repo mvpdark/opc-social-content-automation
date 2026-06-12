@@ -623,6 +623,7 @@ def validate_content_production_contract() -> int:
         "DeepSeek official API provider",
         "provider is not configured yet",
         "model provider is not configured yet",
+        "直连服务",
         "流程联调",
         "OPC TEST ASSET",
         "登录令牌",

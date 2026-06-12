@@ -1952,7 +1952,11 @@ function CreateScreen({
     } catch (error) {
       stopProgressTimer();
       setProgressLabel("生成失败");
-      onAction(error instanceof Error ? error.message : "一键撰稿和封面生成失败。");
+      onAction(
+        sanitizeServiceErrorMessage(
+          error instanceof Error ? error.message : "一键撰稿和封面生成失败。"
+        )
+      );
     } finally {
       setBusy(false);
     }
@@ -1971,7 +1975,7 @@ function CreateScreen({
     <div className="space-y-4">
       <MobilePanel
         title="手机端生成"
-        action={<span className="text-xs font-semibold text-moss">直连服务</span>}
+        action={<span className="text-xs font-semibold text-moss">服务已连接</span>}
       >
         <label className="block">
           <span className="text-xs font-medium text-muted">选题</span>

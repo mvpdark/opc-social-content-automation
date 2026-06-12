@@ -2112,7 +2112,9 @@ function GenerationLauncher({
       setProviderStatusError(null);
       return data;
     } catch (error) {
-      setProviderStatusError(error instanceof Error ? error.message : "服务状态读取失败。");
+      setProviderStatusError(
+        sanitizeServiceErrorMessage(error instanceof Error ? error.message : "服务状态读取失败。")
+      );
       return null;
     }
   }
@@ -2129,7 +2131,9 @@ function GenerationLauncher({
         }
       } catch (error) {
         if (active) {
-          setProviderStatusError(error instanceof Error ? error.message : "服务状态读取失败。");
+          setProviderStatusError(
+            sanitizeServiceErrorMessage(error instanceof Error ? error.message : "服务状态读取失败。")
+          );
         }
       }
     }
@@ -3028,7 +3032,9 @@ function SettingsView({
       setProviderStatusError(null);
       return statuses;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "服务状态读取失败。";
+      const message = sanitizeServiceErrorMessage(
+        error instanceof Error ? error.message : "服务状态读取失败。"
+      );
       setProviderStatusError(message);
       return null;
     }
@@ -3046,7 +3052,9 @@ function SettingsView({
         }
       } catch (error) {
         if (active) {
-          setProviderStatusError(error instanceof Error ? error.message : "服务状态读取失败。");
+          setProviderStatusError(
+            sanitizeServiceErrorMessage(error instanceof Error ? error.message : "服务状态读取失败。")
+          );
         }
       }
     }
