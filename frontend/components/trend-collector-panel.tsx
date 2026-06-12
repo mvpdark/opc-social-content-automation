@@ -295,7 +295,7 @@ export function TrendCollectorPanel({
     ? "先填关键词"
     : isPollingJob
       ? "采集中"
-      : "创建并启动";
+      : "开始采集";
   const saveDigestLabel = !canSubmit
     ? "先填关键词"
     : !sourcesReviewed

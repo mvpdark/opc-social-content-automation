@@ -963,6 +963,7 @@ def validate_content_production_contract() -> int:
         "浏览器可能拦截了剪贴板权限",
         "function formatMobileCollectionJobStatus",
         "const terminalJobStatuses = new Set",
+        ': "创建并启动"',
         "请重新点击“创建并启动”",
         'MobilePanel title="高赞参考"',
         "把高赞参考变成素材池",
