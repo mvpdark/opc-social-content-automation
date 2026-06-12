@@ -2736,7 +2736,7 @@ function GeneratedPostExportCard({
           </div>
           {copyState === "failed" && !testDraft ? (
             <div className="rounded-md border border-coral/40 bg-coral/10 p-3 text-ink">
-              浏览器复制失败，请手动选中正文复制。
+              复制被浏览器拦截了；正文和话题就在上方，可以直接选中后复制。
             </div>
           ) : null}
         </div>
@@ -3825,7 +3825,7 @@ function DraftPanel({
                 </div>
                 {copyState === "failed" ? (
                   <div className="mt-3 rounded-md border border-coral/40 bg-coral/10 p-3 text-xs leading-5 text-ink">
-                    当前没有可复制的正式草稿，或浏览器复制被拦截。
+                    当前没有可复制的正式草稿，或复制被浏览器拦截；正文和话题仍在预览里，可以直接选中复制。
                   </div>
                 ) : null}
               </div>

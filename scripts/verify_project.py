@@ -989,6 +989,7 @@ def validate_content_production_contract() -> int:
         "已填写不代表授权通过",
         "copyImageFileToClipboard",
         "文案仍在剪贴板里",
+        "浏览器复制失败",
         "复制封面+文案，去小红书",
         "文案和封面图已复制",
         "浏览器可能拦截了剪贴板权限",
