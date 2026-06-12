@@ -1,3 +1,5 @@
+from secrets import compare_digest
+
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -5,6 +7,9 @@ from sqlalchemy.orm import Session
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.user import User
 from app.schemas.auth import UserCreate
+
+
+MOBILE_TEST_ACCOUNTS = ("admin", "admin1", "admin2")
 
 
 def get_user_by_phone(db: Session, phone: str) -> User | None:
@@ -38,6 +43,18 @@ def authenticate_user(db: Session, phone: str, password: str) -> User:
             detail="Invalid phone number or password.",
         )
     return user
+
+
+def authenticate_mobile_account(account: str, password: str) -> str:
+    normalized_account = account.strip()
+    for candidate in MOBILE_TEST_ACCOUNTS:
+        if compare_digest(normalized_account, candidate) and compare_digest(password, candidate):
+            return candidate
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid account or password.",
+    )
 
 
 def issue_token(user: User) -> str:

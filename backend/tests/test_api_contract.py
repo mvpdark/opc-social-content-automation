@@ -8,6 +8,7 @@ def test_documented_api_paths_are_registered() -> None:
     expected_paths = {
         "/health",
         "/api/auth/login",
+        "/api/auth/mobile-login",
         "/api/auth/register",
         "/api/content/generate",
         "/api/content/rewrite",

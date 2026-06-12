@@ -42,7 +42,6 @@ import {
 
 type MobileTab = "home" | "collect" | "create" | "settings";
 type MobilePlatform = "douyin" | "xiaohongshu";
-type MobileAccount = "admin" | "admin1" | "admin2";
 
 type CredentialSettings = {
   draftApiKey: string;
@@ -72,6 +71,12 @@ type ProviderCheckResult = {
   message: string;
   status: string;
   target: string;
+};
+
+type MobileLoginResponse = {
+  account: string;
+  key_profile: string;
+  provider_statuses: ProviderStatusItem[];
 };
 
 type LinkImportTarget = {
@@ -105,12 +110,6 @@ const emptyCredentials: CredentialSettings = {
   rewriteApiKey: "",
   workspaceToken: ""
 };
-
-const mobileLoginAccounts: MobileAccount[] = ["admin", "admin1", "admin2"];
-
-function isMobileAccount(value: string): value is MobileAccount {
-  return mobileLoginAccounts.includes(value as MobileAccount);
-}
 
 const xhsMobileDraftTone = [
   "小红书女性向图文风格，像学姐认真提醒，温柔、轻松、真实、有陪伴感，不要像官方说明文",
@@ -242,6 +241,25 @@ async function fetchProviderStatuses() {
     throw new Error(await readApiError(response, "服务状态读取失败。"));
   }
   return (await response.json()) as ProviderStatusItem[];
+}
+
+async function authenticateMobileLogin(account: string, password: string) {
+  const response = await fetch(`${API_BASE}/auth/mobile-login`, {
+    body: JSON.stringify({ account, password }),
+    headers: { "Content-Type": "application/json" },
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error("账号或密码不正确。");
+  }
+  const data = (await response.json()) as Partial<MobileLoginResponse>;
+  if (!data.account?.trim()) {
+    throw new Error("登录服务响应异常，请稍后再试。");
+  }
+  return {
+    account: data.account.trim(),
+    providerStatuses: Array.isArray(data.provider_statuses) ? data.provider_statuses : []
+  };
 }
 
 async function readApiError(response: Response, fallback: string) {
@@ -614,10 +632,11 @@ function getPcReturnHref() {
 
 function readStoredMobileAccount() {
   const stored = readMobileStorage(MOBILE_AUTH_STORAGE_KEY);
-  return stored && isMobileAccount(stored) ? stored : null;
+  const account = stored?.trim() ?? "";
+  return account.length > 0 && account.length <= 32 ? account : null;
 }
 
-function saveStoredMobileAccount(account: MobileAccount) {
+function saveStoredMobileAccount(account: string) {
   writeMobileStorage(MOBILE_AUTH_STORAGE_KEY, account);
 }
 
@@ -629,7 +648,8 @@ export default function AndroidPreviewPage() {
   const [activeTab, setActiveTab] = useState<MobileTab>("home");
   const [status, setStatus] = useState("手机端操作已就绪");
   const [credentials, setCredentials] = useState<CredentialSettings>(emptyCredentials);
-  const [mobileAccount, setMobileAccount] = useState<MobileAccount | null>(null);
+  const [credentialsLoaded, setCredentialsLoaded] = useState(false);
+  const [mobileAccount, setMobileAccount] = useState<string | null>(null);
   const [authLoaded, setAuthLoaded] = useState(false);
   const [providerStatuses, setProviderStatuses] = useState<ProviderStatusItem[]>([]);
 
@@ -646,12 +666,17 @@ export default function AndroidPreviewPage() {
       }
     } catch (_error) {
       setCredentials(emptyCredentials);
+    } finally {
+      setCredentialsLoaded(true);
     }
   }, []);
 
   useEffect(() => {
+    if (!credentialsLoaded) {
+      return;
+    }
     writeMobileStorage(CREDENTIAL_STORAGE_KEY, JSON.stringify(credentials));
-  }, [credentials]);
+  }, [credentials, credentialsLoaded]);
 
   useEffect(() => {
     if (!mobileAccount) {
@@ -685,11 +710,14 @@ export default function AndroidPreviewPage() {
     setStatus(message);
   }
 
-  function login(account: MobileAccount) {
+  function login(account: string, nextProviderStatuses: ProviderStatusItem[]) {
     saveStoredMobileAccount(account);
     setMobileAccount(account);
+    setProviderStatuses(nextProviderStatuses);
     setActiveTab("home");
-    setStatus(`已登录：${account}`);
+    const bindings = providerBindingDefaultsFromStatuses(nextProviderStatuses);
+    const boundCount = [bindings.draft, bindings.image, bindings.rewrite].filter(Boolean).length;
+    setStatus(boundCount === 3 ? `已登录：${account}，默认 Key 已绑定。` : `已登录：${account}，请检查默认 Key 状态。`);
   }
 
   function logout() {
@@ -765,29 +793,32 @@ function LoginScreen({
   onLogin
 }: {
   loading: boolean;
-  onLogin: (account: MobileAccount) => void;
+  onLogin: (account: string, providerStatuses: ProviderStatusItem[]) => void;
 }) {
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  function submitLogin(event: FormEvent<HTMLFormElement>) {
+  async function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalizedAccount = account.trim();
 
-    if (isMobileAccount(normalizedAccount) && password === normalizedAccount) {
-      setError("");
-      onLogin(normalizedAccount);
+    if (!normalizedAccount || !password) {
+      setError("请输入账号和密码。");
       return;
     }
 
-    setError("账号或密码不对。可用：admin / admin1 / admin2，密码同账号。");
-  }
-
-  function quickFill(nextAccount: MobileAccount) {
-    setAccount(nextAccount);
-    setPassword(nextAccount);
+    setBusy(true);
     setError("");
+    try {
+      const loginResult = await authenticateMobileLogin(normalizedAccount, password);
+      onLogin(loginResult.account, loginResult.providerStatuses);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "账号或密码不正确。");
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (loading) {
@@ -812,7 +843,7 @@ function LoginScreen({
           登录手机工作台
         </h1>
         <p className="mt-3 text-sm leading-6 text-muted">
-          测试账号：admin、admin1、admin2，密码同账号。当前只是本机测试门禁，不代表正式服务端权限。
+          请输入分配给你的账号和密码。
         </p>
       </div>
 
@@ -826,7 +857,7 @@ function LoginScreen({
               className="min-w-0 flex-1 bg-transparent text-base font-semibold text-ink outline-none"
               data-testid="mobile-login-account"
               onChange={(event) => setAccount(event.target.value)}
-              placeholder="admin"
+              placeholder="请输入账号"
               value={account}
             />
           </div>
@@ -841,7 +872,7 @@ function LoginScreen({
               className="min-w-0 flex-1 bg-transparent text-base font-semibold text-ink outline-none"
               data-testid="mobile-login-password"
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="同账号"
+              placeholder="请输入密码"
               type="password"
               value={password}
             />
@@ -859,27 +890,15 @@ function LoginScreen({
         ) : null}
 
         <button
-          className="flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-md bg-ink text-sm font-semibold text-paper active:scale-[0.99]"
+          className="flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-md bg-ink text-sm font-semibold text-paper active:scale-[0.99] disabled:opacity-60"
           data-testid="mobile-login-submit"
+          disabled={busy}
           type="submit"
         >
-          <ShieldCheck className="h-4 w-4" />
-          登录
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+          {busy ? "登录中" : "登录"}
         </button>
       </form>
-
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        {mobileLoginAccounts.map((item) => (
-          <button
-            className="h-10 touch-manipulation rounded-md border border-[#cce3d7] bg-white text-xs font-semibold text-ink active:scale-[0.98]"
-            key={item}
-            onClick={() => quickFill(item)}
-            type="button"
-          >
-            {item}
-          </button>
-        ))}
-      </div>
     </section>
   );
 }
@@ -2033,7 +2052,7 @@ function SettingsScreen({
   providerStatuses
 }: {
   credentials: CredentialSettings;
-  mobileAccount: MobileAccount;
+  mobileAccount: string;
   onAction: (message: string) => void;
   onCredentialsChange: (nextCredentials: CredentialSettings) => void;
   onLogout: () => void;
