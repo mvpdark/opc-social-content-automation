@@ -34,6 +34,7 @@ import {
 
 import { PlatformIcon, PlatformLabel } from "@/components/platform-icon";
 import { getApiBase } from "@/lib/api-base";
+import { copyText, tryCopyText } from "@/lib/clipboard";
 import {
   providerBindingDefaultsFromStatuses,
   providerKeyUpdatePayload,
@@ -608,39 +609,6 @@ function resolveAssetUrl(imageUrl: string) {
   }
   const apiUrl = new URL(API_BASE);
   return `${apiUrl.origin}${normalizedUrl.startsWith("/") ? normalizedUrl : `/${normalizedUrl}`}`;
-}
-
-async function copyText(text: string) {
-  if (navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return;
-    } catch (_error) {
-      // Fall back to the selection-based copy path below.
-    }
-  }
-
-  const textarea = document.createElement("textarea");
-  textarea.value = text;
-  textarea.setAttribute("readonly", "true");
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  document.body.appendChild(textarea);
-  textarea.select();
-  const copied = document.execCommand("copy");
-  textarea.remove();
-  if (!copied) {
-    throw new Error("Clipboard copy failed.");
-  }
-}
-
-async function tryCopyText(text: string) {
-  try {
-    await copyText(text);
-    return true;
-  } catch (_error) {
-    return false;
-  }
 }
 
 function getPcReturnHref() {

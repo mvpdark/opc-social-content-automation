@@ -415,6 +415,9 @@ def validate_content_production_contract() -> int:
     service_error_text = (
         ROOT / "frontend" / "lib" / "service-error-copy.ts"
     ).read_text(encoding="utf-8")
+    clipboard_text = (ROOT / "frontend" / "lib" / "clipboard.ts").read_text(
+        encoding="utf-8"
+    )
     draft_prompt_text = (ROOT / "prompts" / "draft_generation.md").read_text(
         encoding="utf-8"
     )
@@ -492,6 +495,17 @@ def validate_content_production_contract() -> int:
         if snippet not in android_text:
             raise SystemExit(f"Missing mobile Xiaohongshu copy contract: {snippet}")
 
+    clipboard_contract_snippets = [
+        "export async function copyText",
+        "export async function tryCopyText",
+        "navigator.clipboard?.writeText",
+        'document.execCommand("copy")',
+    ]
+    for snippet in clipboard_contract_snippets:
+        total += 1
+        if snippet not in clipboard_text:
+            raise SystemExit(f"Missing clipboard helper contract: {snippet}")
+
     particle_style_contracts = [
         (
             workspace_text,
@@ -528,6 +542,8 @@ def validate_content_production_contract() -> int:
 
     stale_gate_snippets = [
         "Only human-approved content can be used for image generation.",
+        "async function copyText(text: string)",
+        "async function tryCopyText(text: string)",
         "canCopy && imageProviderReady && !imageBusy",
         "封面仍是版式预览，真实图片生成后会在这里替换。\" :",
         "假图",
