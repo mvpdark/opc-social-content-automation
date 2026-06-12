@@ -340,7 +340,7 @@ export const promoterActions = [
   },
   {
     title: "导出包",
-    description: "Markdown、纯文本或 JSON 交付格式。",
+    description: "图文稿、纯文本或结构化交付格式。",
     status: "确认门控",
     icon: Download,
     command: "导出"
@@ -405,7 +405,7 @@ export const externalSkillCandidates = [
     status: "优先试点",
     license: "MIT",
     summary: "支持检索、详情、发布和评论相关 Skill，适合拆出只读搜索与发布前填充流程。",
-    guardrail: "需要真实登录状态和网页选择器；默认只接只读检索，发布仍需人工确认。",
+    guardrail: "需要真实登录状态和网页定位规则；默认只接只读检索，发布仍需人工确认。",
     icon: Search
   },
   {
@@ -415,8 +415,8 @@ export const externalSkillCandidates = [
     module: "小红书组图 / 封面",
     status: "可选外部调用",
     license: "AGPL-3.0",
-    summary: "提供 1080x1440 小红书卡片、版式骨架、主题和 Playwright 渲染 PNG。",
-    guardrail: "AGPL 不直接复制进闭源产品；可作为外部工具或视觉参考。",
+    summary: "提供小红书卡片、版式骨架、主题和浏览器渲染图片。",
+    guardrail: "受限开源许可证不直接复制进闭源产品；可作为外部工具或视觉参考。",
     icon: LayoutTemplate
   },
   {
@@ -449,7 +449,7 @@ export const externalSkillCandidates = [
     status: "只做外部工具",
     license: "GPL-3.0",
     summary: "成熟的作品信息、图片和视频下载工具，适合用户主动提供链接后的资料归档。",
-    guardrail: "GPL 项目不复制实现；只可作为独立进程、可选工具或接口设计参考。",
+    guardrail: "受限开源项目不复制实现；只可作为独立进程、可选工具或流程设计参考。",
     icon: Download
   },
   {
@@ -458,7 +458,7 @@ export const externalSkillCandidates = [
     href: "https://github.com/devinchen2014/xiaohongshu-xhs-rednote-mcp",
     module: "只读社媒情报",
     status: "候选服务",
-    license: "MIT 文档 / 托管服务",
+    license: "许可待确认 / 托管服务",
     summary: "托管检索服务，支持搜索、热榜、笔记详情、评论和博主信息，适合低频只读调研。",
     guardrail: "需要第三方服务密钥；接入前确认数据来源、费用和隐私条款。",
     icon: ShieldCheck
@@ -481,8 +481,8 @@ export const externalSkillCandidates = [
     module: "封面 / 轮播卡片",
     status: "可选接入",
     license: "需确认",
-    summary: "面向小红书封面、标题卡、轮播页和 CTA 卡的文本图生成 Skill，输出 SVG/PNG/JPG。",
-    guardrail: "PNG/JPG 依赖 macOS Swift；Windows 安装包阶段优先借鉴 JSON 规格和 SVG 渲染思路。",
+    summary: "面向小红书封面、标题卡、轮播页和行动引导卡的文本图生成能力包，可导出图片文件。",
+    guardrail: "导出图片依赖特定系统能力；安装包阶段优先借鉴配置结构和图片生成思路。",
     icon: LayoutTemplate
   },
   {
@@ -492,8 +492,8 @@ export const externalSkillCandidates = [
     module: "封面候选服务",
     status: "候选服务",
     license: "需确认",
-    summary: "小红书封面生成器，可用外部命令启动，适合做封面工作台的外部渲染器候选。",
-    guardrail: "先确认许可证、字体素材、图片输出归属和 Windows 打包方式；不要替代人工复核。",
+    summary: "小红书封面生成器，可作为外部工具启动，适合做封面工作台的外部渲染器候选。",
+    guardrail: "先确认许可证、字体素材、图片输出归属和安装包适配方式；不要替代人工复核。",
     icon: Image
   },
   {
