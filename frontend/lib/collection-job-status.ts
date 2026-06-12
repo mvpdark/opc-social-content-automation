@@ -82,22 +82,22 @@ export function formatCollectionJobStatus(
 
   if (job.status === "queued") {
     if (!job.result_summary?.auto_start) {
-      return `当前采集任务排队中${collected}。这条旧任务不会自动启动；请点击“启动旧任务”。`;
+      return `上次采集仍在排队${collected}。它不会自动开始；请点击“继续上次采集”。`;
     }
-    return `当前采集任务${collectionJobStatusLabel(job.status)}${collected}。采集器正在启动，可见浏览器会自动打开。`;
+    return `本次采集${collectionJobStatusLabel(job.status)}${collected}。采集器正在启动，可见浏览器会自动打开。`;
   }
   if (job.status === "running") {
-    return `当前采集任务${collectionJobStatusLabel(job.status)}${collected}${waitText}。请留意自动打开的浏览器窗口；如果遇到登录或验证码，先人工处理。`;
+    return `本次采集${collectionJobStatusLabel(job.status)}${collected}${waitText}。请留意自动打开的浏览器窗口；如果遇到登录或验证码，先人工处理。`;
   }
   if (job.status === "completed") {
-    return `当前采集任务${collectionJobStatusLabel(job.status)}${collected}${diagnosticText}。请人工确认来源后再保存知识摘要。`;
+    return `本次采集${collectionJobStatusLabel(job.status)}${collected}${diagnosticText}。请人工确认来源后再保存知识摘要。`;
   }
   if (job.status === "needs_operator_review") {
-    return `当前采集任务需要人工处理${collected}${diagnosticText}。公开搜索可能被登录墙、验证码或空结果拦截；人工确认后可直接重试。${errorText}`;
+    return `本次采集需要人工处理${collected}${diagnosticText}。公开搜索可能被登录墙、验证码或空结果拦截；人工确认后可直接重试。${errorText}`;
   }
   if (job.status === "failed") {
-    return `当前采集任务执行失败${collected}${diagnosticText}${errorText}。可以直接重新启动这条任务。`;
+    return `本次采集失败${collected}${diagnosticText}${errorText}。可以直接重新采集一次。`;
   }
 
-  return `当前采集任务状态：${collectionJobStatusLabel(job.status)}${collected}${diagnosticText}${errorText}。`;
+  return `本次采集状态：${collectionJobStatusLabel(job.status)}${collected}${diagnosticText}${errorText}。`;
 }

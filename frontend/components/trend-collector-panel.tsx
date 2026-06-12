@@ -249,15 +249,15 @@ function buildLocalXhsLinkImportTarget(rawText: string): LinkImportTarget {
 
 function restartCollectionJobLabel(status: string | null) {
   if (status === "queued") {
-    return "启动旧任务";
+    return "继续上次采集";
   }
   if (status === "needs_operator_review") {
     return "重试采集";
   }
   if (status === "failed") {
-    return "重新启动";
+    return "重新采集";
   }
-  return "启动任务";
+  return "继续采集";
 }
 
 export function TrendCollectorPanel({
@@ -399,7 +399,7 @@ export function TrendCollectorPanel({
           return;
         }
         if (!job) {
-          setStatusText("当前采集任务暂时查不到状态，请稍后刷新。");
+          setStatusText("暂时查不到这次采集状态，请稍后刷新。");
           timer = window.setTimeout(pollJobStatus, 3000);
           return;
         }
@@ -495,7 +495,7 @@ export function TrendCollectorPanel({
 
   async function startExistingJob() {
     if (restartableJobId === null) {
-      setStatusText("没有可启动的旧采集任务。");
+      setStatusText("没有可继续的上次采集。");
       return;
     }
     setBusyAction("restart");
@@ -507,13 +507,13 @@ export function TrendCollectorPanel({
         }
       });
       if (!response.ok) {
-        throw new Error("旧采集任务启动失败，请重新开始一次采集。");
+        throw new Error("继续上次采集失败，请重新开始一次采集。");
       }
       const data = (await response.json()) as TrendCollectionJob;
       setActiveJobId(data.id);
       showCollectionJob(data);
     } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "旧采集任务启动失败。");
+      setStatusText(error instanceof Error ? error.message : "继续上次采集失败。");
     } finally {
       setBusyAction(null);
     }
