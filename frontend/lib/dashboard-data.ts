@@ -227,7 +227,7 @@ export const stats = [
   { label: "趋势素材", value: "0", helper: "公开图文样本", tone: "steel" },
   { label: "知识条目", value: "0", helper: "可检索资产", tone: "moss" },
   { label: "待确认稿件", value: "0", helper: "发布前确认", tone: "coral" },
-  { label: "可交付内容", value: "0", helper: "确认后交付", tone: "amber" }
+  { label: "发布准备", value: "0", helper: "确认后可用", tone: "amber" }
 ] as const;
 
 export const pipeline = [
@@ -279,7 +279,7 @@ export const commandFocus = [
   {
     title: "把参考沉淀进知识库",
     detail: "保存来源摘要前必须人工确认，避免把不可靠样本写进资产库。",
-    state: "门控",
+    state: "需确认",
     icon: BookOpenText
   },
   {
@@ -334,14 +334,14 @@ export const promoterActions = [
   {
     title: "已批准内容",
     description: "人工确认后进入推广交付池。",
-    status: "0 条可交付",
+    status: "0 条已确认",
     icon: CheckCircle2,
     command: "打开"
   },
   {
     title: "导出包",
     description: "图文稿、纯文本或结构化交付格式。",
-    status: "确认门控",
+    status: "确认后可用",
     icon: Download,
     command: "导出"
   },
@@ -365,7 +365,7 @@ export const publishingRecords = [
     content: "发布前必须人工批准",
     platform: "全部",
     owner: "运营",
-    status: "门控"
+    status: "需确认"
   },
   {
     content: "确认后生成导出内容",
