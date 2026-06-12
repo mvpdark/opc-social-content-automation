@@ -57,6 +57,9 @@ def validate_required_files() -> int:
         ROOT / "backend" / "alembic" / "versions" / "0007_trend_collection_jobs.py",
         ROOT / "frontend" / "app" / "page.tsx",
         ROOT / "frontend" / "middleware.ts",
+        ROOT / "frontend" / "public" / "mobile-assets" / "collection-collage.png",
+        ROOT / "frontend" / "public" / "mobile-assets" / "create-card-bg.png",
+        ROOT / "frontend" / "public" / "mobile-assets" / "paper-texture.png",
         ROOT / "frontend" / "lib" / "api-base.ts",
         ROOT / "frontend" / "lib" / "asset-url.ts",
         ROOT / "frontend" / "lib" / "generated-assets.ts",
@@ -414,6 +417,9 @@ def validate_frontend_design_contract() -> int:
     mobile_shell_contracts = [
         "pt-[calc(12px+env(safe-area-inset-top))]",
         "opc-mobile-shell",
+        "MOBILE_CREATE_CARD_BG",
+        "create-card-bg.png",
+        "style={{ backgroundImage: `url(${MOBILE_CREATE_CARD_BG})` }}",
     ]
     for snippet in mobile_shell_contracts:
         if snippet not in android_text:

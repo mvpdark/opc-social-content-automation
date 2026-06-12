@@ -106,6 +106,7 @@ const MOBILE_LAST_CONTENT_STORAGE_KEY = "opc_mobile_last_generated_content_v1";
 const MOBILE_LAST_COVER_STORAGE_KEY = "opc_mobile_last_generated_cover_v1";
 const MOBILE_PAPER_TEXTURE = "/mobile-assets/paper-texture.png";
 const MOBILE_COLLECTION_COLLAGE = "/mobile-assets/collection-collage.png";
+const MOBILE_CREATE_CARD_BG = "/mobile-assets/create-card-bg.png";
 
 const emptyCredentials: CredentialSettings = {
   draftApiKey: "",
@@ -1241,7 +1242,7 @@ function CollectScreen({
         title="定时自动采集"
         action={<span className="text-xs font-semibold text-moss">自动获取</span>}
       >
-        <label className="mb-3 flex items-start gap-3 rounded-[18px] border border-white/75 bg-[#f9fbf6] px-3.5 py-3 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+        <label className="mb-3 flex items-start gap-3 rounded-[24px] border border-white/75 bg-[#f9fbf6] px-3.5 py-3 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
           <input
             checked={autoEnabled}
             className="mt-1 h-4 w-4"
@@ -1258,7 +1259,7 @@ function CollectScreen({
         </label>
         <label className="block">
           <span className="text-xs font-medium text-muted">关键词</span>
-          <div className="mt-2 flex min-h-12 items-center gap-2 rounded-md border border-[#d6e8df] bg-white px-3 py-2">
+          <div className="mt-2 flex min-h-12 items-center gap-2 rounded-full border border-[#d6e8df] bg-white px-4 py-2">
             <Search className="h-4 w-4 shrink-0 text-muted" />
             <input
               aria-label="采集关键词"
@@ -1302,7 +1303,7 @@ function CollectScreen({
         <label className="mt-3 block">
           <span className="text-xs font-medium text-muted">最大采集条数</span>
           <input
-            className="mt-2 h-11 w-full rounded-md border border-[#d6e8df] bg-white px-3 text-sm font-medium text-ink outline-none"
+            className="mt-2 h-12 w-full rounded-full border border-[#d6e8df] bg-white px-4 text-sm font-medium text-ink outline-none"
             data-testid="mobile-max-items"
             max={100}
             min={1}
@@ -1317,7 +1318,7 @@ function CollectScreen({
         <label className="mt-3 block">
           <span className="text-xs font-medium text-muted">采集间隔（分钟）</span>
           <input
-            className="mt-2 h-11 w-full rounded-md border border-[#d6e8df] bg-white px-3 text-sm font-medium text-ink outline-none"
+            className="mt-2 h-12 w-full rounded-full border border-[#d6e8df] bg-white px-4 text-sm font-medium text-ink outline-none"
             data-testid="mobile-collect-interval"
             max={1440}
             min={5}
@@ -1329,7 +1330,7 @@ function CollectScreen({
             value={intervalMinutes}
           />
         </label>
-        <div className="mt-3 rounded-md border border-[#d6e8df] bg-white px-3 py-2 text-xs leading-5 text-muted">
+        <div className="mt-3 rounded-[22px] border border-[#d6e8df] bg-white px-4 py-3 text-xs leading-5 text-muted">
           <div>{scheduleMessage}</div>
           <div>下次运行：{formatScheduleTime(nextRunAt)}</div>
           <div>
@@ -1339,7 +1340,7 @@ function CollectScreen({
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <button
-            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-md border border-[#d6e8df] bg-white text-sm font-semibold text-ink active:scale-[0.99]"
+            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full border border-[#d6e8df] bg-white text-sm font-semibold text-ink active:scale-[0.99]"
             data-testid="mobile-save-schedule"
             onClick={saveSchedule}
             type="button"
@@ -1348,7 +1349,7 @@ function CollectScreen({
             保存定时
           </button>
           <button
-            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-md bg-ink text-sm font-semibold text-paper active:scale-[0.99] disabled:opacity-60"
+            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full bg-ink text-sm font-semibold text-paper active:scale-[0.99] disabled:opacity-60"
             data-testid="mobile-run-collection-now"
             disabled={busyAction === "job"}
             onClick={() => void runCollectionJob("manual")}
@@ -1359,7 +1360,7 @@ function CollectScreen({
           </button>
         </div>
         <button
-          className="mt-3 flex h-11 w-full touch-manipulation items-center justify-center gap-2 rounded-md border border-[#d6e8df] bg-white text-sm font-semibold text-ink active:scale-[0.99]"
+          className="mt-3 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-full border border-[#d6e8df] bg-white text-sm font-semibold text-ink active:scale-[0.99]"
           data-testid="mobile-open-search"
           onClick={openSearchPage}
           type="button"
@@ -1367,7 +1368,7 @@ function CollectScreen({
           <ExternalLink className="h-4 w-4" />
           手动打开搜索页
         </button>
-        <label className="mt-3 flex items-start gap-3 rounded-md border border-[#d6e8df] bg-white px-3 py-3 text-sm">
+        <label className="mt-3 flex items-start gap-3 rounded-[22px] border border-[#d6e8df] bg-white px-4 py-3 text-sm">
           <input
             checked={sourceReviewed}
             className="mt-1 h-4 w-4"
@@ -1383,7 +1384,7 @@ function CollectScreen({
           </span>
         </label>
         <button
-          className="mt-3 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-md border border-[#d6e8df] bg-white text-sm font-semibold text-ink active:scale-[0.99] disabled:opacity-60"
+          className="mt-3 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-full border border-[#d6e8df] bg-white text-sm font-semibold text-ink active:scale-[0.99] disabled:opacity-60"
           data-testid="mobile-save-digest"
           disabled={busyAction === "digest"}
           onClick={saveKnowledgeDigest}
@@ -1396,14 +1397,14 @@ function CollectScreen({
 
       <MobilePanel title="小红书链接导入">
         <textarea
-          className="min-h-24 w-full resize-y rounded-md border border-[#d6e8df] bg-white px-3 py-2 text-sm leading-6 text-ink outline-none"
+          className="min-h-24 w-full resize-y rounded-[22px] border border-[#d6e8df] bg-white px-4 py-3 text-sm leading-6 text-ink outline-none"
           data-testid="mobile-link-text"
           onChange={(event) => setLinkText(event.target.value)}
           placeholder="粘贴小红书分享文本或链接"
           value={linkText}
         />
         <button
-          className="mt-3 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-md bg-ink text-sm font-semibold text-paper active:scale-[0.99] disabled:opacity-60"
+          className="mt-3 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-full bg-ink text-sm font-semibold text-paper active:scale-[0.99] disabled:opacity-60"
           data-testid="mobile-parse-links"
           disabled={busyAction === "link"}
           onClick={parseLinks}
@@ -1413,7 +1414,7 @@ function CollectScreen({
           {busyAction === "link" ? "解析中" : "解析链接"}
         </button>
         {linkResult ? (
-          <div className="mt-3 rounded-md border border-[#d6e8df] bg-white px-3 py-2 text-xs leading-5 text-muted">
+          <div className="mt-3 rounded-[22px] border border-[#d6e8df] bg-white px-4 py-3 text-xs leading-5 text-muted">
             已解析 {linkResult.extracted_count} 个链接，可导入 {linkResult.accepted_count} 个。
           </div>
         ) : null}
@@ -1426,7 +1427,7 @@ function CollectScreen({
               aria-pressed={selectedReference === item.title}
               key={item.title}
               className={[
-                "block w-full touch-manipulation rounded-md border bg-white p-3 text-left active:scale-[0.99]",
+                "block w-full touch-manipulation rounded-[22px] border bg-white p-3 text-left active:scale-[0.99]",
                 selectedReference === item.title ? "border-moss ring-2 ring-moss/15" : "border-[#d6e8df]"
               ].join(" ")}
               data-testid={`reference-${index}`}
@@ -1878,7 +1879,16 @@ function CreateScreen({
 
   return (
     <div className="space-y-4">
-      <section className="relative overflow-hidden rounded-[26px] bg-[#151815] p-4 text-white shadow-[0_22px_48px_rgba(22,24,23,0.20)]">
+      <section className="relative overflow-hidden rounded-[26px] bg-[#181712] p-4 text-white shadow-[0_22px_48px_rgba(22,24,23,0.20)]">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${MOBILE_CREATE_CARD_BG})` }}
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-[linear-gradient(90deg,rgba(18,20,17,0.96)_0%,rgba(18,20,17,0.74)_48%,rgba(18,20,17,0.28)_100%)]"
+        />
         <div
           aria-hidden="true"
           className="absolute -right-12 -top-14 h-40 w-40 rounded-full bg-[#ff2442]/22 blur-2xl"
@@ -1894,11 +1904,11 @@ function CreateScreen({
             </div>
           </div>
           <div className="mt-4 grid grid-cols-[minmax(0,1fr)_74px] gap-2">
-            <div className="rounded-[17px] bg-white/10 px-3 py-3">
+            <div className="rounded-[17px] border border-white/10 bg-[#1c211d]/52 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md">
               <div className="text-[11px] font-black text-white/45">当前状态</div>
               <div className="mt-1 truncate text-xs font-black text-white/78">{heroProgressLabel}</div>
             </div>
-            <div className="flex items-center justify-center rounded-[17px] bg-white text-center text-xs font-black text-ink">
+            <div className="flex items-center justify-center rounded-[17px] bg-white/90 text-center text-xs font-black text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur">
               {heroProgressValue}
             </div>
           </div>
@@ -2485,7 +2495,7 @@ function ModeChip({
     <button
       aria-pressed={active}
       className={[
-        "min-h-11 touch-manipulation rounded-[16px] border px-2 text-sm font-black active:scale-[0.98]",
+        "min-h-12 touch-manipulation rounded-full border px-3 text-sm font-black active:scale-[0.98]",
         active ? "border-[#161817] bg-[#161817] text-white shadow-[0_10px_24px_rgba(22,24,23,0.13)]" : "border-white/75 bg-white/86 text-muted active:bg-white"
       ].join(" ")}
       data-testid={testId}
