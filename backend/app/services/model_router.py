@@ -409,6 +409,17 @@ def _image_prompt(prompt_template: str, payload: dict[str, object]) -> str:
     if isinstance(template, dict):
         template_name = str(template.get("name") or template_name)
         aspect_ratio = str(template.get("aspect_ratio") or aspect_ratio)
+    visual_direction = payload.get("visual_direction")
+    visual_direction_lines: list[str] = []
+    if isinstance(visual_direction, dict):
+        visual_direction_lines = [
+            "",
+            "Selected visual direction:",
+            f"ID: {visual_direction.get('id') or 'unspecified'}",
+            f"Name: {visual_direction.get('name') or 'unspecified'}",
+            f"Instructions: {visual_direction.get('instructions') or 'Follow the selected direction.'}",
+            f"Avoid: {visual_direction.get('avoid') or 'Avoid repetitive template styling.'}",
+        ]
     body_excerpt = body[:500]
     lines = [
         prompt_template.strip(),
@@ -423,6 +434,7 @@ def _image_prompt(prompt_template: str, payload: dict[str, object]) -> str:
         f"Style notes: {style_notes}",
         f"Content context: {body_excerpt}",
     ]
+    lines.extend(visual_direction_lines)
     style_reference = str(payload.get("style_reference") or "").strip()
     if style_reference:
         lines.extend(["", "Platform style reference:", style_reference[:2400]])

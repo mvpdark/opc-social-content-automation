@@ -147,6 +147,7 @@ def validate_safety_gates() -> int:
         "prompts/image_generation.md": [
             "primary cover headline must copy the content title verbatim",
             "High-attraction Xiaohongshu cover formula",
+            "visual_direction",
             "Draft and rewritten content may produce cover previews",
         ],
         "backend/app/services/workspace_service.py": [

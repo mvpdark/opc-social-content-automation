@@ -1,20 +1,31 @@
 # Xiaohongshu Style Reference
 
-Evidence status: provisional public-source reference. Anonymous public Xiaohongshu search did not return stable reviewed high-like samples, so use this as a style guide, not as proof of platform performance.
+Evidence status: provisional public-source reference. Anonymous public Xiaohongshu
+search did not return stable reviewed high-like samples, so use this as a style
+guide, not as proof of platform performance.
 
 Use these patterns for Xiaohongshu postgraduate-to-PhD content:
 
 - Start from a real applicant anxiety or mistake.
-- Prefer conflict/correction hooks: `不是先套磁`, `第一步做反了`, `别急着群发邮件`.
+- Prefer conflict/correction hooks: `不是先套磁`, `第一步做反了`, `先别急着群发邮件`.
 - Sound like a calm senior advisor or recent applicant, not a formal institution.
 - Use short mobile lines and practical steps.
 - Make one clear judgment, then explain the reason and action path.
-- Add a clear Xiaohongshu expression layer: feminine, friendly, slightly cute, with useful advice underneath.
-- Natural address words are allowed in moderation: `姐妹`, `宝子`, `uu`, `学妹`.
-- For list-heavy education posts, use emoji as section navigation and `结构标识`, not random decoration. A strong pattern is: `👉💧` opening hook, `👇` classification lead-in, `📍` route sections, `🔥` benefits/conditions, `✅` benefit bullets, `🎓` major/program pool, `😎` direct FAQ confidence line, `💓` application-condition or soft CTA close.
-- Unless the task says not to, include 5-9 structural emojis across route/list posts. Add sticker codes or light kaomoji only as a secondary layer, such as `[笑哭R]`, `[哭惹R]`, `[哇R]`, `[赞R]`, `[doge]`, `[蹲后续H]`.
-- Use expressive punctuation for rhythm: `～`, `！！`, `？`, `……`. Do not stack more than two strong marks in a row.
-- Use short parenthetical asides for meme-like feeling, for example: `（先别急）`, `（真的会被看出来）`, `（这一步很亏）`.
+- Add a clear Xiaohongshu expression layer: feminine, friendly, slightly cute,
+  with useful advice underneath.
+- Natural address words are allowed in moderation: `姐妹`, `宝子`, `uu`, `学姐`.
+- For list-heavy education posts, use emoji as section navigation and `结构标识`,
+  not random decoration. A strong pattern is: `👉💡` opening hook, `👇`
+  classification lead-in, `📍` route sections, `🔥` benefits/conditions, `✅`
+  benefit bullets, `🎯` major/program pool, `😎` direct FAQ confidence line,
+  `💬` application-condition or soft CTA close.
+- Unless the task says not to, include 5-9 structural emojis across route/list
+  posts. Add sticker codes or light kaomoji only as a secondary layer, such as
+  `[笑哭R]`, `[哭惹R]`, `[赞R]`, `[哇R]`, `[doge]`, `[蹲后续H]`.
+- Use expressive punctuation for rhythm: `～`, `！！`, `？`, `……`. Do not stack
+  more than two strong marks in a row.
+- Use short parenthetical asides for meme-like feeling, for example:
+  `（先别慌）`, `（真的会被看出来）`, `（这一步很亏）`.
 - Avoid guaranteed outcomes, fear-based urgency, or unsupported admissions claims.
 - Keep all facts traceable to provided knowledge context and collected trend assets.
 
@@ -36,10 +47,17 @@ Example opening patterns:
 Cover/image structure:
 
 - Use the exact content title as the primary cover headline. Do not rewrite it.
-- Large Chinese headline, 2-4 stacked lines max, with one emphasized word, red underline, or small warning tag.
+- Large Chinese headline, 2-4 stacked lines max, with one emphasized word, red
+  underline, or small warning tag.
 - Make the first visual read a mistake or benefit, not a decorative poster.
-- Use real-life proof scenes: study desk, laptop email draft, notebook, sticky notes, calendar, research papers, books, highlighter, library table, or application checklist.
-- Use check/cross marks, circled keywords, numbered checklist, 3 short chips, or before/after contrast where suitable.
-- Use bright clean editorial visuals with feminine cute but credible accents: cream base, coral red, mint green, soft daylight, light scrapbook stickers, hand-drawn arrows, and clean whitespace.
-- Avoid fake university seals, admission letters, guaranteed-offer badges, or misleading official-looking marks.
-- Avoid official Xiaohongshu/Douyin logos in generated covers unless the user explicitly asks for platform badges outside the cover image.
+- Vary cover visuals. Do not always use the same desk, sticky note, scrapbook,
+  coral/mint checklist, and red underline formula.
+- Acceptable visual routes include real desk proof, phone screenshot collage,
+  dark academic blueprint, editorial magazine page, checklist workflow board,
+  library research mood, blackboard annotation, or minimal typography poster.
+- Use check/cross marks, circled keywords, numbered checklist, 2-3 short chips,
+  or before/after contrast only when they fit the chosen route.
+- Avoid fake university seals, admission letters, guaranteed-offer badges, or
+  misleading official-looking marks.
+- Avoid official Xiaohongshu/Douyin logos in generated covers unless the user
+  explicitly asks for platform badges outside the cover image.

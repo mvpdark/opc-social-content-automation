@@ -6,7 +6,7 @@ generation prompt, not a publishing approval.
 Core rules:
 
 - Use the content title, body, platform, selected cover template, aspect ratio,
-  tags, style notes, and `style_reference`.
+  tags, style notes, `visual_direction`, and `style_reference`.
 - The primary cover headline must copy the content title verbatim unless the
   payload provides a shorter approved cover headline.
 - Keep text overlays short enough for mobile scanning.
@@ -19,18 +19,20 @@ Core rules:
 High-attraction Xiaohongshu cover formula:
 
 - Build the cover around one clear anxiety, mistake, or counter-intuitive hook.
-- Use a real-life visual proof scene, such as a study desk, laptop email draft,
-  notebook, sticky notes, calendar, research papers, highlighter, library table,
-  or application checklist.
+- Use the selected `visual_direction` as the dominant art direction. It overrides
+  the generic platform style reference.
+- Do not repeat the same default "study desk + sticky notes + coral/mint
+  checklist" look unless the selected visual direction explicitly asks for it.
 - Use oversized Chinese headline typography with 2-4 stacked lines, black or
   very dark text, strong contrast, and one emphasized word or underline.
-- Add one small risk/warning tag when useful, such as `别群发!` or `先别急`.
-- Add 3 short checklist chips when the title promises steps, e.g. `研究方向`,
-  `导师匹配`, `邮件时机`.
-- Prefer bright clean editorial visuals, feminine cute but credible accents,
-  coral red plus mint/cream, scrapbook markers, hand-drawn arrows, check marks,
-  and soft daylight.
+- Add one small risk/warning tag when useful, such as `先别急`, `避坑`, `顺序别反`.
+- Add 2-3 short checklist chips only when the selected direction supports chips,
+  e.g. `研究方向`, `导师匹配`, `邮件时机`.
+- Keep the cover readable on a phone. Prefer one strong composition over many
+  small labels.
 - Avoid generic gradient posters, empty abstract backgrounds, tiny unreadable
   text, cluttered infographic grids, fake platform UI, and official brand logos.
+- Avoid copying a previous generated cover style for the same project. Vary the
+  scene, palette, layout, props, and graphic language across generations.
 
 Return an image prompt that is directly usable by the image provider.

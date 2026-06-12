@@ -50,12 +50,12 @@ def test_draft_prompt_template_requires_xhs_expression_layer() -> None:
 
     assert "[笑哭R]" in prompt
     assert "表情包" in prompt
-    assert "👉💧" in prompt
+    assert "👉💡" in prompt
     assert "📍" in prompt
-    assert "🎓" in prompt
+    assert "🎯" in prompt
     assert "～" in prompt
     assert "[哭惹R]" in style_reference
-    assert "结构" in style_reference
+    assert "结构标识" in style_reference
     assert "✅" in style_reference
     assert "姐妹" in style_reference
 
@@ -66,7 +66,7 @@ def test_rewrite_prompt_package_includes_xiaohongshu_style_reference() -> None:
         user_id=1,
         platform="xiaohongshu",
         title="硕升博申请第一步",
-        body="先定方向，再考虑套磁。",
+        body="先定研究方向，再考虑套磁。",
         tags=["硕升博"],
         status="draft",
     )
@@ -79,13 +79,13 @@ def test_rewrite_prompt_package_includes_xiaohongshu_style_reference() -> None:
     assert "Xiaohongshu Style Reference" in str(package.payload["style_reference"])
 
 
-def test_image_prompt_package_includes_xiaohongshu_style_reference() -> None:
+def test_image_prompt_package_includes_xiaohongshu_style_reference_and_visual_direction() -> None:
     content = Content(
         id=1,
         user_id=1,
         platform="xiaohongshu",
         title="硕升博申请第一步",
-        body="先定方向，再考虑套磁。",
+        body="先定研究方向，再考虑套磁。",
         tags=["硕升博"],
         status="approved",
     )
@@ -95,4 +95,7 @@ def test_image_prompt_package_includes_xiaohongshu_style_reference() -> None:
     package = build_image_prompt_package(content=content, payload=payload, current_user=user)
 
     assert "style_reference" in package.payload
+    assert "visual_direction" in package.payload
     assert "Xiaohongshu Style Reference" in str(package.payload["style_reference"])
+    assert isinstance(package.payload["visual_direction"], dict)
+    assert package.payload["visual_direction"]["instructions"]

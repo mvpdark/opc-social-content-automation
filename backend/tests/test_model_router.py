@@ -344,6 +344,12 @@ def test_openai_compatible_image_provider_accepts_remote_url(
             "title": "硕升博封面",
             "platform": "xiaohongshu",
             "aspect_ratio": "3:4",
+            "visual_direction": {
+                "id": "dark-academic-blueprint",
+                "name": "深色学术蓝图",
+                "instructions": "Use a dark navy academic blueprint look.",
+                "avoid": "Avoid warm daylight sticky-note desk scenes.",
+            },
             "style_reference": "Use strong mobile cover hooks.",
         },
     )
@@ -358,7 +364,8 @@ def test_openai_compatible_image_provider_accepts_remote_url(
         request_json["prompt"]
     )
     assert "High-attraction Xiaohongshu cover formula" in str(request_json["prompt"])
-    assert "real-life visual proof scene" in str(request_json["prompt"])
+    assert "Selected visual direction" in str(request_json["prompt"])
+    assert "dark-academic-blueprint" in str(request_json["prompt"])
     assert "Use strong mobile cover hooks." in str(request_json["prompt"])
     assert secret not in str(request_json)
 
