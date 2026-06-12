@@ -2214,7 +2214,7 @@ function GenerationLauncher({
           setNeedsProviderSettings(
             rewriteMessage.includes("DeepSeek") ||
               rewriteMessage.includes("授权失败") ||
-            rewriteMessage.includes("API Key")
+              rewriteMessage.includes("API Key")
           );
           rewriteWarning = `DeepSeek 改写未完成：${rewriteMessage}`;
           setStatusText(
@@ -2225,7 +2225,7 @@ function GenerationLauncher({
 
       if (isTestDraft(finalContent)) {
         setStatusText(
-          `草稿 #${finalContent.id} 是流程联调用测试草稿，不会生成假封面图。请配置真实撰稿服务后再一键生成。`
+          `草稿 #${finalContent.id} 是流程联调用测试草稿，不会创建演示封面。请配置真实撰稿服务后再一键生成。`
         );
         return;
       }
@@ -2802,7 +2802,7 @@ function GeneratedPostExportCard({
         </div>
         {!imageProviderReady ? (
           <div className="mt-3 rounded-md border border-amber/40 bg-amber/10 p-3 text-xs leading-5 text-ink">
-            点击生成时会重新检测真实图片服务；检测未通过不会创建假图。
+            点击生成时会重新检测真实图片服务；检测未通过不会创建演示图片。
           </div>
         ) : null}
         {imageError ? (

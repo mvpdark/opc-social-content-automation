@@ -479,6 +479,8 @@ def validate_content_production_contract() -> int:
         "Only human-approved content can be used for image generation.",
         "canCopy && imageProviderReady && !imageBusy",
         "封面仍是版式预览，真实图片生成后会在这里替换。\" :",
+        "假图",
+        "假封面图",
     ]
     for snippet in stale_gate_snippets:
         total += 1
