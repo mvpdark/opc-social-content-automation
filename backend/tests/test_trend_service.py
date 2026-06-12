@@ -10,6 +10,7 @@ from app.services.trend_service import (
     build_xhs_link_import_target,
     build_platform_search_target,
     build_safety_profile,
+    collection_job_has_pending_auto_start,
     ensure_trend_sources_reviewed,
     mark_collection_job_for_auto_start,
     render_trend_knowledge_digest,
@@ -144,6 +145,34 @@ def test_mark_collection_job_for_auto_start_resets_restartable_job() -> None:
     assert job.result_summary["collected_items"] == 2
     assert job.result_summary["trend_ids"] == [4, 5]
     assert "automatically" in str(job.result_summary["message"])
+
+
+def test_collection_job_has_pending_auto_start_only_matches_auto_queued_job() -> None:
+    queued_job = TrendCollectionJob(
+        platform="xiaohongshu",
+        keyword="硕升博",
+        status="queued",
+        safety_profile={},
+        result_summary={"auto_start": True},
+    )
+    legacy_job = TrendCollectionJob(
+        platform="xiaohongshu",
+        keyword="硕升博",
+        status="queued",
+        safety_profile={},
+        result_summary={"auto_start": False},
+    )
+    running_job = TrendCollectionJob(
+        platform="xiaohongshu",
+        keyword="硕升博",
+        status="running",
+        safety_profile={},
+        result_summary={"auto_start": True},
+    )
+
+    assert collection_job_has_pending_auto_start(queued_job) is True
+    assert collection_job_has_pending_auto_start(legacy_job) is False
+    assert collection_job_has_pending_auto_start(running_job) is False
 
 
 def test_render_trend_knowledge_digest_includes_sources() -> None:

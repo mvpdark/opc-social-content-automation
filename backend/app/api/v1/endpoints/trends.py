@@ -23,6 +23,7 @@ from app.services.trend_service import (
     analyze_keywords,
     build_platform_search_target,
     build_xhs_link_import_target,
+    collection_job_has_pending_auto_start,
     create_collection_job,
     create_trend_knowledge_digest,
     create_trend_asset,
@@ -183,6 +184,11 @@ def start_trend_collection_job(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Trend collection job is already running.",
+        )
+    if collection_job_has_pending_auto_start(job):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Trend collection job is already queued for automatic start.",
         )
     if job.status == "completed":
         raise HTTPException(

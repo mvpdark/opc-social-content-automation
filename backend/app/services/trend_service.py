@@ -293,6 +293,11 @@ def mark_collection_job_for_auto_start(job: TrendCollectionJob) -> None:
     job.result_summary = summary
 
 
+def collection_job_has_pending_auto_start(job: TrendCollectionJob) -> bool:
+    summary = job.result_summary or {}
+    return job.status == "queued" and bool(summary.get("auto_start"))
+
+
 def list_collection_jobs(
     db: Session,
     platform: str | None,
