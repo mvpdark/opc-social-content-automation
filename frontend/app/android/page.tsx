@@ -853,9 +853,11 @@ function LoginScreen({
   return (
     <section className="flex min-h-0 flex-1 flex-col justify-center px-5 pb-[calc(24px+env(safe-area-inset-bottom))] pt-3">
       <div className="mb-8">
-        <div className="flex h-12 w-12 items-center justify-center rounded-md bg-ink text-paper">
-          <LockKeyhole className="h-5 w-5" />
-        </div>
+        <img
+          alt=""
+          className="h-12 w-12 rounded-md object-cover shadow-[0_12px_28px_rgba(37,99,235,0.18)]"
+          src="/app-icon.png"
+        />
         <div className="mt-5 text-xs font-semibold text-moss">OPC Mobile</div>
         <h1 className="mt-1 text-[30px] font-semibold leading-9 tracking-normal text-ink">
           登录手机工作台
