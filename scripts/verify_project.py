@@ -60,6 +60,7 @@ def validate_required_files() -> int:
         ROOT / "frontend" / "lib" / "api-base.ts",
         ROOT / "frontend" / "lib" / "asset-url.ts",
         ROOT / "frontend" / "lib" / "status-labels.ts",
+        ROOT / "frontend" / "lib" / "xhs-stickers.tsx",
         ROOT / "docs" / "RUNBOOK.md",
         ROOT / "docs" / "CLOUDFLARE_OPC.md",
         ROOT / "docs" / "SECURITY_NOTES.md",
@@ -425,6 +426,9 @@ def validate_content_production_contract() -> int:
     clipboard_text = (ROOT / "frontend" / "lib" / "clipboard.ts").read_text(
         encoding="utf-8"
     )
+    xhs_stickers_text = (ROOT / "frontend" / "lib" / "xhs-stickers.tsx").read_text(
+        encoding="utf-8"
+    )
     draft_prompt_text = (ROOT / "prompts" / "draft_generation.md").read_text(
         encoding="utf-8"
     )
@@ -524,6 +528,17 @@ def validate_content_production_contract() -> int:
         if snippet not in asset_url_text:
             raise SystemExit(f"Missing asset URL helper contract: {snippet}")
 
+    xhs_sticker_contract_snippets = [
+        "export function renderXhsExpressionText",
+        '["[笑哭R]", { face: "😂", name: "笑哭" }]',
+        '["[哭惹R]", { face: "🥺", name: "哭惹" }]',
+        "复制时仍保留原字符码",
+    ]
+    for snippet in xhs_sticker_contract_snippets:
+        total += 1
+        if snippet not in xhs_stickers_text:
+            raise SystemExit(f"Missing Xiaohongshu sticker helper contract: {snippet}")
+
     particle_style_contracts = [
         (
             workspace_text,
@@ -563,6 +578,8 @@ def validate_content_production_contract() -> int:
         "async function copyText(text: string)",
         "async function tryCopyText(text: string)",
         "function resolveAssetUrl(imageUrl: string)",
+        "const xhsStickerPreviewByCode = new Map<string, { face: string; name: string }>",
+        "function xhsStickerFallback(code: string)",
         "canCopy && imageProviderReady && !imageBusy",
         "封面仍是版式预览，真实图片生成后会在这里替换。\" :",
         "假图",
