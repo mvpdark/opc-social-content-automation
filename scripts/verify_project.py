@@ -481,6 +481,17 @@ def validate_content_production_contract() -> int:
         if snippet not in status_labels_text:
             raise SystemExit(f"Missing status label contract: {snippet}")
 
+    mobile_xhs_copy_contract_snippets = [
+        "tryCopyText(draftText)",
+        "文案已重新复制",
+        "浏览器拦截了剪贴板，请点“复制预览文案”",
+        "复制文案+封面，去小红书",
+    ]
+    for snippet in mobile_xhs_copy_contract_snippets:
+        total += 1
+        if snippet not in android_text:
+            raise SystemExit(f"Missing mobile Xiaohongshu copy contract: {snippet}")
+
     particle_style_contracts = [
         (
             workspace_text,
@@ -696,6 +707,10 @@ def validate_content_production_contract() -> int:
         "本机/局域网地址",
         "服务状态读取失败",
         "已填写不代表授权通过",
+        "copyImageFileToClipboard",
+        "文案仍在剪贴板里",
+        "复制封面+文案，去小红书",
+        "文案和封面图已复制",
     ]
     for snippet in stale_gate_snippets:
         total += 1
