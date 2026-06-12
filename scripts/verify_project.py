@@ -482,6 +482,9 @@ def validate_content_production_contract() -> int:
     workspace_service_text = (
         ROOT / "backend" / "app" / "services" / "workspace_service.py"
     ).read_text(encoding="utf-8")
+    dependency_service_text = (
+        ROOT / "backend" / "app" / "services" / "dependency_service.py"
+    ).read_text(encoding="utf-8")
     status_labels_text = (ROOT / "frontend" / "lib" / "status-labels.ts").read_text(
         encoding="utf-8"
     )
@@ -981,6 +984,11 @@ def validate_content_production_contract() -> int:
         "已创建采集任务",
         "采集任务创建失败",
         "请重新创建一个任务",
+        "测试图文采集任务",
+        "本地 SQLite 测试数据库",
+        "测试环境请运行",
+        "测试图片服务已就绪",
+        "测试撰稿服务已就绪",
         'MobilePanel title="高赞参考"',
         "把高赞参考变成素材池",
         "来源待 PC 确认",
@@ -1004,6 +1012,15 @@ def validate_content_production_contract() -> int:
             or snippet in api_deps_text
         ):
             raise SystemExit(f"Stale content production gate still present: {snippet}")
+
+    dependency_stale_snippets = [
+        "本地 SQLite 测试数据库",
+        "测试环境请运行",
+    ]
+    for snippet in dependency_stale_snippets:
+        total += 1
+        if snippet in dependency_service_text:
+            raise SystemExit(f"Stale dependency copy still present: {snippet}")
 
     return total
 

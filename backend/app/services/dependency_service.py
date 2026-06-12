@@ -208,14 +208,14 @@ def _database_items() -> list[dict[str, object]]:
         writable = path.parent.exists()
         return [
             _item(
-                name="本地 SQLite 测试数据库",
+                name="本地 SQLite 数据库",
                 category="数据库",
                 required=True,
                 status="ok" if writable else "missing",
                 detected=str(path),
                 minimum=None,
                 message=(
-                    "已启用本地 SQLite 测试数据库。"
+                    "已启用本地 SQLite 数据库。"
                     if writable
                     else "SQLite 数据库目录不存在或不可写。"
                 ),
@@ -229,7 +229,7 @@ def _database_items() -> list[dict[str, object]]:
     postgres_fix = (
         "安装 Docker 后运行 docker compose up -d postgres redis；或将 DATABASE_URL 切到 sqlite:///./artifacts/dev/opc-dev.db。"
         if settings.is_self_hosted_profile
-        else "Windows 安装包不需要 Docker；测试环境请运行 python scripts/setup_local.py 使用本地 SQLite，或确认 DATABASE_URL 指向可用数据库。"
+        else "Windows 安装包不需要 Docker；本地运行请运行 python scripts/setup_local.py 使用本地 SQLite，或确认 DATABASE_URL 指向可用数据库。"
     )
     postgres_items = [
         _item(

@@ -291,7 +291,7 @@ export const commandFocus = [
 ];
 
 export const nextActions = [
-  "测试图文采集任务能否稳定创建",
+  "检查图文采集流程是否稳定开始",
   "把高赞标题和封面风格整理成写作参考",
   "用参考生成一篇新草稿并人工确认"
 ];
