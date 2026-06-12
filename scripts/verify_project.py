@@ -963,6 +963,7 @@ def validate_content_production_contract() -> int:
         "浏览器可能拦截了剪贴板权限",
         "function formatMobileCollectionJobStatus",
         "const terminalJobStatuses = new Set",
+        "请重新点击“创建并启动”",
         'MobilePanel title="高赞参考"',
         "把高赞参考变成素材池",
         "来源待 PC 确认",
@@ -976,6 +977,7 @@ def validate_content_production_contract() -> int:
             or snippet in android_text
             or snippet in public_preview_text
             or snippet in trend_collector_text
+            or snippet in collection_job_status_text
             or snippet in image_service_text
             or snippet in model_router_text
             or snippet in workspace_service_text
