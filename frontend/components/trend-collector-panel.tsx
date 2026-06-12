@@ -298,6 +298,10 @@ function formatCollectionJobStatus(job: TrendCollectionJob) {
   return `采集任务 #${job.id} 当前状态：${job.status}${collectedItems}${errorText}。`;
 }
 
+function isRestartableLegacyJob(job: TrendCollectionJob) {
+  return job.status === "queued" && !job.result_summary?.auto_start;
+}
+
 export function TrendCollectorPanel({
   onOpenSettings,
   workspaceToken
@@ -315,13 +319,15 @@ export function TrendCollectorPanel({
   const [linkImportText, setLinkImportText] = useState("");
   const [linkImportTarget, setLinkImportTarget] = useState<LinkImportTarget | null>(null);
   const [statusText, setStatusText] = useState("准备进行公开优先的图文采集。");
-  const [busyAction, setBusyAction] = useState<"target" | "job" | "digest" | "link" | null>(null);
+  const [busyAction, setBusyAction] = useState<"target" | "job" | "restart" | "digest" | "link" | null>(null);
   const [activeJobId, setActiveJobId] = useState<number | null>(null);
+  const [restartableJobId, setRestartableJobId] = useState<number | null>(null);
 
   const canSubmit = useMemo(() => keyword.trim().length > 0, [keyword]);
   const isPollingJob = activeJobId !== null;
   const canOpenSearch = canSubmit && busyAction === null;
   const canCreateJob = canSubmit && busyAction === null && !isPollingJob;
+  const canRestartJob = restartableJobId !== null && busyAction === null && !isPollingJob;
   const canSaveDigest = canSubmit && sourcesReviewed && busyAction === null;
   const canParseLinks =
     platform === "xiaohongshu" && linkImportText.trim().length > 0 && busyAction === null;
@@ -374,6 +380,11 @@ export function TrendCollectorPanel({
     return (await response.json()) as TrendCollectionJob;
   }
 
+  function showCollectionJob(job: TrendCollectionJob) {
+    setStatusText(formatCollectionJobStatus(job));
+    setRestartableJobId(isRestartableLegacyJob(job) ? job.id : null);
+  }
+
   useEffect(() => {
     let cancelled = false;
 
@@ -389,7 +400,7 @@ export function TrendCollectorPanel({
         if (cancelled || !latestJob) {
           return;
         }
-        setStatusText(formatCollectionJobStatus(latestJob));
+        showCollectionJob(latestJob);
         if (
           !terminalJobStatuses.has(latestJob.status) &&
           latestJob.result_summary?.auto_start
@@ -427,7 +438,7 @@ export function TrendCollectorPanel({
           timer = window.setTimeout(pollJobStatus, 3000);
           return;
         }
-        setStatusText(formatCollectionJobStatus(job));
+        showCollectionJob(job);
         if (terminalJobStatuses.has(job.status)) {
           setActiveJobId(null);
           return;
@@ -508,9 +519,35 @@ export function TrendCollectorPanel({
       }
       const data = (await response.json()) as TrendCollectionJob;
       setActiveJobId(data.id);
-      setStatusText(formatCollectionJobStatus(data));
+      showCollectionJob(data);
     } catch (error) {
       setStatusText(error instanceof Error ? error.message : "采集任务创建失败。");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function startExistingJob() {
+    if (restartableJobId === null) {
+      setStatusText("没有可启动的旧采集任务。");
+      return;
+    }
+    setBusyAction("restart");
+    try {
+      const response = await fetch(`${API_BASE}/trends/jobs/${restartableJobId}/start`, {
+        method: "POST",
+        headers: {
+          ...(workspaceToken ? { Authorization: `Bearer ${workspaceToken}` } : {})
+        }
+      });
+      if (!response.ok) {
+        throw new Error("旧采集任务启动失败，请重新创建一个任务。");
+      }
+      const data = (await response.json()) as TrendCollectionJob;
+      setActiveJobId(data.id);
+      showCollectionJob(data);
+    } catch (error) {
+      setStatusText(error instanceof Error ? error.message : "旧采集任务启动失败。");
     } finally {
       setBusyAction(null);
     }
@@ -849,6 +886,21 @@ export function TrendCollectorPanel({
             <div className="min-w-0">
               <div className="text-sm font-semibold">采集状态</div>
               <p className="mt-1 text-sm leading-5 text-muted">{statusText}</p>
+              {restartableJobId !== null ? (
+                <button
+                  className={`${secondaryButtonClass} mt-3 px-3`}
+                  disabled={!canRestartJob}
+                  onClick={startExistingJob}
+                  type="button"
+                >
+                  {busyAction === "restart" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Play className="h-4 w-4" />
+                  )}
+                  {busyAction === "restart" ? "正在启动" : "启动旧任务"}
+                </button>
+              ) : null}
             </div>
           </div>
 

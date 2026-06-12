@@ -69,6 +69,20 @@ def _run_collection_job_in_background(job_id: int) -> None:
         db.close()
 
 
+def _mark_job_for_auto_start(job: TrendCollectionJob) -> None:
+    summary = dict(job.result_summary or {})
+    summary.update(
+        {
+            "message": "Queued; the safe visible-browser collector will start automatically.",
+            "auto_start": True,
+            "collected_items": int(summary.get("collected_items") or 0),
+        }
+    )
+    job.status = "queued"
+    job.error = None
+    job.result_summary = summary
+
+
 @router.get("/list", response_model=list[TrendRead])
 def list_trends(
     db: Session = Depends(get_db),
@@ -162,6 +176,37 @@ def get_trend_collection_job(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Trend collection job was not found.",
         )
+    return TrendCollectionJobRead.model_validate(job)
+
+
+@router.post("/jobs/{job_id}/start", response_model=TrendCollectionJobRead)
+def start_trend_collection_job(
+    job_id: int,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
+) -> TrendCollectionJobRead:
+    job = db.get(TrendCollectionJob, job_id)
+    if job is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Trend collection job was not found.",
+        )
+    if job.status == "running":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Trend collection job is already running.",
+        )
+    if job.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Completed trend collection jobs cannot be restarted.",
+        )
+
+    _mark_job_for_auto_start(job)
+    db.commit()
+    db.refresh(job)
+    background_tasks.add_task(_run_collection_job_in_background, job.id)
     return TrendCollectionJobRead.model_validate(job)
 
 
