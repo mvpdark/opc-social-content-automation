@@ -91,6 +91,20 @@ type LinkImportTarget = {
   }>;
 };
 
+type MobileCollectionJob = {
+  id: number;
+  status: string;
+  result_summary: {
+    auto_start?: boolean;
+    blocked_candidates?: number;
+    collected_items?: number;
+    operator_wait_seconds?: number;
+    page_title?: string | null;
+    raw_candidates?: number;
+  } | null;
+  error: string | null;
+};
+
 type DraftPreviewState = {
   body: string;
   points: string[];
@@ -110,6 +124,11 @@ const MOBILE_CREATE_CARD_BG = "/mobile-assets/create-card-bg.png";
 const MOBILE_HEADER_ICON_BUTTON_CLASS =
   "flex h-10 w-10 shrink-0 touch-manipulation items-center justify-center rounded-[16px] border border-white/70 bg-white/40 text-ink shadow-[0_10px_26px_rgba(28,54,45,0.10),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-xl active:scale-[0.98]";
 const XHS_COPY_TEXT_ONLY_LABEL = "只复制文案";
+const MOBILE_COLLECTION_TERMINAL_STATUSES = new Set([
+  "completed",
+  "failed",
+  "needs_operator_review"
+]);
 
 const emptyCredentials: CredentialSettings = {
   draftApiKey: "",
@@ -278,6 +297,40 @@ async function readApiError(response: Response, fallback: string) {
     | { detail?: string; message?: string }
     | null;
   return sanitizeServiceErrorMessage(errorBody?.message ?? errorBody?.detail ?? fallback);
+}
+
+function formatMobileCollectionJobStatus(job: MobileCollectionJob) {
+  const summary = job.result_summary;
+  const collected =
+    typeof summary?.collected_items === "number" ? `，已采集 ${summary.collected_items} 条` : "";
+  const diagnostics = [
+    typeof summary?.raw_candidates === "number" ? `原始候选 ${summary.raw_candidates} 条` : "",
+    typeof summary?.blocked_candidates === "number" ? `过滤 ${summary.blocked_candidates} 条` : "",
+    summary?.page_title ? `页面：${summary.page_title}` : ""
+  ].filter(Boolean);
+  const diagnosticText = diagnostics.length ? `（${diagnostics.join("，")}）` : "";
+  const waitText =
+    typeof summary?.operator_wait_seconds === "number"
+      ? `，浏览器等待 ${summary.operator_wait_seconds} 秒`
+      : "";
+  const errorText = job.error ? `；${job.error}` : "";
+
+  if (job.status === "queued") {
+    return `采集任务排队中${collected}，可见浏览器即将打开。`;
+  }
+  if (job.status === "running") {
+    return `采集任务采集中${collected}${waitText}。遇到登录或验证码时，先在浏览器里人工处理。`;
+  }
+  if (job.status === "completed") {
+    return `采集任务已完成${collected}${diagnosticText}。请人工确认来源后再保存知识摘要。`;
+  }
+  if (job.status === "needs_operator_review") {
+    return `采集任务需要人工处理${collected}${diagnosticText}。可能是登录墙、验证码或空结果，处理后可重新运行。${errorText}`;
+  }
+  if (job.status === "failed") {
+    return `采集任务失败${collected}${diagnosticText}${errorText}。可以重新运行一次。`;
+  }
+  return `采集任务状态：${collectionJobStatusLabel(job.status)}${collected}${diagnosticText}${errorText}。`;
 }
 
 function readMobileStorage(key: string) {
@@ -974,6 +1027,7 @@ function CollectScreen({
   const [nextRunAt, setNextRunAt] = useState<string | null>(null);
   const [lastRunAt, setLastRunAt] = useState<string | null>(null);
   const [lastJobId, setLastJobId] = useState<number | null>(null);
+  const [activeCollectionJobId, setActiveCollectionJobId] = useState<number | null>(null);
   const [scheduleMessage, setScheduleMessage] = useState("定时采集未启用。");
   const [sourceReviewed, setSourceReviewed] = useState(false);
   const [linkText, setLinkText] = useState("");
@@ -1050,6 +1104,76 @@ function CollectScreen({
     return () => window.clearInterval(timer);
   }, [autoEnabled, nextRunAt, platform, query, maxItems, intervalMinutes, credentials]);
 
+  useEffect(() => {
+    if (!lastJobId || activeCollectionJobId !== null) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    async function refreshLastJob() {
+      try {
+        const job = await fetchCollectionJobStatus(lastJobId as number);
+        if (cancelled) {
+          return;
+        }
+        setScheduleMessage(formatMobileCollectionJobStatus(job));
+        if (!MOBILE_COLLECTION_TERMINAL_STATUSES.has(job.status)) {
+          setActiveCollectionJobId(job.id);
+        }
+      } catch {
+        // The user can still create a fresh collection task if the old job no longer exists.
+      }
+    }
+
+    void refreshLastJob();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeCollectionJobId, credentials.workspaceToken, lastJobId]);
+
+  useEffect(() => {
+    if (activeCollectionJobId === null) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let timer: number | undefined;
+
+    async function pollCollectionJob() {
+      try {
+        const job = await fetchCollectionJobStatus(activeCollectionJobId as number);
+        if (cancelled) {
+          return;
+        }
+        const message = formatMobileCollectionJobStatus(job);
+        setScheduleMessage(message);
+        if (MOBILE_COLLECTION_TERMINAL_STATUSES.has(job.status)) {
+          setActiveCollectionJobId(null);
+          onAction(message);
+          return;
+        }
+        timer = window.setTimeout(pollCollectionJob, 3000);
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        setScheduleMessage(error instanceof Error ? error.message : "采集任务状态刷新失败。");
+        timer = window.setTimeout(pollCollectionJob, 5000);
+      }
+    }
+
+    timer = window.setTimeout(pollCollectionJob, 800);
+
+    return () => {
+      cancelled = true;
+      if (timer) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, [activeCollectionJobId, credentials.workspaceToken, onAction]);
+
   function formatScheduleTime(value: string | null) {
     if (!value) {
       return "未安排";
@@ -1067,6 +1191,16 @@ function CollectScreen({
     const nextDate = new Date(fromDate.getTime() + safeInterval * 60_000);
     setNextRunAt(nextDate.toISOString());
     return nextDate;
+  }
+
+  async function fetchCollectionJobStatus(jobId: number) {
+    const response = await fetch(`${API_BASE}/trends/jobs/${jobId}`, {
+      headers: authHeaders(credentials)
+    });
+    if (!response.ok) {
+      throw new Error(await readApiError(response, "采集任务状态刷新失败。"));
+    }
+    return (await response.json()) as MobileCollectionJob;
   }
 
   function saveSchedule() {
@@ -1132,11 +1266,12 @@ function CollectScreen({
       if (!response.ok) {
         throw new Error(await readApiError(response, "采集任务创建失败。"));
       }
-      const data = (await response.json()) as { id: number; status: string };
+      const data = (await response.json()) as MobileCollectionJob;
       const nextDate = autoEnabled ? scheduleNextRun(startedAt) : null;
       setLastJobId(data.id);
       setLastRunAt(startedAt.toISOString());
-      const message = `${runLabel}任务已创建，状态：${collectionJobStatusLabel(data.status)}。${
+      setActiveCollectionJobId(data.id);
+      const message = `${runLabel}任务已创建，${formatMobileCollectionJobStatus(data)}${
         nextDate ? ` 下次运行：${formatScheduleTime(nextDate.toISOString())}。` : ""
       }`;
       setScheduleMessage(message);
@@ -1344,7 +1479,7 @@ function CollectScreen({
           <div>下次运行：{formatScheduleTime(nextRunAt)}</div>
           <div>
             上次运行：{formatScheduleTime(lastRunAt)}
-            {lastJobId ? "，已创建采集任务" : ""}
+            {activeCollectionJobId ? "，正在追踪进度" : lastJobId ? "，已创建采集任务" : ""}
           </div>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2">
