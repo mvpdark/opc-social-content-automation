@@ -368,8 +368,6 @@ def validate_frontend_design_contract() -> int:
                 '{ id: "content", label: "一键生成"',
                 'title: "一键生成"',
                 "一键生成文案和封面",
-                "一键生成营销图文",
-                "进入一键生成页生成文案和封面",
             ],
             "navigation one-click entry",
         ),

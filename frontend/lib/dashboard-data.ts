@@ -22,8 +22,7 @@ import {
   Sparkles,
   Upload,
   Users,
-  Wand2,
-  type LucideIcon
+  Wand2
 } from "lucide-react";
 
 export type WorkspaceTab =
@@ -44,15 +43,6 @@ export const workspaceTabIds: WorkspaceTab[] = [
   "delivery",
   "settings"
 ];
-
-type DashboardActionLink = {
-  command: string;
-  detail: string;
-  icon: LucideIcon;
-  status: string;
-  tab: WorkspaceTab;
-  title: string;
-};
 
 export type InterfaceStyle =
   | "apple"
@@ -304,33 +294,6 @@ export const nextActions = [
   "检查图文采集流程是否稳定开始",
   "把高赞标题和封面风格整理成写作参考",
   "用参考生成一篇新草稿并人工确认"
-];
-
-export const dashboardActionLinks: DashboardActionLink[] = [
-  {
-    title: "补高赞图文参考",
-    detail: "先采集公开图文和标题结构。",
-    tab: "research",
-    command: "去采集",
-    status: "当前重点",
-    icon: Radar
-  },
-  {
-    title: "沉淀写作参考",
-    detail: "把确认过的样本整理进知识库。",
-    tab: "knowledge",
-    command: "去知识库",
-    status: "待补充",
-    icon: BookOpenText
-  },
-  {
-    title: "一键生成营销图文",
-    detail: "进入一键生成页生成文案和封面。",
-    tab: "content",
-    command: "去生成",
-    status: "可开始",
-    icon: PenLine
-  }
 ];
 
 export const queues = [
