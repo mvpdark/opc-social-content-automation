@@ -243,7 +243,7 @@ function authHeaders(credentials: CredentialSettings) {
 async function fetchProviderStatuses() {
   const response = await fetch(`${API_BASE}/workspace/provider-status`);
   if (!response.ok) {
-    throw new Error(await readApiError(response, "服务状态读取失败。"));
+    throw new Error(await readApiError(response, "服务配置读取失败。"));
   }
   return sanitizeProviderStatusItems(
     (await response.json()) as ProviderStatusItem[]

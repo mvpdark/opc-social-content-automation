@@ -694,6 +694,8 @@ def validate_content_production_contract() -> int:
         "服务已连接",
         "本地服务",
         "本机/局域网地址",
+        "服务状态读取失败",
+        "已填写不代表授权通过",
     ]
     for snippet in stale_gate_snippets:
         total += 1

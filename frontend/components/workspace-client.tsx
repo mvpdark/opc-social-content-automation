@@ -836,7 +836,7 @@ type WorkspaceLoginResponse = {
 async function fetchProviderStatuses() {
   const response = await fetch(`${API_BASE}/workspace/provider-status`);
   if (!response.ok) {
-    throw new Error(await readApiError(response, "服务状态读取失败。"));
+    throw new Error(await readApiError(response, "服务配置读取失败。"));
   }
   return sanitizeProviderStatusItems(
     (await response.json()) as ProviderStatusItem[]
@@ -2113,7 +2113,7 @@ function GenerationLauncher({
       return data;
     } catch (error) {
       setProviderStatusError(
-        sanitizeServiceErrorMessage(error instanceof Error ? error.message : "服务状态读取失败。")
+        sanitizeServiceErrorMessage(error instanceof Error ? error.message : "服务配置读取失败。")
       );
       return null;
     }
@@ -2132,7 +2132,7 @@ function GenerationLauncher({
       } catch (error) {
         if (active) {
           setProviderStatusError(
-            sanitizeServiceErrorMessage(error instanceof Error ? error.message : "服务状态读取失败。")
+            sanitizeServiceErrorMessage(error instanceof Error ? error.message : "服务配置读取失败。")
           );
         }
       }
@@ -2529,12 +2529,12 @@ function GenerationLauncher({
             <p className="mt-2 text-sm leading-6 text-muted">{launchStatusText}</p>
             <div className="mt-4 rounded-md border border-line bg-mist/60 p-3">
               <div className="flex items-center justify-between gap-3">
-                <div className="text-xs font-semibold text-ink">服务状态</div>
-                <span className="text-[11px] text-muted">已填写不代表授权通过</span>
+                <div className="text-xs font-semibold text-ink">服务配置检测</div>
+                <span className="text-[11px] text-muted">填写后仍建议检测一次</span>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {providerStatusError ? (
-                  <Pill tone="red">读取失败</Pill>
+                  <Pill tone="red">检测失败</Pill>
                 ) : providerDisplayItems.some((item) => item.status) ? (
                   providerDisplayItems.map((item) => {
                     const isDraft = item.name === "Draft generation";
@@ -2542,7 +2542,7 @@ function GenerationLauncher({
                     const tone = needsProviderSettings && isDraft ? "red" : configured ? "green" : "amber";
                     const label =
                       needsProviderSettings && isDraft
-                        ? "授权失败"
+                        ? "密钥需检查"
                         : configured
                           ? "已填写"
                           : "未填写";
@@ -3033,7 +3033,7 @@ function SettingsView({
       return statuses;
     } catch (error) {
       const message = sanitizeServiceErrorMessage(
-        error instanceof Error ? error.message : "服务状态读取失败。"
+        error instanceof Error ? error.message : "服务配置读取失败。"
       );
       setProviderStatusError(message);
       return null;
@@ -3053,7 +3053,7 @@ function SettingsView({
       } catch (error) {
         if (active) {
           setProviderStatusError(
-            sanitizeServiceErrorMessage(error instanceof Error ? error.message : "服务状态读取失败。")
+            sanitizeServiceErrorMessage(error instanceof Error ? error.message : "服务配置读取失败。")
           );
         }
       }
