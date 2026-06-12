@@ -284,7 +284,8 @@ def validate_frontend_design_contract() -> int:
         "/content/generate",
         "/content/rewrite",
         "Humanization rewrite",
-        "本次未走 DeepSeek",
+        "本次未走改写服务",
+        "normalizeRewriteServiceMessage",
         "DEFAULT_WRITING_STYLE_STORAGE_KEY",
         "defaultWritingStyle={defaultWritingStyle}",
         "onDefaultWritingStyleChange={setDefaultWritingStyle}",
@@ -423,7 +424,7 @@ def validate_content_production_contract() -> int:
         "isGeneratedImageAsset",
         "/content/rewrite",
         "Humanization rewrite",
-        "本次未走 DeepSeek",
+        "本次未走改写服务",
     ]
     backend_contract_snippets = [
         'IMAGE_GENERATABLE_STATUSES = {"draft", "rewritten", "review_pending", "approved"}',
@@ -481,6 +482,9 @@ def validate_content_production_contract() -> int:
         "封面仍是版式预览，真实图片生成后会在这里替换。\" :",
         "假图",
         "假封面图",
+        "本次未走 DeepSeek",
+        "DeepSeek 改写未完成",
+        "image2 Key",
     ]
     for snippet in stale_gate_snippets:
         total += 1

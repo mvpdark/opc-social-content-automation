@@ -760,6 +760,12 @@ async function readApiError(response: Response, fallback: string) {
   return errorBody?.message ?? errorBody?.detail ?? fallback;
 }
 
+function normalizeRewriteServiceMessage(message: string) {
+  return message
+    .replace(/DeepSeek rewrite provider is not configured yet\./g, "改写服务尚未配置。")
+    .replace(/DeepSeek/g, "改写服务");
+}
+
 type GeneratedContent = {
   body: string;
   created_at?: string;
@@ -2184,9 +2190,9 @@ function GenerationLauncher({
       let finalContent = data;
       let rewriteWarning: string | null = null;
       if (!rewriteProviderReady) {
-        rewriteWarning = "改写服务未配置或尚未确认，本次未走 DeepSeek。";
+        rewriteWarning = "改写服务未配置或尚未确认，本次未走改写服务。";
         setStatusText(
-          `草稿 #${data.id} 已生成。改写服务未配置或尚未确认，本次未走 DeepSeek，正在尝试生成封面图。`
+          `草稿 #${data.id} 已生成。改写服务未配置或尚未确认，本次未走改写服务，正在尝试生成封面图。`
         );
       } else {
         setStatusText(`草稿 #${data.id} 已生成，正在调用改写服务做人味化处理。`);
@@ -2201,7 +2207,7 @@ function GenerationLauncher({
             })
           });
           if (!rewriteResponse.ok) {
-            throw new Error(await readApiError(rewriteResponse, "DeepSeek 改写失败。"));
+            throw new Error(await readApiError(rewriteResponse, "改写服务处理失败。"));
           }
           const rewrittenContent = (await rewriteResponse.json()) as GeneratedContent;
           finalContent = rewrittenContent;
@@ -2209,16 +2215,17 @@ function GenerationLauncher({
           onGeneratedContent(rewrittenContent);
           setStatusText(`草稿 #${rewrittenContent.id} 已完成改写，正在生成封面图。`);
         } catch (rewriteError) {
-          const rewriteMessage =
-            rewriteError instanceof Error ? rewriteError.message : "DeepSeek 改写失败。";
+          const rawRewriteMessage =
+            rewriteError instanceof Error ? rewriteError.message : "改写服务处理失败。";
+          const rewriteMessage = normalizeRewriteServiceMessage(rawRewriteMessage);
           setNeedsProviderSettings(
-            rewriteMessage.includes("DeepSeek") ||
-              rewriteMessage.includes("授权失败") ||
-              rewriteMessage.includes("API Key")
+            rawRewriteMessage.includes("DeepSeek") ||
+              rawRewriteMessage.includes("授权失败") ||
+              rawRewriteMessage.includes("API Key")
           );
-          rewriteWarning = `DeepSeek 改写未完成：${rewriteMessage}`;
+          rewriteWarning = `改写服务未完成：${rewriteMessage}`;
           setStatusText(
-            `草稿 #${data.id} 已生成，但 DeepSeek 改写未完成：${rewriteMessage} 正在尝试用当前草稿生成封面图。`
+            `草稿 #${data.id} 已生成，但改写服务未完成：${rewriteMessage} 正在尝试用当前草稿生成封面图。`
           );
         }
       }
@@ -2267,7 +2274,7 @@ function GenerationLauncher({
     const refreshedImageProviderReady =
       liveImageProviderReady || hasLiveImageProvider(refreshedStatuses ?? []);
     if (!refreshedImageProviderReady) {
-      throw new Error("图片服务还没有通过真实配置检测，请先到设置页应用 image2 Key。");
+      throw new Error("图片服务还没有通过真实配置检测，请先到设置页应用图片服务 Key。");
     }
 
     const response = await fetch(`${API_BASE}/image/generate`, {
@@ -2648,7 +2655,7 @@ function GeneratedPostExportCard({
       const refreshedImageProviderReady = imageProviderReady ||
         hasLiveImageProvider(refreshedStatuses ?? []);
       if (!refreshedImageProviderReady) {
-        throw new Error("图片服务还没有通过真实配置检测，请先到设置页应用 image2 Key 后再点生成封面图。");
+        throw new Error("图片服务还没有通过真实配置检测，请先到设置页应用图片服务 Key 后再点生成封面图。");
       }
       const response = await fetch(`${API_BASE}/image/generate`, {
         method: "POST",
