@@ -400,6 +400,9 @@ def validate_content_production_contract() -> int:
     status_labels_text = (ROOT / "frontend" / "lib" / "status-labels.ts").read_text(
         encoding="utf-8"
     )
+    dashboard_data_text = (ROOT / "frontend" / "lib" / "dashboard-data.ts").read_text(
+        encoding="utf-8"
+    )
     draft_prompt_text = (ROOT / "prompts" / "draft_generation.md").read_text(
         encoding="utf-8"
     )
@@ -510,6 +513,10 @@ def validate_content_production_contract() -> int:
         "DeepSeek 改写未完成",
         "image2 Key",
         "AIGC 撰稿",
+        "Prompt 模板",
+        "Prompt 模板库",
+        "Prompt 独立存放",
+        "prompt 结构参考",
         "Bearer token",
         "服务端权限",
         "测试门禁",
@@ -581,6 +588,7 @@ def validate_content_production_contract() -> int:
             or snippet in trend_collector_text
             or snippet in image_service_text
             or snippet in model_router_text
+            or snippet in dashboard_data_text
         ):
             raise SystemExit(f"Stale content production gate still present: {snippet}")
 

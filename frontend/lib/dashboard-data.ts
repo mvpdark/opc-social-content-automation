@@ -250,7 +250,7 @@ export const pipeline = [
     icon: PenLine
   },
   {
-    title: "人味化",
+    title: "自然润色",
     state: "配置后可用",
     description: "完成设置后，改写服务压低模板感，保留关键词和事实边界。",
     icon: Sparkles
@@ -385,7 +385,7 @@ export const connectionStatuses = [
   {
     credentialKey: "rewriteApiKey",
     name: "改写服务",
-    note: "设置页应用后用于正文人味化和风格修正；仍需人工审阅。",
+    note: "设置页应用后用于正文自然润色和风格修正；仍需人工审阅。",
     icon: Wand2
   },
   {
@@ -515,7 +515,7 @@ export const externalSkillCandidates = [
     status: "可选接入",
     license: "需确认",
     summary: "覆盖内容创作、账号运营、互动运营、数据分析、电商转化、规则、工具生态和增长策略。",
-    guardrail: "先当运营知识目录和 prompt 结构参考；逐项确认质量与许可证后再拆分接入。",
+    guardrail: "先当运营知识目录和写作结构参考；逐项确认质量与许可证后再拆分接入。",
     icon: BookOpenText
   },
   {
@@ -593,7 +593,7 @@ export const knowledgeAssets = [
     icon: Upload
   },
   {
-    title: "Prompt 模板库",
+    title: "写作模板库",
     status: "独立存放",
     detail: "撰稿、改写、封面提示词不写死在业务代码里。",
     icon: FileText
@@ -647,7 +647,7 @@ export const imageWorkflow = [
 
 export const safetyGates = [
   { label: "采集先于生成", state: "启用", icon: Database },
-  { label: "Prompt 独立存放", state: "启用", icon: FileText },
+  { label: "写作模板独立存放", state: "启用", icon: FileText },
   { label: "发布需人工确认", state: "强制", icon: ShieldCheck },
   { label: "图片标题需复核", state: "提醒", icon: AlertTriangle }
 ];
