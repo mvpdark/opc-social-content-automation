@@ -3428,7 +3428,7 @@ function ExternalSkillRadarPanel() {
   return (
     <Panel
       action={<Pill tone="blue">只读调研</Pill>}
-      helper="把 GitHub 上适合本项目的外部能力候选沉淀在这里；接入前先看许可证、登录态和发布风险。"
+      helper="把适合本项目的外部公开能力候选沉淀在这里；接入前先看许可证、登录态和发布风险。"
       title="外部能力接入雷达"
     >
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
@@ -3453,7 +3453,7 @@ function ExternalSkillRadarPanel() {
                     {candidate.module}
                   </span>
                   <span className="rounded-md border border-line bg-mist px-2 py-1 text-muted">
-                    {candidate.license}
+                    许可：{candidate.license}
                   </span>
                 </div>
                 <p className="mt-3 text-xs leading-5 text-ink/80">{candidate.summary}</p>
@@ -3466,7 +3466,7 @@ function ExternalSkillRadarPanel() {
                   rel="noreferrer"
                   target="_blank"
                 >
-                  打开 GitHub
+                  查看来源
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
               </div>

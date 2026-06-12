@@ -551,6 +551,8 @@ def validate_content_production_contract() -> int:
         'title: "xhs-cover-mcp"',
         'title: "xhs-skill"',
         'title: "139 Xiaohongshu Skills"',
+        "GitHub 上适合",
+        "打开 GitHub",
         "Bearer token",
         "服务端权限",
         "测试门禁",
