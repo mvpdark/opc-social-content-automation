@@ -242,6 +242,9 @@ def validate_frontend_design_contract() -> int:
     workspace_text = (
         ROOT / "frontend" / "components" / "workspace-client.tsx"
     ).read_text(encoding="utf-8")
+    app_shell_text = (
+        ROOT / "frontend" / "components" / "app-shell.tsx"
+    ).read_text(encoding="utf-8")
     middleware_text = (ROOT / "frontend" / "middleware.ts").read_text(encoding="utf-8")
 
     tab_ids = _extract_ts_array("workspaceTabIds", data_text)
@@ -296,12 +299,42 @@ def validate_frontend_design_contract() -> int:
         if snippet not in middleware_text:
             raise SystemExit(f"Missing terminal routing snippet: {snippet}")
 
+    pc_login_snippets = [
+        "PC_AUTH_STORAGE_KEY",
+        "readStoredWorkspaceAccount",
+        "saveStoredWorkspaceAccount(account)",
+        "clearStoredWorkspaceAccount",
+        "authenticateWorkspaceLogin",
+        "<PcLoginPage",
+        'data-testid="pc-login-form"',
+        'data-testid="pc-login-account"',
+        'data-testid="pc-login-password"',
+        'data-testid="pc-login-submit"',
+        "登录 OPC 工作台",
+    ]
+    for snippet in pc_login_snippets:
+        if snippet not in workspace_text:
+            raise SystemExit(f"Missing PC login contract snippet: {snippet}")
+
+    app_shell_login_snippets = [
+        "accountLabel?: string",
+        "onLogout?: () => void",
+        "{accountLabel ?",
+        "{onLogout ?",
+        "退出",
+    ]
+    for snippet in app_shell_login_snippets:
+        if snippet not in app_shell_text:
+            raise SystemExit(f"Missing app shell login contract snippet: {snippet}")
+
     return (
         len(tab_ids)
         + len(style_ids)
         + len(referenced_styles)
         + len(generation_flow_snippets)
         + len(terminal_routing_snippets)
+        + len(pc_login_snippets)
+        + len(app_shell_login_snippets)
     )
 
 
