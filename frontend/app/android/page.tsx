@@ -1191,7 +1191,7 @@ function CollectScreen({
   async function runCollectionJob(source: "manual" | "schedule") {
     const keyword = query.trim();
     if (!keyword) {
-      onAction("先填关键词，再创建采集任务。");
+      onAction("先填关键词，再开始采集。");
       return;
     }
 
@@ -1199,7 +1199,7 @@ function CollectScreen({
     setBusyAction("job");
     const startedAt = new Date();
     const runLabel = source === "schedule" ? "定时采集" : "立即采集";
-    onAction(`${runLabel}正在创建采集任务。`);
+    onAction(`${runLabel}正在准备采集。`);
     try {
       const response = await fetch(`${API_BASE}/trends/jobs`, {
         method: "POST",

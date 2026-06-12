@@ -309,7 +309,7 @@ export function TrendCollectorPanel({
         : "先粘贴链接";
   const openSearchTitle = canSubmit ? undefined : "先填写关键词，再打开公开搜索页";
   const createJobTitle = !canSubmit
-    ? "先填写关键词，再创建采集任务"
+    ? "先填写关键词，再开始采集"
     : undefined;
   const saveDigestTitle = !canSubmit
     ? "先填写关键词，再保存知识摘要"
@@ -456,7 +456,7 @@ export function TrendCollectorPanel({
 
   async function createCollectionJob() {
     if (!canSubmit) {
-      setStatusText("先填写关键词，再创建采集任务。");
+      setStatusText("先填写关键词，再开始采集。");
       return;
     }
     setBusyAction("job");
