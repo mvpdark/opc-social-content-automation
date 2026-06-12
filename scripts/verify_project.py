@@ -357,11 +357,17 @@ def validate_content_production_contract() -> int:
 
     frontend_contract_snippets = [
         "latestContent={previewContent}",
+        "latestImageAsset={previewImageAsset}",
         "const exportContent = lastContent ?? latestContent;",
         "onImageGenerated={onImageGenerated}",
         "onRefreshProviderStatuses={refreshProviderStatuses}",
         "fetchProviderStatuses",
         "hasLiveImageProvider",
+        "一键生成图文+封面",
+        'data-flow="one-click-generate"',
+        "generateCoverForContent",
+        "generatedImageAsset={latestImageAsset}",
+        "和封面图 #",
         'data-testid="cover-generate-button"',
         'data-testid="cover-generate-button-secondary"',
         'data-testid="xhs-preview-real-cover"',

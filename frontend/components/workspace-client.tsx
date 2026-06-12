@@ -1916,6 +1916,7 @@ function ContentView({
     <div className="space-y-4">
       <GenerationLauncher
         defaultWritingStyle={defaultWritingStyle}
+        latestImageAsset={previewImageAsset}
         latestContent={previewContent}
         onGeneratedContent={handleGeneratedContent}
         onImageGenerated={setPreviewImageAsset}
@@ -1960,6 +1961,7 @@ function ContentView({
 
 function GenerationLauncher({
   defaultWritingStyle,
+  latestImageAsset,
   latestContent,
   onGeneratedContent,
   onImageGenerated,
@@ -1967,6 +1969,7 @@ function GenerationLauncher({
   workspaceToken
 }: {
   defaultWritingStyle: WritingStylePresetId;
+  latestImageAsset: GeneratedImageAsset | null;
   latestContent: GeneratedContent | null;
   onGeneratedContent: (content: GeneratedContent) => void;
   onImageGenerated: (asset: GeneratedImageAsset) => void;
@@ -1985,7 +1988,7 @@ function GenerationLauncher({
   );
   const [tagsText, setTagsText] = useState("硕升博,博士申请,研究方向,申请规划");
   const [busyAction, setBusyAction] = useState<"draft" | null>(null);
-  const [statusText, setStatusText] = useState("填写选题后，点击“开始生产图文”创建草稿。");
+  const [statusText, setStatusText] = useState("填写选题后，点击“一键生成图文+封面”。");
   const [lastContent, setLastContent] = useState<GeneratedContent | null>(null);
   const [needsProviderSettings, setNeedsProviderSettings] = useState(false);
   const [providerStatuses, setProviderStatuses] = useState<ProviderStatusItem[]>([]);
@@ -2009,16 +2012,16 @@ function GenerationLauncher({
         ? "先配置撰稿服务"
       : draftProviderCheckFailed
         ? "先修复撰稿服务"
-      : "开始生产图文";
+      : "一键生成图文+封面";
   const generateButtonTitle = !hasTopic
-      ? "先填写选题，再开始生产图文"
+      ? "先填写选题，再一键生成图文和封面"
       : draftProviderMissing
         ? "去设置里填写并应用撰稿 API Key"
       : draftProviderCheckFailed
         ? "检测到撰稿服务不可用，请先去设置页更换或重新应用 API Key"
       : undefined;
   const launchStatusText = !hasTopic
-      ? "先填写选题，再开始生产图文。"
+      ? "先填写选题，再一键生成图文和封面。"
       : draftProviderMissing
         ? "撰稿服务缺少 API Key，先去设置页填写并应用。"
       : draftProviderCheckFailed
@@ -2026,9 +2029,9 @@ function GenerationLauncher({
       : statusText;
   const primaryGenerateLabel =
     busyAction === "draft"
-      ? "正在生产草稿"
+      ? "正在一键生成"
       : exportContent
-        ? "重新生产草稿"
+        ? "重新一键生成"
         : generateButtonLabel;
   const providerDisplayItems = [
     { label: "撰稿", name: "Draft generation" },
@@ -2147,13 +2150,13 @@ function GenerationLauncher({
 
   async function generateDraft() {
     if (!topic.trim()) {
-      setStatusText("先填写选题，再开始生产图文。");
+      setStatusText("先填写选题，再一键生成图文和封面。");
       return;
     }
 
     setBusyAction("draft");
     setNeedsProviderSettings(false);
-    setStatusText("正在生成图文初稿，生成后会尝试进入改写服务。");
+    setStatusText("正在一键生成：先撰稿，再改写，最后生成封面图。");
     try {
       const response = await fetch(`${API_BASE}/content/generate`, {
         method: "POST",
@@ -2178,44 +2181,71 @@ function GenerationLauncher({
       setLastContent(data);
       onGeneratedContent(data);
       setNeedsProviderSettings(false);
+      let finalContent = data;
+      let rewriteWarning: string | null = null;
       if (!rewriteProviderReady) {
+        rewriteWarning = "改写服务未配置或尚未确认，本次未走 DeepSeek。";
         setStatusText(
-          `草稿 #${data.id} 已生成，当前状态：${data.status}。改写服务未配置或尚未确认，本次未走 DeepSeek。`
+          `草稿 #${data.id} 已生成。改写服务未配置或尚未确认，本次未走 DeepSeek，正在尝试生成封面图。`
+        );
+      } else {
+        setStatusText(`草稿 #${data.id} 已生成，正在调用改写服务做人味化处理。`);
+        try {
+          const rewriteResponse = await fetch(`${API_BASE}/content/rewrite`, {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify({
+              content_id: data.id,
+              instruction:
+                "按当前选题和风格做人味化改写，保留事实边界、关键词、标签语境和合规限制，不制造录取承诺。"
+            })
+          });
+          if (!rewriteResponse.ok) {
+            throw new Error(await readApiError(rewriteResponse, "DeepSeek 改写失败。"));
+          }
+          const rewrittenContent = (await rewriteResponse.json()) as GeneratedContent;
+          finalContent = rewrittenContent;
+          setLastContent(rewrittenContent);
+          onGeneratedContent(rewrittenContent);
+          setStatusText(`草稿 #${rewrittenContent.id} 已完成改写，正在生成封面图。`);
+        } catch (rewriteError) {
+          const rewriteMessage =
+            rewriteError instanceof Error ? rewriteError.message : "DeepSeek 改写失败。";
+          setNeedsProviderSettings(
+            rewriteMessage.includes("DeepSeek") ||
+              rewriteMessage.includes("授权失败") ||
+            rewriteMessage.includes("API Key")
+          );
+          rewriteWarning = `DeepSeek 改写未完成：${rewriteMessage}`;
+          setStatusText(
+            `草稿 #${data.id} 已生成，但 DeepSeek 改写未完成：${rewriteMessage} 正在尝试用当前草稿生成封面图。`
+          );
+        }
+      }
+
+      if (isTestDraft(finalContent)) {
+        setStatusText(
+          `草稿 #${finalContent.id} 是流程联调用测试草稿，不会生成假封面图。请配置真实撰稿服务后再一键生成。`
         );
         return;
       }
 
-      setStatusText(`草稿 #${data.id} 已生成，正在调用改写服务做人味化处理。`);
       try {
-        const rewriteResponse = await fetch(`${API_BASE}/content/rewrite`, {
-          method: "POST",
-          headers: authHeaders(),
-          body: JSON.stringify({
-            content_id: data.id,
-            instruction:
-              "按当前选题和风格做人味化改写，保留事实边界、关键词、标签语境和合规限制，不制造录取承诺。"
-          })
-        });
-        if (!rewriteResponse.ok) {
-          throw new Error(await readApiError(rewriteResponse, "DeepSeek 改写失败。"));
-        }
-        const rewrittenContent = (await rewriteResponse.json()) as GeneratedContent;
-        setLastContent(rewrittenContent);
-        onGeneratedContent(rewrittenContent);
-        setStatusText(
-          `草稿 #${rewrittenContent.id} 已生成并完成改写，当前状态：${rewrittenContent.status}。发布前仍需人工确认。`
-        );
-      } catch (rewriteError) {
-        const rewriteMessage =
-          rewriteError instanceof Error ? rewriteError.message : "DeepSeek 改写失败。";
+        const cover = await generateCoverForContent(finalContent);
+        const completionMessage = rewriteWarning
+          ? `文案 #${finalContent.id} 和封面图 #${cover.id} 已生成，但${rewriteWarning}预览确认后即可复制文案。`
+          : `草稿 #${finalContent.id} 和封面图 #${cover.id} 已一键生成。预览确认后即可复制文案。`;
+        setStatusText(completionMessage);
+      } catch (coverError) {
+        const coverMessage =
+          coverError instanceof Error ? coverError.message : "封面图生成失败。";
         setNeedsProviderSettings(
-          rewriteMessage.includes("DeepSeek") ||
-            rewriteMessage.includes("授权失败") ||
-            rewriteMessage.includes("API Key")
+          coverMessage.includes("图片服务") ||
+            coverMessage.includes("授权失败") ||
+            coverMessage.includes("API Key") ||
+            coverMessage.includes("image")
         );
-        setStatusText(
-          `草稿 #${data.id} 已生成，但 DeepSeek 改写未完成：${rewriteMessage}`
-        );
+        setStatusText(`文案 #${finalContent.id} 已生成，但封面图未完成：${coverMessage}`);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "图文草稿生成失败。";
@@ -2231,6 +2261,35 @@ function GenerationLauncher({
     }
   }
 
+  async function generateCoverForContent(content: GeneratedContent) {
+    const isDouyinPost = content.platform === "douyin";
+    const refreshedStatuses = liveImageProviderReady ? null : await refreshProviderStatuses();
+    const refreshedImageProviderReady =
+      liveImageProviderReady || hasLiveImageProvider(refreshedStatuses ?? []);
+    if (!refreshedImageProviderReady) {
+      throw new Error("图片服务还没有通过真实配置检测，请先到设置页应用 image2 Key。");
+    }
+
+    const response = await fetch(`${API_BASE}/image/generate`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        aspect_ratio: isDouyinPost ? "9:16" : "3:4",
+        content_id: content.id,
+        style_notes: isDouyinPost
+          ? douyinHighAttractionCoverStyle
+          : xhsHighAttractionCoverStyle,
+        template: isDouyinPost ? "douyin-cover" : "xiaohongshu-cover"
+      })
+    });
+    if (!response.ok) {
+      throw new Error(await readApiError(response, "封面图生成失败。"));
+    }
+    const cover = (await response.json()) as GeneratedImageAsset;
+    onImageGenerated(cover);
+    return cover;
+  }
+
   return (
     <div data-testid="generation-launcher">
       <Panel
@@ -2239,8 +2298,8 @@ function GenerationLauncher({
             {exportContent ? `草稿 #${exportContent.id}` : "主入口"}
           </Pill>
         }
-        helper="生成只创建草稿，不会自动发布；单独确认页暂时隐藏，发布前仍需人工确认。"
-        title="开始生产图文"
+        helper="一键生成会创建文案并尝试生成封面，不会自动发布；发布前仍需人工确认。"
+        title="一键生成图文+封面"
       >
         <div className="mb-4 rounded-md border border-steel/40 bg-steel/10 p-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -2249,15 +2308,16 @@ function GenerationLauncher({
                 {exportContent ? `草稿 #${exportContent.id}` : "生产入口"}
               </Pill>
               <h3 className="mt-3 text-lg font-semibold leading-6 text-ink">
-                选题确认后，点这里开始生产
+                选题确认后，点这里一键生成
               </h3>
               <p className="mt-1 text-sm leading-6 text-muted">
-                当前会生成一篇营销图文草稿，不会自动发布。
+                当前会生成一篇营销图文草稿，自动改写并尝试生成封面图；不会自动发布。
               </p>
             </div>
             <button
               aria-label={primaryGenerateLabel}
               className="flex h-12 min-w-44 items-center justify-center gap-2 rounded-md bg-ink px-5 text-sm font-semibold text-paper shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+              data-flow="one-click-generate"
               data-testid="start-production-button"
               disabled={!canGenerate}
               onClick={generateDraft}
@@ -2473,7 +2533,7 @@ function GenerationLauncher({
               </button>
             ) : null}
             <div className="mt-4 border-l-4 border-amber pl-3 text-xs leading-5 text-muted">
-              生成图文后可生成封面预览图；发布交付仍保持人工确认，不会自动发布。
+              一键生成会按顺序处理文案、改写和封面；发布交付仍保持人工确认，不会自动发布。
             </div>
           </div>
         </div>
@@ -2481,6 +2541,7 @@ function GenerationLauncher({
           <GeneratedPostExportCard
             key={exportContent.id}
             content={exportContent}
+            generatedImageAsset={latestImageAsset}
             imageProviderReady={liveImageProviderReady}
             onImageGenerated={onImageGenerated}
             onOpenSettings={onOpenSettings}
@@ -2495,6 +2556,7 @@ function GenerationLauncher({
 
 function GeneratedPostExportCard({
   content,
+  generatedImageAsset,
   imageProviderReady,
   onImageGenerated,
   onOpenSettings,
@@ -2502,6 +2564,7 @@ function GeneratedPostExportCard({
   workspaceToken
 }: {
   content: GeneratedContent;
+  generatedImageAsset: GeneratedImageAsset | null;
   imageProviderReady: boolean;
   onImageGenerated: (asset: GeneratedImageAsset) => void;
   onOpenSettings: () => void;
@@ -2533,6 +2596,13 @@ function GeneratedPostExportCard({
       : imageProviderReady
         ? "生成封面图"
         : "检测并生成封面";
+
+  useEffect(() => {
+    if (generatedImageAsset?.content_id === content.id) {
+      setImageAsset(generatedImageAsset);
+      setImageError(null);
+    }
+  }, [content.id, generatedImageAsset]);
 
   function authHeaders() {
     return {
