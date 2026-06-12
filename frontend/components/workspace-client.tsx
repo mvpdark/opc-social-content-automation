@@ -3368,7 +3368,7 @@ function SettingsView({
           helper={
             showHelperText
               ? "辅助说明已经显示；设置入口会始终保留。"
-              : "如果隐藏了说明文字，可以在这里重新打开，不会重置主题或凭证。"
+              : "如果隐藏了说明文字，可以在这里重新打开，不会重置主题或服务设置。"
           }
           title="说明文字"
         >
@@ -3383,7 +3383,7 @@ function SettingsView({
             {showHelperText ? "说明已显示" : "显示说明文字"}
           </button>
           <p className="mt-3 text-xs leading-5 text-muted">
-            只恢复顶部页面说明和侧边发布确认说明，不会修改主题、凭证或内容。
+            只恢复顶部页面说明和侧边发布确认说明，不会修改主题、服务设置或内容。
           </p>
         </Panel>
 
