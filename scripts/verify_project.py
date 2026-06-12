@@ -10,6 +10,23 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKIP_DIRS = {".git", ".venv", "node_modules", ".next", ".next-build"}
+TEXT_HYGIENE_EXTENSIONS = {".md", ".ts", ".tsx"}
+TEXT_HYGIENE_ROOTS = [
+    ROOT / "frontend" / "app",
+    ROOT / "frontend" / "components",
+    ROOT / "frontend" / "lib",
+    ROOT / "frontend" / "middleware.ts",
+    ROOT / "prompts",
+]
+FORBIDDEN_TEXT_MARKERS = {
+    "\ufffd": "replacement character",
+    "锟": "mojibake marker",
+    "鈥": "mojibake marker",
+    "涓": "mojibake marker",
+    "Â": "mojibake marker",
+    "debugger": "debugger statement",
+    "console.log": "console logging",
+}
 
 
 def compile_backend() -> int:
@@ -345,6 +362,39 @@ def validate_content_production_contract() -> int:
     return total
 
 
+def _iter_text_hygiene_files() -> list[Path]:
+    files: list[Path] = []
+    for root in TEXT_HYGIENE_ROOTS:
+        if root.is_file():
+            candidates = [root]
+        else:
+            candidates = sorted(root.rglob("*"))
+        for file in candidates:
+            if not file.is_file() or file.suffix not in TEXT_HYGIENE_EXTENSIONS:
+                continue
+            if SKIP_DIRS.intersection(file.relative_to(ROOT).parts):
+                continue
+            files.append(file)
+    return files
+
+
+def validate_text_hygiene() -> int:
+    files = _iter_text_hygiene_files()
+    failures: list[str] = []
+    for file in files:
+        text = file.read_text(encoding="utf-8")
+        for marker, reason in FORBIDDEN_TEXT_MARKERS.items():
+            index = text.find(marker)
+            if index == -1:
+                continue
+            line_number = text.count("\n", 0, index) + 1
+            rel_path = file.relative_to(ROOT)
+            failures.append(f"{rel_path}:{line_number} contains {reason} {marker!r}")
+    if failures:
+        raise SystemExit("Text hygiene check failed:\n" + "\n".join(failures))
+    return len(files)
+
+
 def clean_pycache() -> int:
     count = 0
     for cache_dir in ROOT.rglob("__pycache__"):
@@ -371,6 +421,7 @@ def main() -> None:
         "safety_gates_checked": validate_safety_gates(),
         "frontend_design_contract_checked": validate_frontend_design_contract(),
         "content_production_contract_checked": validate_content_production_contract(),
+        "text_hygiene_files_checked": validate_text_hygiene(),
     }
     if not args.keep_cache:
         results["removed_pycache_dirs"] = clean_pycache()
