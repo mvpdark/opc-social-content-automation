@@ -520,6 +520,9 @@ def validate_content_production_contract() -> int:
         "图片服务 Key",
         "更换 Key",
         "封面生成走服务端",
+        "真实配置检测",
+        "当前保存配置",
+        "DATABASE_URL",
     ]
     for snippet in stale_gate_snippets:
         total += 1

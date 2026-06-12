@@ -755,7 +755,7 @@ function clearStoredWorkspaceAccount() {
 async function readApiError(response: Response, fallback: string) {
   const errorBody = (await response.json().catch(() => null)) as ApiErrorBody | null;
   if (errorBody?.detail === "database_unavailable") {
-    return "数据库暂时不可用：安装包/测试模式请重新运行本地启动；自部署模式请检查 DATABASE_URL 和数据库服务。";
+    return "数据库暂时不可用：安装包/测试模式请重新运行本地启动；自部署模式请检查数据库连接设置和数据库服务。";
   }
   return errorBody?.message ?? errorBody?.detail ?? fallback;
 }
@@ -2278,7 +2278,7 @@ function GenerationLauncher({
     const refreshedImageProviderReady =
       liveImageProviderReady || hasLiveImageProvider(refreshedStatuses ?? []);
     if (!refreshedImageProviderReady) {
-      throw new Error("图片服务还没有通过真实配置检测，请先到设置页应用图片服务密钥。");
+      throw new Error("图片服务还没有完成可用性检查，请先到设置页应用图片服务密钥。");
     }
 
     const response = await fetch(`${API_BASE}/image/generate`, {
@@ -2659,7 +2659,7 @@ function GeneratedPostExportCard({
       const refreshedImageProviderReady = imageProviderReady ||
         hasLiveImageProvider(refreshedStatuses ?? []);
       if (!refreshedImageProviderReady) {
-        throw new Error("图片服务还没有通过真实配置检测，请先到设置页应用图片服务密钥后再点生成封面图。");
+        throw new Error("图片服务还没有完成可用性检查，请先到设置页应用图片服务密钥后再点生成封面图。");
       }
       const response = await fetch(`${API_BASE}/image/generate`, {
         method: "POST",
@@ -3114,21 +3114,21 @@ function SettingsView({
     {
       keyName: "draftApiKey",
       label: "撰稿服务密钥",
-      placeholder: "留空则不覆盖当前保存配置",
+      placeholder: "留空则保留已有配置",
       helper: "撰稿服务使用；只有更换密钥时才需要填写。",
       backendBound: providerBindings.draft
     },
     {
       keyName: "imageApiKey",
       label: "图片服务密钥",
-      placeholder: "留空则不覆盖当前保存配置",
+      placeholder: "留空则保留已有配置",
       helper: "图片生成服务使用；封面会通过图片服务完成。",
       backendBound: providerBindings.image
     },
     {
       keyName: "rewriteApiKey",
       label: "改写服务密钥",
-      placeholder: "留空则不覆盖当前保存配置",
+      placeholder: "留空则保留已有配置",
       helper: "改写和人味化服务使用；页面不会显示完整密钥。",
       backendBound: providerBindings.rewrite
     }
