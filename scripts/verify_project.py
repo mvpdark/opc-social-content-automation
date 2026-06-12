@@ -535,6 +535,7 @@ def validate_content_production_contract() -> int:
         "skills CLI",
         "Agent Skills",
         "候选 Skill",
+        "第三方 API Key",
         "Bearer token",
         "服务端权限",
         "测试门禁",

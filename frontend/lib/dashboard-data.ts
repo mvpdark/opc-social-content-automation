@@ -460,7 +460,7 @@ export const externalSkillCandidates = [
     status: "候选服务",
     license: "MIT 文档 / 托管服务",
     summary: "托管检索服务，支持搜索、热榜、笔记详情、评论和博主信息，适合低频只读调研。",
-    guardrail: "需要第三方 API Key；接入前确认数据来源、费用和隐私条款。",
+    guardrail: "需要第三方服务密钥；接入前确认数据来源、费用和隐私条款。",
     icon: ShieldCheck
   },
   {
