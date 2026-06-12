@@ -393,7 +393,7 @@ export function TrendCollectorPanel({
       return null;
     }
     if (!response.ok) {
-      throw new Error("无法刷新采集任务状态，请检查后端服务。");
+      throw new Error("无法刷新采集任务状态，请检查本地服务。");
     }
     return (await response.json()) as TrendCollectionJob;
   }
@@ -603,11 +603,11 @@ export function TrendCollectorPanel({
         if (response.status === 404 && fallbackTarget.extracted_count > 0) {
           setLinkImportTarget(fallbackTarget);
           setStatusText(
-            `后端链接导入接口还未加载，已先完成本地预解析：${fallbackTarget.accepted_count}/${fallbackTarget.extracted_count} 个链接可作为导入目标。`
+            `链接导入服务还未加载，已先完成本地预解析：${fallbackTarget.accepted_count}/${fallbackTarget.extracted_count} 个链接可作为导入目标。`
           );
           return;
         }
-        throw new Error(`链接解析接口返回 ${response.status}，请稍后重试或检查后端服务。`);
+        throw new Error(`链接解析服务返回 ${response.status}，请稍后重试或检查本地服务。`);
       }
       const data = (await response.json()) as LinkImportTarget;
       setLinkImportTarget(data);

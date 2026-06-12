@@ -831,12 +831,12 @@ async function authenticateWorkspaceLogin(account: string, password: string) {
     }
 
     if (response.status === 404 || response.status === 405) {
-      throw new Error("登录服务暂未更新，请重启后端后再试。");
+      throw new Error("登录服务暂未更新，请重启本地服务后再试。");
     }
     throw new Error("账号或密码不正确。");
   } catch (error) {
     if (error instanceof TypeError) {
-      throw new Error("无法连接登录服务，请确认后端正在运行。");
+      throw new Error("无法连接登录服务，请确认本地服务正在运行。");
     }
     throw error;
   }
@@ -2117,7 +2117,7 @@ function GenerationLauncher({
       });
       if (!response.ok) {
         if (response.status === 404) {
-          throw new Error("服务检测接口暂不可用，请重启后端服务后再试。");
+          throw new Error("服务检测暂不可用，请重启本地服务后再试。");
         }
         throw new Error(await readApiError(response, "撰稿服务检测失败。"));
       }
@@ -3083,7 +3083,7 @@ function SettingsView({
       });
       if (!response.ok) {
         if (response.status === 404) {
-          throw new Error("服务检测接口暂不可用，请重启后端服务后再试。");
+          throw new Error("服务检测暂不可用，请重启本地服务后再试。");
         }
         throw new Error(await readApiError(response, "撰稿服务检测失败。"));
       }
@@ -3114,21 +3114,21 @@ function SettingsView({
     {
       keyName: "draftApiKey",
       label: "撰稿 API Key",
-      placeholder: "留空则不覆盖后端现有配置",
+      placeholder: "留空则不覆盖当前保存配置",
       helper: "撰稿服务使用；只有更换 Key 时才需要填写。",
       backendBound: providerBindings.draft
     },
     {
       keyName: "imageApiKey",
       label: "图片 API Key",
-      placeholder: "留空则不覆盖后端现有配置",
+      placeholder: "留空则不覆盖当前保存配置",
       helper: "图片生成服务使用；封面生成走服务端。",
       backendBound: providerBindings.image
     },
     {
       keyName: "rewriteApiKey",
       label: "改写 API Key",
-      placeholder: "留空则不覆盖后端现有配置",
+      placeholder: "留空则不覆盖当前保存配置",
       helper: "改写和人味化服务使用；页面不会显示完整密钥。",
       backendBound: providerBindings.rewrite
     }

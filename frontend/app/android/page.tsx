@@ -264,12 +264,12 @@ async function authenticateMobileLogin(account: string, password: string) {
       };
     }
     if (response.status === 404 || response.status === 405) {
-      throw new Error("登录服务暂未更新，请重启后端后再试。");
+      throw new Error("登录服务暂未更新，请重启本地服务后再试。");
     }
     throw new Error("账号或密码不正确。");
   } catch (error) {
     if (error instanceof TypeError) {
-      throw new Error("登录服务暂时不可用，请确认后端已启动。");
+      throw new Error("登录服务暂时不可用，请确认本地服务已启动。");
     }
     throw error;
   }
@@ -707,7 +707,7 @@ export default function AndroidPreviewPage() {
         }
       } catch (_error) {
         if (active) {
-          setStatus("后端服务状态暂时读取失败，生成时会继续尝试连接。");
+          setStatus("本地服务状态暂时读取失败，生成时会继续尝试连接。");
         }
       }
     }
@@ -1964,7 +1964,7 @@ function CreateScreen({
     <div className="space-y-4">
       <MobilePanel
         title="手机端生成"
-        action={<span className="text-xs font-semibold text-moss">直连后端</span>}
+        action={<span className="text-xs font-semibold text-moss">直连服务</span>}
       >
         <label className="block">
           <span className="text-xs font-medium text-muted">选题</span>
@@ -2216,21 +2216,21 @@ function SettingsScreen({
     {
       keyName: "draftApiKey",
       label: "撰稿 API Key",
-      placeholder: "留空则不覆盖后端现有配置",
+      placeholder: "留空则不覆盖当前保存配置",
       testId: "mobile-draft-key",
       backendBound: providerBindings.draft
     },
     {
       keyName: "imageApiKey",
       label: "图片 API Key",
-      placeholder: "留空则不覆盖后端现有配置",
+      placeholder: "留空则不覆盖当前保存配置",
       testId: "mobile-image-key",
       backendBound: providerBindings.image
     },
     {
       keyName: "rewriteApiKey",
       label: "改写 API Key",
-      placeholder: "留空则不覆盖后端现有配置",
+      placeholder: "留空则不覆盖当前保存配置",
       testId: "mobile-rewrite-key",
       backendBound: providerBindings.rewrite
     }
