@@ -12,6 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SKIP_DIRS = {".git", ".venv", "node_modules", ".next", ".next-build"}
 TEXT_HYGIENE_EXTENSIONS = {".md", ".ts", ".tsx"}
 TEXT_HYGIENE_ROOTS = [
+    ROOT / "README.md",
+    ROOT / "docs",
     ROOT / "frontend" / "app",
     ROOT / "frontend" / "components",
     ROOT / "frontend" / "lib",
