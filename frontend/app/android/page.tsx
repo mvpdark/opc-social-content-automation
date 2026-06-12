@@ -109,6 +109,7 @@ const MOBILE_COLLECTION_COLLAGE = "/mobile-assets/collection-collage.png";
 const MOBILE_CREATE_CARD_BG = "/mobile-assets/create-card-bg.png";
 const MOBILE_HEADER_ICON_BUTTON_CLASS =
   "flex h-10 w-10 shrink-0 touch-manipulation items-center justify-center rounded-[16px] border border-white/70 bg-white/40 text-ink shadow-[0_10px_26px_rgba(28,54,45,0.10),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-xl active:scale-[0.98]";
+const XHS_COPY_TEXT_ONLY_LABEL = "只复制文案";
 
 const emptyCredentials: CredentialSettings = {
   draftApiKey: "",
@@ -2796,7 +2797,7 @@ function DraftPreviewEditor({
     try {
       const textCopied = await tryCopyText(draftText);
       if (!textCopied) {
-        throw new Error("浏览器拦截了剪贴板，请点“只复制文案”后再去小红书。");
+        throw new Error(`浏览器拦截了剪贴板，请点“${XHS_COPY_TEXT_ONLY_LABEL}”后再去小红书。`);
       }
       const coverFile = await buildXhsCoverFile(coverImageUrl, draft);
 
@@ -2819,7 +2820,7 @@ function DraftPreviewEditor({
             const restored = await tryCopyText(draftText);
             const abortMessage = restored
               ? "已取消系统分享；文案已重新复制，可以直接去小红书粘贴。"
-              : "已取消系统分享；浏览器拦截了剪贴板，请点“只复制文案”。";
+              : `已取消系统分享；浏览器拦截了剪贴板，请点“${XHS_COPY_TEXT_ONLY_LABEL}”。`;
             publishExportStatus(abortMessage);
             return;
           }
@@ -2828,7 +2829,7 @@ function DraftPreviewEditor({
         const sharedCopyRestored = await tryCopyText(draftText);
         const sharedMessage = sharedCopyRestored
           ? "已交给系统分享；文案已重新复制，如果小红书没有自动带入正文，请直接粘贴。"
-          : "已交给系统分享；如果小红书没有自动带入正文，请返回点“只复制文案”。";
+          : `已交给系统分享；如果小红书没有自动带入正文，请返回点“${XHS_COPY_TEXT_ONLY_LABEL}”。`;
         publishExportStatus(sharedMessage);
         return;
       }
@@ -2837,7 +2838,7 @@ function DraftPreviewEditor({
       const fallbackTextRestored = await tryCopyText(draftText);
       const fallbackMessage = fallbackTextRestored
         ? "文案已复制，封面图已下载；正在打开小红书，请新建图文后粘贴正文。"
-        : "封面图已下载；浏览器拦截了剪贴板，请返回点“只复制文案”。";
+        : `封面图已下载；浏览器拦截了剪贴板，请返回点“${XHS_COPY_TEXT_ONLY_LABEL}”。`;
       publishExportStatus(fallbackMessage);
       window.location.href = "https://www.xiaohongshu.com/explore";
     } catch (error) {
@@ -3053,7 +3054,7 @@ function DraftPreviewEditor({
             type="button"
           >
             <Clipboard className="h-4 w-4" />
-            只复制文案
+            {XHS_COPY_TEXT_ONLY_LABEL}
           </button>
           <button
             className="mb-2 flex h-10 w-full items-center justify-center gap-2 rounded-full border border-[#eeeeee] bg-white px-4 text-sm font-semibold text-ink active:scale-[0.99] disabled:opacity-50"
