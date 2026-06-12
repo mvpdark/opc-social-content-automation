@@ -77,6 +77,7 @@ import {
   generatedContentStatusLabel,
   generatedImageStatusLabel
 } from "@/lib/status-labels";
+import { formatTagLine } from "@/lib/tags";
 
 const pillTone = {
   neutral: "border-line bg-mist text-muted",
@@ -898,13 +899,6 @@ const blockedPublishTerms = [
   "保证套磁成功",
   "必上岸"
 ];
-
-function formatTagLine(tags: string[] | null) {
-  const cleanTags = (tags ?? [])
-    .map((tag) => tag.trim().replace(/^#+/, ""))
-    .filter(Boolean);
-  return cleanTags.map((tag) => `#${tag}`).join(" ");
-}
 
 function buildPlatformCopy(content: GeneratedContent) {
   const tagLine = formatTagLine(content.tags);

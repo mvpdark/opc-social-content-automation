@@ -60,6 +60,7 @@ def validate_required_files() -> int:
         ROOT / "frontend" / "lib" / "api-base.ts",
         ROOT / "frontend" / "lib" / "asset-url.ts",
         ROOT / "frontend" / "lib" / "status-labels.ts",
+        ROOT / "frontend" / "lib" / "tags.ts",
         ROOT / "frontend" / "lib" / "xhs-stickers.tsx",
         ROOT / "docs" / "RUNBOOK.md",
         ROOT / "docs" / "CLOUDFLARE_OPC.md",
@@ -429,6 +430,9 @@ def validate_content_production_contract() -> int:
     xhs_stickers_text = (ROOT / "frontend" / "lib" / "xhs-stickers.tsx").read_text(
         encoding="utf-8"
     )
+    tags_text = (ROOT / "frontend" / "lib" / "tags.ts").read_text(
+        encoding="utf-8"
+    )
     draft_prompt_text = (ROOT / "prompts" / "draft_generation.md").read_text(
         encoding="utf-8"
     )
@@ -539,6 +543,17 @@ def validate_content_production_contract() -> int:
         if snippet not in xhs_stickers_text:
             raise SystemExit(f"Missing Xiaohongshu sticker helper contract: {snippet}")
 
+    tag_contract_snippets = [
+        "export function normalizeTags",
+        "export function formatTags",
+        "export function formatTagLine",
+        "tag.trim().replace(/^#+/, \"\")",
+    ]
+    for snippet in tag_contract_snippets:
+        total += 1
+        if snippet not in tags_text:
+            raise SystemExit(f"Missing tag format helper contract: {snippet}")
+
     particle_style_contracts = [
         (
             workspace_text,
@@ -580,6 +595,8 @@ def validate_content_production_contract() -> int:
         "function resolveAssetUrl(imageUrl: string)",
         "const xhsStickerPreviewByCode = new Map<string, { face: string; name: string }>",
         "function xhsStickerFallback(code: string)",
+        "function formatTags(tags: string[] | null)",
+        "function formatTagLine(tags: string[] | null)",
         "canCopy && imageProviderReady && !imageBusy",
         "封面仍是版式预览，真实图片生成后会在这里替换。\" :",
         "假图",

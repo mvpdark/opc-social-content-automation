@@ -47,6 +47,7 @@ import {
   sanitizeServiceErrorMessage
 } from "@/lib/service-error-copy";
 import { collectionJobStatusLabel } from "@/lib/status-labels";
+import { formatTagLine } from "@/lib/tags";
 import { renderXhsExpressionText } from "@/lib/xhs-stickers";
 
 type MobileTab = "home" | "collect" | "create" | "settings";
@@ -391,16 +392,8 @@ function clearStoredMobileCover() {
   removeMobileStorage(MOBILE_LAST_COVER_STORAGE_KEY);
 }
 
-function formatTags(tags: string[] | null) {
-  return (tags ?? [])
-    .map((tag) => tag.trim().replace(/^#+/, ""))
-    .filter(Boolean)
-    .map((tag) => `#${tag}`)
-    .join(" ");
-}
-
 function buildPlatformCopy(content: GeneratedContent) {
-  return [content.title.trim(), content.body.trim(), formatTags(content.tags)]
+  return [content.title.trim(), content.body.trim(), formatTagLine(content.tags)]
     .filter(Boolean)
     .join("\n\n");
 }
@@ -550,7 +543,7 @@ function draftStateFromContent(content: GeneratedContent): DraftPreviewState {
   return {
     body: content.body,
     points: ["明确研究方向", "匹配导师项目", "再定制套磁"],
-    tags: formatTags(content.tags),
+    tags: formatTagLine(content.tags),
     title: content.title
   };
 }

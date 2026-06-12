@@ -5,6 +5,7 @@ import { AlertCircle, Bookmark, Heart, MessageCircle, Share2 } from "lucide-reac
 
 import { getApiBase } from "@/lib/api-base";
 import { resolveAssetUrl } from "@/lib/asset-url";
+import { formatTags } from "@/lib/tags";
 import { renderXhsExpressionText } from "@/lib/xhs-stickers";
 
 type GeneratedContent = {
@@ -49,13 +50,6 @@ function isGeneratedImageAsset(value: unknown): value is GeneratedImageAsset {
     typeof image.image_url === "string" &&
     typeof image.status === "string"
   );
-}
-
-function formatTags(tags: string[] | null) {
-  return (tags ?? [])
-    .map((tag) => tag.trim().replace(/^#+/, ""))
-    .filter(Boolean)
-    .map((tag) => `#${tag}`);
 }
 
 export function PublicPreviewClient({ contentId }: { contentId: string }) {
