@@ -896,6 +896,8 @@ def validate_content_production_contract() -> int:
         "测试门禁",
         "模型名",
         "可用模型/中转站",
+        "中转站",
+        "接口地址",
         "codex_test 测试 Provider",
         "OpenAI-compatible image provider is configured",
         "OpenAI-compatible draft provider is configured",
