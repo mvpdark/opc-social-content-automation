@@ -186,7 +186,7 @@ export const navigation: Array<{
   { id: "dashboard", label: "指挥台", icon: BarChart3 },
   { id: "research", label: "趋势采集", icon: Radar },
   { id: "knowledge", label: "知识库", icon: BookOpenText },
-  { id: "content", label: "内容生产", icon: PenLine },
+  { id: "content", label: "一键生成", icon: PenLine },
   { id: "cover", label: "封面", icon: Image },
   { id: "delivery", label: "发布交付", icon: Users },
   { id: "settings", label: "设置", icon: Settings }
@@ -206,8 +206,8 @@ export const tabMeta: Record<WorkspaceTab, { title: string; description: string 
     description: "管理趋势摘要、内部资料、写作参考和可检索资产。"
   },
   content: {
-    title: "内容生产",
-    description: "围绕知识库生成初稿、改写正文，并保留发布前人工确认边界。"
+    title: "一键生成",
+    description: "围绕知识库一键生成文案和封面，并保留发布前人工确认边界。"
   },
   cover: {
     title: "封面工作台",
@@ -314,10 +314,10 @@ export const dashboardActionLinks = [
     icon: BookOpenText
   },
   {
-    title: "生成营销图文",
-    detail: "进入内容生产页创建草稿。",
+    title: "一键生成营销图文",
+    detail: "进入一键生成页创建文案和封面。",
     href: "/?tab=content",
-    command: "去生产",
+    command: "去生成",
     status: "可开始",
     icon: PenLine
   }

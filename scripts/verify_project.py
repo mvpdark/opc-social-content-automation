@@ -327,6 +327,36 @@ def validate_frontend_design_contract() -> int:
         if snippet not in app_shell_text:
             raise SystemExit(f"Missing app shell login contract snippet: {snippet}")
 
+    one_click_entry_contracts = [
+        (app_shell_text, ["一键生成"], "topbar one-click entry"),
+        (
+            data_text,
+            [
+                '{ id: "content", label: "一键生成"',
+                'title: "一键生成"',
+                "一键生成文案和封面",
+                "一键生成营销图文",
+                "进入一键生成页创建文案和封面",
+            ],
+            "navigation one-click entry",
+        ),
+        (
+            workspace_text,
+            [
+                "登录后即可一键生成小红书图文和封面",
+                "从一键生成页完成正文、改写和封面",
+                "一键生成图文+封面",
+                "可在一键生成页细调",
+                "去一键生成",
+            ],
+            "workspace one-click entry",
+        ),
+    ]
+    for text, snippets, contract_name in one_click_entry_contracts:
+        for snippet in snippets:
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
+
     return (
         len(tab_ids)
         + len(style_ids)
@@ -335,6 +365,7 @@ def validate_frontend_design_contract() -> int:
         + len(terminal_routing_snippets)
         + len(pc_login_snippets)
         + len(app_shell_login_snippets)
+        + sum(len(snippets) for _text, snippets, _name in one_click_entry_contracts)
     )
 
 

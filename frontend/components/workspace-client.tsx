@@ -1219,10 +1219,10 @@ function PcLoginPage({
                   <Pill tone="amber">人工确认后发布</Pill>
                 </div>
                 <h1 className="mt-5 max-w-xl text-3xl font-semibold leading-tight text-ink md:text-4xl">
-                  登录后开始生产可复制的小红书图文。
+                  登录后即可一键生成小红书图文和封面。
                 </h1>
                 <p className="mt-4 max-w-xl text-sm leading-6 text-muted">
-                  进入工作台后，可以从内容生产页生成正文和封面，预览成小红书样式，再一键复制文案用于人工提交。
+                  进入工作台后，从一键生成页完成正文、改写和封面，预览成小红书样式，再复制文案用于人工提交。
                 </p>
               </div>
 
@@ -1405,7 +1405,7 @@ function DashboardView({
               <div className="rounded-[18px] border border-line bg-paper/65 p-4 md:col-span-2">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div className="text-xs font-medium text-muted">默认风格</div>
-                  <span className="text-[11px] text-muted">可在内容生产页细调</span>
+                  <span className="text-[11px] text-muted">可在一键生成页细调</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
                   {writingStylePresets.map((style) => {
@@ -1438,7 +1438,7 @@ function DashboardView({
                 href="/?tab=content"
               >
                 <PlatformIcon className="ring-white/55" platform="xiaohongshu" size="sm" />
-                生成小红书图文
+                一键生成图文+封面
               </a>
               <a
                 className={`${secondaryButtonClass} h-12 px-4`}
@@ -2847,15 +2847,15 @@ function CoverView() {
       <Panel
         action={
           <a
-            aria-label="前往内容生产生成封面"
+            aria-label="前往一键生成页生成封面"
             className="flex h-9 items-center gap-2 rounded-md bg-ink px-3 text-sm font-medium text-paper"
             href="/?tab=content"
           >
             <Image className="h-4 w-4" />
-            去生成封面
+            去一键生成
           </a>
         }
-        helper="先在内容生产页生成图文，再在结果卡里生成封面图。下方展示参考版式。"
+        helper="先在一键生成页生成文案和封面；下方展示参考版式。"
         title="封面参考版式"
       >
         <CoverReferencePreview />
