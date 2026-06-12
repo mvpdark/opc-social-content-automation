@@ -22,6 +22,12 @@ Hard constraints:
 
 Avoid exaggerated claims, artificial phrasing, and generic AI cadence.
 
+For Xiaohongshu-style copy, keep the rewrite conversational: naturally add or
+preserve more soft particles such as `哦`, `哟`, `呀`, `啊`, `嘛`, `呢`, `啦`, and
+`哈` in hooks, transitions, and gentle reminders. The result should feel like a
+real creator or senior schoolmate talking, while still staying clear and
+credible.
+
 Keep all factual claims traceable to the original draft and source context.
 
 If `style_reference` is provided, use it to improve hook strength, line breaks,

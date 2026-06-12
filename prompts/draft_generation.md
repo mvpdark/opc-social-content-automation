@@ -35,6 +35,10 @@ For Xiaohongshu:
   structural emoji system with only sticker codes.
 - Use lively punctuation naturally: `～`, `！！`, `？`, `……`, and short
   parenthetical reactions such as `（先别慌）`, `（真的别反着来）`, `（会很亏）`.
+- Use conversational particles frequently but naturally, especially `哦`, `哟`,
+  `呀`, `啊`, `嘛`, `呢`, `啦`, and `哈`. Place them in hooks, transitions, and
+  soft reminders so the post sounds like a real Xiaohongshu creator talking to a
+  reader, not like formal copywriting. Do not stack particles in every sentence.
 - Add at least one `表情包感` aside or soft self-talk sentence when Xiaohongshu
   style is requested, while keeping the advice useful and credible.
 - It is acceptable to use light female-community address words such as `姐妹`,

@@ -165,7 +165,7 @@ const writingStylePresets = [
     label: "女性可爱",
     helper: "亲近、软一点、有陪伴感",
     prompt:
-      "偏女性可爱风，像学姐认真提醒：语气温柔、轻松、有陪伴感，可以少量用姐妹/宝子/uu口吻，开头要有共鸣，不要像硬广或官方说明文"
+      "偏女性可爱风，像学姐认真提醒：语气温柔、轻松、有陪伴感，可以少量用姐妹/宝子/uu口吻，并自然多用哦、哟、呀、啊等口语语气词，开头要有共鸣，不要像硬广或官方说明文"
   },
   {
     id: "professional",
@@ -191,11 +191,12 @@ const writingStylePresets = [
 ] as const;
 
 type WritingStylePresetId = (typeof writingStylePresets)[number]["id"];
-type ExpressionOptionKey = "emoji" | "punctuation" | "meme" | "softCta";
+type ExpressionOptionKey = "emoji" | "punctuation" | "particles" | "meme" | "softCta";
 
 const defaultExpressionOptions: Record<ExpressionOptionKey, boolean> = {
   emoji: true,
   punctuation: true,
+  particles: true,
   meme: true,
   softCta: true
 };
@@ -212,6 +213,12 @@ const expressionOptions = [
     label: "活泼标点",
     enabled: "必须自然使用 ～、！！、？、…… 来制造口语节奏，但不要连续堆叠",
     disabled: "标点保持克制"
+  },
+  {
+    key: "particles",
+    label: "语气词",
+    enabled: "必须自然提高口语语气词密度，在开头、转折和提醒处穿插哦、哟、呀、啊、嘛、呢、啦、哈等，但不要每句都堆",
+    disabled: "少用哦、呀、啊等口语语气词，表达更克制"
   },
   {
     key: "meme",
@@ -2356,7 +2363,7 @@ function GenerationLauncher({
             </div>
             <div className="md:col-span-2">
               <span className="text-xs font-medium text-muted">表达增强</span>
-              <div className="mt-2 grid grid-cols-2 gap-2 lg:grid-cols-4">
+              <div className="mt-2 grid grid-cols-2 gap-2 lg:grid-cols-5">
                 {expressionOptions.map((option) => {
                   const enabled = styleOptions[option.key];
                   return (
