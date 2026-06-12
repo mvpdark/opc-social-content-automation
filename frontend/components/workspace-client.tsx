@@ -2542,6 +2542,7 @@ function GenerationLauncher({
             key={exportContent.id}
             content={exportContent}
             generatedImageAsset={latestImageAsset}
+            generationBusy={busyAction !== null}
             imageProviderReady={liveImageProviderReady}
             onImageGenerated={onImageGenerated}
             onOpenSettings={onOpenSettings}
@@ -2557,6 +2558,7 @@ function GenerationLauncher({
 function GeneratedPostExportCard({
   content,
   generatedImageAsset,
+  generationBusy,
   imageProviderReady,
   onImageGenerated,
   onOpenSettings,
@@ -2565,6 +2567,7 @@ function GeneratedPostExportCard({
 }: {
   content: GeneratedContent;
   generatedImageAsset: GeneratedImageAsset | null;
+  generationBusy: boolean;
   imageProviderReady: boolean;
   onImageGenerated: (asset: GeneratedImageAsset) => void;
   onOpenSettings: () => void;
@@ -2577,7 +2580,7 @@ function GeneratedPostExportCard({
   const [imageError, setImageError] = useState<string | null>(null);
   const warnings = complianceWarnings(content);
   const testDraft = isTestDraft(content);
-  const canCopy = !testDraft;
+  const canCopy = !testDraft && !generationBusy;
   const canGenerateImage = canCopy && !imageBusy;
   const copyPayload = buildPlatformCopy(content);
   const tagLine = formatTagLine(content.tags);
@@ -2591,6 +2594,8 @@ function GeneratedPostExportCard({
   const coverTemplate = isDouyinPost ? "douyin-cover" : "xiaohongshu-cover";
   const imageButtonLabel = imageBusy
     ? "正在生成封面"
+    : generationBusy
+      ? "一键生成中"
     : imageAsset
       ? "重新生成封面"
       : imageProviderReady
@@ -2625,6 +2630,10 @@ function GeneratedPostExportCard({
   }
 
   async function handleGenerateImage() {
+    if (generationBusy) {
+      setImageError("一键生成还没完成，请等文案和封面流程结束后再操作。");
+      return;
+    }
     if (!canCopy) {
       setImageError("测试草稿不可生成封面图，请先生成一篇真实草稿。");
       return;
@@ -2716,7 +2725,9 @@ function GeneratedPostExportCard({
         </div>
 
         <p className="mt-3 text-xs leading-5 text-muted">
-          复制内容包含标题、正文和话题标签；不会自动发布，粘贴到{platformLabel}前仍需人工看一遍。
+          {generationBusy
+            ? "一键生成还在继续，完成前先不要复制或手动生成封面。"
+            : `复制内容包含标题、正文和话题标签；不会自动发布，粘贴到${platformLabel}前仍需人工看一遍。`}
         </p>
       </div>
 
