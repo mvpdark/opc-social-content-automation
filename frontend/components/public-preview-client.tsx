@@ -206,7 +206,7 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
         {coverUrl ? (
           <img
             alt="图文封面预览"
-            className="aspect-[3/4] w-full bg-[#f7f7f7] object-cover"
+            className="aspect-[3/4] w-full bg-[#f7f7f7] object-contain"
             data-testid="public-preview-cover"
             decoding="async"
             src={coverUrl}

@@ -2,11 +2,13 @@
 
 import type React from "react";
 import {
+  LogOut,
   Palette,
   PenLine,
   Settings,
   ShieldCheck,
-  Smartphone
+  Smartphone,
+  UserRound
 } from "lucide-react";
 
 import {
@@ -20,15 +22,19 @@ import {
 
 type AppShellProps = {
   activeTab: WorkspaceTab;
+  accountLabel?: string;
   children: React.ReactNode;
   interfaceStyle: InterfaceStyle;
+  onLogout?: () => void;
   showHelperText: boolean;
 };
 
 export function AppShell({
   activeTab,
+  accountLabel,
   children,
   interfaceStyle,
+  onLogout,
   showHelperText
 }: AppShellProps) {
   const activeMeta = tabMeta[activeTab];
@@ -157,6 +163,22 @@ export function AppShell({
                   </div>
                 ) : null}
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  {accountLabel ? (
+                    <div className="glass-control flex h-9 max-w-[180px] items-center gap-2 rounded-md border px-3 text-xs font-medium text-muted">
+                      <UserRound className="h-3.5 w-3.5 shrink-0 text-steel" />
+                      <span className="truncate text-ink">{accountLabel}</span>
+                    </div>
+                  ) : null}
+                  {onLogout ? (
+                    <button
+                      className="glass-control flex h-9 shrink-0 items-center gap-2 rounded-md border px-3 text-sm font-medium text-muted transition hover:text-ink"
+                      onClick={onLogout}
+                      type="button"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      退出
+                    </button>
+                  ) : null}
                   <a
                     className="glass-control flex h-9 shrink-0 items-center gap-2 rounded-md border px-3 text-sm font-medium text-ink"
                     href={androidHref}

@@ -2648,7 +2648,7 @@ function DraftPreviewCard({
       {coverImageUrl ? (
         <CoverImagePreview
           alt="已生成封面图"
-          className="mt-4 aspect-[3/4] w-full rounded-md object-cover"
+          className="mt-4 aspect-[3/4] w-full rounded-md bg-[#f7f7f7] object-contain"
           src={coverImageUrl}
           testId="draft-cover-image"
         />
@@ -2837,7 +2837,7 @@ function DraftPreviewEditor({
             {coverImageUrl ? (
               <CoverImagePreview
                 alt="小红书图文封面预览"
-                className="aspect-[3/4] w-full bg-[#f7f7f7] object-cover"
+                className="aspect-[3/4] w-full bg-[#f7f7f7] object-contain"
                 src={coverImageUrl}
                 testId="draft-preview-cover-image"
               />

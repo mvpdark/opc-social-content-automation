@@ -305,7 +305,7 @@ def test_openai_compatible_image_provider_accepts_remote_url(
     monkeypatch.setattr(settings, "image_openai_compatible_api_key", secret)
     monkeypatch.setattr(settings, "image_openai_compatible_base_url", "https://image.test/v1")
     monkeypatch.setattr(settings, "image_model", "gpt-image-2")
-    monkeypatch.setattr(settings, "image_size", None)
+    monkeypatch.setattr(settings, "image_size", "1024x1024")
     monkeypatch.setattr(settings, "image_response_format", None)
 
     class FakeResponse:

@@ -576,9 +576,7 @@ class ModelRouter:
                 "prompt": _image_prompt(prompt_template, payload),
                 "n": 1,
             }
-            request_payload["size"] = settings.image_size or _image_size(
-                str(payload.get("aspect_ratio") or "3:4")
-            )
+            request_payload["size"] = _image_size(str(payload.get("aspect_ratio") or "3:4"))
             if settings.image_response_format:
                 request_payload["response_format"] = settings.image_response_format
             data = _post_image_generation(

@@ -25,6 +25,11 @@ High-attraction Xiaohongshu cover formula:
   checklist" look unless the selected visual direction explicitly asks for it.
 - Use oversized Chinese headline typography with 2-4 stacked lines, black or
   very dark text, strong contrast, and one emphasized word or underline.
+- Keep every headline character fully inside the canvas. Leave at least 8% safe
+  margin on all sides; no Chinese text, label, badge, underline, or checklist
+  chip may touch or bleed past the image edge.
+- If the title is long, reduce the font size and wrap it into complete lines
+  instead of cropping, hiding, or letting any character run off-canvas.
 - Add one small risk/warning tag when useful, such as `先别急`, `避坑`, `顺序别反`.
 - Add 2-3 short checklist chips only when the selected direction supports chips,
   e.g. `研究方向`, `导师匹配`, `邮件时机`.
