@@ -22,10 +22,10 @@ TEXT_HYGIENE_ROOTS = [
 ]
 FORBIDDEN_TEXT_MARKERS = {
     "\ufffd": "replacement character",
-    "锟": "mojibake marker",
-    "鈥": "mojibake marker",
-    "涓": "mojibake marker",
-    "Â": "mojibake marker",
+    "\u951f": "mojibake marker",
+    "\u9225": "mojibake marker",
+    "\u6d93": "mojibake marker",
+    "\u00c2": "mojibake marker",
     "debugger": "debugger statement",
     "console.log": "console logging",
 }
