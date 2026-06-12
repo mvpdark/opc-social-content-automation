@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
-from app.db.session import get_db
+from app.db.session import SessionLocal, get_db
+from app.models.trend_collection_job import TrendCollectionJob
 from app.models.trend_content import TrendContent
 from app.models.user import User
 from app.schemas.trend import (
@@ -28,9 +29,44 @@ from app.services.trend_service import (
     list_collection_jobs,
     trend_report as build_trend_report,
 )
+from app.services.trend_browser_collector import run_browser_collection_job
 
 
 router = APIRouter()
+
+
+def _run_collection_job_in_background(job_id: int) -> None:
+    db = SessionLocal()
+    try:
+        run_browser_collection_job(
+            db=db,
+            job_id=job_id,
+            headless=False,
+            operator_wait_seconds=0,
+            max_scrolls=6,
+        )
+    except HTTPException as exc:
+        job = db.get(TrendCollectionJob, job_id)
+        if job is not None and job.status in {"queued", "running"}:
+            job.status = "failed"
+            job.error = str(exc.detail)
+            job.result_summary = {
+                "message": str(exc.detail),
+                "collected_items": 0,
+            }
+            db.commit()
+    except Exception:
+        job = db.get(TrendCollectionJob, job_id)
+        if job is not None and job.status in {"queued", "running"}:
+            job.status = "failed"
+            job.error = "Background collection failed. Check local browser setup and session state."
+            job.result_summary = {
+                "message": job.error,
+                "collected_items": 0,
+            }
+            db.commit()
+    finally:
+        db.close()
 
 
 @router.get("/list", response_model=list[TrendRead])
@@ -75,10 +111,12 @@ def get_link_import_target(payload: TrendLinkImportRequest) -> TrendLinkImportTa
 @router.post("/jobs", response_model=TrendCollectionJobRead)
 def create_trend_collection_job(
     payload: TrendCollectionJobCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> TrendCollectionJobRead:
     job = create_collection_job(db, payload, current_user)
+    background_tasks.add_task(_run_collection_job_in_background, job.id)
     return TrendCollectionJobRead.model_validate(job)
 
 

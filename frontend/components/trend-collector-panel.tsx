@@ -1,7 +1,7 @@
 "use client";
 
 import { ExternalLink, Loader2, Play, Save, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { PlatformLabel } from "@/components/platform-icon";
 import { getApiBase } from "@/lib/api-base";
@@ -40,6 +40,19 @@ type LinkImportTarget = {
   safety_notes: string[];
 };
 
+type TrendCollectionJob = {
+  id: number;
+  platform: Platform;
+  keyword: string;
+  status: string;
+  result_summary: {
+    message?: string;
+    collected_items?: number;
+    trend_ids?: number[];
+  } | null;
+  error: string | null;
+};
+
 const API_BASE = getApiBase();
 const XHS_URL_PATTERN = /https?:\/\/[^\s<>'"，。；、)）】]+/gi;
 const SUPPORTED_XHS_HOSTS = new Set([
@@ -54,6 +67,7 @@ const platformLabels: Record<Platform, string> = {
   xiaohongshu: "小红书",
   douyin: "抖音"
 };
+const terminalJobStatuses = new Set(["completed", "failed", "needs_operator_review"]);
 
 const fieldLabelClass = "text-xs font-medium text-muted";
 const inputClass =
@@ -237,6 +251,52 @@ function buildLocalXhsLinkImportTarget(rawText: string): LinkImportTarget {
   };
 }
 
+function collectionStatusLabel(status: string) {
+  switch (status) {
+    case "queued":
+      return "排队中";
+    case "running":
+      return "采集中";
+    case "completed":
+      return "已完成";
+    case "needs_operator_review":
+      return "需要人工处理";
+    case "failed":
+      return "失败";
+    default:
+      return status;
+  }
+}
+
+function formatCollectionJobStatus(job: TrendCollectionJob) {
+  const collectedItems =
+    typeof job.result_summary?.collected_items === "number"
+      ? `，已采集 ${job.result_summary.collected_items} 条`
+      : "";
+  const errorText = job.error ? `；${job.error}` : "";
+
+  if (job.status === "queued") {
+    if (!job.result_summary?.message?.includes("automatically")) {
+      return `采集任务 #${job.id} 排队中${collectedItems}。这是一条旧版队列任务，后台不会自动消费；请重新点击“创建并启动”。`;
+    }
+    return `采集任务 #${job.id} ${collectionStatusLabel(job.status)}${collectedItems}。后台采集器正在启动，可见浏览器会自动打开。`;
+  }
+  if (job.status === "running") {
+    return `采集任务 #${job.id} ${collectionStatusLabel(job.status)}${collectedItems}。请留意自动打开的浏览器窗口；如果遇到登录或验证码，先人工处理。`;
+  }
+  if (job.status === "completed") {
+    return `采集任务 #${job.id} ${collectionStatusLabel(job.status)}${collectedItems}。请人工确认来源后再保存知识摘要。`;
+  }
+  if (job.status === "needs_operator_review") {
+    return `采集任务 #${job.id} 需要人工处理${collectedItems}。公开搜索可能被登录墙、验证码或空结果拦截，请先打开搜索页人工确认。${errorText}`;
+  }
+  if (job.status === "failed") {
+    return `采集任务 #${job.id} 执行失败${collectedItems}${errorText}。`;
+  }
+
+  return `采集任务 #${job.id} 当前状态：${job.status}${collectedItems}${errorText}。`;
+}
+
 export function TrendCollectorPanel({
   onOpenSettings,
   workspaceToken
@@ -255,17 +315,21 @@ export function TrendCollectorPanel({
   const [linkImportTarget, setLinkImportTarget] = useState<LinkImportTarget | null>(null);
   const [statusText, setStatusText] = useState("准备进行公开优先的图文采集。");
   const [busyAction, setBusyAction] = useState<"target" | "job" | "digest" | "link" | null>(null);
+  const [activeJobId, setActiveJobId] = useState<number | null>(null);
 
   const canSubmit = useMemo(() => keyword.trim().length > 0, [keyword]);
+  const isPollingJob = activeJobId !== null;
   const canOpenSearch = canSubmit && busyAction === null;
-  const canCreateJob = canSubmit && busyAction === null;
+  const canCreateJob = canSubmit && busyAction === null && !isPollingJob;
   const canSaveDigest = canSubmit && sourcesReviewed && busyAction === null;
   const canParseLinks =
     platform === "xiaohongshu" && linkImportText.trim().length > 0 && busyAction === null;
   const openSearchLabel = canSubmit ? "打开搜索" : "先填关键词";
   const createJobLabel = !canSubmit
     ? "先填关键词"
-    : "创建任务";
+    : isPollingJob
+      ? "采集中"
+      : "创建并启动";
   const saveDigestLabel = !canSubmit
     ? "先填关键词"
     : !sourcesReviewed
@@ -297,6 +361,94 @@ export function TrendCollectorPanel({
     setTarget(nextTarget);
     return nextTarget;
   }
+
+  async function fetchCollectionJob(jobId: number): Promise<TrendCollectionJob | null> {
+    const params = new URLSearchParams({ limit: "100" });
+    const response = await fetch(`${API_BASE}/trends/jobs?${params.toString()}`);
+    if (!response.ok) {
+      throw new Error("无法刷新采集任务状态，请检查后端服务。");
+    }
+    const jobs = (await response.json()) as TrendCollectionJob[];
+    return jobs.find((job) => job.id === jobId) ?? null;
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadLatestJob() {
+      try {
+        const params = new URLSearchParams({ limit: "1" });
+        const response = await fetch(`${API_BASE}/trends/jobs?${params.toString()}`);
+        if (!response.ok) {
+          return;
+        }
+        const jobs = (await response.json()) as TrendCollectionJob[];
+        const latestJob = jobs[0];
+        if (cancelled || !latestJob) {
+          return;
+        }
+        setStatusText(formatCollectionJobStatus(latestJob));
+        if (
+          !terminalJobStatuses.has(latestJob.status) &&
+          latestJob.result_summary?.message?.includes("automatically")
+        ) {
+          setActiveJobId(latestJob.id);
+        }
+      } catch {
+        // The panel can still create a new job even if the latest status fetch fails.
+      }
+    }
+
+    void loadLatestJob();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (activeJobId === null) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let timer: number | undefined;
+
+    async function pollJobStatus() {
+      try {
+        const job = await fetchCollectionJob(activeJobId as number);
+        if (cancelled) {
+          return;
+        }
+        if (!job) {
+          setStatusText(`采集任务 #${activeJobId} 暂时查不到状态，请稍后刷新。`);
+          timer = window.setTimeout(pollJobStatus, 3000);
+          return;
+        }
+        setStatusText(formatCollectionJobStatus(job));
+        if (terminalJobStatuses.has(job.status)) {
+          setActiveJobId(null);
+          return;
+        }
+        timer = window.setTimeout(pollJobStatus, 3000);
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        setStatusText(error instanceof Error ? error.message : "采集任务状态刷新失败。");
+        timer = window.setTimeout(pollJobStatus, 5000);
+      }
+    }
+
+    timer = window.setTimeout(pollJobStatus, 800);
+
+    return () => {
+      cancelled = true;
+      if (timer) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, [activeJobId]);
 
   async function openSearchPage() {
     if (!canSubmit) {
@@ -331,6 +483,7 @@ export function TrendCollectorPanel({
     }
     setBusyAction("job");
     try {
+      setTarget(buildLocalSearchTarget(platform, keyword));
       const response = await fetch(`${API_BASE}/trends/jobs`, {
         method: "POST",
         headers: {
@@ -351,8 +504,9 @@ export function TrendCollectorPanel({
       if (!response.ok) {
         throw new Error("采集任务创建失败；如果已恢复正式登录，请检查登录令牌。");
       }
-      const data = (await response.json()) as { id: number; status: string };
-      setStatusText(`采集任务 #${data.id} 当前状态：${data.status}。`);
+      const data = (await response.json()) as TrendCollectionJob;
+      setActiveJobId(data.id);
+      setStatusText(formatCollectionJobStatus(data));
     } catch (error) {
       setStatusText(error instanceof Error ? error.message : "采集任务创建失败。");
     } finally {
@@ -587,6 +741,8 @@ export function TrendCollectorPanel({
               type="button"
             >
               {busyAction === "job" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : isPollingJob ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Play className="h-4 w-4" />

@@ -267,7 +267,7 @@ def create_collection_job(
         status="queued",
         safety_profile=build_safety_profile(payload),
         result_summary={
-            "message": "Queued for safe Playwright-assisted collection.",
+            "message": "Queued; the safe visible-browser collector will start automatically.",
             "collected_items": 0,
         },
     )
