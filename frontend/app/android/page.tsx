@@ -2774,6 +2774,12 @@ function DraftPreviewEditor({
     onExportStatus(message);
   }
 
+  function toggleEditing() {
+    setManualCopyText(null);
+    setXhsExportMessage(null);
+    setEditing((current) => !current);
+  }
+
   async function copyDraftTextOnly() {
     setEditing(false);
     const copied = await onCopy();
@@ -2895,7 +2901,7 @@ function DraftPreviewEditor({
             <button
               className="h-10 rounded-full bg-[#111111] px-4 text-sm font-semibold text-white"
               data-testid={editing ? "draft-preview-save" : "draft-preview-edit-toggle"}
-              onClick={() => setEditing((current) => !current)}
+              onClick={toggleEditing}
               type="button"
             >
               {editing ? "完成" : "编辑"}
