@@ -58,6 +58,7 @@ def validate_required_files() -> int:
         ROOT / "frontend" / "app" / "page.tsx",
         ROOT / "frontend" / "middleware.ts",
         ROOT / "frontend" / "lib" / "api-base.ts",
+        ROOT / "frontend" / "lib" / "asset-url.ts",
         ROOT / "frontend" / "lib" / "status-labels.ts",
         ROOT / "docs" / "RUNBOOK.md",
         ROOT / "docs" / "CLOUDFLARE_OPC.md",
@@ -391,6 +392,9 @@ def validate_content_production_contract() -> int:
     android_text = (ROOT / "frontend" / "app" / "android" / "page.tsx").read_text(
         encoding="utf-8"
     )
+    public_preview_text = (
+        ROOT / "frontend" / "components" / "public-preview-client.tsx"
+    ).read_text(encoding="utf-8")
     trend_collector_text = (
         ROOT / "frontend" / "components" / "trend-collector-panel.tsx"
     ).read_text(encoding="utf-8")
@@ -415,6 +419,9 @@ def validate_content_production_contract() -> int:
     service_error_text = (
         ROOT / "frontend" / "lib" / "service-error-copy.ts"
     ).read_text(encoding="utf-8")
+    asset_url_text = (ROOT / "frontend" / "lib" / "asset-url.ts").read_text(
+        encoding="utf-8"
+    )
     clipboard_text = (ROOT / "frontend" / "lib" / "clipboard.ts").read_text(
         encoding="utf-8"
     )
@@ -506,6 +513,17 @@ def validate_content_production_contract() -> int:
         if snippet not in clipboard_text:
             raise SystemExit(f"Missing clipboard helper contract: {snippet}")
 
+    asset_url_contract_snippets = [
+        "export function resolveAssetUrl",
+        "apiBase = getApiBase()",
+        "normalizedUrl.startsWith(\"//\")",
+        "new URL(apiBase)",
+    ]
+    for snippet in asset_url_contract_snippets:
+        total += 1
+        if snippet not in asset_url_text:
+            raise SystemExit(f"Missing asset URL helper contract: {snippet}")
+
     particle_style_contracts = [
         (
             workspace_text,
@@ -544,6 +562,7 @@ def validate_content_production_contract() -> int:
         "Only human-approved content can be used for image generation.",
         "async function copyText(text: string)",
         "async function tryCopyText(text: string)",
+        "function resolveAssetUrl(imageUrl: string)",
         "canCopy && imageProviderReady && !imageBusy",
         "封面仍是版式预览，真实图片生成后会在这里替换。\" :",
         "假图",
@@ -734,6 +753,7 @@ def validate_content_production_contract() -> int:
         if (
             snippet in workspace_text
             or snippet in android_text
+            or snippet in public_preview_text
             or snippet in trend_collector_text
             or snippet in image_service_text
             or snippet in model_router_text

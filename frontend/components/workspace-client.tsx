@@ -40,6 +40,7 @@ import {
 } from "@/components/platform-icon";
 import { TrendCollectorPanel } from "@/components/trend-collector-panel";
 import { getApiBase } from "@/lib/api-base";
+import { resolveAssetUrl } from "@/lib/asset-url";
 import { copyText } from "@/lib/clipboard";
 import {
   connectionStatuses,
@@ -908,22 +909,6 @@ function formatTagLine(tags: string[] | null) {
 function buildPlatformCopy(content: GeneratedContent) {
   const tagLine = formatTagLine(content.tags);
   return [content.title.trim(), content.body.trim(), tagLine].filter(Boolean).join("\n\n");
-}
-
-function resolveAssetUrl(imageUrl: string) {
-  const normalizedUrl = imageUrl.trim();
-  if (!normalizedUrl) {
-    return "";
-  }
-  if (/^(https?:|data:|blob:|file:)/i.test(normalizedUrl)) {
-    return normalizedUrl;
-  }
-  if (normalizedUrl.startsWith("//")) {
-    const protocol = typeof window !== "undefined" ? window.location.protocol : "http:";
-    return `${protocol}${normalizedUrl}`;
-  }
-  const apiUrl = new URL(API_BASE);
-  return `${apiUrl.origin}${normalizedUrl.startsWith("/") ? normalizedUrl : `/${normalizedUrl}`}`;
 }
 
 function complianceWarnings(content: GeneratedContent) {

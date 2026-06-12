@@ -34,6 +34,7 @@ import {
 
 import { PlatformIcon, PlatformLabel } from "@/components/platform-icon";
 import { getApiBase } from "@/lib/api-base";
+import { resolveAssetUrl } from "@/lib/asset-url";
 import { copyText, tryCopyText } from "@/lib/clipboard";
 import {
   providerBindingDefaultsFromStatuses,
@@ -593,22 +594,6 @@ function draftStateFromContent(content: GeneratedContent): DraftPreviewState {
     tags: formatTags(content.tags),
     title: content.title
   };
-}
-
-function resolveAssetUrl(imageUrl: string) {
-  const normalizedUrl = imageUrl.trim();
-  if (!normalizedUrl) {
-    return "";
-  }
-  if (/^(https?:|data:|blob:|file:)/i.test(normalizedUrl)) {
-    return normalizedUrl;
-  }
-  if (normalizedUrl.startsWith("//")) {
-    const protocol = typeof window !== "undefined" ? window.location.protocol : "http:";
-    return `${protocol}${normalizedUrl}`;
-  }
-  const apiUrl = new URL(API_BASE);
-  return `${apiUrl.origin}${normalizedUrl.startsWith("/") ? normalizedUrl : `/${normalizedUrl}`}`;
 }
 
 function getPcReturnHref() {

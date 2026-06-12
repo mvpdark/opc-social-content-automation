@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, Bookmark, Heart, MessageCircle, Share2 } from "lucide-react";
 
 import { getApiBase } from "@/lib/api-base";
+import { resolveAssetUrl } from "@/lib/asset-url";
 
 type GeneratedContent = {
   body: string;
@@ -59,22 +60,6 @@ function isGeneratedImageAsset(value: unknown): value is GeneratedImageAsset {
     typeof image.image_url === "string" &&
     typeof image.status === "string"
   );
-}
-
-function resolveAssetUrl(imageUrl: string) {
-  const normalizedUrl = imageUrl.trim();
-  if (!normalizedUrl) {
-    return "";
-  }
-  if (/^(https?:|data:|blob:|file:)/i.test(normalizedUrl)) {
-    return normalizedUrl;
-  }
-  if (normalizedUrl.startsWith("//")) {
-    const protocol = typeof window !== "undefined" ? window.location.protocol : "http:";
-    return `${protocol}${normalizedUrl}`;
-  }
-  const apiUrl = new URL(getApiBase());
-  return `${apiUrl.origin}${normalizedUrl.startsWith("/") ? normalizedUrl : `/${normalizedUrl}`}`;
 }
 
 function formatTags(tags: string[] | null) {
