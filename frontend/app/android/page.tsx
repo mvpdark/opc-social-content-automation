@@ -245,23 +245,33 @@ async function fetchProviderStatuses() {
 }
 
 async function authenticateMobileLogin(account: string, password: string) {
-  const response = await fetch(`${API_BASE}/auth/mobile-login`, {
-    body: JSON.stringify({ account, password }),
-    headers: { "Content-Type": "application/json" },
-    method: "POST"
-  });
-  if (!response.ok) {
+  try {
+    const response = await fetch(`${API_BASE}/auth/mobile-login`, {
+      body: JSON.stringify({ account, password }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST"
+    });
+    if (response.ok) {
+      const data = (await response.json()) as Partial<MobileLoginResponse>;
+      if (!data.account?.trim()) {
+        throw new Error("登录服务响应异常，请稍后再试。");
+      }
+      return {
+        account: data.account.trim(),
+        defaultKeysBound: Boolean(data.default_keys_bound),
+        providerStatuses: Array.isArray(data.provider_statuses) ? data.provider_statuses : []
+      };
+    }
+    if (response.status === 404 || response.status === 405) {
+      throw new Error("登录服务暂未更新，请重启后端后再试。");
+    }
     throw new Error("账号或密码不正确。");
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error("登录服务暂时不可用，请确认后端已启动。");
+    }
+    throw error;
   }
-  const data = (await response.json()) as Partial<MobileLoginResponse>;
-  if (!data.account?.trim()) {
-    throw new Error("登录服务响应异常，请稍后再试。");
-  }
-  return {
-    account: data.account.trim(),
-    defaultKeysBound: Boolean(data.default_keys_bound),
-    providerStatuses: Array.isArray(data.provider_statuses) ? data.provider_statuses : []
-  };
 }
 
 async function readApiError(response: Response, fallback: string) {

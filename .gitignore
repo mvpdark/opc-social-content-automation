@@ -34,3 +34,4 @@ backend/static/generated/
 artifacts/
 .browser-sessions/
 .playwright-cli/
+.codex-remote-attachments/
