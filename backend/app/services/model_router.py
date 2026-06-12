@@ -303,7 +303,7 @@ def _test_draft(payload: dict[str, object]) -> str:
 
     return "\n".join(
         [
-            f"【测试草稿】{topic}",
+            f"【演示草稿】{topic}",
             "",
             f"面向：{audience}",
             f"平台：{platform}",
@@ -313,7 +313,7 @@ def _test_draft(payload: dict[str, object]) -> str:
             f"参考上下文：{source_line}",
             f"标签：{tag_line}",
             "",
-            "风险提示：这是 codex_test 测试 Provider 生成的草稿，只用于流程联调，正式发布前必须经过人工审核。",
+            "风险提示：这是演示模式生成的草稿，只用于流程测试，正式发布前必须经过人工审核。",
         ]
     )
 
@@ -330,15 +330,15 @@ def _aspect_ratio_size(aspect_ratio: str) -> tuple[int, int]:
 
 def _wrap_svg_text(text: str, width: int = 12, max_lines: int = 4) -> list[str]:
     lines = textwrap.wrap(text, width=width)[:max_lines]
-    return lines or ["OPC Test Cover"]
+    return lines or ["OPC 演示封面"]
 
 
 def _test_image(payload: dict[str, object]) -> str:
-    title = str(payload.get("title") or "OPC Test Cover")
+    title = str(payload.get("title") or "OPC 演示封面")
     platform = str(payload.get("platform") or "multi")
     aspect_ratio = str(payload.get("aspect_ratio") or "3:4")
     template = payload.get("template")
-    template_name = "Codex test template"
+    template_name = "演示封面模板"
     if isinstance(template, dict):
         template_name = str(template.get("name") or template_name)
 
@@ -356,8 +356,8 @@ def _test_image(payload: dict[str, object]) -> str:
         f'<text x="72" y="{260 + index * 78}" class="title">{html.escape(line)}</text>'
         for index, line in enumerate(title_lines)
     )
-    tag_line = html.escape(f"{platform} · {template_name} · TEST")
-    body_line = html.escape("仅用于流程联调，正式发布前需要人工审核")
+    tag_line = html.escape(f"{platform} · {template_name} · 演示模式")
+    body_line = html.escape("仅用于流程测试，正式发布前需要人工审核")
 
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">
   <defs>
@@ -379,7 +379,7 @@ def _test_image(payload: dict[str, object]) -> str:
   {title_spans}
   <text x="72" y="{height - 178}" class="body">{body_line}</text>
   <rect x="72" y="{height - 124}" width="236" height="52" rx="10" fill="#182033"/>
-  <text x="96" y="{height - 89}" class="mark">OPC TEST ASSET</text>
+  <text x="96" y="{height - 89}" class="mark">演示素材</text>
 </svg>
 """
     target.write_text(svg, encoding="utf-8")

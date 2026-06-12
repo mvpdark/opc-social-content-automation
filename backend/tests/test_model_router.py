@@ -38,8 +38,9 @@ def test_codex_test_draft_provider(monkeypatch: pytest.MonkeyPatch) -> None:
         },
     )
 
-    assert "【测试草稿】硕升博申请节奏" in result
-    assert "codex_test 测试 Provider" in result
+    assert "【演示草稿】硕升博申请节奏" in result
+    assert "演示模式生成的草稿" in result
+    assert "codex_test 测试 Provider" not in result
     assert "申请时间线" in result
 
 
@@ -107,7 +108,9 @@ def test_codex_test_image_provider_creates_svg(monkeypatch: pytest.MonkeyPatch) 
     filename = image_url.rsplit("/", 1)[-1]
     generated_file = GENERATED_ASSET_ROOT / filename
     assert generated_file.exists()
-    assert "OPC TEST ASSET" in generated_file.read_text(encoding="utf-8")
+    svg_text = generated_file.read_text(encoding="utf-8")
+    assert "演示素材" in svg_text
+    assert "流程联调" not in svg_text
     generated_file.unlink()
 
 

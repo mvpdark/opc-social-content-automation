@@ -390,6 +390,9 @@ def validate_content_production_contract() -> int:
     image_service_text = (
         ROOT / "backend" / "app" / "services" / "image_service.py"
     ).read_text(encoding="utf-8")
+    model_router_text = (
+        ROOT / "backend" / "app" / "services" / "model_router.py"
+    ).read_text(encoding="utf-8")
     draft_prompt_text = (ROOT / "prompts" / "draft_generation.md").read_text(
         encoding="utf-8"
     )
@@ -491,10 +494,13 @@ def validate_content_production_contract() -> int:
         "测试门禁",
         "模型名",
         "可用模型/中转站",
+        "codex_test 测试 Provider",
+        "流程联调",
+        "OPC TEST ASSET",
     ]
     for snippet in stale_gate_snippets:
         total += 1
-        if snippet in workspace_text or snippet in image_service_text:
+        if snippet in workspace_text or snippet in image_service_text or snippet in model_router_text:
             raise SystemExit(f"Stale content production gate still present: {snippet}")
 
     return total

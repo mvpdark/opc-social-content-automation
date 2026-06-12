@@ -895,7 +895,11 @@ function complianceWarnings(content: GeneratedContent) {
 }
 
 function isTestDraft(content: GeneratedContent) {
-  return content.body.includes("codex_test") || content.body.includes("【测试草稿】");
+  return (
+    content.body.includes("codex_test") ||
+    content.body.includes("【测试草稿】") ||
+    content.body.includes("【演示草稿】")
+  );
 }
 
 function isGeneratedContent(value: unknown): value is GeneratedContent {
@@ -2232,7 +2236,7 @@ function GenerationLauncher({
 
       if (isTestDraft(finalContent)) {
         setStatusText(
-          `草稿 #${finalContent.id} 是流程联调用测试草稿，不会创建演示封面。请配置真实撰稿服务后再一键生成。`
+          `草稿 #${finalContent.id} 是演示草稿，不会创建封面图。请配置真实撰稿服务后再一键生成。`
         );
         return;
       }
@@ -2642,7 +2646,7 @@ function GeneratedPostExportCard({
       return;
     }
     if (!canCopy) {
-      setImageError("测试草稿不可生成封面图，请先生成一篇真实草稿。");
+      setImageError("演示草稿不可生成封面图，请先生成一篇正式草稿。");
       return;
     }
 
@@ -2716,7 +2720,7 @@ function GeneratedPostExportCard({
                 <Clipboard className="h-4 w-4" />
               )}
               {testDraft
-                ? "测试草稿不可复制"
+                ? "演示草稿不可复制"
                 : copyState === "copied"
                   ? "已复制"
                   : `一键复制${platformLabel}文案`}
@@ -2750,7 +2754,7 @@ function GeneratedPostExportCard({
         <div className="mt-3 space-y-2 text-xs leading-5 text-muted">
           {testDraft ? (
             <div className="rounded-md border border-amber/40 bg-amber/10 p-3 text-ink">
-              当前是流程联调用测试草稿，不可直接发布。
+              当前是演示草稿，不可直接发布。
             </div>
           ) : null}
           {warnings.length ? (
