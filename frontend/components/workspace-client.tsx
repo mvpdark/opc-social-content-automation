@@ -2026,14 +2026,14 @@ function GenerationLauncher({
   const generateButtonTitle = !hasTopic
       ? "先填写选题，再一键生成图文和封面"
       : draftProviderMissing
-        ? "去设置里填写并应用撰稿 API Key"
+        ? "去设置里填写并应用撰稿服务密钥"
       : draftProviderCheckFailed
-        ? "检测到撰稿服务不可用，请先去设置页更换或重新应用 API Key"
+        ? "检测到撰稿服务不可用，请先去设置页更换或重新应用服务密钥"
       : undefined;
   const launchStatusText = !hasTopic
       ? "先填写选题，再一键生成图文和封面。"
       : draftProviderMissing
-        ? "撰稿服务缺少 API Key，先去设置页填写并应用。"
+        ? "撰稿服务缺少服务密钥，先去设置页填写并应用。"
       : draftProviderCheckFailed
         ? draftCheckStatus?.message ?? "撰稿服务检测未通过，请先去设置页修复。"
       : statusText;
@@ -2278,7 +2278,7 @@ function GenerationLauncher({
     const refreshedImageProviderReady =
       liveImageProviderReady || hasLiveImageProvider(refreshedStatuses ?? []);
     if (!refreshedImageProviderReady) {
-      throw new Error("图片服务还没有通过真实配置检测，请先到设置页应用图片服务 Key。");
+      throw new Error("图片服务还没有通过真实配置检测，请先到设置页应用图片服务密钥。");
     }
 
     const response = await fetch(`${API_BASE}/image/generate`, {
@@ -2540,7 +2540,7 @@ function GenerationLauncher({
                 type="button"
               >
                 <Settings className="h-4 w-4" />
-                去设置检查撰稿 API Key
+                去设置检查撰稿服务密钥
               </button>
             ) : null}
             <div className="mt-4 border-l-4 border-amber pl-3 text-xs leading-5 text-muted">
@@ -2659,7 +2659,7 @@ function GeneratedPostExportCard({
       const refreshedImageProviderReady = imageProviderReady ||
         hasLiveImageProvider(refreshedStatuses ?? []);
       if (!refreshedImageProviderReady) {
-        throw new Error("图片服务还没有通过真实配置检测，请先到设置页应用图片服务 Key 后再点生成封面图。");
+        throw new Error("图片服务还没有通过真实配置检测，请先到设置页应用图片服务密钥后再点生成封面图。");
       }
       const response = await fetch(`${API_BASE}/image/generate`, {
         method: "POST",
@@ -3113,21 +3113,21 @@ function SettingsView({
     },
     {
       keyName: "draftApiKey",
-      label: "撰稿 API Key",
+      label: "撰稿服务密钥",
       placeholder: "留空则不覆盖当前保存配置",
-      helper: "撰稿服务使用；只有更换 Key 时才需要填写。",
+      helper: "撰稿服务使用；只有更换密钥时才需要填写。",
       backendBound: providerBindings.draft
     },
     {
       keyName: "imageApiKey",
-      label: "图片 API Key",
+      label: "图片服务密钥",
       placeholder: "留空则不覆盖当前保存配置",
-      helper: "图片生成服务使用；封面生成走服务端。",
+      helper: "图片生成服务使用；封面会通过图片服务完成。",
       backendBound: providerBindings.image
     },
     {
       keyName: "rewriteApiKey",
-      label: "改写 API Key",
+      label: "改写服务密钥",
       placeholder: "留空则不覆盖当前保存配置",
       helper: "改写和人味化服务使用；页面不会显示完整密钥。",
       backendBound: providerBindings.rewrite

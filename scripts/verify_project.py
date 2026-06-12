@@ -514,10 +514,21 @@ def validate_content_production_contract() -> int:
         "本机保存的凭证",
         "当前浏览器本机",
         "手机本机",
+        "撰稿 API Key",
+        "图片 API Key",
+        "改写 API Key",
+        "图片服务 Key",
+        "更换 Key",
+        "封面生成走服务端",
     ]
     for snippet in stale_gate_snippets:
         total += 1
-        if snippet in workspace_text or snippet in image_service_text or snippet in model_router_text:
+        if (
+            snippet in workspace_text
+            or snippet in android_text
+            or snippet in image_service_text
+            or snippet in model_router_text
+        ):
             raise SystemExit(f"Stale content production gate still present: {snippet}")
 
     return total

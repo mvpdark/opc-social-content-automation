@@ -2215,21 +2215,21 @@ function SettingsScreen({
     },
     {
       keyName: "draftApiKey",
-      label: "撰稿 API Key",
+      label: "撰稿服务密钥",
       placeholder: "留空则不覆盖当前保存配置",
       testId: "mobile-draft-key",
       backendBound: providerBindings.draft
     },
     {
       keyName: "imageApiKey",
-      label: "图片 API Key",
+      label: "图片服务密钥",
       placeholder: "留空则不覆盖当前保存配置",
       testId: "mobile-image-key",
       backendBound: providerBindings.image
     },
     {
       keyName: "rewriteApiKey",
-      label: "改写 API Key",
+      label: "改写服务密钥",
       placeholder: "留空则不覆盖当前保存配置",
       testId: "mobile-rewrite-key",
       backendBound: providerBindings.rewrite
