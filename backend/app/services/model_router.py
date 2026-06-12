@@ -509,7 +509,7 @@ class ModelRouter:
             if not settings.openai_compatible_api_key:
                 raise HTTPException(
                     status_code=status.HTTP_501_NOT_IMPLEMENTED,
-                    detail="OpenAI-compatible draft provider is not configured yet.",
+                    detail="撰稿服务尚未配置服务密钥。",
                 )
             request_payload: dict[str, object] = {
                 "model": settings.draft_model,
@@ -529,7 +529,7 @@ class ModelRouter:
             return _extract_chat_content("OpenAI-compatible draft provider", data)
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Draft model provider is not configured yet.",
+            detail="撰稿服务尚未配置。",
         )
 
     def rewrite_model(self, prompt_name: str, payload: dict[str, object]) -> str:
@@ -537,7 +537,7 @@ class ModelRouter:
         if not settings.deepseek_api_key:
             raise HTTPException(
                 status_code=status.HTTP_501_NOT_IMPLEMENTED,
-                detail="DeepSeek rewrite provider is not configured yet.",
+                detail="改写服务尚未配置。",
             )
 
         request_payload: dict[str, object] = {
@@ -565,7 +565,7 @@ class ModelRouter:
             if not api_key:
                 raise HTTPException(
                     status_code=status.HTTP_501_NOT_IMPLEMENTED,
-                    detail="OpenAI-compatible image provider is not configured yet.",
+                    detail="图片服务尚未配置服务密钥。",
                 )
             base_url = (
                 settings.image_openai_compatible_base_url
@@ -593,14 +593,14 @@ class ModelRouter:
             )
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Image model provider is not configured yet.",
+            detail="图片服务尚未配置。",
         )
 
     def review_model(self, prompt_name: str, payload: dict[str, object]) -> str:
         load_prompt(prompt_name)
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Review model provider is not configured yet.",
+            detail="确认服务尚未配置。",
         )
 
 

@@ -139,9 +139,9 @@ def provider_status_items() -> list[ProviderStatusItem]:
         settings.image_openai_compatible_api_key or settings.openai_compatible_api_key
     )
 
-    image_note = "Ready for test SVG generation."
+    image_note = "测试图片服务已就绪。"
     if settings.image_provider == "openai_compatible":
-        image_note = "OpenAI-compatible image provider is configured for generation."
+        image_note = "图片服务已配置，可用于生成封面。"
 
     return [
         ProviderStatusItem(
@@ -151,9 +151,9 @@ def provider_status_items() -> list[ProviderStatusItem]:
             configured=draft_configured,
             status="configured" if draft_configured else "missing_key",
             note=(
-                "OpenAI-compatible draft provider is configured."
+                "撰稿服务已配置。"
                 if settings.draft_provider == "openai_compatible"
-                else "Using codex_test workflow draft provider."
+                else "测试撰稿服务已就绪。"
             ),
         ),
         ProviderStatusItem(
@@ -162,7 +162,7 @@ def provider_status_items() -> list[ProviderStatusItem]:
             model=settings.deepseek_rewrite_model,
             configured=rewrite_configured,
             status="configured" if rewrite_configured else "missing_key",
-            note="DeepSeek official API provider for rewrite and de-AIGC pass.",
+            note="改写服务用于口吻润色和降低模板感。",
         ),
         ProviderStatusItem(
             name="Image generation",

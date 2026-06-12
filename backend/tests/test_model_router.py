@@ -131,7 +131,7 @@ def test_openai_compatible_draft_provider_requires_key(
         model_router.draft_model("draft_generation", {"topic": "test"})
 
     assert exc.value.status_code == 501
-    assert "OpenAI-compatible draft provider" in exc.value.detail
+    assert "撰稿服务尚未配置服务密钥" in exc.value.detail
 
 
 def test_openai_compatible_draft_provider_calls_chat_completion(
@@ -296,7 +296,7 @@ def test_openai_compatible_image_provider_requires_key(
         model_router.image_model("image_generation", {"title": "test"})
 
     assert exc.value.status_code == 501
-    assert "OpenAI-compatible image provider" in exc.value.detail
+    assert "图片服务尚未配置服务密钥" in exc.value.detail
 
 
 def test_openai_compatible_image_provider_accepts_remote_url(
@@ -423,7 +423,7 @@ def test_rewrite_model_requires_deepseek_key(monkeypatch: pytest.MonkeyPatch) ->
         model_router.rewrite_model("humanization", {"body": "test"})
 
     assert exc.value.status_code == 501
-    assert "DeepSeek rewrite provider" in exc.value.detail
+    assert "改写服务尚未配置" in exc.value.detail
 
 
 def test_rewrite_model_calls_deepseek_without_exposing_key(

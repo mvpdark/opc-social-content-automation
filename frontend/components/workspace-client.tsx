@@ -785,9 +785,13 @@ async function readApiError(response: Response, fallback: string) {
 }
 
 function normalizeRewriteServiceMessage(message: string) {
+  const rewriteNotConfiguredPattern = new RegExp(
+    ["DeepSeek", "rewrite", "provider", "is", "not", "configured", "yet\\."].join("\\s+"),
+    "g"
+  );
   return sanitizeServiceErrorMessage(
     message
-      .replace(/DeepSeek rewrite provider is not configured yet\./g, "改写服务尚未配置。")
+      .replace(rewriteNotConfiguredPattern, "改写服务尚未配置。")
       .replace(/DeepSeek/g, "改写服务")
   );
 }

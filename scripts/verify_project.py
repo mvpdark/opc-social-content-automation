@@ -163,7 +163,7 @@ def validate_safety_gates() -> int:
         "backend/app/services/model_router.py": [
             "load_prompt",
             "load_platform_style_reference",
-            "Review model provider is not configured yet.",
+            "确认服务尚未配置。",
         ],
         "prompts/image_generation.md": [
             "primary cover headline must copy the content title verbatim",
@@ -400,6 +400,9 @@ def validate_content_production_contract() -> int:
     model_router_text = (
         ROOT / "backend" / "app" / "services" / "model_router.py"
     ).read_text(encoding="utf-8")
+    workspace_service_text = (
+        ROOT / "backend" / "app" / "services" / "workspace_service.py"
+    ).read_text(encoding="utf-8")
     status_labels_text = (ROOT / "frontend" / "lib" / "status-labels.ts").read_text(
         encoding="utf-8"
     )
@@ -614,6 +617,12 @@ def validate_content_production_contract() -> int:
         "模型名",
         "可用模型/中转站",
         "codex_test 测试 Provider",
+        "OpenAI-compatible image provider is configured",
+        "OpenAI-compatible draft provider is configured",
+        "Using codex_test workflow draft provider",
+        "DeepSeek official API provider",
+        "provider is not configured yet",
+        "model provider is not configured yet",
         "流程联调",
         "OPC TEST ASSET",
         "登录令牌",
@@ -679,6 +688,7 @@ def validate_content_production_contract() -> int:
             or snippet in trend_collector_text
             or snippet in image_service_text
             or snippet in model_router_text
+            or snippet in workspace_service_text
             or snippet in dashboard_data_text
             or snippet in app_shell_text
         ):
