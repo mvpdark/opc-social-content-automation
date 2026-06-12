@@ -289,17 +289,34 @@ function formatCollectionJobStatus(job: TrendCollectionJob) {
     return `采集任务 #${job.id} ${collectionStatusLabel(job.status)}${collectedItems}。请人工确认来源后再保存知识摘要。`;
   }
   if (job.status === "needs_operator_review") {
-    return `采集任务 #${job.id} 需要人工处理${collectedItems}。公开搜索可能被登录墙、验证码或空结果拦截，请先打开搜索页人工确认。${errorText}`;
+    return `采集任务 #${job.id} 需要人工处理${collectedItems}。公开搜索可能被登录墙、验证码或空结果拦截；人工确认后可直接重试。${errorText}`;
   }
   if (job.status === "failed") {
-    return `采集任务 #${job.id} 执行失败${collectedItems}${errorText}。`;
+    return `采集任务 #${job.id} 执行失败${collectedItems}${errorText}。可以直接重新启动这条任务。`;
   }
 
   return `采集任务 #${job.id} 当前状态：${job.status}${collectedItems}${errorText}。`;
 }
 
-function isRestartableLegacyJob(job: TrendCollectionJob) {
-  return job.status === "queued" && !job.result_summary?.auto_start;
+function isRestartableCollectionJob(job: TrendCollectionJob) {
+  return (
+    (job.status === "queued" && !job.result_summary?.auto_start) ||
+    job.status === "needs_operator_review" ||
+    job.status === "failed"
+  );
+}
+
+function restartCollectionJobLabel(status: string | null) {
+  if (status === "queued") {
+    return "启动旧任务";
+  }
+  if (status === "needs_operator_review") {
+    return "重试采集";
+  }
+  if (status === "failed") {
+    return "重新启动";
+  }
+  return "启动任务";
 }
 
 export function TrendCollectorPanel({
@@ -322,6 +339,7 @@ export function TrendCollectorPanel({
   const [busyAction, setBusyAction] = useState<"target" | "job" | "restart" | "digest" | "link" | null>(null);
   const [activeJobId, setActiveJobId] = useState<number | null>(null);
   const [restartableJobId, setRestartableJobId] = useState<number | null>(null);
+  const [restartableJobStatus, setRestartableJobStatus] = useState<string | null>(null);
 
   const canSubmit = useMemo(() => keyword.trim().length > 0, [keyword]);
   const isPollingJob = activeJobId !== null;
@@ -382,7 +400,13 @@ export function TrendCollectorPanel({
 
   function showCollectionJob(job: TrendCollectionJob) {
     setStatusText(formatCollectionJobStatus(job));
-    setRestartableJobId(isRestartableLegacyJob(job) ? job.id : null);
+    if (isRestartableCollectionJob(job)) {
+      setRestartableJobId(job.id);
+      setRestartableJobStatus(job.status);
+    } else {
+      setRestartableJobId(null);
+      setRestartableJobStatus(null);
+    }
   }
 
   useEffect(() => {
@@ -898,7 +922,7 @@ export function TrendCollectorPanel({
                   ) : (
                     <Play className="h-4 w-4" />
                   )}
-                  {busyAction === "restart" ? "正在启动" : "启动旧任务"}
+                  {busyAction === "restart" ? "正在启动" : restartCollectionJobLabel(restartableJobStatus)}
                 </button>
               ) : null}
             </div>
