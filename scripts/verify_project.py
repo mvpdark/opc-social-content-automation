@@ -484,6 +484,9 @@ def validate_content_production_contract() -> int:
     status_labels_text = (ROOT / "frontend" / "lib" / "status-labels.ts").read_text(
         encoding="utf-8"
     )
+    collection_job_status_text = (
+        ROOT / "frontend" / "lib" / "collection-job-status.ts"
+    ).read_text(encoding="utf-8")
     dashboard_data_text = (ROOT / "frontend" / "lib" / "dashboard-data.ts").read_text(
         encoding="utf-8"
     )
@@ -573,6 +576,46 @@ def validate_content_production_contract() -> int:
         total += 1
         if snippet not in status_labels_text:
             raise SystemExit(f"Missing status label contract: {snippet}")
+
+    collection_job_status_contracts = [
+        (
+            collection_job_status_text,
+            [
+                "export const COLLECTION_JOB_TERMINAL_STATUSES",
+                "export type CollectionJobStatusSnapshot",
+                "export function formatCollectionJobStatus",
+                'surface: "desktop" | "mobile" = "desktop"',
+                "raw_candidates",
+                "blocked_candidates",
+                "operator_wait_seconds",
+            ],
+            "shared collection job status helper",
+        ),
+        (
+            trend_collector_text,
+            [
+                'from "@/lib/collection-job-status"',
+                "formatCollectionJobStatus(job)",
+                "COLLECTION_JOB_TERMINAL_STATUSES.has",
+            ],
+            "PC collection job status helper usage",
+        ),
+        (
+            android_text,
+            [
+                'from "@/lib/collection-job-status"',
+                'formatCollectionJobStatus(job, "mobile")',
+                'formatCollectionJobStatus(data, "mobile")',
+                "COLLECTION_JOB_TERMINAL_STATUSES.has",
+            ],
+            "mobile collection job status helper usage",
+        ),
+    ]
+    for text, snippets, contract_name in collection_job_status_contracts:
+        for snippet in snippets:
+            total += 1
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
 
     mobile_xhs_copy_contract_snippets = [
         "tryCopyText(draftText)",
@@ -906,6 +949,8 @@ def validate_content_production_contract() -> int:
         "复制封面+文案，去小红书",
         "文案和封面图已复制",
         "浏览器可能拦截了剪贴板权限",
+        "function formatMobileCollectionJobStatus",
+        "const terminalJobStatuses = new Set",
     ]
     for snippet in stale_gate_snippets:
         total += 1
