@@ -2132,7 +2132,7 @@ function SettingsScreen({
   function clearCredentials() {
     onCredentialsChange(emptyCredentials);
     setCheckStatus(null);
-    onAction("已清空此设备保存的凭证。");
+    onAction("已清空这台设备保存的服务配置。");
   }
 
   async function applyProviderKeys() {
@@ -2210,8 +2210,8 @@ function SettingsScreen({
   }> = [
     {
       keyName: "workspaceToken",
-      label: "登录凭证（可选）",
-      placeholder: "测试模式可不填",
+      label: "登录验证（可选）",
+      placeholder: "当前版本无需填写",
       testId: "mobile-token"
     },
     {
@@ -2243,7 +2243,7 @@ function SettingsScreen({
         <div className="flex items-center justify-between gap-3 rounded-md border border-[#d6e8df] bg-white px-3 py-3">
           <div className="min-w-0">
             <div className="text-sm font-semibold text-ink">{mobileAccount}</div>
-            <div className="mt-1 text-xs text-muted">当前为测试免登录；正式发布前仍保留权限校验。</div>
+            <div className="mt-1 text-xs text-muted">当前版本免登录；正式发布前仍保留权限校验。</div>
           </div>
           <button
             className="flex h-10 shrink-0 touch-manipulation items-center gap-2 rounded-md border border-[#d6e8df] bg-[#f6fbf6] px-3 text-xs font-semibold text-ink active:scale-[0.98]"
@@ -2264,7 +2264,7 @@ function SettingsScreen({
           {credentialFields.map((field) => {
             const localFilled = credentials[field.keyName].trim().length > 0;
             const statusText = field.keyName === "workspaceToken"
-              ? "测试免填"
+              ? "当前免填"
               : localFilled
                 ? "此设备已填"
                 : field.backendBound
@@ -2322,7 +2322,7 @@ function SettingsScreen({
             type="button"
           >
             <Trash2 className="h-4 w-4" />
-            清空此设备凭证
+            清空此设备保存
           </button>
         </div>
         {checkStatus ? (

@@ -523,7 +523,7 @@ export function TrendCollectorPanel({
         })
       });
       if (!response.ok) {
-        throw new Error("采集任务创建失败；如果已恢复正式登录，请检查登录凭证。");
+        throw new Error("采集任务创建失败；如果已恢复正式登录，请检查登录验证。");
       }
       const data = (await response.json()) as TrendCollectionJob;
       setActiveJobId(data.id);
@@ -732,13 +732,13 @@ export function TrendCollectorPanel({
           </div>
 
           <div className="glass-subtle mt-3 rounded-md border px-3 py-3">
-            <div className={fieldLabelClass}>登录门控</div>
+            <div className={fieldLabelClass}>登录验证</div>
             <div className="mt-2 flex items-center justify-between gap-3">
               <span className="text-sm font-medium text-ink">
-                {workspaceToken ? "登录凭证已配置" : "测试模式免登录凭证"}
+                {workspaceToken ? "登录验证已配置" : "当前版本免登录"}
               </span>
               <button
-                aria-label="打开设置查看登录凭证"
+                aria-label="打开设置查看登录验证"
                 className="glass-control rounded-md border px-2 py-1 text-xs font-medium text-ink"
                 onClick={onOpenSettings}
                 type="button"

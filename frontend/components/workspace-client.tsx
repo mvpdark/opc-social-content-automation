@@ -759,7 +759,7 @@ function clearStoredWorkspaceAccount() {
 async function readApiError(response: Response, fallback: string) {
   const errorBody = (await response.json().catch(() => null)) as ApiErrorBody | null;
   if (errorBody?.detail === "database_unavailable") {
-    return "数据库暂时不可用：安装包/测试模式请重新运行本地启动；自部署模式请检查数据库连接设置和数据库服务。";
+    return "数据库暂时不可用：安装包或本地运行请重新启动；自部署模式请检查数据库连接设置和数据库服务。";
   }
   return errorBody?.message ?? errorBody?.detail ?? fallback;
 }
@@ -2370,13 +2370,13 @@ function GenerationLauncher({
               </select>
             </label>
             <div className={`${subtleCardClass} px-3 py-2`}>
-              <div className="text-xs font-medium text-muted">登录门控</div>
+              <div className="text-xs font-medium text-muted">登录验证</div>
               <div className="mt-1 flex items-center justify-between gap-3">
                 <span className="text-sm font-medium">
-                  {workspaceToken ? "登录凭证已配置" : "测试模式免登录凭证"}
+                  {workspaceToken ? "登录验证已配置" : "当前版本免登录"}
                 </span>
                 <button
-                  aria-label="打开设置查看登录凭证"
+                  aria-label="打开设置查看登录验证"
                   className="glass-control rounded-md border px-2 py-1 text-xs font-medium text-ink"
                   onClick={onOpenSettings}
                   type="button"
@@ -2973,7 +2973,7 @@ function SettingsView({
   onShowHelperTextChange: (nextValue: boolean) => void;
   showHelperText: boolean;
 }) {
-  const [credentialStatus, setCredentialStatus] = useState("凭证会保存在当前浏览器的此设备。");
+  const [credentialStatus, setCredentialStatus] = useState("服务密钥只保存在这台设备。");
   const [credentialBusy, setCredentialBusy] = useState(false);
   const [providerStatuses, setProviderStatuses] = useState<ProviderStatusItem[]>([]);
   const [providerStatusError, setProviderStatusError] = useState<string | null>(null);
@@ -3026,7 +3026,7 @@ function SettingsView({
 
   function clearCredentials() {
     onCredentialsChange(emptyCredentials);
-    setCredentialStatus("已清空此设备保存的凭证。");
+    setCredentialStatus("已清空这台设备保存的服务配置。");
   }
 
   async function applyProviderKeys() {
@@ -3111,9 +3111,9 @@ function SettingsView({
   }> = [
     {
       keyName: "workspaceToken",
-      label: "登录凭证（可选）",
-      placeholder: "策划师测试模式下不用填写",
-      helper: "当前测试阶段已免登录；以后恢复正式登录时再填写登录凭证。"
+      label: "登录验证（可选）",
+      placeholder: "当前版本无需填写",
+      helper: "当前版本免登录；以后开启正式登录时再填写。"
     },
     {
       keyName: "draftApiKey",
@@ -3146,7 +3146,7 @@ function SettingsView({
     <div className="space-y-4">
       <Panel
         action={<Pill tone="blue">集中管理</Pill>}
-        helper="服务密钥集中填写；策划师测试阶段不再要求工作台登录凭证。"
+        helper="服务密钥集中填写；当前版本不要求登录验证。"
         title="服务配置"
       >
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
@@ -3154,7 +3154,7 @@ function SettingsView({
             {credentialFields.map((field) => {
               const localFilled = credentials[field.keyName].trim().length > 0;
               const statusText = field.keyName === "workspaceToken"
-                ? "测试免填"
+                ? "当前免填"
                 : localFilled
                   ? "此设备已填"
                   : field.backendBound
@@ -3191,7 +3191,7 @@ function SettingsView({
                 <KeyRound className="h-4 w-4" />
               </IconBox>
               <div>
-                <div className="text-sm font-semibold">凭证状态</div>
+                <div className="text-sm font-semibold">保存状态</div>
                 <p className="mt-1 text-xs leading-5 text-muted">{credentialStatus}</p>
                 {providerCheckStatus ? (
                   <p className="mt-2 text-xs leading-5 text-muted">{providerCheckStatus}</p>
@@ -3228,12 +3228,12 @@ function SettingsView({
                 type="button"
               >
                 <Trash2 className="h-4 w-4" />
-                清空此设备凭证
+                清空此设备保存
               </button>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
               <Pill tone={credentials.workspaceToken ? "green" : "amber"}>
-                登录 {credentials.workspaceToken ? "已填" : "测试免填"}
+                登录 {credentials.workspaceToken ? "已填" : "当前免填"}
               </Pill>
               <Pill tone={credentials.draftApiKey || providerBindings.draft ? "green" : "amber"}>
                 撰稿 {credentials.draftApiKey ? "此设备已填" : providerBindings.draft ? "已保存" : "未保存"}

@@ -359,7 +359,7 @@ def validate_frontend_design_contract() -> int:
                 "一键生成图文+封面",
                 "可在一键生成页细调",
                 "去一键生成",
-                "数据库暂时不可用：安装包/测试模式请重新运行本地启动",
+                "数据库暂时不可用：安装包或本地运行请重新启动",
             ],
             "workspace one-click entry",
         ),
@@ -561,6 +561,17 @@ def validate_content_production_contract() -> int:
         "{content.status}",
         "return status;",
         "非已批准内容",
+        "策划师",
+        "测试模式",
+        "测试阶段",
+        "测试免填",
+        "测试模式免登录凭证",
+        "登录凭证",
+        "登录门控",
+        "凭证状态",
+        "清空此设备凭证",
+        "当前浏览器的此设备",
+        "凭证会保存在",
     ]
     for snippet in stale_gate_snippets:
         total += 1
