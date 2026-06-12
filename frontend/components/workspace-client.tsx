@@ -1088,6 +1088,7 @@ export function WorkspaceClient({
     >
       {activeTab === "dashboard" ? (
         <DashboardView
+          buildWorkspaceUrl={buildWorkspaceUrl}
           defaultWritingStyle={defaultWritingStyle}
           onDefaultWritingStyleChange={setDefaultWritingStyle}
         />
@@ -1106,7 +1107,7 @@ export function WorkspaceClient({
           workspaceToken={credentials.workspaceToken}
         />
       ) : null}
-      {activeTab === "cover" ? <CoverView /> : null}
+      {activeTab === "cover" ? <CoverView contentHref={buildWorkspaceUrl("content")} /> : null}
       {activeTab === "delivery" ? <DeliveryView /> : null}
       {activeTab === "settings" ? (
         <SettingsView
@@ -1289,9 +1290,11 @@ function PcLoginPage({
 }
 
 function DashboardView({
+  buildWorkspaceUrl,
   defaultWritingStyle,
   onDefaultWritingStyleChange
 }: {
+  buildWorkspaceUrl: (tab: WorkspaceTab) => string;
   defaultWritingStyle: WritingStylePresetId;
   onDefaultWritingStyleChange: (nextStyle: WritingStylePresetId) => void;
 }) {
@@ -1301,7 +1304,7 @@ function DashboardView({
       title: "素材参考",
       description: "先补 3-5 条公开高赞图文，再进入知识库。",
       action: "去采集",
-      href: "/?tab=research",
+      href: buildWorkspaceUrl("research"),
       icon: Radar,
       tone: "blue" as const,
       value: "待补充"
@@ -1310,7 +1313,7 @@ function DashboardView({
       title: "知识库",
       description: "只沉淀人工确认过的标题、开头、封面结构。",
       action: "看资产",
-      href: "/?tab=knowledge",
+      href: buildWorkspaceUrl("knowledge"),
       icon: BookOpenText,
       tone: "green" as const,
       value: "可接入"
@@ -1319,7 +1322,7 @@ function DashboardView({
       title: "安全检查",
       description: "生成后人工确认，避免保录、包过和虚假承诺。",
       action: "看规则",
-      href: "/?tab=settings",
+      href: buildWorkspaceUrl("settings"),
       icon: ShieldCheck,
       tone: "red" as const,
       value: "强制"
@@ -1400,14 +1403,14 @@ function DashboardView({
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <a
                 className="flex h-12 items-center justify-center gap-2 rounded-[14px] bg-steel px-5 text-sm font-semibold text-paper shadow-soft transition hover:translate-y-[-1px] hover:shadow-panel active:translate-y-0"
-                href="/?tab=content"
+                href={buildWorkspaceUrl("content")}
               >
                 <PlatformIcon className="ring-white/55" platform="xiaohongshu" size="sm" />
                 一键生成图文+封面
               </a>
               <a
                 className={`${secondaryButtonClass} h-12 px-4`}
-                href="/?tab=research"
+                href={buildWorkspaceUrl("research")}
               >
                 <Search className="h-4 w-4" />
                 先补素材参考
@@ -1458,7 +1461,7 @@ function DashboardView({
                 </div>
                 <a
                   className={`${secondaryButtonClass} mt-4 h-10 w-full`}
-                  href="/?tab=content"
+                  href={buildWorkspaceUrl("content")}
                 >
                   <Clipboard className="h-4 w-4" />
                   一键复制文案
@@ -1504,12 +1507,12 @@ function DashboardView({
                 className="group flex items-center gap-2 rounded-md border border-line bg-paper/55 px-3 py-2 text-xs font-medium text-ink"
                 href={
                   index === 0
-                    ? "/?tab=research"
+                    ? buildWorkspaceUrl("research")
                     : index === 1
-                      ? "/?tab=knowledge"
+                      ? buildWorkspaceUrl("knowledge")
                       : index === 2 || index === 3
-                        ? "/?tab=content"
-                        : "/?tab=settings"
+                        ? buildWorkspaceUrl("content")
+                        : buildWorkspaceUrl("settings")
                 }
                 key={step.title}
               >
@@ -2817,7 +2820,7 @@ function GeneratedPostExportCard({
   );
 }
 
-function CoverView() {
+function CoverView({ contentHref }: { contentHref: string }) {
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,0.9fr)_1fr]">
       <Panel
@@ -2825,7 +2828,7 @@ function CoverView() {
           <a
             aria-label="前往一键生成页生成封面"
             className="flex h-9 items-center gap-2 rounded-md bg-ink px-3 text-sm font-medium text-paper"
-            href="/?tab=content"
+            href={contentHref}
           >
             <Image className="h-4 w-4" />
             去一键生成
