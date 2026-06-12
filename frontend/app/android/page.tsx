@@ -2857,17 +2857,16 @@ function DraftPreviewEditor({
     }
 
     const previewUrl = `${window.location.origin}/preview/${generatedContent.id}`;
-    try {
-      await copyText(previewUrl);
-      const isLocalPreview = isLocalOrPrivateHostname(window.location.hostname);
-      const message = isLocalPreview
+    const copied = await tryCopyText(previewUrl);
+    setManualCopyText(copied ? null : previewUrl);
+    const isLocalPreview = isLocalOrPrivateHostname(window.location.hostname);
+    let message = "浏览器拦截了剪贴板，预览链接已展开，可长按全选复制。";
+    if (copied) {
+      message = isLocalPreview
         ? "预览链接已复制；当前是这台设备或同一网络地址，外部用户需要部署到公网后才能打开。"
         : "预览链接已复制，可以发给别人查看。";
-      publishExportStatus(message);
-    } catch (_error) {
-      const message = `复制预览链接失败，请长按手动复制：${previewUrl}`;
-      publishExportStatus(message);
     }
+    publishExportStatus(message);
   }
 
   return (
@@ -3073,7 +3072,7 @@ function DraftPreviewEditor({
           ) : null}
           {manualCopyText ? (
             <textarea
-              aria-label="手动复制文案"
+              aria-label="手动复制内容"
               className="mb-2 max-h-28 w-full resize-none rounded-[18px] border border-[#ffd78f] bg-[#fffaf0] px-3 py-2 text-xs leading-5 text-ink outline-none focus:border-[#ff2442] focus:ring-2 focus:ring-[#ff2442]/15"
               data-testid="draft-manual-copy-text"
               onFocus={(event) => event.currentTarget.select()}
