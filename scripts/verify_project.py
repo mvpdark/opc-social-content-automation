@@ -537,6 +537,12 @@ def validate_content_production_contract() -> int:
         "采集任务 #",
         "后台采集器",
         "后台不会自动消费",
+        "状态：${data.status}",
+        "当前状态：${job.status}",
+        "图片状态：{imageAsset.status}",
+        "{content.status}",
+        "return status;",
+        "非已批准内容",
     ]
     for snippet in stale_gate_snippets:
         total += 1

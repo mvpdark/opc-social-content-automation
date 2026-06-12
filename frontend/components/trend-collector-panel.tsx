@@ -265,7 +265,7 @@ function collectionStatusLabel(status: string) {
     case "failed":
       return "失败";
     default:
-      return status;
+      return "等待确认";
   }
 }
 
@@ -295,7 +295,7 @@ function formatCollectionJobStatus(job: TrendCollectionJob) {
     return `当前采集任务执行失败${collectedItems}${errorText}。可以直接重新启动这条任务。`;
   }
 
-  return `当前采集任务状态：${job.status}${collectedItems}${errorText}。`;
+  return `当前采集任务状态：${collectionStatusLabel(job.status)}${collectedItems}${errorText}。`;
 }
 
 function isRestartableCollectionJob(job: TrendCollectionJob) {

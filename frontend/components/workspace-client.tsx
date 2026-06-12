@@ -788,6 +788,42 @@ type GeneratedImageAsset = {
   template: string | null;
 };
 
+function generatedContentStatusLabel(status: string) {
+  switch (status) {
+    case "approved":
+      return "已确认";
+    case "draft":
+      return "草稿";
+    case "generated":
+      return "已生成";
+    case "needs_review":
+    case "review_pending":
+      return "待确认";
+    case "published":
+      return "已发布";
+    case "rewritten":
+      return "已润色";
+    default:
+      return "待确认";
+  }
+}
+
+function generatedImageStatusLabel(status: string) {
+  switch (status) {
+    case "approved":
+      return "已确认";
+    case "failed":
+      return "生成失败";
+    case "generated":
+      return "已生成";
+    case "needs_review":
+    case "review_pending":
+      return "待确认";
+    default:
+      return "待确认";
+  }
+}
+
 type ProviderCheckResult = {
   configured: boolean;
   message: string;
@@ -2692,7 +2728,7 @@ function GeneratedPostExportCard({
             <div className="flex flex-wrap items-center gap-2">
               <Pill tone="green">已生成</Pill>
               <Pill tone={content.status === "draft" ? "amber" : "green"}>
-                {content.status}
+                {generatedContentStatusLabel(content.status)}
               </Pill>
             </div>
             <h3 className="mt-3 text-xl font-semibold leading-7">{content.title}</h3>
@@ -2831,9 +2867,9 @@ function GeneratedPostExportCard({
               />
             </div>
             <div className="rounded-md border border-line bg-mist/60 p-4 text-xs leading-6 text-muted">
-              <div className="font-semibold text-ink">图片状态：{imageAsset.status}</div>
+              <div className="font-semibold text-ink">图片状态：{generatedImageStatusLabel(imageAsset.status)}</div>
               <div className="mt-2">
-                非已批准内容生成的封面会保持待确认状态。粘贴到{platformLabel}前，请确认标题、图中文字、封面暗示和正文一致。
+                未确认内容生成的封面会保持待确认状态。粘贴到{platformLabel}前，请确认标题、图中文字、封面暗示和正文一致。
               </div>
               <a
                 className="mt-3 inline-flex items-center gap-2 font-semibold text-steel"
