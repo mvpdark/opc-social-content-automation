@@ -147,7 +147,9 @@ def validate_safety_gates() -> int:
         ],
         "backend/app/services/trend_browser_collector.py": [
             "operator_wait_seconds",
-            "operator_wait_seconds: int = 0",
+            "operator_wait_seconds: int | None = None",
+            "raw_candidates",
+            "blocked_candidates",
             "headless: bool = False",
             "No collected public image-text items were found",
             "Video collection is disabled",
@@ -164,7 +166,7 @@ def validate_safety_gates() -> int:
         ],
         "scripts/run_trend_collection_job.py": [
             "--operator-wait-seconds",
-            "default=0",
+            "default=30",
             "Backend dependencies are not installed",
         ],
         "backend/app/services/model_router.py": [

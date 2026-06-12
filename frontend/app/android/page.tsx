@@ -1124,6 +1124,7 @@ function CollectScreen({
           max_items: maxItems,
           min_delay_seconds: 4,
           max_delay_seconds: 12,
+          operator_wait_seconds: 30,
           persist_session: true,
           persist_cookies: false
         })

@@ -16,7 +16,7 @@ def main() -> None:
     )
     parser.add_argument("job_id", type=int)
     parser.add_argument("--headless", action="store_true")
-    parser.add_argument("--operator-wait-seconds", type=int, default=0)
+    parser.add_argument("--operator-wait-seconds", type=int, default=30)
     parser.add_argument("--max-scrolls", type=int, default=6)
     args = parser.parse_args()
 

@@ -26,6 +26,7 @@ class TrendCollectionJobCreate(BaseModel):
     max_items: int = Field(default=20, ge=1, le=100)
     min_delay_seconds: int = Field(default=4, ge=2, le=60)
     max_delay_seconds: int = Field(default=12, ge=3, le=120)
+    operator_wait_seconds: int = Field(default=30, ge=0, le=180)
     session_label: str | None = Field(default=None, max_length=120)
     persist_session: bool = True
     persist_cookies: bool = False

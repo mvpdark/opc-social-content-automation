@@ -3,7 +3,9 @@ from fastapi import HTTPException
 
 from app.models.trend_collection_job import TrendCollectionJob
 from app.services.trend_browser_collector import (
+    _blocked_candidate_count,
     _content_kind,
+    _operator_wait_seconds,
     extract_candidate_assets,
     normalize_visible_text,
 )
@@ -66,6 +68,23 @@ def test_extract_candidate_assets_skips_video_markers_by_default() -> None:
     assert assets == []
 
 
+def test_extract_candidate_assets_skips_video_marker_from_class_name() -> None:
+    assets = extract_candidate_assets(
+        raw_items=[
+            {
+                "text": "硕升博申请经验 先介绍背景，再讲研究计划和导师沟通。",
+                "url": "https://www.xiaohongshu.com/explore/video-example",
+                "className": "video-card",
+            }
+        ],
+        platform="xiaohongshu",
+        keyword="硕升博",
+        max_items=5,
+    )
+
+    assert assets == []
+
+
 def test_content_kind_rejects_legacy_video_jobs() -> None:
     job = TrendCollectionJob(
         id=1,
@@ -79,6 +98,46 @@ def test_content_kind_rejects_legacy_video_jobs() -> None:
 
     assert exc.value.status_code == 409
     assert "Video collection is disabled" in exc.value.detail
+
+
+def test_operator_wait_seconds_defaults_and_clamps() -> None:
+    legacy_job = TrendCollectionJob(
+        id=1,
+        platform="xiaohongshu",
+        keyword="硕升博",
+        safety_profile={},
+    )
+    long_wait_job = TrendCollectionJob(
+        id=2,
+        platform="xiaohongshu",
+        keyword="硕升博",
+        safety_profile={"operator_wait_seconds": 999},
+    )
+
+    assert _operator_wait_seconds(legacy_job) == 30
+    assert _operator_wait_seconds(long_wait_job) == 180
+
+
+def test_blocked_candidate_count_uses_text_url_and_class_name() -> None:
+    raw_items = [
+        {
+            "text": "登录后查看搜索结果 手机号登录 获取验证码 用户协议 隐私政策",
+            "url": "https://www.xiaohongshu.com/search_result?keyword=test",
+            "className": "login-container",
+        },
+        {
+            "text": "硕升博申请图文笔记 先确认研究方向，再准备套磁材料和研究计划。",
+            "url": "https://www.xiaohongshu.com/explore/public-note",
+            "className": "note-card",
+        },
+        {
+            "text": "公开页面底部说明",
+            "url": "https://beian.cac.gov.cn/api/static/fileUpload/example.pdf",
+            "className": "footer",
+        },
+    ]
+
+    assert _blocked_candidate_count(raw_items) == 2
 
 
 def test_extract_candidate_assets_does_not_skip_douyin_domain_by_default() -> None:

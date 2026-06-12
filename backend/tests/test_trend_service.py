@@ -93,7 +93,20 @@ def test_build_safety_profile_defaults_to_account_safety() -> None:
     assert profile["cookie_persistence"] is False
     assert profile["content_kind"] == "image_text"
     assert profile["video_collection_enabled"] is False
+    assert profile["operator_wait_seconds"] == 30
     assert profile["target"]["search_url"].startswith("https://www.xiaohongshu.com/")
+
+
+def test_build_safety_profile_includes_operator_wait_window() -> None:
+    payload = TrendCollectionJobCreate(
+        platform="xiaohongshu",
+        keyword="硕升博",
+        operator_wait_seconds=45,
+    )
+
+    profile = build_safety_profile(payload)
+
+    assert profile["operator_wait_seconds"] == 45
 
 
 def test_build_safety_profile_rejects_invalid_delay_window() -> None:

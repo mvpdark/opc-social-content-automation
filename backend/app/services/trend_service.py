@@ -249,6 +249,7 @@ def build_safety_profile(payload: TrendCollectionJobCreate) -> dict[str, object]
         "cookie_persistence": payload.persist_cookies,
         "session_label": payload.session_label,
         "max_items": payload.max_items,
+        "operator_wait_seconds": payload.operator_wait_seconds,
         "content_kind": payload.content_kind,
         "video_collection_enabled": False,
         "speed_policy": "account_safety_first",

@@ -50,6 +50,11 @@ type TrendCollectionJob = {
     message?: string;
     auto_start?: boolean;
     collected_items?: number;
+    raw_candidates?: number;
+    blocked_candidates?: number;
+    page_title?: string | null;
+    final_url?: string | null;
+    operator_wait_seconds?: number;
     trend_ids?: number[];
   } | null;
   error: string | null;
@@ -259,6 +264,20 @@ function formatCollectionJobStatus(job: TrendCollectionJob) {
       ? `，已采集 ${job.result_summary.collected_items} 条`
       : "";
   const errorText = job.error ? `；${job.error}` : "";
+  const diagnostics = [
+    typeof job.result_summary?.raw_candidates === "number"
+      ? `原始候选 ${job.result_summary.raw_candidates} 条`
+      : "",
+    typeof job.result_summary?.blocked_candidates === "number"
+      ? `过滤 ${job.result_summary.blocked_candidates} 条`
+      : "",
+    job.result_summary?.page_title ? `页面：${job.result_summary.page_title}` : ""
+  ].filter(Boolean);
+  const diagnosticsText = diagnostics.length ? `（${diagnostics.join("，")}）` : "";
+  const waitText =
+    typeof job.result_summary?.operator_wait_seconds === "number"
+      ? `，浏览器等待 ${job.result_summary.operator_wait_seconds} 秒`
+      : "";
 
   if (job.status === "queued") {
     if (!job.result_summary?.auto_start) {
@@ -267,19 +286,19 @@ function formatCollectionJobStatus(job: TrendCollectionJob) {
     return `当前采集任务${collectionJobStatusLabel(job.status)}${collectedItems}。采集器正在启动，可见浏览器会自动打开。`;
   }
   if (job.status === "running") {
-    return `当前采集任务${collectionJobStatusLabel(job.status)}${collectedItems}。请留意自动打开的浏览器窗口；如果遇到登录或验证码，先人工处理。`;
+    return `当前采集任务${collectionJobStatusLabel(job.status)}${collectedItems}${waitText}。请留意自动打开的浏览器窗口；如果遇到登录或验证码，先人工处理。`;
   }
   if (job.status === "completed") {
-    return `当前采集任务${collectionJobStatusLabel(job.status)}${collectedItems}。请人工确认来源后再保存知识摘要。`;
+    return `当前采集任务${collectionJobStatusLabel(job.status)}${collectedItems}${diagnosticsText}。请人工确认来源后再保存知识摘要。`;
   }
   if (job.status === "needs_operator_review") {
-    return `当前采集任务需要人工处理${collectedItems}。公开搜索可能被登录墙、验证码或空结果拦截；人工确认后可直接重试。${errorText}`;
+    return `当前采集任务需要人工处理${collectedItems}${diagnosticsText}。公开搜索可能被登录墙、验证码或空结果拦截；人工确认后可直接重试。${errorText}`;
   }
   if (job.status === "failed") {
-    return `当前采集任务执行失败${collectedItems}${errorText}。可以直接重新启动这条任务。`;
+    return `当前采集任务执行失败${collectedItems}${diagnosticsText}${errorText}。可以直接重新启动这条任务。`;
   }
 
-  return `当前采集任务状态：${collectionJobStatusLabel(job.status)}${collectedItems}${errorText}。`;
+  return `当前采集任务状态：${collectionJobStatusLabel(job.status)}${collectedItems}${diagnosticsText}${errorText}。`;
 }
 
 function isRestartableCollectionJob(job: TrendCollectionJob) {
@@ -518,6 +537,7 @@ export function TrendCollectorPanel({
           max_items: maxItems,
           min_delay_seconds: minDelay,
           max_delay_seconds: maxDelay,
+          operator_wait_seconds: 30,
           persist_session: true,
           persist_cookies: false
         })

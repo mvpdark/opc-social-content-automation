@@ -44,7 +44,6 @@ def _run_collection_job_in_background(job_id: int) -> None:
             db=db,
             job_id=job_id,
             headless=False,
-            operator_wait_seconds=0,
             max_scrolls=6,
         )
     except HTTPException as exc:

@@ -104,7 +104,7 @@ def extract_candidate_assets(
             continue
 
         url = normalize_visible_text(raw_item.get("url")) or None
-        marker_source = f"{text} {url or ''}".lower()
+        marker_source = f"{text} {url or ''} {raw_item.get('className') or ''}".lower()
         if any(marker in marker_source for marker in BLOCKED_MARKERS):
             continue
         if content_kind == "image_text" and any(
@@ -134,19 +134,56 @@ def extract_candidate_assets(
 def _raw_visible_items_script() -> str:
     return """
 () => {
-  const nodes = Array.from(document.querySelectorAll('article, section, a, div')).slice(0, 900);
+  const selectors = [
+    'a[href*="/explore/"]',
+    'a[href*="/discovery/item/"]',
+    'article',
+    'section',
+    '[class*="note"]',
+    '[class*="card"]',
+    'a',
+    'div'
+  ];
+  const nodes = [];
+  const seen = new Set();
+  for (const selector of selectors) {
+    for (const node of Array.from(document.querySelectorAll(selector)).slice(0, 900)) {
+      if (seen.has(node)) continue;
+      seen.add(node);
+      nodes.push(node);
+      if (nodes.length >= 1200) break;
+    }
+    if (nodes.length >= 1200) break;
+  }
   const items = [];
   for (const node of nodes) {
-    const text = (node.innerText || node.textContent || '').trim();
-    if (!text || text.length < 30) continue;
     const linkNode = node.tagName === 'A' ? node : node.querySelector('a[href]');
+    const text = [
+      node.innerText || node.textContent || '',
+      node.getAttribute('aria-label') || '',
+      node.getAttribute('title') || '',
+      linkNode?.getAttribute('aria-label') || '',
+      linkNode?.getAttribute('title') || ''
+    ].join(' ').trim();
+    if (!text || text.length < 20) continue;
     const url = linkNode ? linkNode.href : location.href;
-    items.push({ text, url });
-    if (items.length >= 220) break;
+    items.push({ text, url, className: String(node.className || '') });
+    if (items.length >= 240) break;
   }
   return items;
 }
 """.strip()
+
+
+def _blocked_candidate_count(raw_items: list[dict[str, Any]]) -> int:
+    count = 0
+    for raw_item in raw_items:
+        text = normalize_visible_text(raw_item.get("text"))
+        url = normalize_visible_text(raw_item.get("url"))
+        marker_source = f"{text} {url} {raw_item.get('className') or ''}".lower()
+        if any(marker in marker_source for marker in BLOCKED_MARKERS):
+            count += 1
+    return count
 
 
 def _session_dir(job: TrendCollectionJob) -> Path:
@@ -199,10 +236,24 @@ def _delay_window(job: TrendCollectionJob) -> tuple[int, int]:
     return 4, 12
 
 
+def _operator_wait_seconds(job: TrendCollectionJob) -> int:
+    profile = job.safety_profile or {}
+    value = profile.get("operator_wait_seconds")
+    if isinstance(value, int):
+        return max(0, min(value, 180))
+    return 30
+
+
 def _store_assets(
     db: Session,
     job: TrendCollectionJob,
     assets: list[CollectedTrendAsset],
+    *,
+    raw_candidate_count: int = 0,
+    blocked_candidate_count: int = 0,
+    page_title: str | None = None,
+    final_url: str | None = None,
+    operator_wait_seconds: int = 0,
 ) -> list[TrendContent]:
     stored: list[TrendContent] = []
     for asset in assets:
@@ -224,13 +275,33 @@ def _store_assets(
         stored.append(item)
 
     job.status = "completed" if stored else "needs_operator_review"
+    if stored:
+        message = "Collected public visible items from the operator-assisted browser session."
+    elif blocked_candidate_count:
+        message = (
+            "No collected public image-text items were found. The visible page looks blocked by "
+            "login, verification, legal footer, or platform shell text; complete the visible "
+            "browser step only if allowed, then retry."
+        )
+    elif raw_candidate_count:
+        message = (
+            "No collected public image-text items were found. Visible page text loaded, but no "
+            "safe public note candidates matched the image-text filters; try a broader keyword "
+            "or paste note links."
+        )
+    else:
+        message = (
+            "No collected public image-text items were found. Confirm the search page loaded in "
+            "the visible browser, then retry."
+        )
     job.result_summary = {
-        "message": (
-            "Collected public visible items from the operator-assisted browser session."
-            if stored
-            else "No collected public image-text items were found. Complete login/captcha only if public results are blocked, then retry."
-        ),
+        "message": message,
         "collected_items": len(stored),
+        "raw_candidates": raw_candidate_count,
+        "blocked_candidates": blocked_candidate_count,
+        "page_title": page_title,
+        "final_url": final_url,
+        "operator_wait_seconds": operator_wait_seconds,
         "trend_ids": [],
     }
     db.commit()
@@ -251,7 +322,7 @@ def run_browser_collection_job(
     job_id: int,
     *,
     headless: bool = False,
-    operator_wait_seconds: int = 0,
+    operator_wait_seconds: int | None = None,
     max_scrolls: int = 6,
 ) -> list[TrendContent]:
     job = db.get(TrendCollectionJob, job_id)
@@ -274,6 +345,11 @@ def run_browser_collection_job(
     max_items = _safe_max_items(job)
     content_kind = _content_kind(job)
     min_delay, max_delay = _delay_window(job)
+    operator_wait_seconds = (
+        _operator_wait_seconds(job)
+        if operator_wait_seconds is None
+        else max(0, min(operator_wait_seconds, 180))
+    )
     session_dir = _session_dir(job)
     session_dir.mkdir(parents=True, exist_ok=True)
 
@@ -283,12 +359,15 @@ def run_browser_collection_job(
         "target_url": target_url,
         "content_kind": content_kind,
         "collected_items": 0,
+        "operator_wait_seconds": operator_wait_seconds,
     }
     job.error = None
     db.commit()
     db.refresh(job)
 
     raw_items: list[dict[str, Any]] = []
+    page_title: str | None = None
+    final_url: str | None = target_url
     try:
         with sync_playwright() as playwright:
             context = playwright.chromium.launch_persistent_context(
@@ -299,11 +378,16 @@ def run_browser_collection_job(
             )
             page = context.new_page()
             page.goto(target_url, wait_until="domcontentloaded", timeout=60_000)
+            page_title = page.title()
+            final_url = page.url
             if operator_wait_seconds > 0:
                 page.wait_for_timeout(operator_wait_seconds * 1000)
 
             for _ in range(max(1, max_scrolls)):
-                raw_items.extend(page.evaluate(_raw_visible_items_script()))
+                evaluated_items = page.evaluate(_raw_visible_items_script()) or []
+                raw_items.extend(evaluated_items)
+                page_title = page.title()
+                final_url = page.url
                 if (
                     len(
                         extract_candidate_assets(
@@ -350,4 +434,13 @@ def run_browser_collection_job(
         max_items,
         content_kind=content_kind,
     )
-    return _store_assets(db=db, job=job, assets=assets)
+    return _store_assets(
+        db=db,
+        job=job,
+        assets=assets,
+        raw_candidate_count=len(raw_items),
+        blocked_candidate_count=_blocked_candidate_count(raw_items),
+        page_title=page_title,
+        final_url=final_url,
+        operator_wait_seconds=operator_wait_seconds,
+    )
