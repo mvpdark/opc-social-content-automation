@@ -605,6 +605,7 @@ def validate_content_production_contract() -> int:
         "安全门仍保持开启",
         'title="安全门"',
         "安全门已确认",
+        'status: "暂停"',
         "Bearer token",
         "服务端权限",
         "测试门禁",

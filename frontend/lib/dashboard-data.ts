@@ -327,7 +327,7 @@ export const queues = [
   { name: "采集任务", count: 0, owner: "运营", status: "待样本" },
   { name: "知识上传", count: 0, owner: "管理员", status: "等待" },
   { name: "草稿请求", count: 0, owner: "投放", status: "待创建" },
-  { name: "确认清单", count: 0, owner: "负责人", status: "暂停" }
+  { name: "确认清单", count: 0, owner: "负责人", status: "待确认" }
 ];
 
 export const promoterActions = [
