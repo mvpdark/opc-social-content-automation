@@ -399,6 +399,8 @@ def validate_frontend_design_contract() -> int:
             [
                 "opc-mobile-shell",
                 "focus-visible:ring-2 focus-visible:ring-moss/35",
+                'data-testid="mobile-status"',
+                'aria-live="polite"',
             ],
             "mobile focus visible controls",
         ),

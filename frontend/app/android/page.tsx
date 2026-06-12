@@ -642,6 +642,7 @@ export default function AndroidPreviewPage() {
       />
       <section className="min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(104px+env(safe-area-inset-bottom))] pt-4">
         <div
+          aria-live="polite"
           className="mb-4 rounded-[18px] border border-white/70 bg-white/78 px-3.5 py-2.5 text-xs font-semibold leading-5 text-ink shadow-[0_10px_30px_rgba(27,58,48,0.08)] backdrop-blur"
           data-testid="mobile-status"
           role="status"
@@ -3064,7 +3065,11 @@ function DraftPreviewEditor({
             复制预览链接
           </button>
           {xhsExportMessage ? (
-            <div className="mb-2 rounded-md bg-[#fff6e3] px-3 py-2 text-[11px] font-medium leading-4 text-[#8a5d16]">
+            <div
+              aria-live="polite"
+              className="mb-2 rounded-md bg-[#fff6e3] px-3 py-2 text-[11px] font-medium leading-4 text-[#8a5d16]"
+              role="status"
+            >
               {xhsExportMessage}
             </div>
           ) : null}
