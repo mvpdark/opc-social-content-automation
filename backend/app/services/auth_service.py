@@ -10,6 +10,7 @@ from app.schemas.auth import UserCreate
 
 
 MOBILE_TEST_ACCOUNTS = ("admin", "admin1", "admin2")
+MOBILE_ACCOUNT_KEY_PROFILES = {account: "default" for account in MOBILE_TEST_ACCOUNTS}
 
 
 def get_user_by_phone(db: Session, phone: str) -> User | None:
@@ -55,6 +56,10 @@ def authenticate_mobile_account(account: str, password: str) -> str:
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid account or password.",
     )
+
+
+def mobile_account_key_profile(account: str) -> str:
+    return MOBILE_ACCOUNT_KEY_PROFILES[account]
 
 
 def issue_token(user: User) -> str:

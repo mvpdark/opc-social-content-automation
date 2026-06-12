@@ -75,6 +75,7 @@ type ProviderCheckResult = {
 
 type MobileLoginResponse = {
   account: string;
+  default_keys_bound: boolean;
   key_profile: string;
   provider_statuses: ProviderStatusItem[];
 };
@@ -258,6 +259,7 @@ async function authenticateMobileLogin(account: string, password: string) {
   }
   return {
     account: data.account.trim(),
+    defaultKeysBound: Boolean(data.default_keys_bound),
     providerStatuses: Array.isArray(data.provider_statuses) ? data.provider_statuses : []
   };
 }
@@ -710,14 +712,16 @@ export default function AndroidPreviewPage() {
     setStatus(message);
   }
 
-  function login(account: string, nextProviderStatuses: ProviderStatusItem[]) {
+  function login(
+    account: string,
+    nextProviderStatuses: ProviderStatusItem[],
+    defaultKeysBound: boolean
+  ) {
     saveStoredMobileAccount(account);
     setMobileAccount(account);
     setProviderStatuses(nextProviderStatuses);
     setActiveTab("home");
-    const bindings = providerBindingDefaultsFromStatuses(nextProviderStatuses);
-    const boundCount = [bindings.draft, bindings.image, bindings.rewrite].filter(Boolean).length;
-    setStatus(boundCount === 3 ? `已登录：${account}，默认 Key 已绑定。` : `已登录：${account}，请检查默认 Key 状态。`);
+    setStatus(defaultKeysBound ? `已登录：${account}，默认 Key 已绑定。` : `已登录：${account}，请检查默认 Key 状态。`);
   }
 
   function logout() {
@@ -793,7 +797,11 @@ function LoginScreen({
   onLogin
 }: {
   loading: boolean;
-  onLogin: (account: string, providerStatuses: ProviderStatusItem[]) => void;
+  onLogin: (
+    account: string,
+    providerStatuses: ProviderStatusItem[],
+    defaultKeysBound: boolean
+  ) => void;
 }) {
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
@@ -813,7 +821,7 @@ function LoginScreen({
     setError("");
     try {
       const loginResult = await authenticateMobileLogin(normalizedAccount, password);
-      onLogin(loginResult.account, loginResult.providerStatuses);
+      onLogin(loginResult.account, loginResult.providerStatuses, loginResult.defaultKeysBound);
     } catch (error) {
       setError(error instanceof Error ? error.message : "账号或密码不正确。");
     } finally {

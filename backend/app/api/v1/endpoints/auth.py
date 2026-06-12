@@ -15,6 +15,7 @@ from app.services.auth_service import (
     authenticate_user,
     create_user,
     issue_token,
+    mobile_account_key_profile,
 )
 from app.services.workspace_service import provider_status_items
 
@@ -37,8 +38,10 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> Token:
 @router.post("/mobile-login", response_model=MobileLoginResponse)
 def mobile_login(payload: MobileLoginRequest) -> MobileLoginResponse:
     account = authenticate_mobile_account(payload.account, payload.password)
+    provider_statuses = provider_status_items()
     return MobileLoginResponse(
         account=account,
-        key_profile="default",
-        provider_statuses=provider_status_items(),
+        default_keys_bound=all(item.configured for item in provider_statuses),
+        key_profile=mobile_account_key_profile(account),
+        provider_statuses=provider_statuses,
     )

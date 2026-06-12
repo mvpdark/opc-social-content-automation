@@ -40,6 +40,7 @@ def test_mobile_login_endpoint_accepts_configured_account(monkeypatch) -> None:
 
         assert response.status_code == 200
         assert payload["account"] == account
+        assert payload["default_keys_bound"] is True
         assert payload["key_profile"] == "default"
         assert len(provider_statuses) == 3
         assert {item["status"] for item in provider_statuses} == {"configured"}

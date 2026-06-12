@@ -40,5 +40,6 @@ class Token(BaseModel):
 
 class MobileLoginResponse(BaseModel):
     account: str
+    default_keys_bound: bool
     key_profile: str
     provider_statuses: list[ProviderStatusItem]
