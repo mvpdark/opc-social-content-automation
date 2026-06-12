@@ -114,7 +114,7 @@ export const themeTemplates: Array<{
 }> = [
   {
     label: "日常运营",
-    description: "默认工作台、汇总和交付",
+    description: "默认工作台、汇总和发布",
     style: "apple"
   },
   {
@@ -169,7 +169,7 @@ export const tabThemeRecommendations: Record<
     style: "candy"
   },
   delivery: {
-    reason: "交付和推广协作更适合柔和暖色。",
+    reason: "发布和推广协作更适合柔和暖色。",
     style: "warm"
   },
   settings: {
@@ -188,7 +188,7 @@ export const navigation: Array<{
   { id: "knowledge", label: "知识库", icon: BookOpenText },
   { id: "content", label: "一键生成", icon: PenLine },
   { id: "cover", label: "封面", icon: Image },
-  { id: "delivery", label: "发布交付", icon: Users },
+  { id: "delivery", label: "发布助手", icon: Users },
   { id: "settings", label: "设置", icon: Settings }
 ];
 
@@ -214,8 +214,8 @@ export const tabMeta: Record<WorkspaceTab, { title: string; description: string 
     description: "根据高赞图文风格生成封面方案，并人工复核标题准确性。"
   },
   delivery: {
-    title: "发布交付",
-    description: "管理已批准内容、导出包、发布记录和推广交接。"
+    title: "发布助手",
+    description: "管理已确认内容、复制包、发布记录和推广协作。"
   },
   settings: {
     title: "设置",
@@ -264,7 +264,7 @@ export const pipeline = [
   {
     title: "封面与发布",
     state: "追踪",
-    description: "图片服务生成素材，人工复核后交付发布。",
+    description: "图片服务生成素材，人工复核后再用于发布。",
     icon: Send
   }
 ] as const;
@@ -332,18 +332,18 @@ export const queues = [
 
 export const promoterActions = [
   {
-    title: "已批准内容",
-    description: "人工确认后进入推广交付池。",
+    title: "已确认内容",
+    description: "人工确认后进入发布清单。",
     status: "0 条已确认",
     icon: CheckCircle2,
     command: "打开"
   },
   {
-    title: "导出包",
-    description: "图文稿、纯文本或结构化交付格式。",
+    title: "复制包",
+    description: "图文稿、纯文本或结构化复制格式。",
     status: "确认后可用",
     icon: Download,
-    command: "导出"
+    command: "生成"
   },
   {
     title: "发布记录",

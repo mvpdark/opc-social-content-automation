@@ -2564,7 +2564,7 @@ function GenerationLauncher({
               </button>
             ) : null}
             <div className="mt-4 border-l-4 border-amber pl-3 text-xs leading-5 text-muted">
-              一键生成会按顺序处理文案、改写和封面；发布交付仍保持人工确认，不会自动发布。
+              一键生成会按顺序处理文案、改写和封面；最终发布仍保持人工确认，不会自动发布。
             </div>
           </div>
         </div>
@@ -2922,7 +2922,7 @@ function CoverView() {
 function DeliveryView() {
   return (
     <div className="space-y-4">
-      <Panel helper="无已批准内容前保持禁用；批准后再生成导出包和发布记录。" title="交付动作">
+      <Panel helper="没有已确认内容时保持禁用；确认后再生成复制包和发布记录。" title="发布动作">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
           {promoterActions.map((action) => (
             <div key={action.title} className={`${subtleCardClass} p-4`}>
@@ -2934,10 +2934,10 @@ function DeliveryView() {
               <div className="mt-3 flex items-center justify-between gap-3">
                 <span className="text-xs font-medium text-muted">{action.status}</span>
                 <button
-                  aria-label={`${action.command}，需有已批准内容后启用`}
+                  aria-label={`${action.command}，需有已确认内容后启用`}
                   className="glass-control flex h-8 items-center gap-2 rounded-md border px-2 text-xs font-medium text-ink disabled:cursor-not-allowed disabled:opacity-55"
                   disabled
-                  title="需有已批准内容后启用"
+                  title="需有已确认内容后启用"
                   type="button"
                 >
                   <action.icon className="h-3.5 w-3.5" />
@@ -3427,7 +3427,7 @@ function SettingsView({
             {showHelperText ? "说明已显示" : "显示说明文字"}
           </button>
           <p className="mt-3 text-xs leading-5 text-muted">
-            只恢复顶部页面说明和侧边安全门说明，不会修改主题、凭证或内容。
+            只恢复顶部页面说明和侧边发布确认说明，不会修改主题、凭证或内容。
           </p>
         </Panel>
 
@@ -3903,7 +3903,7 @@ function DraftPanel({
 
 function PublishingTable() {
   return (
-    <Panel helper="平台交付历史和当前确认状态。" title="发布记录">
+    <Panel helper="平台发布历史和当前确认状态。" title="发布记录">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[520px] border-collapse text-left text-sm">
           <thead className="bg-mist text-xs text-muted">

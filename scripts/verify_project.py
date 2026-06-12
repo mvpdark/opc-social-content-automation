@@ -406,6 +406,9 @@ def validate_content_production_contract() -> int:
     dashboard_data_text = (ROOT / "frontend" / "lib" / "dashboard-data.ts").read_text(
         encoding="utf-8"
     )
+    app_shell_text = (ROOT / "frontend" / "components" / "app-shell.tsx").read_text(
+        encoding="utf-8"
+    )
     draft_prompt_text = (ROOT / "prompts" / "draft_generation.md").read_text(
         encoding="utf-8"
     )
@@ -586,6 +589,16 @@ def validate_content_production_contract() -> int:
         'state: "门控"',
         'status: "门控"',
         "0 条可交付",
+        "发布交付",
+        "推广交付池",
+        "结构化交付格式",
+        "交付动作",
+        "平台交付历史",
+        "发布安全门",
+        "侧边安全门说明",
+        "已批准内容",
+        "导出包",
+        "需有已批准内容后启用",
         "Bearer token",
         "服务端权限",
         "测试门禁",
@@ -658,6 +671,7 @@ def validate_content_production_contract() -> int:
             or snippet in image_service_text
             or snippet in model_router_text
             or snippet in dashboard_data_text
+            or snippet in app_shell_text
         ):
             raise SystemExit(f"Stale content production gate still present: {snippet}")
 

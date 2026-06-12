@@ -102,7 +102,7 @@ export function AppShell({
           <div className="hidden border-t border-line p-4 xl:block">
             <div className="flex items-center gap-2 text-xs font-medium text-muted">
               <ShieldCheck className="h-4 w-4 text-moss" />
-              发布安全门
+              发布前确认
             </div>
             {showHelperText ? (
               <p className="mt-2 text-xs leading-5 text-muted">
