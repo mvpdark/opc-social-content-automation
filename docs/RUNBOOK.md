@@ -59,6 +59,12 @@ python scripts/start_local.py
 The helper skips services that are already listening on ports `8010` or `3000`
 and writes logs to `backend/uvicorn-8010.log` and `frontend/next-3000.log`.
 
+Check local service status without starting anything:
+
+```bash
+python scripts/start_local.py --status
+```
+
 Run only the API:
 
 ```bash

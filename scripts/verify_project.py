@@ -206,6 +206,7 @@ def validate_safety_gates() -> int:
             "8010",
             "3000",
             "port_is_open",
+            "--status",
         ],
         "scripts/setup_local.py": [
             "python scripts/start_local.py",

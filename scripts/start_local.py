@@ -80,14 +80,29 @@ def start_frontend() -> None:
     print(f"Started frontend pid={pid}; log={FRONTEND_LOG}")
 
 
+def print_status() -> None:
+    backend_status = "running" if port_is_open(8010) else "stopped"
+    frontend_status = "running" if port_is_open(3000) else "stopped"
+    print("Local service status:")
+    print(f"  Backend  8010: {backend_status}")
+    print(f"  Frontend 3000: {frontend_status}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Start local OPC backend and frontend dev servers.")
     parser.add_argument("--backend-only", action="store_true", help="Only start the backend API.")
     parser.add_argument("--frontend-only", action="store_true", help="Only start the frontend app.")
+    parser.add_argument("--status", action="store_true", help="Only print whether local services are running.")
     args = parser.parse_args()
 
     if args.backend_only and args.frontend_only:
         raise SystemExit("Choose at most one of --backend-only or --frontend-only.")
+    if args.status and (args.backend_only or args.frontend_only):
+        raise SystemExit("--status cannot be combined with --backend-only or --frontend-only.")
+
+    if args.status:
+        print_status()
+        return
 
     if not args.frontend_only:
         start_backend()
