@@ -822,7 +822,7 @@ export function TrendCollectorPanel({
                 </p>
               </div>
               <span className="rounded-md border border-line bg-mist px-2 py-1 text-xs font-medium text-muted">
-                clean-room
+                安全解析
               </span>
             </div>
             <textarea
@@ -932,17 +932,17 @@ export function TrendCollectorPanel({
               </span>
             </div>
             <div className="flex items-center justify-between gap-3 py-3">
-              <span className="text-muted">登录门槛</span>
+              <span className="text-muted">访问方式</span>
               <span className="font-medium">
                 {target?.requires_manual_login === false ? "公开优先" : "需人工处理"}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3 py-3">
-              <span className="text-muted">Cookie 保存</span>
+              <span className="text-muted">登录状态保存</span>
               <span className="font-medium text-moss">默认关闭</span>
             </div>
             <div className="flex items-center justify-between gap-3 py-3">
-              <span className="text-muted">自动化模式</span>
+              <span className="text-muted">采集方式</span>
               <span className="font-medium">
                 {target?.automation_mode ?? "可见浏览器"}
               </span>
