@@ -2285,12 +2285,12 @@ function SettingsScreen({
           {credentialFields.map((field) => {
             const localFilled = credentials[field.keyName].trim().length > 0;
             const statusText = field.keyName === "workspaceToken"
-              ? "当前免填"
+              ? "无需填写"
               : localFilled
-                ? "此设备已填"
+                ? "当前设备已填写"
                 : field.backendBound
                   ? "已保存"
-                  : "未保存";
+                  : "未配置";
             const statusClass = field.keyName === "workspaceToken" || localFilled || field.backendBound
               ? "bg-[#e5f2ec] text-moss"
               : "bg-[#fff3d8] text-[#8a5a00]";

@@ -3206,12 +3206,12 @@ function SettingsView({
             {credentialFields.map((field) => {
               const localFilled = credentials[field.keyName].trim().length > 0;
               const statusText = field.keyName === "workspaceToken"
-                ? "当前免填"
+                ? "无需填写"
                 : localFilled
-                  ? "此设备已填"
+                  ? "当前设备已填写"
                   : field.backendBound
                     ? "已保存"
-                    : "未保存";
+                    : "未配置";
               const statusToneClass = field.keyName === "workspaceToken" || localFilled || field.backendBound
                 ? "bg-mist text-moss"
                 : "bg-amber/15 text-[#8a5a00]";
@@ -3285,16 +3285,16 @@ function SettingsView({
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
               <Pill tone={credentials.workspaceToken ? "green" : "amber"}>
-                登录 {credentials.workspaceToken ? "已填" : "当前免填"}
+                登录 {credentials.workspaceToken ? "已填写" : "无需填写"}
               </Pill>
               <Pill tone={credentials.draftApiKey || providerBindings.draft ? "green" : "amber"}>
-                撰稿 {credentials.draftApiKey ? "此设备已填" : providerBindings.draft ? "已保存" : "未保存"}
+                撰稿 {credentials.draftApiKey ? "当前设备已填写" : providerBindings.draft ? "已保存" : "未配置"}
               </Pill>
               <Pill tone={credentials.imageApiKey || providerBindings.image ? "green" : "amber"}>
-                图片 {credentials.imageApiKey ? "此设备已填" : providerBindings.image ? "已保存" : "未保存"}
+                图片 {credentials.imageApiKey ? "当前设备已填写" : providerBindings.image ? "已保存" : "未配置"}
               </Pill>
               <Pill tone={credentials.rewriteApiKey || providerBindings.rewrite ? "green" : "amber"}>
-                改写 {credentials.rewriteApiKey ? "此设备已填" : providerBindings.rewrite ? "已保存" : "未保存"}
+                改写 {credentials.rewriteApiKey ? "当前设备已填写" : providerBindings.rewrite ? "已保存" : "未配置"}
               </Pill>
             </div>
           </div>
