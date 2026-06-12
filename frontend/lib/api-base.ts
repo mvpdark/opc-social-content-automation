@@ -26,11 +26,22 @@ function isLocalOrPrivateHostname(hostname: string) {
 function resolveConfiguredApiBase(
   configuredApiBase: string,
   browserHostname: string,
+  browserOrigin?: string,
 ) {
   const normalizedBase = trimTrailingSlash(configuredApiBase);
 
   try {
     const url = new URL(normalizedBase);
+    const configuredIsLocalOrPrivate = isLocalOrPrivateHostname(url.hostname);
+
+    if (
+      configuredIsLocalOrPrivate &&
+      !isLocalOrPrivateHostname(browserHostname) &&
+      browserOrigin
+    ) {
+      return `${browserOrigin}/api`;
+    }
+
     const shouldUseBrowserHost =
       isLoopbackHostname(url.hostname) &&
       isLocalOrPrivateHostname(browserHostname) &&
@@ -57,7 +68,7 @@ export function getApiBase() {
 
   const { hostname, origin, protocol } = window.location;
   if (configuredApiBase) {
-    return resolveConfiguredApiBase(configuredApiBase, hostname);
+    return resolveConfiguredApiBase(configuredApiBase, hostname, origin);
   }
 
   if (!isLocalOrPrivateHostname(hostname)) {

@@ -1587,6 +1587,7 @@ function CreateScreen({
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const progressCeilingRef = useRef(88);
   const progressLabelRef = useRef("准备中");
+  const lastProgressActionRef = useRef("");
   const audioContextRef = useRef<AudioContext | null>(null);
   const completionSoundReadyRef = useRef(false);
   const coverImageUrl = generatedCover ? resolveAssetUrl(generatedCover.image_url) : null;
@@ -1674,6 +1675,20 @@ function CreateScreen({
     };
   }, []);
 
+  useEffect(() => {
+    if (!busy || progressPercent <= 0) {
+      return;
+    }
+
+    const message = `${progressLabel}：${progressPercent}%，切换页面也会继续运行。`;
+    if (lastProgressActionRef.current === message) {
+      return;
+    }
+
+    lastProgressActionRef.current = message;
+    onAction(message);
+  }, [busy, onAction, progressLabel, progressPercent]);
+
   function stopProgressTimer() {
     if (progressTimerRef.current) {
       clearInterval(progressTimerRef.current);
@@ -1686,16 +1701,15 @@ function CreateScreen({
     progressCeilingRef.current = ceiling;
     setProgressLabel(label);
     setProgressPercent((current) => Math.max(current, floor));
-    onAction(`${label}：${Math.max(progressPercent, floor)}%，切换页面也会继续运行。`);
   }
 
   function startProgress(label: string) {
     stopProgressTimer();
     progressLabelRef.current = label;
     progressCeilingRef.current = 62;
+    lastProgressActionRef.current = "";
     setProgressLabel(label);
     setProgressPercent(3);
-    onAction(`${label}：3%，切换页面也会继续运行。`);
     progressTimerRef.current = setInterval(() => {
       setProgressPercent((current) => {
         const ceiling = progressCeilingRef.current;
@@ -1704,7 +1718,6 @@ function CreateScreen({
         }
         const step = current < 30 ? 4 : current < 65 ? 3 : 1;
         const next = Math.min(ceiling, current + step);
-        onAction(`${progressLabelRef.current}：${next}%，切换页面也会继续运行。`);
         return next;
       });
     }, 700);

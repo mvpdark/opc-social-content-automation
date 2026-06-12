@@ -174,8 +174,11 @@ def validate_safety_gates() -> int:
             "NEXT_PUBLIC_API_PORT",
             "window.location",
             "hostname",
+            "browserOrigin",
+            "configuredIsLocalOrPrivate",
             "isLocalOrPrivateHostname",
             "return `${origin}/api`",
+            "return `${browserOrigin}/api`",
         ],
         "frontend/package.json": [
             '"dev:lan": "next dev -H 0.0.0.0"',
