@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
@@ -149,6 +149,20 @@ def get_trend_collection_jobs(
             limit=limit,
         )
     ]
+
+
+@router.get("/jobs/{job_id}", response_model=TrendCollectionJobRead)
+def get_trend_collection_job(
+    job_id: int,
+    db: Session = Depends(get_db),
+) -> TrendCollectionJobRead:
+    job = db.get(TrendCollectionJob, job_id)
+    if job is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Trend collection job was not found.",
+        )
+    return TrendCollectionJobRead.model_validate(job)
 
 
 @router.post("/collect", response_model=TrendRead)

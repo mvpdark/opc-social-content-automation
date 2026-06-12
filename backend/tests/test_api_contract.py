@@ -25,6 +25,7 @@ def test_documented_api_paths_are_registered() -> None:
         "/api/trends/link-import-target",
         "/api/trends/search-target",
         "/api/trends/jobs",
+        "/api/trends/jobs/{job_id}",
         "/api/trends/knowledge-digest",
         "/api/trends/keywords",
         "/api/image/generate",

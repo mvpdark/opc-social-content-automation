@@ -363,13 +363,14 @@ export function TrendCollectorPanel({
   }
 
   async function fetchCollectionJob(jobId: number): Promise<TrendCollectionJob | null> {
-    const params = new URLSearchParams({ limit: "100" });
-    const response = await fetch(`${API_BASE}/trends/jobs?${params.toString()}`);
+    const response = await fetch(`${API_BASE}/trends/jobs/${jobId}`);
+    if (response.status === 404) {
+      return null;
+    }
     if (!response.ok) {
       throw new Error("无法刷新采集任务状态，请检查后端服务。");
     }
-    const jobs = (await response.json()) as TrendCollectionJob[];
-    return jobs.find((job) => job.id === jobId) ?? null;
+    return (await response.json()) as TrendCollectionJob;
   }
 
   useEffect(() => {
