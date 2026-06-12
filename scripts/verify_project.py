@@ -56,6 +56,7 @@ def validate_required_files() -> int:
         ROOT / "frontend" / "app" / "page.tsx",
         ROOT / "frontend" / "middleware.ts",
         ROOT / "frontend" / "lib" / "api-base.ts",
+        ROOT / "frontend" / "lib" / "status-labels.ts",
         ROOT / "docs" / "RUNBOOK.md",
         ROOT / "docs" / "CLOUDFLARE_OPC.md",
         ROOT / "docs" / "SECURITY_NOTES.md",
@@ -396,6 +397,9 @@ def validate_content_production_contract() -> int:
     model_router_text = (
         ROOT / "backend" / "app" / "services" / "model_router.py"
     ).read_text(encoding="utf-8")
+    status_labels_text = (ROOT / "frontend" / "lib" / "status-labels.ts").read_text(
+        encoding="utf-8"
+    )
     draft_prompt_text = (ROOT / "prompts" / "draft_generation.md").read_text(
         encoding="utf-8"
     )
@@ -431,6 +435,8 @@ def validate_content_production_contract() -> int:
         "/content/rewrite",
         "Humanization rewrite",
         "本次未走改写服务",
+        "generatedContentStatusLabel",
+        "generatedImageStatusLabel",
     ]
     backend_contract_snippets = [
         'IMAGE_GENERATABLE_STATUSES = {"draft", "rewritten", "review_pending", "approved"}',
@@ -447,6 +453,18 @@ def validate_content_production_contract() -> int:
         total += 1
         if snippet not in image_service_text:
             raise SystemExit(f"Missing content production backend contract: {snippet}")
+
+    status_label_contract_snippets = [
+        "export function collectionJobStatusLabel",
+        "export function generatedContentStatusLabel",
+        "export function generatedImageStatusLabel",
+        'case "needs_operator_review"',
+        "return \"等待确认\"",
+    ]
+    for snippet in status_label_contract_snippets:
+        total += 1
+        if snippet not in status_labels_text:
+            raise SystemExit(f"Missing status label contract: {snippet}")
 
     particle_style_contracts = [
         (

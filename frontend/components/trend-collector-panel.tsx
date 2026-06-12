@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { PlatformLabel } from "@/components/platform-icon";
 import { getApiBase } from "@/lib/api-base";
+import { collectionJobStatusLabel } from "@/lib/status-labels";
 
 type Platform = "xiaohongshu" | "douyin";
 
@@ -252,23 +253,6 @@ function buildLocalXhsLinkImportTarget(rawText: string): LinkImportTarget {
   };
 }
 
-function collectionStatusLabel(status: string) {
-  switch (status) {
-    case "queued":
-      return "排队中";
-    case "running":
-      return "采集中";
-    case "completed":
-      return "已完成";
-    case "needs_operator_review":
-      return "需要人工处理";
-    case "failed":
-      return "失败";
-    default:
-      return "等待确认";
-  }
-}
-
 function formatCollectionJobStatus(job: TrendCollectionJob) {
   const collectedItems =
     typeof job.result_summary?.collected_items === "number"
@@ -280,13 +264,13 @@ function formatCollectionJobStatus(job: TrendCollectionJob) {
     if (!job.result_summary?.auto_start) {
       return `当前采集任务排队中${collectedItems}。这条任务不会自动启动；请重新点击“创建并启动”。`;
     }
-    return `当前采集任务${collectionStatusLabel(job.status)}${collectedItems}。采集器正在启动，可见浏览器会自动打开。`;
+    return `当前采集任务${collectionJobStatusLabel(job.status)}${collectedItems}。采集器正在启动，可见浏览器会自动打开。`;
   }
   if (job.status === "running") {
-    return `当前采集任务${collectionStatusLabel(job.status)}${collectedItems}。请留意自动打开的浏览器窗口；如果遇到登录或验证码，先人工处理。`;
+    return `当前采集任务${collectionJobStatusLabel(job.status)}${collectedItems}。请留意自动打开的浏览器窗口；如果遇到登录或验证码，先人工处理。`;
   }
   if (job.status === "completed") {
-    return `当前采集任务${collectionStatusLabel(job.status)}${collectedItems}。请人工确认来源后再保存知识摘要。`;
+    return `当前采集任务${collectionJobStatusLabel(job.status)}${collectedItems}。请人工确认来源后再保存知识摘要。`;
   }
   if (job.status === "needs_operator_review") {
     return `当前采集任务需要人工处理${collectedItems}。公开搜索可能被登录墙、验证码或空结果拦截；人工确认后可直接重试。${errorText}`;
@@ -295,7 +279,7 @@ function formatCollectionJobStatus(job: TrendCollectionJob) {
     return `当前采集任务执行失败${collectedItems}${errorText}。可以直接重新启动这条任务。`;
   }
 
-  return `当前采集任务状态：${collectionStatusLabel(job.status)}${collectedItems}${errorText}。`;
+  return `当前采集任务状态：${collectionJobStatusLabel(job.status)}${collectedItems}${errorText}。`;
 }
 
 function isRestartableCollectionJob(job: TrendCollectionJob) {

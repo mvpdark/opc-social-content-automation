@@ -65,6 +65,10 @@ import {
   providerKeyUpdatePayload,
   type ProviderStatusItem
 } from "@/lib/provider-settings";
+import {
+  generatedContentStatusLabel,
+  generatedImageStatusLabel
+} from "@/lib/status-labels";
 
 const pillTone = {
   neutral: "border-line bg-mist text-muted",
@@ -787,42 +791,6 @@ type GeneratedImageAsset = {
   status: string;
   template: string | null;
 };
-
-function generatedContentStatusLabel(status: string) {
-  switch (status) {
-    case "approved":
-      return "已确认";
-    case "draft":
-      return "草稿";
-    case "generated":
-      return "已生成";
-    case "needs_review":
-    case "review_pending":
-      return "待确认";
-    case "published":
-      return "已发布";
-    case "rewritten":
-      return "已润色";
-    default:
-      return "待确认";
-  }
-}
-
-function generatedImageStatusLabel(status: string) {
-  switch (status) {
-    case "approved":
-      return "已确认";
-    case "failed":
-      return "生成失败";
-    case "generated":
-      return "已生成";
-    case "needs_review":
-    case "review_pending":
-      return "待确认";
-    default:
-      return "待确认";
-  }
-}
 
 type ProviderCheckResult = {
   configured: boolean;

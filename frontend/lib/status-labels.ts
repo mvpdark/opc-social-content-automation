@@ -1,0 +1,52 @@
+export function collectionJobStatusLabel(status: string) {
+  switch (status) {
+    case "completed":
+      return "已完成";
+    case "failed":
+      return "失败";
+    case "needs_operator_review":
+      return "需要人工处理";
+    case "queued":
+      return "排队中";
+    case "running":
+      return "采集中";
+    default:
+      return "等待确认";
+  }
+}
+
+export function generatedContentStatusLabel(status: string) {
+  switch (status) {
+    case "approved":
+      return "已确认";
+    case "draft":
+      return "草稿";
+    case "generated":
+      return "已生成";
+    case "needs_review":
+    case "review_pending":
+      return "待确认";
+    case "published":
+      return "已发布";
+    case "rewritten":
+      return "已润色";
+    default:
+      return "待确认";
+  }
+}
+
+export function generatedImageStatusLabel(status: string) {
+  switch (status) {
+    case "approved":
+      return "已确认";
+    case "failed":
+      return "生成失败";
+    case "generated":
+      return "已生成";
+    case "needs_review":
+    case "review_pending":
+      return "待确认";
+    default:
+      return "待确认";
+  }
+}

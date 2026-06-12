@@ -39,6 +39,7 @@ import {
   providerKeyUpdatePayload,
   type ProviderStatusItem
 } from "@/lib/provider-settings";
+import { collectionJobStatusLabel } from "@/lib/status-labels";
 
 type MobileTab = "home" | "collect" | "create" | "settings";
 type MobilePlatform = "douyin" | "xiaohongshu";
@@ -197,23 +198,6 @@ const taskActionCopy: Record<MobileTab, string> = {
   create: "已打开创作页，可以切换版式并进入生成入口。",
   settings: "已打开设置页，可以查看配置和安全门状态。"
 };
-
-function collectionStatusLabel(status: string) {
-  switch (status) {
-    case "completed":
-      return "已完成";
-    case "failed":
-      return "失败";
-    case "needs_operator_review":
-      return "需要人工处理";
-    case "queued":
-      return "排队中";
-    case "running":
-      return "采集中";
-    default:
-      return "等待确认";
-  }
-}
 
 const sampleReferences = [
   {
@@ -1257,7 +1241,7 @@ function CollectScreen({
       const nextDate = autoEnabled ? scheduleNextRun(startedAt) : null;
       setLastJobId(data.id);
       setLastRunAt(startedAt.toISOString());
-      const message = `${runLabel}任务已创建，状态：${collectionStatusLabel(data.status)}。${
+      const message = `${runLabel}任务已创建，状态：${collectionJobStatusLabel(data.status)}。${
         nextDate ? ` 下次运行：${formatScheduleTime(nextDate.toISOString())}。` : ""
       }`;
       setScheduleMessage(message);
