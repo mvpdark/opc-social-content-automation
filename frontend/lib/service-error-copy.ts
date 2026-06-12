@@ -1,3 +1,5 @@
+export const SERVICE_CONFIG_READ_ERROR = "服务配置读取失败。";
+
 export function sanitizeServiceErrorMessage(message: string) {
   return message
     .replace(/Failed to fetch/gi, "服务暂时连接不上，请确认应用服务已启动。")

@@ -67,6 +67,7 @@ import {
   type ProviderStatusItem
 } from "@/lib/provider-settings";
 import {
+  SERVICE_CONFIG_READ_ERROR,
   isServiceCredentialError,
   sanitizeServiceErrorMessage
 } from "@/lib/service-error-copy";
@@ -836,7 +837,7 @@ type WorkspaceLoginResponse = {
 async function fetchProviderStatuses() {
   const response = await fetch(`${API_BASE}/workspace/provider-status`);
   if (!response.ok) {
-    throw new Error(await readApiError(response, "服务配置读取失败。"));
+    throw new Error(await readApiError(response, SERVICE_CONFIG_READ_ERROR));
   }
   return sanitizeProviderStatusItems(
     (await response.json()) as ProviderStatusItem[]
@@ -2113,7 +2114,7 @@ function GenerationLauncher({
       return data;
     } catch (error) {
       setProviderStatusError(
-        sanitizeServiceErrorMessage(error instanceof Error ? error.message : "服务配置读取失败。")
+        sanitizeServiceErrorMessage(error instanceof Error ? error.message : SERVICE_CONFIG_READ_ERROR)
       );
       return null;
     }
@@ -2132,7 +2133,7 @@ function GenerationLauncher({
       } catch (error) {
         if (active) {
           setProviderStatusError(
-            sanitizeServiceErrorMessage(error instanceof Error ? error.message : "服务配置读取失败。")
+            sanitizeServiceErrorMessage(error instanceof Error ? error.message : SERVICE_CONFIG_READ_ERROR)
           );
         }
       }
@@ -3033,7 +3034,7 @@ function SettingsView({
       return statuses;
     } catch (error) {
       const message = sanitizeServiceErrorMessage(
-        error instanceof Error ? error.message : "服务配置读取失败。"
+        error instanceof Error ? error.message : SERVICE_CONFIG_READ_ERROR
       );
       setProviderStatusError(message);
       return null;
@@ -3053,7 +3054,7 @@ function SettingsView({
       } catch (error) {
         if (active) {
           setProviderStatusError(
-            sanitizeServiceErrorMessage(error instanceof Error ? error.message : "服务配置读取失败。")
+            sanitizeServiceErrorMessage(error instanceof Error ? error.message : SERVICE_CONFIG_READ_ERROR)
           );
         }
       }
