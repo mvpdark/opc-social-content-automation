@@ -281,16 +281,51 @@ function isGeneratedImageAsset(value: unknown): value is GeneratedImageAsset {
   );
 }
 
-function readStoredMobileContent() {
+function readMobileStorage(key: string) {
   if (typeof window === "undefined") {
     return null;
   }
 
   try {
-    const raw = window.localStorage.getItem(MOBILE_LAST_CONTENT_STORAGE_KEY);
-    if (!raw) {
-      return null;
-    }
+    return window.localStorage.getItem(key);
+  } catch (_error) {
+    return null;
+  }
+}
+
+function writeMobileStorage(key: string, value: string) {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    window.localStorage.setItem(key, value);
+    return true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+function removeMobileStorage(key: string) {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    window.localStorage.removeItem(key);
+    return true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+function readStoredMobileContent() {
+  const raw = readMobileStorage(MOBILE_LAST_CONTENT_STORAGE_KEY);
+  if (!raw) {
+    return null;
+  }
+
+  try {
     const parsed: unknown = JSON.parse(raw);
     return isGeneratedContent(parsed) ? parsed : null;
   } catch (_error) {
@@ -299,27 +334,16 @@ function readStoredMobileContent() {
 }
 
 function saveStoredMobileContent(content: GeneratedContent) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(MOBILE_LAST_CONTENT_STORAGE_KEY, JSON.stringify(content));
-  } catch (_error) {
-    // Local recovery is best-effort; the backend copy remains the source of truth.
-  }
+  writeMobileStorage(MOBILE_LAST_CONTENT_STORAGE_KEY, JSON.stringify(content));
 }
 
 function readStoredMobileCover() {
-  if (typeof window === "undefined") {
+  const raw = readMobileStorage(MOBILE_LAST_COVER_STORAGE_KEY);
+  if (!raw) {
     return null;
   }
 
   try {
-    const raw = window.localStorage.getItem(MOBILE_LAST_COVER_STORAGE_KEY);
-    if (!raw) {
-      return null;
-    }
     const parsed: unknown = JSON.parse(raw);
     return isGeneratedImageAsset(parsed) ? parsed : null;
   } catch (_error) {
@@ -328,27 +352,11 @@ function readStoredMobileCover() {
 }
 
 function saveStoredMobileCover(cover: GeneratedImageAsset) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(MOBILE_LAST_COVER_STORAGE_KEY, JSON.stringify(cover));
-  } catch (_error) {
-    // Local recovery is best-effort; the backend copy remains the source of truth.
-  }
+  writeMobileStorage(MOBILE_LAST_COVER_STORAGE_KEY, JSON.stringify(cover));
 }
 
 function clearStoredMobileCover() {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  try {
-    window.localStorage.removeItem(MOBILE_LAST_COVER_STORAGE_KEY);
-  } catch (_error) {
-    // Ignore storage failures.
-  }
+  removeMobileStorage(MOBILE_LAST_COVER_STORAGE_KEY);
 }
 
 function formatTags(tags: string[] | null) {
@@ -605,32 +613,16 @@ function getPcReturnHref() {
 }
 
 function readStoredMobileAccount() {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  try {
-    const stored = window.localStorage.getItem(MOBILE_AUTH_STORAGE_KEY);
-    return stored && isMobileAccount(stored) ? stored : null;
-  } catch (_error) {
-    return null;
-  }
+  const stored = readMobileStorage(MOBILE_AUTH_STORAGE_KEY);
+  return stored && isMobileAccount(stored) ? stored : null;
 }
 
 function saveStoredMobileAccount(account: MobileAccount) {
-  try {
-    window.localStorage.setItem(MOBILE_AUTH_STORAGE_KEY, account);
-  } catch (_error) {
-    // 登录状态只用于当前手机端测试门禁；本机存储不可用时保持本次会话可用。
-  }
+  writeMobileStorage(MOBILE_AUTH_STORAGE_KEY, account);
 }
 
 function clearStoredMobileAccount() {
-  try {
-    window.localStorage.removeItem(MOBILE_AUTH_STORAGE_KEY);
-  } catch (_error) {
-    // Ignore storage failures.
-  }
+  removeMobileStorage(MOBILE_AUTH_STORAGE_KEY);
 }
 
 export default function AndroidPreviewPage() {
@@ -648,7 +640,7 @@ export default function AndroidPreviewPage() {
 
   useEffect(() => {
     try {
-      const stored = window.localStorage.getItem(CREDENTIAL_STORAGE_KEY);
+      const stored = readMobileStorage(CREDENTIAL_STORAGE_KEY);
       if (stored) {
         setCredentials({ ...emptyCredentials, ...JSON.parse(stored) });
       }
@@ -658,11 +650,7 @@ export default function AndroidPreviewPage() {
   }, []);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(CREDENTIAL_STORAGE_KEY, JSON.stringify(credentials));
-    } catch (_error) {
-      // Mobile private browsing can block localStorage; the UI remains usable for this session.
-    }
+    writeMobileStorage(CREDENTIAL_STORAGE_KEY, JSON.stringify(credentials));
   }, [credentials]);
 
   useEffect(() => {
@@ -1062,7 +1050,7 @@ function CollectScreen({
 
   useEffect(() => {
     try {
-      const stored = window.localStorage.getItem(COLLECTION_SCHEDULE_STORAGE_KEY);
+      const stored = readMobileStorage(COLLECTION_SCHEDULE_STORAGE_KEY);
       if (!stored) {
         return;
       }
@@ -1101,11 +1089,7 @@ function CollectScreen({
       platform,
       scheduleMessage
     };
-    try {
-      window.localStorage.setItem(COLLECTION_SCHEDULE_STORAGE_KEY, JSON.stringify(payload));
-    } catch (_error) {
-      // Some mobile browsers block storage; the active in-memory schedule still runs while open.
-    }
+    writeMobileStorage(COLLECTION_SCHEDULE_STORAGE_KEY, JSON.stringify(payload));
   }, [
     autoEnabled,
     intervalMinutes,
