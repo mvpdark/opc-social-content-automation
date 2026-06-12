@@ -104,6 +104,8 @@ const CREDENTIAL_STORAGE_KEY = "opc_workspace_credentials_v1";
 const COLLECTION_SCHEDULE_STORAGE_KEY = "opc_mobile_collection_schedule_v1";
 const MOBILE_LAST_CONTENT_STORAGE_KEY = "opc_mobile_last_generated_content_v1";
 const MOBILE_LAST_COVER_STORAGE_KEY = "opc_mobile_last_generated_cover_v1";
+const MOBILE_PAPER_TEXTURE = "/mobile-assets/paper-texture.png";
+const MOBILE_COLLECTION_COLLAGE = "/mobile-assets/collection-collage.png";
 
 const emptyCredentials: CredentialSettings = {
   draftApiKey: "",
@@ -620,60 +622,65 @@ export default function AndroidPreviewPage() {
 
   if (!authLoaded || !mobileAccount) {
     return (
-      <main className="min-h-[100dvh] bg-[#dceee7] px-0 py-0 text-ink sm:px-6 sm:py-6">
-        <div className="relative mx-auto h-[100dvh] max-w-[430px] overflow-hidden bg-[#f6fbf6] shadow-soft sm:h-[calc(100dvh-48px)] sm:min-h-[680px] sm:rounded-[28px] sm:border sm:border-white/80">
-          <div className="flex h-full flex-col">
-            <StatusBar />
-            <LoginScreen
-              loading={!authLoaded}
-              onLogin={login}
-            />
-          </div>
-        </div>
-      </main>
+      <MobileShell>
+        <StatusBar />
+        <LoginScreen
+          loading={!authLoaded}
+          onLogin={login}
+        />
+      </MobileShell>
     );
   }
 
   return (
-    <main className="min-h-[100dvh] bg-[#dceee7] px-0 py-0 text-ink sm:px-6 sm:py-6">
-      <div className="relative mx-auto h-[100dvh] max-w-[430px] overflow-hidden bg-[#f6fbf6] shadow-soft sm:h-[calc(100dvh-48px)] sm:min-h-[680px] sm:rounded-[28px] sm:border sm:border-white/80">
-        <div className="flex h-full flex-col">
-          <StatusBar />
-          <MobileHeader
-            activeTab={activeTab}
-            onNotify={() => setStatus("暂无新通知，发布前确认和安全规则仍保持开启。")}
-          />
-          <section className="min-h-0 flex-1 overflow-y-auto px-3 pb-[calc(96px+env(safe-area-inset-bottom))] pt-3 sm:px-4">
-            <div
-              className="mb-3 rounded-md border border-[#cce3d7] bg-white/90 px-3 py-2 text-xs font-medium leading-5 text-ink"
-              data-testid="mobile-status"
-              role="status"
-            >
-              {status}
-            </div>
-            <div hidden={activeTab !== "home"}>
-              <HomeScreen onAction={setStatus} onChangeTab={openTab} />
-            </div>
-            <div hidden={activeTab !== "collect"}>
-              <CollectScreen credentials={credentials} onAction={setStatus} />
-            </div>
-            <div hidden={activeTab !== "create"}>
-              <CreateScreen credentials={credentials} onAction={setStatus} />
-            </div>
-            <div hidden={activeTab !== "settings"}>
-              <SettingsScreen
-                credentials={credentials}
-                mobileAccount={mobileAccount}
-                onAction={setStatus}
-                onCredentialsChange={setCredentials}
-                onLogout={logout}
-                onProviderStatusesChange={setProviderStatuses}
-                providerStatuses={providerStatuses}
-              />
-            </div>
-          </section>
-          <BottomNav activeTab={activeTab} onChange={openTab} />
+    <MobileShell>
+      <StatusBar />
+      <MobileHeader
+        activeTab={activeTab}
+        onNotify={() => setStatus("暂无新通知，发布前确认和安全规则仍保持开启。")}
+      />
+      <section className="min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(104px+env(safe-area-inset-bottom))] pt-4">
+        <div
+          className="mb-4 rounded-[18px] border border-white/70 bg-white/78 px-3.5 py-2.5 text-xs font-semibold leading-5 text-ink shadow-[0_10px_30px_rgba(27,58,48,0.08)] backdrop-blur"
+          data-testid="mobile-status"
+          role="status"
+        >
+          {status}
         </div>
+        <div hidden={activeTab !== "home"}>
+          <HomeScreen onAction={setStatus} onChangeTab={openTab} />
+        </div>
+        <div hidden={activeTab !== "collect"}>
+          <CollectScreen credentials={credentials} onAction={setStatus} />
+        </div>
+        <div hidden={activeTab !== "create"}>
+          <CreateScreen credentials={credentials} onAction={setStatus} />
+        </div>
+        <div hidden={activeTab !== "settings"}>
+          <SettingsScreen
+            credentials={credentials}
+            mobileAccount={mobileAccount}
+            onAction={setStatus}
+            onCredentialsChange={setCredentials}
+            onLogout={logout}
+            onProviderStatusesChange={setProviderStatuses}
+            providerStatuses={providerStatuses}
+          />
+        </div>
+      </section>
+      <BottomNav activeTab={activeTab} onChange={openTab} />
+    </MobileShell>
+  );
+}
+
+function MobileShell({ children }: { children: ReactNode }) {
+  return (
+    <main className="min-h-[100dvh] bg-[#d8e6dc] px-0 py-0 text-ink sm:px-6 sm:py-6">
+      <div
+        className="relative mx-auto h-[100dvh] max-w-[430px] overflow-hidden bg-[#f8f5ec] bg-cover shadow-[0_24px_70px_rgba(20,48,41,0.18)] sm:h-[calc(100dvh-48px)] sm:min-h-[680px] sm:rounded-[30px] sm:border sm:border-white/80"
+        style={{ backgroundImage: `url(${MOBILE_PAPER_TEXTURE})` }}
+      >
+        <div className="flex h-full flex-col">{children}</div>
       </div>
     </main>
   );
@@ -728,18 +735,18 @@ function LoginScreen({
   }
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col justify-center px-5 pb-[calc(24px+env(safe-area-inset-bottom))] pt-3">
-      <div className="mb-8">
+    <section className="flex min-h-0 flex-1 flex-col justify-center px-6 pb-[calc(26px+env(safe-area-inset-bottom))] pt-3">
+      <div className="mb-9">
         <img
           alt=""
-          className="h-12 w-12 rounded-md object-cover shadow-[0_12px_28px_rgba(37,99,235,0.18)]"
+          className="h-14 w-14 rounded-[18px] object-cover shadow-[0_18px_36px_rgba(24,64,52,0.18)]"
           src="/app-icon.png"
         />
-        <div className="mt-5 text-xs font-semibold text-moss">OPC Mobile</div>
-        <h1 className="mt-1 text-[30px] font-semibold leading-9 tracking-normal text-ink">
+        <div className="mt-6 text-xs font-black text-moss">OPC Mobile</div>
+        <h1 className="mt-1 text-[34px] font-black leading-10 tracking-normal text-ink">
           登录手机工作台
         </h1>
-        <p className="mt-3 text-sm leading-6 text-muted">
+        <p className="mt-3 max-w-[300px] text-sm font-medium leading-6 text-muted">
           请输入分配给你的账号和密码。
         </p>
       </div>
@@ -747,7 +754,7 @@ function LoginScreen({
       <form className="space-y-3" data-testid="mobile-login-form" onSubmit={submitLogin}>
         <label className="block">
           <span className="text-xs font-semibold text-muted">账号</span>
-          <div className="mt-2 flex h-12 items-center gap-2 rounded-md border border-[#cce3d7] bg-white px-3">
+          <div className="mt-2 flex h-[52px] items-center gap-2 rounded-[16px] border border-white/75 bg-white/88 px-3.5 shadow-[0_12px_30px_rgba(31,58,49,0.08)]">
             <UserRound className="h-4 w-4 shrink-0 text-muted" />
             <input
               autoComplete="username"
@@ -762,7 +769,7 @@ function LoginScreen({
 
         <label className="block">
           <span className="text-xs font-semibold text-muted">密码</span>
-          <div className="mt-2 flex h-12 items-center gap-2 rounded-md border border-[#cce3d7] bg-white px-3">
+          <div className="mt-2 flex h-[52px] items-center gap-2 rounded-[16px] border border-white/75 bg-white/88 px-3.5 shadow-[0_12px_30px_rgba(31,58,49,0.08)]">
             <LockKeyhole className="h-4 w-4 shrink-0 text-muted" />
             <input
               autoComplete="current-password"
@@ -787,7 +794,7 @@ function LoginScreen({
         ) : null}
 
         <button
-          className="flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-md bg-ink text-sm font-semibold text-paper active:scale-[0.99] disabled:opacity-60"
+          className="flex h-[52px] w-full touch-manipulation items-center justify-center gap-2 rounded-[18px] bg-[#161817] text-sm font-black text-white shadow-[0_16px_34px_rgba(22,24,23,0.20)] active:scale-[0.99] disabled:opacity-60"
           data-testid="mobile-login-submit"
           disabled={busy}
           type="submit"
@@ -802,7 +809,7 @@ function LoginScreen({
 
 function StatusBar() {
   return (
-    <div className="flex h-8 items-center justify-between px-5 text-[11px] font-semibold text-ink">
+    <div className="flex h-8 items-center justify-between px-5 text-[11px] font-black text-ink">
       <span>9:41</span>
       <span>5G  82%</span>
     </div>
@@ -818,11 +825,11 @@ function MobileHeader({ activeTab, onNotify }: { activeTab: MobileTab; onNotify:
   };
 
   return (
-    <header className="border-b border-[#d6e8df] bg-white/90 px-4 pb-3 pt-2 backdrop-blur">
+    <header className="border-b border-white/60 bg-[#fbf8ef]/78 px-4 pb-3 pt-2 backdrop-blur-xl">
       <div className="flex items-center justify-between gap-3">
         <button
           aria-label="返回 PC 工作台"
-          className="flex h-10 w-10 shrink-0 touch-manipulation items-center justify-center rounded-md border border-[#d6e8df] bg-[#f6fbf6] text-ink active:scale-[0.98]"
+          className="flex h-10 w-10 shrink-0 touch-manipulation items-center justify-center rounded-[16px] border border-white/70 bg-white/82 text-ink shadow-[0_10px_24px_rgba(28,54,45,0.08)] active:scale-[0.98]"
           onClick={() => {
             window.location.href = getPcReturnHref();
           }}
@@ -831,14 +838,14 @@ function MobileHeader({ activeTab, onNotify }: { activeTab: MobileTab; onNotify:
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div className="min-w-0 flex-1">
-          <div className="text-[11px] font-semibold text-moss">
+          <div className="text-[11px] font-black text-moss">
             OPC Mobile
           </div>
-          <h1 className="truncate text-lg font-semibold leading-6">{titles[activeTab]}</h1>
+          <h1 className="truncate text-[22px] font-black leading-7">{titles[activeTab]}</h1>
         </div>
         <button
           aria-label="查看通知状态"
-          className="flex h-10 w-10 shrink-0 touch-manipulation items-center justify-center rounded-md border border-[#d6e8df] bg-[#f6fbf6] text-ink active:scale-[0.98]"
+          className="flex h-10 w-10 shrink-0 touch-manipulation items-center justify-center rounded-[16px] border border-white/70 bg-white/82 text-ink shadow-[0_10px_24px_rgba(28,54,45,0.08)] active:scale-[0.98]"
           onClick={onNotify}
           title="通知状态"
           type="button"
@@ -859,22 +866,27 @@ function HomeScreen({
 }) {
   return (
     <div className="space-y-4">
-      <section className="rounded-md bg-ink p-4 text-paper">
-        <div className="flex items-start justify-between gap-3">
+      <section className="relative overflow-hidden rounded-[26px] bg-[#171a18] p-5 text-white shadow-[0_22px_46px_rgba(20,36,31,0.24)]">
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 bottom-0 h-32 bg-cover bg-center opacity-30"
+          style={{ backgroundImage: `url(${MOBILE_COLLECTION_COLLAGE})` }}
+        />
+        <div className="relative flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-xs text-white/70">今天优先级</div>
-            <h2 className="mt-1 text-[22px] font-semibold leading-7">先采集，再生成</h2>
-            <p className="mt-2 text-sm leading-6 text-white/75">
+            <div className="text-xs font-bold text-white/70">今天优先级</div>
+            <h2 className="mt-2 text-[28px] font-black leading-8">先采集，再生成</h2>
+            <p className="mt-3 max-w-[250px] text-sm font-medium leading-6 text-white/76">
               当前适合补充高赞图文参考，然后启动一篇硕升博草稿。
             </p>
           </div>
-          <div className="rounded-md bg-white/12 px-3 py-2 text-center">
-            <div className="text-2xl font-semibold">3</div>
+          <div className="rounded-[18px] bg-white/12 px-3.5 py-2.5 text-center shadow-inner">
+            <div className="text-3xl font-black">3</div>
             <div className="text-[11px] text-white/65">待处理</div>
           </div>
         </div>
         <button
-          className="mt-4 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-md bg-white text-sm font-semibold text-ink active:scale-[0.99]"
+          className="relative mt-6 flex h-[52px] w-full touch-manipulation items-center justify-center gap-2 rounded-[18px] bg-white text-sm font-black text-ink shadow-[0_12px_28px_rgba(0,0,0,0.16)] active:scale-[0.99]"
           onClick={() => onChangeTab("create", "已进入创作预览，手机端按钮现在可直接操作。")}
           type="button"
         >
@@ -1209,11 +1221,29 @@ function CollectScreen({
 
   return (
     <div className="space-y-4">
+      <section className="overflow-hidden rounded-[26px] border border-white/70 bg-white/82 shadow-[0_18px_42px_rgba(31,58,49,0.10)]">
+        <div
+          aria-hidden="true"
+          className="h-32 bg-cover bg-center"
+          style={{ backgroundImage: `url(${MOBILE_COLLECTION_COLLAGE})` }}
+        />
+        <div className="px-4 pb-4 pt-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-xs font-black text-moss">自动采集</div>
+              <h2 className="mt-1 text-xl font-black leading-6">把高赞参考变成素材池</h2>
+            </div>
+            <span className="rounded-[12px] bg-[#ff2442] px-3 py-1.5 text-[11px] font-black text-white">
+              {autoEnabled ? "运行中" : "待开启"}
+            </span>
+          </div>
+        </div>
+      </section>
       <MobilePanel
         title="定时自动采集"
         action={<span className="text-xs font-semibold text-moss">自动获取</span>}
       >
-        <label className="mb-3 flex items-start gap-3 rounded-md border border-[#d6e8df] bg-white px-3 py-3 text-sm">
+        <label className="mb-3 flex items-start gap-3 rounded-[18px] border border-white/75 bg-[#f9fbf6] px-3.5 py-3 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
           <input
             checked={autoEnabled}
             className="mt-1 h-4 w-4"
@@ -1842,6 +1872,35 @@ function CreateScreen({
 
   return (
     <div className="space-y-4">
+      <section className="relative overflow-hidden rounded-[26px] bg-[#161817] p-5 text-white shadow-[0_22px_48px_rgba(22,24,23,0.22)]">
+        <div
+          aria-hidden="true"
+          className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-[#ff2442]/24 blur-2xl"
+        />
+        <div className="relative">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-xs font-black text-white/65">一键生产</div>
+              <h2 className="mt-1 text-[26px] font-black leading-8">撰稿 + 封面图</h2>
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-white/12">
+              <Sparkles className="h-5 w-5 text-white" />
+            </div>
+          </div>
+          <div className="mt-5 rounded-[18px] bg-white/10 p-3">
+            <div className="flex items-center justify-between text-xs font-bold text-white/70">
+              <span>{busy ? progressLabel : generatedContent ? "最近草稿已就绪" : "等待开始"}</span>
+              <span>{busy || progressPercent === 100 ? `${progressPercent}%` : "0%"}</span>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/16">
+              <div
+                className="h-full rounded-full bg-[#ff2442] transition-all duration-500"
+                style={{ width: `${busy || progressPercent === 100 ? progressPercent : 0}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
       <MobilePanel
         title="手机端生成"
         action={<span className="text-xs font-semibold text-moss">生成入口</span>}
@@ -1927,7 +1986,7 @@ function CreateScreen({
         </label>
         <button
           aria-label="一键完成撰稿和封面图"
-          className="mt-3 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-md bg-ink text-sm font-semibold text-paper active:scale-[0.99] disabled:opacity-60"
+          className="mt-4 flex h-[54px] w-full touch-manipulation items-center justify-center gap-2 rounded-[20px] bg-[#ff2442] text-sm font-black text-white shadow-[0_16px_34px_rgba(255,36,66,0.22)] active:scale-[0.99] disabled:opacity-60"
           data-testid="mobile-generate-draft"
           disabled={busy}
           onClick={generateDraftAndCover}
@@ -1942,11 +2001,11 @@ function CreateScreen({
         </button>
         {busy || progressPercent === 100 || progressLabel === "生成失败" ? (
           <div className="mt-3" data-testid="mobile-generation-progress">
-            <div className="h-2 overflow-hidden rounded-full bg-[#d6e8df]">
+            <div className="h-2 overflow-hidden rounded-full bg-[#eadfd6]">
               <div
                 className={[
                   "h-full rounded-full transition-all duration-500",
-                  progressLabel === "生成失败" ? "bg-coral" : "bg-moss"
+                  progressLabel === "生成失败" ? "bg-coral" : "bg-[#ff2442]"
                 ].join(" ")}
                 style={{ width: `${progressPercent}%` }}
               />
@@ -2129,8 +2188,37 @@ function SettingsScreen({
 
   return (
     <div className="space-y-4">
+      <section className="rounded-[26px] border border-white/70 bg-white/82 p-5 shadow-[0_18px_42px_rgba(31,58,49,0.10)] backdrop-blur">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-xs font-black text-moss">当前账号</div>
+            <h2 className="mt-1 text-[24px] font-black leading-7">{mobileAccount}</h2>
+            <p className="mt-2 text-sm font-medium leading-6 text-muted">默认服务 Key 已绑定，生成链路可直接使用。</p>
+          </div>
+          <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-[#e7f2ea] text-moss">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {[
+            ["撰稿", providerBindings.draft],
+            ["图片", providerBindings.image],
+            ["改写", providerBindings.rewrite]
+          ].map(([label, bound]) => (
+            <div
+              className={`rounded-[16px] px-3 py-2 text-center text-xs font-black ${
+                bound ? "bg-[#e7f2ea] text-moss" : "bg-[#fff3d8] text-[#8a5a00]"
+              }`}
+              key={String(label)}
+            >
+              <div>{label}</div>
+              <div className="mt-1 text-[10px]">{bound ? "已绑定" : "待配置"}</div>
+            </div>
+          ))}
+        </div>
+      </section>
       <MobilePanel title="登录状态" action={mobileAccount}>
-        <div className="flex items-center justify-between gap-3 rounded-md border border-[#d6e8df] bg-white px-3 py-3">
+        <div className="flex items-center justify-between gap-3 rounded-[18px] border border-white/70 bg-[#f9fbf6] px-3.5 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
           <div className="min-w-0">
             <div className="text-sm font-semibold text-ink">{mobileAccount}</div>
             <div className="mt-1 text-xs text-muted">当前工作台无需登录验证；需要时可在设置中开启。</div>
@@ -2237,7 +2325,7 @@ function BottomNav({ activeTab, onChange }: { activeTab: MobileTab; onChange: (t
   return (
     <nav
       aria-label="安卓端主导航"
-      className="absolute bottom-0 left-0 right-0 z-20 border-t border-[#d6e8df] bg-white/95 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur sm:rounded-b-[28px]"
+      className="absolute bottom-0 left-0 right-0 z-20 border-t border-white/70 bg-[#fffaf1]/88 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl sm:rounded-b-[30px]"
     >
       <div className="grid grid-cols-4 gap-1">
         {bottomTabs.map((tab) => {
@@ -2248,8 +2336,8 @@ function BottomNav({ activeTab, onChange }: { activeTab: MobileTab; onChange: (t
               aria-pressed={active}
               key={tab.id}
               className={[
-                "flex min-h-[52px] touch-manipulation flex-col items-center justify-center gap-1 rounded-md text-[11px] font-semibold active:scale-[0.98]",
-                active ? "bg-[#e5f2ec] text-moss" : "text-muted active:bg-[#eef7f2]"
+                "flex min-h-[54px] touch-manipulation flex-col items-center justify-center gap-1 rounded-[18px] text-[11px] font-black active:scale-[0.98]",
+                active ? "bg-[#161817] text-white shadow-[0_10px_24px_rgba(22,24,23,0.16)]" : "text-muted active:bg-white/80"
               ].join(" ")}
               data-testid={`mobile-tab-${tab.id}`}
               onClick={() => onChange(tab.id)}
@@ -2267,11 +2355,11 @@ function BottomNav({ activeTab, onChange }: { activeTab: MobileTab; onChange: (t
 
 function MobilePanel({ action, children, title }: { action?: ReactNode; children: ReactNode; title: string }) {
   return (
-    <section className="rounded-md border border-[#d6e8df] bg-white/92 p-4 shadow-panel">
+    <section className="rounded-[24px] border border-white/70 bg-white/82 p-4 shadow-[0_16px_40px_rgba(31,58,49,0.09)] backdrop-blur">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold">{title}</h2>
+        <h2 className="text-[15px] font-black">{title}</h2>
         {typeof action === "string" ? (
-          <span className="text-xs font-semibold text-moss">{action}</span>
+          <span className="rounded-[12px] bg-[#e7f2ea] px-2.5 py-1 text-xs font-black text-moss">{action}</span>
         ) : (
           action
         )}
@@ -2295,19 +2383,19 @@ function Metric({
   value: string;
 }) {
   const toneClass = {
-    blue: "border-steel/30 bg-steel/10 text-steel",
-    coral: "border-coral/30 bg-coral/10 text-coral",
-    green: "border-moss/30 bg-moss/10 text-moss"
+    blue: "bg-[#edf5f8] text-steel",
+    coral: "bg-[#fff1ec] text-coral",
+    green: "bg-[#e7f2ea] text-moss"
   };
   return (
     <button
-      className={["min-h-[76px] touch-manipulation rounded-md border p-3 text-left active:scale-[0.98]", toneClass[tone]].join(" ")}
+      className={["min-h-[82px] touch-manipulation rounded-[20px] border border-white/70 p-3 text-left shadow-[0_10px_26px_rgba(31,58,49,0.07)] active:scale-[0.98]", toneClass[tone]].join(" ")}
       data-testid={testId}
       onClick={onClick}
       type="button"
     >
-      <div className="text-xl font-semibold">{value}</div>
-      <div className="mt-1 text-[11px] font-medium">{label}</div>
+      <div className="text-2xl font-black">{value}</div>
+      <div className="mt-1 text-[11px] font-bold">{label}</div>
     </button>
   );
 }
@@ -2327,17 +2415,17 @@ function TaskRow({
 }) {
   return (
     <button
-      className="flex min-h-[64px] w-full touch-manipulation items-center gap-3 rounded-md border border-[#d6e8df] bg-white px-3 py-3 text-left active:scale-[0.99] active:border-moss"
+      className="flex min-h-[68px] w-full touch-manipulation items-center gap-3 rounded-[20px] border border-white/70 bg-[#fffdf7]/88 px-3 py-3 text-left shadow-[0_10px_28px_rgba(31,58,49,0.07)] active:scale-[0.99] active:border-moss"
       data-testid={testId}
       onClick={onClick}
       type="button"
     >
-      <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[#e5f2ec] text-moss">
+      <div className="flex h-10 w-10 items-center justify-center rounded-[16px] bg-[#e7f2ea] text-moss">
         {icon}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-semibold">{label}</div>
-        <div className="text-xs text-muted">{state}</div>
+        <div className="text-sm font-black">{label}</div>
+        <div className="mt-0.5 text-xs font-medium text-muted">{state}</div>
       </div>
       <ChevronRight className="h-4 w-4 text-muted" />
     </button>
@@ -2359,16 +2447,16 @@ function StepTile({
 }) {
   return (
     <button
-      className="min-h-[116px] touch-manipulation rounded-md border border-[#d6e8df] bg-[#f6fbf6] p-3 text-left active:scale-[0.98] active:border-moss"
+      className="min-h-[118px] touch-manipulation rounded-[20px] border border-white/70 bg-[#f9fbf6]/90 p-3 text-left shadow-[0_10px_26px_rgba(31,58,49,0.07)] active:scale-[0.98] active:border-moss"
       data-testid={testId}
       onClick={onClick}
       type="button"
     >
-      <div className="flex h-8 w-8 items-center justify-center rounded-md bg-white text-steel">
+      <div className="flex h-9 w-9 items-center justify-center rounded-[14px] bg-white text-steel shadow-[0_8px_18px_rgba(31,58,49,0.08)]">
         {icon}
       </div>
-      <div className="mt-3 text-sm font-semibold">{label}</div>
-      <div className="mt-1 text-xs text-muted">{state}</div>
+      <div className="mt-3 text-sm font-black">{label}</div>
+      <div className="mt-1 text-xs font-medium text-muted">{state}</div>
     </button>
   );
 }
@@ -2388,8 +2476,8 @@ function ModeChip({
     <button
       aria-pressed={active}
       className={[
-        "min-h-11 touch-manipulation rounded-md border px-2 text-sm font-semibold active:scale-[0.98]",
-        active ? "border-moss bg-[#e5f2ec] text-moss" : "border-[#d6e8df] bg-white text-muted active:bg-[#eef7f2]"
+        "min-h-11 touch-manipulation rounded-[16px] border px-2 text-sm font-black active:scale-[0.98]",
+        active ? "border-[#161817] bg-[#161817] text-white shadow-[0_10px_24px_rgba(22,24,23,0.13)]" : "border-white/75 bg-white/86 text-muted active:bg-white"
       ].join(" ")}
       data-testid={testId}
       onClick={onClick}
