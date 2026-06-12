@@ -398,7 +398,7 @@ export const connectionStatuses = [
 
 export const externalSkillCandidates = [
   {
-    title: "XiaohongshuSkills",
+    title: "小红书运营能力包",
     source: "white0dew/XiaohongshuSkills",
     href: "https://github.com/white0dew/XiaohongshuSkills",
     module: "采集 / 发布流程参考",
@@ -409,7 +409,7 @@ export const externalSkillCandidates = [
     icon: Search
   },
   {
-    title: "Guizang Social Card Skill",
+    title: "社媒卡片生成参考",
     source: "op7418/guizang-social-card-skill",
     href: "https://github.com/op7418/guizang-social-card-skill",
     module: "小红书组图 / 封面",
@@ -420,7 +420,7 @@ export const externalSkillCandidates = [
     icon: LayoutTemplate
   },
   {
-    title: "xhs-cover-skill",
+    title: "小红书封面能力包",
     source: "Vivixiao980/xhs-cover-skill",
     href: "https://github.com/Vivixiao980/xhs-cover-skill",
     module: "封面生成",
@@ -431,7 +431,7 @@ export const externalSkillCandidates = [
     icon: Image
   },
   {
-    title: "xiaohongshu-ops-skill",
+    title: "小红书运营流程参考",
     source: "Xiangyu-CAS/xiaohongshu-ops-skill",
     href: "https://github.com/Xiangyu-CAS/xiaohongshu-ops-skill",
     module: "选题 / 知识库 / 复盘",
@@ -442,7 +442,7 @@ export const externalSkillCandidates = [
     icon: Radar
   },
   {
-    title: "XHS-Downloader",
+    title: "小红书链接归档工具",
     source: "JoeanAmier/XHS-Downloader",
     href: "https://github.com/JoeanAmier/XHS-Downloader",
     module: "链接解析 / 素材归档",
@@ -475,7 +475,7 @@ export const externalSkillCandidates = [
     icon: Search
   },
   {
-    title: "xiaohongshu-text-image",
+    title: "小红书图文卡片生成",
     source: "buptweixin/xiaohongshu_skills",
     href: "https://github.com/buptweixin/xiaohongshu_skills",
     module: "封面 / 轮播卡片",
@@ -486,7 +486,7 @@ export const externalSkillCandidates = [
     icon: LayoutTemplate
   },
   {
-    title: "xhs-cover-mcp",
+    title: "小红书封面候选服务",
     source: "xwchris/xhs-cover-mcp",
     href: "https://github.com/xwchris/xhs-cover-mcp",
     module: "封面候选服务",
@@ -497,7 +497,7 @@ export const externalSkillCandidates = [
     icon: Image
   },
   {
-    title: "xhs-skill",
+    title: "小红书发布安全参考",
     source: "leeguooooo/xhs-skill",
     href: "https://github.com/leeguooooo/xhs-skill",
     module: "发布门禁 / 登录流程参考",
@@ -508,7 +508,7 @@ export const externalSkillCandidates = [
     icon: ShieldCheck
   },
   {
-    title: "139 Xiaohongshu Skills",
+    title: "小红书运营技能库",
     source: "vivy-yi/xiaohongshu-skills",
     href: "https://github.com/vivy-yi/xiaohongshu-skills",
     module: "运营技能库参考",
