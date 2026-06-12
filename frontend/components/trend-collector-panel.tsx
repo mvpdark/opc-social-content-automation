@@ -481,7 +481,7 @@ export function TrendCollectorPanel({
         })
       });
       if (!response.ok) {
-        throw new Error("开始采集失败；如果已恢复正式登录，请检查登录验证。");
+        throw new Error("开始采集失败；如果已开启访问保护，请检查设置。");
       }
       const data = (await response.json()) as TrendCollectionJob;
       setActiveJobId(data.id);
@@ -690,13 +690,13 @@ export function TrendCollectorPanel({
           </div>
 
           <div className="glass-subtle mt-3 rounded-md border px-3 py-3">
-            <div className={fieldLabelClass}>登录验证</div>
+            <div className={fieldLabelClass}>访问保护</div>
             <div className="mt-2 flex items-center justify-between gap-3">
               <span className="text-sm font-medium text-ink">
-                {workspaceToken ? "登录验证已配置" : "无需登录验证"}
+                {workspaceToken ? "访问保护已开启" : "当前未开启"}
               </span>
               <button
-                aria-label="打开设置查看登录验证"
+                aria-label="打开设置查看访问保护"
                 className="glass-control rounded-md border px-2 py-1 text-xs font-medium text-ink"
                 onClick={onOpenSettings}
                 type="button"
