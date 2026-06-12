@@ -1224,7 +1224,7 @@ function CollectScreen({
       setLastJobId(data.id);
       setLastRunAt(startedAt.toISOString());
       setActiveCollectionJobId(data.id);
-      const message = `${runLabel}任务已创建，${formatCollectionJobStatus(data, "mobile")}${
+      const message = `${runLabel}已开始，${formatCollectionJobStatus(data, "mobile")}${
         nextDate ? ` 下次运行：${formatScheduleTime(nextDate.toISOString())}。` : ""
       }`;
       setScheduleMessage(message);
@@ -1350,7 +1350,7 @@ function CollectScreen({
           <span>
             <span className="block font-semibold">启用定时采集</span>
             <span className="mt-1 block text-xs leading-5 text-muted">
-              页面保持打开时会按间隔自动创建采集任务，不参与一键生成。
+              页面保持打开时会按间隔自动开始采集，不参与一键生成。
             </span>
           </span>
         </label>
@@ -1432,7 +1432,7 @@ function CollectScreen({
           <div>下次运行：{formatScheduleTime(nextRunAt)}</div>
           <div>
             上次运行：{formatScheduleTime(lastRunAt)}
-            {activeCollectionJobId ? "，正在追踪进度" : lastJobId ? "，已创建采集任务" : ""}
+            {activeCollectionJobId ? "，正在追踪进度" : lastJobId ? "，已开始" : ""}
           </div>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2">
