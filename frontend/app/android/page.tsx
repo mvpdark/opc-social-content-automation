@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   ArrowLeft,
   Bell,
@@ -15,6 +15,8 @@ import {
   Heart,
   Image,
   Layers3,
+  LockKeyhole,
+  LogOut,
   Loader2,
   MessageCircle,
   PenLine,
@@ -26,7 +28,8 @@ import {
   Share2,
   ShieldCheck,
   Sparkles,
-  Trash2
+  Trash2,
+  UserRound
 } from "lucide-react";
 
 import { PlatformIcon, PlatformLabel } from "@/components/platform-icon";
@@ -39,6 +42,7 @@ import {
 
 type MobileTab = "home" | "collect" | "create" | "settings";
 type MobilePlatform = "douyin" | "xiaohongshu";
+type MobileAccount = "admin" | "admin1" | "admin2";
 
 type CredentialSettings = {
   draftApiKey: string;
@@ -89,6 +93,7 @@ type DraftPreviewState = {
 };
 
 const API_BASE = getApiBase();
+const MOBILE_AUTH_STORAGE_KEY = "opc_mobile_auth_v1";
 const CREDENTIAL_STORAGE_KEY = "opc_workspace_credentials_v1";
 const COLLECTION_SCHEDULE_STORAGE_KEY = "opc_mobile_collection_schedule_v1";
 const MOBILE_LAST_CONTENT_STORAGE_KEY = "opc_mobile_last_generated_content_v1";
@@ -100,6 +105,12 @@ const emptyCredentials: CredentialSettings = {
   rewriteApiKey: "",
   workspaceToken: ""
 };
+
+const mobileLoginAccounts: MobileAccount[] = ["admin", "admin1", "admin2"];
+
+function isMobileAccount(value: string): value is MobileAccount {
+  return mobileLoginAccounts.includes(value as MobileAccount);
+}
 
 const xhsMobileDraftTone = [
   "小红书女性向图文风格，像学姐认真提醒，温柔、轻松、真实、有陪伴感，不要像官方说明文",
@@ -593,11 +604,47 @@ function getPcReturnHref() {
   return "/";
 }
 
+function readStoredMobileAccount() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const stored = window.localStorage.getItem(MOBILE_AUTH_STORAGE_KEY);
+    return stored && isMobileAccount(stored) ? stored : null;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function saveStoredMobileAccount(account: MobileAccount) {
+  try {
+    window.localStorage.setItem(MOBILE_AUTH_STORAGE_KEY, account);
+  } catch (_error) {
+    // 登录状态只用于当前手机端测试门禁；本机存储不可用时保持本次会话可用。
+  }
+}
+
+function clearStoredMobileAccount() {
+  try {
+    window.localStorage.removeItem(MOBILE_AUTH_STORAGE_KEY);
+  } catch (_error) {
+    // Ignore storage failures.
+  }
+}
+
 export default function AndroidPreviewPage() {
   const [activeTab, setActiveTab] = useState<MobileTab>("home");
   const [status, setStatus] = useState("手机端操作已就绪");
   const [credentials, setCredentials] = useState<CredentialSettings>(emptyCredentials);
+  const [mobileAccount, setMobileAccount] = useState<MobileAccount | null>(null);
+  const [authLoaded, setAuthLoaded] = useState(false);
   const [providerStatuses, setProviderStatuses] = useState<ProviderStatusItem[]>([]);
+
+  useEffect(() => {
+    setMobileAccount(readStoredMobileAccount());
+    setAuthLoaded(true);
+  }, []);
 
   useEffect(() => {
     try {
@@ -619,6 +666,11 @@ export default function AndroidPreviewPage() {
   }, [credentials]);
 
   useEffect(() => {
+    if (!mobileAccount) {
+      setProviderStatuses([]);
+      return;
+    }
+
     let active = true;
 
     async function loadProviderStatuses() {
@@ -638,11 +690,41 @@ export default function AndroidPreviewPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [mobileAccount]);
 
   function openTab(tab: MobileTab, message = taskActionCopy[tab]) {
     setActiveTab(tab);
     setStatus(message);
+  }
+
+  function login(account: MobileAccount) {
+    saveStoredMobileAccount(account);
+    setMobileAccount(account);
+    setActiveTab("home");
+    setStatus(`已登录：${account}`);
+  }
+
+  function logout() {
+    clearStoredMobileAccount();
+    setMobileAccount(null);
+    setActiveTab("home");
+    setStatus("已退出登录。");
+  }
+
+  if (!authLoaded || !mobileAccount) {
+    return (
+      <main className="min-h-[100dvh] bg-[#dceee7] px-0 py-0 text-ink sm:px-6 sm:py-6">
+        <div className="relative mx-auto h-[100dvh] max-w-[430px] overflow-hidden bg-[#f6fbf6] shadow-soft sm:h-[calc(100dvh-48px)] sm:min-h-[680px] sm:rounded-[28px] sm:border sm:border-white/80">
+          <div className="flex h-full flex-col">
+            <StatusBar />
+            <LoginScreen
+              loading={!authLoaded}
+              onLogin={login}
+            />
+          </div>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -674,8 +756,10 @@ export default function AndroidPreviewPage() {
             <div hidden={activeTab !== "settings"}>
               <SettingsScreen
                 credentials={credentials}
+                mobileAccount={mobileAccount}
                 onAction={setStatus}
                 onCredentialsChange={setCredentials}
+                onLogout={logout}
                 onProviderStatusesChange={setProviderStatuses}
                 providerStatuses={providerStatuses}
               />
@@ -685,6 +769,130 @@ export default function AndroidPreviewPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function LoginScreen({
+  loading,
+  onLogin
+}: {
+  loading: boolean;
+  onLogin: (account: MobileAccount) => void;
+}) {
+  const [account, setAccount] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  function submitLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const normalizedAccount = account.trim();
+
+    if (isMobileAccount(normalizedAccount) && password === normalizedAccount) {
+      setError("");
+      onLogin(normalizedAccount);
+      return;
+    }
+
+    setError("账号或密码不对。可用：admin / admin1 / admin2，密码同账号。");
+  }
+
+  function quickFill(nextAccount: MobileAccount) {
+    setAccount(nextAccount);
+    setPassword(nextAccount);
+    setError("");
+  }
+
+  if (loading) {
+    return (
+      <section className="flex min-h-0 flex-1 items-center justify-center px-6">
+        <div className="flex items-center gap-2 text-sm font-semibold text-muted">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          正在检查登录状态
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="flex min-h-0 flex-1 flex-col justify-center px-5 pb-[calc(24px+env(safe-area-inset-bottom))] pt-3">
+      <div className="mb-8">
+        <div className="flex h-12 w-12 items-center justify-center rounded-md bg-ink text-paper">
+          <LockKeyhole className="h-5 w-5" />
+        </div>
+        <div className="mt-5 text-xs font-semibold text-moss">OPC Mobile</div>
+        <h1 className="mt-1 text-[30px] font-semibold leading-9 tracking-normal text-ink">
+          登录手机工作台
+        </h1>
+        <p className="mt-3 text-sm leading-6 text-muted">
+          测试账号：admin、admin1、admin2，密码同账号。当前只是本机测试门禁，不代表正式服务端权限。
+        </p>
+      </div>
+
+      <form className="space-y-3" data-testid="mobile-login-form" onSubmit={submitLogin}>
+        <label className="block">
+          <span className="text-xs font-semibold text-muted">账号</span>
+          <div className="mt-2 flex h-12 items-center gap-2 rounded-md border border-[#cce3d7] bg-white px-3">
+            <UserRound className="h-4 w-4 shrink-0 text-muted" />
+            <input
+              autoComplete="username"
+              className="min-w-0 flex-1 bg-transparent text-base font-semibold text-ink outline-none"
+              data-testid="mobile-login-account"
+              onChange={(event) => setAccount(event.target.value)}
+              placeholder="admin"
+              value={account}
+            />
+          </div>
+        </label>
+
+        <label className="block">
+          <span className="text-xs font-semibold text-muted">密码</span>
+          <div className="mt-2 flex h-12 items-center gap-2 rounded-md border border-[#cce3d7] bg-white px-3">
+            <LockKeyhole className="h-4 w-4 shrink-0 text-muted" />
+            <input
+              autoComplete="current-password"
+              className="min-w-0 flex-1 bg-transparent text-base font-semibold text-ink outline-none"
+              data-testid="mobile-login-password"
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="同账号"
+              type="password"
+              value={password}
+            />
+          </div>
+        </label>
+
+        {error ? (
+          <div
+            className="rounded-md border border-coral/30 bg-coral/10 px-3 py-2 text-xs font-medium leading-5 text-ink"
+            data-testid="mobile-login-error"
+            role="alert"
+          >
+            {error}
+          </div>
+        ) : null}
+
+        <button
+          className="flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-md bg-ink text-sm font-semibold text-paper active:scale-[0.99]"
+          data-testid="mobile-login-submit"
+          type="submit"
+        >
+          <ShieldCheck className="h-4 w-4" />
+          登录
+        </button>
+      </form>
+
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        {mobileLoginAccounts.map((item) => (
+          <button
+            className="h-10 touch-manipulation rounded-md border border-[#cce3d7] bg-white text-xs font-semibold text-ink active:scale-[0.98]"
+            key={item}
+            onClick={() => quickFill(item)}
+            type="button"
+          >
+            {item}
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -1833,14 +2041,18 @@ function CreateScreen({
 
 function SettingsScreen({
   credentials,
+  mobileAccount,
   onAction,
   onCredentialsChange,
+  onLogout,
   onProviderStatusesChange,
   providerStatuses
 }: {
   credentials: CredentialSettings;
+  mobileAccount: MobileAccount;
   onAction: (message: string) => void;
   onCredentialsChange: (nextCredentials: CredentialSettings) => void;
+  onLogout: () => void;
   onProviderStatusesChange: (nextStatuses: ProviderStatusItem[]) => void;
   providerStatuses: ProviderStatusItem[];
 }) {
@@ -1962,6 +2174,23 @@ function SettingsScreen({
 
   return (
     <div className="space-y-4">
+      <MobilePanel title="登录状态" action={mobileAccount}>
+        <div className="flex items-center justify-between gap-3 rounded-md border border-[#d6e8df] bg-white px-3 py-3">
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-ink">{mobileAccount}</div>
+            <div className="mt-1 text-xs text-muted">测试门禁已通过；正式发布前仍需接入服务端权限。</div>
+          </div>
+          <button
+            className="flex h-10 shrink-0 touch-manipulation items-center gap-2 rounded-md border border-[#d6e8df] bg-[#f6fbf6] px-3 text-xs font-semibold text-ink active:scale-[0.98]"
+            data-testid="mobile-logout"
+            onClick={onLogout}
+            type="button"
+          >
+            <LogOut className="h-4 w-4" />
+            退出
+          </button>
+        </div>
+      </MobilePanel>
       <MobilePanel title="API Key 与令牌" action="手机可配置">
         <p className="mb-3 text-xs leading-5 text-muted">
           凭证保存在当前手机浏览器本机；应用后由后端运行时调用服务，响应不会回显密钥。
