@@ -577,6 +577,7 @@ def validate_content_production_contract() -> int:
         "SVG 渲染",
         "外部命令启动",
         "Windows 打包方式",
+        "许可：{candidate.license}",
         "Bearer token",
         "服务端权限",
         "测试门禁",

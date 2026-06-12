@@ -113,6 +113,22 @@ const externalSkillStatusTone = {
   候选服务: "amber"
 } satisfies Record<(typeof externalSkillCandidates)[number]["status"], keyof typeof pillTone>;
 
+function externalLicenseLabel(license: string) {
+  if (license.includes("GPL")) {
+    return "受限开源";
+  }
+  if (license.includes("MIT")) {
+    return "开放许可";
+  }
+  if (license.includes("托管")) {
+    return "托管服务，许可待确认";
+  }
+  if (license.includes("需确认")) {
+    return "待确认";
+  }
+  return license;
+}
+
 const API_BASE = getApiBase();
 const PC_AUTH_STORAGE_KEY = "opc_pc_auth_v1";
 const CREDENTIAL_STORAGE_KEY = "opc_workspace_credentials_v1";
@@ -3453,7 +3469,7 @@ function ExternalSkillRadarPanel() {
                     {candidate.module}
                   </span>
                   <span className="rounded-md border border-line bg-mist px-2 py-1 text-muted">
-                    许可：{candidate.license}
+                    许可：{externalLicenseLabel(candidate.license)}
                   </span>
                 </div>
                 <p className="mt-3 text-xs leading-5 text-ink/80">{candidate.summary}</p>
