@@ -404,7 +404,7 @@ export const externalSkillCandidates = [
     module: "采集 / 发布流程参考",
     status: "优先试点",
     license: "MIT",
-    summary: "支持检索、详情、发布和评论相关 Skill，适合拆出只读搜索与发布前填充流程。",
+    summary: "支持检索、详情、发布和评论相关能力，适合拆出只读搜索与发布前填充流程。",
     guardrail: "需要真实登录状态和网页定位规则；默认只接只读检索，发布仍需人工确认。",
     icon: Search
   },

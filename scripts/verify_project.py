@@ -527,6 +527,7 @@ def validate_content_production_contract() -> int:
         "登录门槛",
         "自动化模式",
         "Skill/MCP",
+        "相关 Skill",
         "API/MCP",
         "托管 MCP",
         "MCP 形式",
