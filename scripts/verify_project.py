@@ -412,6 +412,9 @@ def validate_content_production_contract() -> int:
     app_shell_text = (ROOT / "frontend" / "components" / "app-shell.tsx").read_text(
         encoding="utf-8"
     )
+    service_error_text = (
+        ROOT / "frontend" / "lib" / "service-error-copy.ts"
+    ).read_text(encoding="utf-8")
     draft_prompt_text = (ROOT / "prompts" / "draft_generation.md").read_text(
         encoding="utf-8"
     )
@@ -689,6 +692,8 @@ def validate_content_production_contract() -> int:
         "优先命令",
         "查看本机环境",
         "服务已连接",
+        "本地服务",
+        "本机/局域网地址",
     ]
     for snippet in stale_gate_snippets:
         total += 1
@@ -701,6 +706,7 @@ def validate_content_production_contract() -> int:
             or snippet in workspace_service_text
             or snippet in dashboard_data_text
             or snippet in app_shell_text
+            or snippet in service_error_text
         ):
             raise SystemExit(f"Stale content production gate still present: {snippet}")
 

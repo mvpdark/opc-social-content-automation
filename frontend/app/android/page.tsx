@@ -271,12 +271,12 @@ async function authenticateMobileLogin(account: string, password: string) {
       };
     }
     if (response.status === 404 || response.status === 405) {
-      throw new Error("登录服务暂未更新，请重启本地服务后再试。");
+      throw new Error("登录服务暂未更新，请重启应用服务后再试。");
     }
     throw new Error("账号或密码不正确。");
   } catch (error) {
     if (error instanceof TypeError) {
-      throw new Error("登录服务暂时不可用，请确认本地服务已启动。");
+      throw new Error("登录服务暂时不可用，请确认应用服务已启动。");
     }
     throw error;
   }
@@ -714,7 +714,7 @@ export default function AndroidPreviewPage() {
         }
       } catch (_error) {
         if (active) {
-          setStatus("本地服务状态暂时读取失败，生成时会继续尝试连接。");
+          setStatus("应用服务状态暂时读取失败，生成时会继续尝试连接。");
         }
       }
     }
@@ -2835,7 +2835,7 @@ function DraftPreviewEditor({
         window.location.hostname.startsWith("192.168.") ||
         window.location.hostname.startsWith("10.");
       const message = isLocalPreview
-        ? "预览链接已复制；当前是本机/局域网地址，外部用户需要部署到公网后才能打开。"
+        ? "预览链接已复制；当前是这台设备或同一网络地址，外部用户需要部署到公网后才能打开。"
         : "预览链接已复制，可以发给别人查看。";
       setXhsExportMessage(message);
       onExportStatus(message);

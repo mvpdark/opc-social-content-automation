@@ -1,6 +1,6 @@
 export function sanitizeServiceErrorMessage(message: string) {
   return message
-    .replace(/Failed to fetch/gi, "服务暂时连接不上，请确认本地服务已启动。")
+    .replace(/Failed to fetch/gi, "服务暂时连接不上，请确认应用服务已启动。")
     .replace(/NetworkError/gi, "网络连接异常，请稍后重试。")
     .replace(/Load failed/gi, "服务加载失败，请稍后重试。")
     .replace(/API\s*Key/gi, "服务密钥")

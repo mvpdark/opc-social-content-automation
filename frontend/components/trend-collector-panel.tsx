@@ -377,7 +377,7 @@ export function TrendCollectorPanel({
       return null;
     }
     if (!response.ok) {
-      throw new Error("无法刷新采集任务状态，请检查本地服务。");
+      throw new Error("无法刷新采集任务状态，请检查应用服务。");
     }
     return (await response.json()) as TrendCollectionJob;
   }
@@ -591,7 +591,7 @@ export function TrendCollectorPanel({
           );
           return;
         }
-        throw new Error(`链接解析服务返回 ${response.status}，请稍后重试或检查本地服务。`);
+        throw new Error(`链接解析服务返回 ${response.status}，请稍后重试或检查应用服务。`);
       }
       const data = (await response.json()) as LinkImportTarget;
       setLinkImportTarget(data);
