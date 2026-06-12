@@ -680,7 +680,11 @@ def validate_content_production_contract() -> int:
         "export async function copyText",
         "export async function tryCopyText",
         "navigator.clipboard?.writeText",
-        "textarea.focus()",
+        "previouslyFocusedElement",
+        "textarea.style.fontSize = \"16px\"",
+        "textarea.style.pointerEvents = \"none\"",
+        "textarea.focus({ preventScroll: true })",
+        "previouslyFocusedElement?.focus({ preventScroll: true })",
         "textarea.setSelectionRange(0, textarea.value.length)",
         'document.execCommand("copy")',
     ]
