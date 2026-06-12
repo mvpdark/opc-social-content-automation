@@ -37,6 +37,11 @@ import { getApiBase, isLocalOrPrivateHostname } from "@/lib/api-base";
 import { resolveAssetUrl } from "@/lib/asset-url";
 import { copyText, tryCopyText } from "@/lib/clipboard";
 import {
+  COLLECTION_JOB_TERMINAL_STATUSES,
+  formatCollectionJobStatus,
+  type CollectionJobStatusSnapshot
+} from "@/lib/collection-job-status";
+import {
   isGeneratedContent,
   isGeneratedImageAsset,
   type GeneratedContent,
@@ -52,7 +57,6 @@ import {
   SERVICE_CONFIG_READ_ERROR,
   sanitizeServiceErrorMessage
 } from "@/lib/service-error-copy";
-import { collectionJobStatusLabel } from "@/lib/status-labels";
 import { formatTagLine } from "@/lib/tags";
 import { renderXhsExpressionText } from "@/lib/xhs-stickers";
 
@@ -91,19 +95,7 @@ type LinkImportTarget = {
   }>;
 };
 
-type MobileCollectionJob = {
-  id: number;
-  status: string;
-  result_summary: {
-    auto_start?: boolean;
-    blocked_candidates?: number;
-    collected_items?: number;
-    operator_wait_seconds?: number;
-    page_title?: string | null;
-    raw_candidates?: number;
-  } | null;
-  error: string | null;
-};
+type MobileCollectionJob = CollectionJobStatusSnapshot;
 
 type DraftPreviewState = {
   body: string;
@@ -124,11 +116,6 @@ const MOBILE_CREATE_CARD_BG = "/mobile-assets/create-card-bg.png";
 const MOBILE_HEADER_ICON_BUTTON_CLASS =
   "flex h-10 w-10 shrink-0 touch-manipulation items-center justify-center rounded-[16px] border border-white/70 bg-white/40 text-ink shadow-[0_10px_26px_rgba(28,54,45,0.10),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-xl active:scale-[0.98]";
 const XHS_COPY_TEXT_ONLY_LABEL = "只复制文案";
-const MOBILE_COLLECTION_TERMINAL_STATUSES = new Set([
-  "completed",
-  "failed",
-  "needs_operator_review"
-]);
 
 const emptyCredentials: CredentialSettings = {
   draftApiKey: "",
@@ -297,40 +284,6 @@ async function readApiError(response: Response, fallback: string) {
     | { detail?: string; message?: string }
     | null;
   return sanitizeServiceErrorMessage(errorBody?.message ?? errorBody?.detail ?? fallback);
-}
-
-function formatMobileCollectionJobStatus(job: MobileCollectionJob) {
-  const summary = job.result_summary;
-  const collected =
-    typeof summary?.collected_items === "number" ? `，已采集 ${summary.collected_items} 条` : "";
-  const diagnostics = [
-    typeof summary?.raw_candidates === "number" ? `原始候选 ${summary.raw_candidates} 条` : "",
-    typeof summary?.blocked_candidates === "number" ? `过滤 ${summary.blocked_candidates} 条` : "",
-    summary?.page_title ? `页面：${summary.page_title}` : ""
-  ].filter(Boolean);
-  const diagnosticText = diagnostics.length ? `（${diagnostics.join("，")}）` : "";
-  const waitText =
-    typeof summary?.operator_wait_seconds === "number"
-      ? `，浏览器等待 ${summary.operator_wait_seconds} 秒`
-      : "";
-  const errorText = job.error ? `；${job.error}` : "";
-
-  if (job.status === "queued") {
-    return `采集任务排队中${collected}，可见浏览器即将打开。`;
-  }
-  if (job.status === "running") {
-    return `采集任务采集中${collected}${waitText}。遇到登录或验证码时，先在浏览器里人工处理。`;
-  }
-  if (job.status === "completed") {
-    return `采集任务已完成${collected}${diagnosticText}。请人工确认来源后再保存知识摘要。`;
-  }
-  if (job.status === "needs_operator_review") {
-    return `采集任务需要人工处理${collected}${diagnosticText}。可能是登录墙、验证码或空结果，处理后可重新运行。${errorText}`;
-  }
-  if (job.status === "failed") {
-    return `采集任务失败${collected}${diagnosticText}${errorText}。可以重新运行一次。`;
-  }
-  return `采集任务状态：${collectionJobStatusLabel(job.status)}${collected}${diagnosticText}${errorText}。`;
 }
 
 function readMobileStorage(key: string) {
@@ -1117,8 +1070,8 @@ function CollectScreen({
         if (cancelled) {
           return;
         }
-        setScheduleMessage(formatMobileCollectionJobStatus(job));
-        if (!MOBILE_COLLECTION_TERMINAL_STATUSES.has(job.status)) {
+        setScheduleMessage(formatCollectionJobStatus(job, "mobile"));
+        if (!COLLECTION_JOB_TERMINAL_STATUSES.has(job.status)) {
           setActiveCollectionJobId(job.id);
         }
       } catch {
@@ -1147,9 +1100,9 @@ function CollectScreen({
         if (cancelled) {
           return;
         }
-        const message = formatMobileCollectionJobStatus(job);
+        const message = formatCollectionJobStatus(job, "mobile");
         setScheduleMessage(message);
-        if (MOBILE_COLLECTION_TERMINAL_STATUSES.has(job.status)) {
+        if (COLLECTION_JOB_TERMINAL_STATUSES.has(job.status)) {
           setActiveCollectionJobId(null);
           onAction(message);
           return;
@@ -1271,7 +1224,7 @@ function CollectScreen({
       setLastJobId(data.id);
       setLastRunAt(startedAt.toISOString());
       setActiveCollectionJobId(data.id);
-      const message = `${runLabel}任务已创建，${formatMobileCollectionJobStatus(data)}${
+      const message = `${runLabel}任务已创建，${formatCollectionJobStatus(data, "mobile")}${
         nextDate ? ` 下次运行：${formatScheduleTime(nextDate.toISOString())}。` : ""
       }`;
       setScheduleMessage(message);

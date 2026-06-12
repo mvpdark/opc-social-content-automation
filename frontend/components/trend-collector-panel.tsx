@@ -5,7 +5,12 @@ import { useEffect, useMemo, useState } from "react";
 
 import { PlatformLabel } from "@/components/platform-icon";
 import { getApiBase } from "@/lib/api-base";
-import { collectionJobStatusLabel } from "@/lib/status-labels";
+import {
+  COLLECTION_JOB_TERMINAL_STATUSES,
+  formatCollectionJobStatus,
+  isRestartableCollectionJob,
+  type CollectionJobStatusSnapshot
+} from "@/lib/collection-job-status";
 
 type Platform = "xiaohongshu" | "douyin";
 
@@ -41,23 +46,9 @@ type LinkImportTarget = {
   safety_notes: string[];
 };
 
-type TrendCollectionJob = {
-  id: number;
+type TrendCollectionJob = CollectionJobStatusSnapshot & {
   platform: Platform;
   keyword: string;
-  status: string;
-  result_summary: {
-    message?: string;
-    auto_start?: boolean;
-    collected_items?: number;
-    raw_candidates?: number;
-    blocked_candidates?: number;
-    page_title?: string | null;
-    final_url?: string | null;
-    operator_wait_seconds?: number;
-    trend_ids?: number[];
-  } | null;
-  error: string | null;
 };
 
 const API_BASE = getApiBase();
@@ -74,8 +65,6 @@ const platformLabels: Record<Platform, string> = {
   xiaohongshu: "小红书",
   douyin: "抖音"
 };
-const terminalJobStatuses = new Set(["completed", "failed", "needs_operator_review"]);
-
 const fieldLabelClass = "text-xs font-medium text-muted";
 const inputClass =
   "glass-control mt-2 h-10 w-full rounded-md border px-3 text-sm text-ink outline-none";
@@ -258,57 +247,6 @@ function buildLocalXhsLinkImportTarget(rawText: string): LinkImportTarget {
   };
 }
 
-function formatCollectionJobStatus(job: TrendCollectionJob) {
-  const collectedItems =
-    typeof job.result_summary?.collected_items === "number"
-      ? `，已采集 ${job.result_summary.collected_items} 条`
-      : "";
-  const errorText = job.error ? `；${job.error}` : "";
-  const diagnostics = [
-    typeof job.result_summary?.raw_candidates === "number"
-      ? `原始候选 ${job.result_summary.raw_candidates} 条`
-      : "",
-    typeof job.result_summary?.blocked_candidates === "number"
-      ? `过滤 ${job.result_summary.blocked_candidates} 条`
-      : "",
-    job.result_summary?.page_title ? `页面：${job.result_summary.page_title}` : ""
-  ].filter(Boolean);
-  const diagnosticsText = diagnostics.length ? `（${diagnostics.join("，")}）` : "";
-  const waitText =
-    typeof job.result_summary?.operator_wait_seconds === "number"
-      ? `，浏览器等待 ${job.result_summary.operator_wait_seconds} 秒`
-      : "";
-
-  if (job.status === "queued") {
-    if (!job.result_summary?.auto_start) {
-      return `当前采集任务排队中${collectedItems}。这条任务不会自动启动；请重新点击“创建并启动”。`;
-    }
-    return `当前采集任务${collectionJobStatusLabel(job.status)}${collectedItems}。采集器正在启动，可见浏览器会自动打开。`;
-  }
-  if (job.status === "running") {
-    return `当前采集任务${collectionJobStatusLabel(job.status)}${collectedItems}${waitText}。请留意自动打开的浏览器窗口；如果遇到登录或验证码，先人工处理。`;
-  }
-  if (job.status === "completed") {
-    return `当前采集任务${collectionJobStatusLabel(job.status)}${collectedItems}${diagnosticsText}。请人工确认来源后再保存知识摘要。`;
-  }
-  if (job.status === "needs_operator_review") {
-    return `当前采集任务需要人工处理${collectedItems}${diagnosticsText}。公开搜索可能被登录墙、验证码或空结果拦截；人工确认后可直接重试。${errorText}`;
-  }
-  if (job.status === "failed") {
-    return `当前采集任务执行失败${collectedItems}${diagnosticsText}${errorText}。可以直接重新启动这条任务。`;
-  }
-
-  return `当前采集任务状态：${collectionJobStatusLabel(job.status)}${collectedItems}${diagnosticsText}${errorText}。`;
-}
-
-function isRestartableCollectionJob(job: TrendCollectionJob) {
-  return (
-    (job.status === "queued" && !job.result_summary?.auto_start) ||
-    job.status === "needs_operator_review" ||
-    job.status === "failed"
-  );
-}
-
 function restartCollectionJobLabel(status: string | null) {
   if (status === "queued") {
     return "启动旧任务";
@@ -429,7 +367,7 @@ export function TrendCollectorPanel({
         }
         showCollectionJob(latestJob);
         if (
-          !terminalJobStatuses.has(latestJob.status) &&
+          !COLLECTION_JOB_TERMINAL_STATUSES.has(latestJob.status) &&
           latestJob.result_summary?.auto_start
         ) {
           setActiveJobId(latestJob.id);
@@ -466,7 +404,7 @@ export function TrendCollectorPanel({
           return;
         }
         showCollectionJob(job);
-        if (terminalJobStatuses.has(job.status)) {
+        if (COLLECTION_JOB_TERMINAL_STATUSES.has(job.status)) {
           setActiveJobId(null);
           return;
         }
