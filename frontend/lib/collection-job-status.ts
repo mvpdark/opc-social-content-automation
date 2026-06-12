@@ -63,21 +63,21 @@ export function formatCollectionJobStatus(
 
   if (surface === "mobile") {
     if (job.status === "queued") {
-      return `采集任务排队中${collected}，可见浏览器即将打开。`;
+      return `正在排队${collected}，可见浏览器即将打开。`;
     }
     if (job.status === "running") {
-      return `采集任务采集中${collected}${waitText}。遇到登录或验证码时，先在浏览器里人工处理。`;
+      return `正在采集中${collected}${waitText}。遇到登录或验证码时，先在浏览器里人工处理。`;
     }
     if (job.status === "completed") {
-      return `采集任务已完成${collected}${diagnosticText}。请人工确认来源后再保存知识摘要。`;
+      return `采集已完成${collected}${diagnosticText}。请人工确认来源后再保存知识摘要。`;
     }
     if (job.status === "needs_operator_review") {
-      return `采集任务需要人工处理${collected}${diagnosticText}。可能是登录墙、验证码或空结果，处理后可重新运行。${errorText}`;
+      return `需要人工处理${collected}${diagnosticText}。可能是登录墙、验证码或空结果，处理后可重新运行。${errorText}`;
     }
     if (job.status === "failed") {
-      return `采集任务失败${collected}${diagnosticText}${errorText}。可以重新运行一次。`;
+      return `采集失败${collected}${diagnosticText}${errorText}。可以重新运行一次。`;
     }
-    return `采集任务状态：${collectionJobStatusLabel(job.status)}${collected}${diagnosticText}${errorText}。`;
+    return `当前状态：${collectionJobStatusLabel(job.status)}${collected}${diagnosticText}${errorText}。`;
   }
 
   if (job.status === "queued") {
