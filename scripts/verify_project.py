@@ -956,6 +956,8 @@ def validate_content_production_contract() -> int:
         "后台采集器",
         "后台不会自动消费",
         "状态：${data.status}",
+        "当前状态：",
+        "本次采集状态：",
         "当前状态：${job.status}",
         "图片状态：{imageAsset.status}",
         "{content.status}",

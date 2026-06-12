@@ -28,8 +28,8 @@ function collectionJobStatusParts(job: CollectionJobStatusSnapshot) {
   const collected =
     typeof summary?.collected_items === "number" ? `，已采集 ${summary.collected_items} 条` : "";
   const diagnostics = [
-    typeof summary?.raw_candidates === "number" ? `原始候选 ${summary.raw_candidates} 条` : "",
-    typeof summary?.blocked_candidates === "number" ? `过滤 ${summary.blocked_candidates} 条` : "",
+    typeof summary?.raw_candidates === "number" ? `找到候选 ${summary.raw_candidates} 条` : "",
+    typeof summary?.blocked_candidates === "number" ? `已过滤 ${summary.blocked_candidates} 条` : "",
     summary?.page_title ? `页面：${summary.page_title}` : ""
   ].filter(Boolean);
   const diagnosticText = diagnostics.length ? `（${diagnostics.join("，")}）` : "";
@@ -77,7 +77,7 @@ export function formatCollectionJobStatus(
     if (job.status === "failed") {
       return `采集失败${collected}${diagnosticText}${errorText}。可以重新运行一次。`;
     }
-    return `当前状态：${collectionJobStatusLabel(job.status)}${collected}${diagnosticText}${errorText}。`;
+    return `采集进度：${collectionJobStatusLabel(job.status)}${collected}${diagnosticText}${errorText}。`;
   }
 
   if (job.status === "queued") {
@@ -99,5 +99,5 @@ export function formatCollectionJobStatus(
     return `本次采集失败${collected}${diagnosticText}${errorText}。可以直接重新采集一次。`;
   }
 
-  return `本次采集状态：${collectionJobStatusLabel(job.status)}${collected}${diagnosticText}${errorText}。`;
+  return `采集进度：${collectionJobStatusLabel(job.status)}${collected}${diagnosticText}${errorText}。`;
 }
