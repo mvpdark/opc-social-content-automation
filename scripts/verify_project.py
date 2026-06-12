@@ -571,6 +571,7 @@ def validate_content_production_contract() -> int:
 
     mobile_xhs_copy_contract_snippets = [
         "tryCopyText(draftText)",
+        "function publishExportStatus(message: string)",
         "async function copyDraftTextOnly()",
         'data-testid="draft-preview-copy"',
         'data-testid="draft-manual-copy-text"',

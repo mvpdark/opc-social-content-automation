@@ -2769,21 +2769,24 @@ function DraftPreviewEditor({
     });
   }
 
+  function publishExportStatus(message: string) {
+    setXhsExportMessage(message);
+    onExportStatus(message);
+  }
+
   async function copyDraftTextOnly() {
     setEditing(false);
     const copied = await onCopy();
     setManualCopyText(copied ? null : buildEditableDraftCopy(draft));
     const message = copied ? "文案已复制，可以直接去小红书粘贴。" : "浏览器拦截了剪贴板，文案已展开，可长按全选复制。";
-    setXhsExportMessage(message);
-    onExportStatus(message);
+    publishExportStatus(message);
   }
 
   async function handleOpenXiaohongshu() {
     const draftText = buildEditableDraftCopy(draft);
     setEditing(false);
     setXhsExporting(true);
-    setXhsExportMessage("正在复制文案并准备封面图。");
-    onExportStatus("正在复制文案并准备封面图。");
+    publishExportStatus("正在复制文案并准备封面图。");
     try {
       const textCopied = await tryCopyText(draftText);
       if (!textCopied) {
@@ -2801,8 +2804,7 @@ function DraftPreviewEditor({
         (typeof navigator.canShare !== "function" || navigator.canShare({ files: [coverFile] }));
 
       if (canShareFiles) {
-        setXhsExportMessage("文案已复制，正在打开系统分享；选择小红书即可带入封面图。");
-        onExportStatus("文案已复制，正在打开系统分享；选择小红书即可带入封面图。");
+        publishExportStatus("文案已复制，正在打开系统分享；选择小红书即可带入封面图。");
         try {
           await navigator.share(shareData);
         } catch (error) {
@@ -2812,8 +2814,7 @@ function DraftPreviewEditor({
             const abortMessage = restored
               ? "已取消系统分享；文案已重新复制，可以直接去小红书粘贴。"
               : "已取消系统分享；浏览器拦截了剪贴板，请点“复制预览文案”。";
-            setXhsExportMessage(abortMessage);
-            onExportStatus(abortMessage);
+            publishExportStatus(abortMessage);
             return;
           }
           throw error;
@@ -2822,8 +2823,7 @@ function DraftPreviewEditor({
         const sharedMessage = sharedCopyRestored
           ? "已交给系统分享；文案已重新复制，如果小红书没有自动带入正文，请直接粘贴。"
           : "已交给系统分享；如果小红书没有自动带入正文，请返回点“复制预览文案”。";
-        setXhsExportMessage(sharedMessage);
-        onExportStatus(sharedMessage);
+        publishExportStatus(sharedMessage);
         return;
       }
 
@@ -2832,13 +2832,11 @@ function DraftPreviewEditor({
       const fallbackMessage = fallbackTextRestored
         ? "文案已复制，封面图已下载；正在打开小红书，请新建图文后粘贴正文。"
         : "封面图已下载；浏览器拦截了剪贴板，请返回点“复制预览文案”。";
-      setXhsExportMessage(fallbackMessage);
-      onExportStatus(fallbackMessage);
+      publishExportStatus(fallbackMessage);
       window.location.href = "https://www.xiaohongshu.com/explore";
     } catch (error) {
       const message = error instanceof Error ? error.message : "打开小红书失败。";
-      setXhsExportMessage(message);
-      onExportStatus(message);
+      publishExportStatus(message);
     } finally {
       setXhsExporting(false);
     }
@@ -2847,8 +2845,7 @@ function DraftPreviewEditor({
   async function copyPreviewLink() {
     if (!generatedContent) {
       const message = "先生成草稿，才会有可分享的预览链接。";
-      setXhsExportMessage(message);
-      onExportStatus(message);
+      publishExportStatus(message);
       return;
     }
 
@@ -2863,12 +2860,10 @@ function DraftPreviewEditor({
       const message = isLocalPreview
         ? "预览链接已复制；当前是这台设备或同一网络地址，外部用户需要部署到公网后才能打开。"
         : "预览链接已复制，可以发给别人查看。";
-      setXhsExportMessage(message);
-      onExportStatus(message);
+      publishExportStatus(message);
     } catch (_error) {
       const message = `复制预览链接失败，请长按手动复制：${previewUrl}`;
-      setXhsExportMessage(message);
-      onExportStatus(message);
+      publishExportStatus(message);
     }
   }
 
