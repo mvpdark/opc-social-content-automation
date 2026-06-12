@@ -573,14 +573,6 @@ async function buildXhsCoverFile(coverImageUrl: string | null, draft: DraftPrevi
   return buildFallbackCoverFile(draft);
 }
 
-async function copyImageFileToClipboard(file: File) {
-  if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined") {
-    return false;
-  }
-  await navigator.clipboard.write([new ClipboardItem({ [file.type]: file })]);
-  return true;
-}
-
 function downloadFile(file: File) {
   const url = URL.createObjectURL(file);
   const link = document.createElement("a");
@@ -639,6 +631,15 @@ async function copyText(text: string) {
   textarea.remove();
   if (!copied) {
     throw new Error("Clipboard copy failed.");
+  }
+}
+
+async function tryCopyText(text: string) {
+  try {
+    await copyText(text);
+    return true;
+  } catch (_error) {
+    return false;
   }
 }
 
@@ -2770,13 +2771,9 @@ function DraftPreviewEditor({
     onExportStatus("正在准备封面图和正文。");
     try {
       const coverFile = await buildXhsCoverFile(coverImageUrl, draft);
-      await copyText(draftText);
-
-      let imageCopied = false;
-      try {
-        imageCopied = await copyImageFileToClipboard(coverFile);
-      } catch (_error) {
-        imageCopied = false;
+      const textCopied = await tryCopyText(draftText);
+      if (!textCopied) {
+        throw new Error("浏览器拦截了剪贴板，请点“复制预览文案”后再去小红书。");
       }
 
       const shareData: ShareData = {
@@ -2791,28 +2788,39 @@ function DraftPreviewEditor({
       if (canShareFiles) {
         setXhsExportMessage("文案已复制，正在打开系统分享；选择小红书即可带入封面图。");
         onExportStatus("文案已复制，正在打开系统分享；选择小红书即可带入封面图。");
-        await navigator.share(shareData);
-        setXhsExportMessage("已交给系统分享；如果小红书没有自动带入正文，请直接粘贴。");
-        onExportStatus("已交给系统分享；如果小红书没有自动带入正文，请直接粘贴。");
+        try {
+          await navigator.share(shareData);
+        } catch (error) {
+          const errorName = error instanceof DOMException ? error.name : "";
+          if (errorName === "AbortError") {
+            const restored = await tryCopyText(draftText);
+            const abortMessage = restored
+              ? "已取消系统分享；文案已重新复制，可以直接去小红书粘贴。"
+              : "已取消系统分享；浏览器拦截了剪贴板，请点“复制预览文案”。";
+            setXhsExportMessage(abortMessage);
+            onExportStatus(abortMessage);
+            return;
+          }
+          throw error;
+        }
+        const sharedCopyRestored = await tryCopyText(draftText);
+        const sharedMessage = sharedCopyRestored
+          ? "已交给系统分享；文案已重新复制，如果小红书没有自动带入正文，请直接粘贴。"
+          : "已交给系统分享；如果小红书没有自动带入正文，请返回点“复制预览文案”。";
+        setXhsExportMessage(sharedMessage);
+        onExportStatus(sharedMessage);
         return;
       }
 
-      if (!imageCopied) {
-        downloadFile(coverFile);
-      }
-      const fallbackMessage = imageCopied
-        ? "文案和封面图已复制；正在打开小红书，请新建图文后粘贴正文。"
-        : "文案已复制，封面图已下载；正在打开小红书，请新建图文后上传封面。";
+      downloadFile(coverFile);
+      const fallbackTextRestored = await tryCopyText(draftText);
+      const fallbackMessage = fallbackTextRestored
+        ? "文案已复制，封面图已下载；正在打开小红书，请新建图文后粘贴正文。"
+        : "封面图已下载；浏览器拦截了剪贴板，请返回点“复制预览文案”。";
       setXhsExportMessage(fallbackMessage);
       onExportStatus(fallbackMessage);
       window.location.href = "https://www.xiaohongshu.com/explore";
     } catch (error) {
-      const errorName = error instanceof DOMException ? error.name : "";
-      if (errorName === "AbortError") {
-        setXhsExportMessage("已取消系统分享；文案仍在剪贴板里。");
-        onExportStatus("已取消系统分享；文案仍在剪贴板里。");
-        return;
-      }
       const message = error instanceof Error ? error.message : "打开小红书失败。";
       setXhsExportMessage(message);
       onExportStatus(message);
@@ -3031,7 +3039,7 @@ function DraftPreviewEditor({
             type="button"
           >
             {xhsExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
-            {xhsExporting ? "正在准备" : "复制封面+文案，去小红书"}
+            {xhsExporting ? "正在准备" : "复制文案+封面，去小红书"}
           </button>
           <button
             className="mb-2 flex h-10 w-full items-center justify-center gap-2 rounded-full border border-[#eeeeee] bg-white px-4 text-sm font-semibold text-ink active:scale-[0.99] disabled:opacity-50"
