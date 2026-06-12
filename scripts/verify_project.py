@@ -986,6 +986,8 @@ def validate_content_production_contract() -> int:
         "本地服务",
         "本机/局域网地址",
         "服务状态读取失败",
+        "服务检测暂不可用",
+        "重启应用服务",
         "已填写不代表授权通过",
         "copyImageFileToClipboard",
         "文案仍在剪贴板里",

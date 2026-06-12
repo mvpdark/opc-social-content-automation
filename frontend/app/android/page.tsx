@@ -268,7 +268,7 @@ async function authenticateMobileLogin(account: string, password: string) {
       };
     }
     if (response.status === 404 || response.status === 405) {
-      throw new Error("登录服务暂未更新，请重启应用服务后再试。");
+      throw new Error("登录服务暂未更新，请重新打开应用后再试。");
     }
     throw new Error("账号或密码不正确。");
   } catch (error) {
