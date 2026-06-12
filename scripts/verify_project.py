@@ -200,9 +200,15 @@ def validate_safety_gates() -> int:
         "frontend/package.json": [
             '"dev:lan": "next dev -H 0.0.0.0"',
         ],
+        "scripts/start_local.py": [
+            "0.0.0.0",
+            "dev:lan",
+            "8010",
+            "3000",
+            "port_is_open",
+        ],
         "scripts/setup_local.py": [
-            "--host 0.0.0.0",
-            "npm run dev:lan",
+            "python scripts/start_local.py",
         ],
         "infra/cloudflare/opc-tunnel.example.yml": [
             "hostname: opc.mvpdark.top",

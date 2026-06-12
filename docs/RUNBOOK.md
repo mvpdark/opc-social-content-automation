@@ -50,17 +50,25 @@ PostgreSQL and Redis are actually reachable. Database-backed endpoints use
 When using local PostgreSQL, prefer a reachable host such as `127.0.0.1` if
 `localhost` resolves to an unavailable IPv6 address first.
 
-Run the API:
+Start the local API and frontend together:
 
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8010
+python scripts/start_local.py
 ```
 
-Run the frontend for LAN/mobile testing:
+The helper skips services that are already listening on ports `8010` or `3000`
+and writes logs to `backend/uvicorn-8010.log` and `frontend/next-3000.log`.
+
+Run only the API:
 
 ```bash
-cd frontend
-npm run dev:lan
+python scripts/start_local.py --backend-only
+```
+
+Run only the frontend for LAN/mobile testing:
+
+```bash
+python scripts/start_local.py --frontend-only
 ```
 
 The frontend derives its API base from the current browser hostname by default.
