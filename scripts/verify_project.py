@@ -578,7 +578,7 @@ def validate_content_production_contract() -> int:
         "浏览器拦截了剪贴板，文案已展开，可长按全选复制。",
         "只复制文案",
         "文案已重新复制",
-        "浏览器拦截了剪贴板，请点“复制预览文案”",
+        "浏览器拦截了剪贴板，请点“只复制文案”",
         "复制文案+封面，去小红书",
     ]
     for snippet in mobile_xhs_copy_contract_snippets:

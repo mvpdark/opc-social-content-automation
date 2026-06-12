@@ -2790,7 +2790,7 @@ function DraftPreviewEditor({
     try {
       const textCopied = await tryCopyText(draftText);
       if (!textCopied) {
-        throw new Error("浏览器拦截了剪贴板，请点“复制预览文案”后再去小红书。");
+        throw new Error("浏览器拦截了剪贴板，请点“只复制文案”后再去小红书。");
       }
       const coverFile = await buildXhsCoverFile(coverImageUrl, draft);
 
@@ -2813,7 +2813,7 @@ function DraftPreviewEditor({
             const restored = await tryCopyText(draftText);
             const abortMessage = restored
               ? "已取消系统分享；文案已重新复制，可以直接去小红书粘贴。"
-              : "已取消系统分享；浏览器拦截了剪贴板，请点“复制预览文案”。";
+              : "已取消系统分享；浏览器拦截了剪贴板，请点“只复制文案”。";
             publishExportStatus(abortMessage);
             return;
           }
@@ -2822,7 +2822,7 @@ function DraftPreviewEditor({
         const sharedCopyRestored = await tryCopyText(draftText);
         const sharedMessage = sharedCopyRestored
           ? "已交给系统分享；文案已重新复制，如果小红书没有自动带入正文，请直接粘贴。"
-          : "已交给系统分享；如果小红书没有自动带入正文，请返回点“复制预览文案”。";
+          : "已交给系统分享；如果小红书没有自动带入正文，请返回点“只复制文案”。";
         publishExportStatus(sharedMessage);
         return;
       }
@@ -2831,7 +2831,7 @@ function DraftPreviewEditor({
       const fallbackTextRestored = await tryCopyText(draftText);
       const fallbackMessage = fallbackTextRestored
         ? "文案已复制，封面图已下载；正在打开小红书，请新建图文后粘贴正文。"
-        : "封面图已下载；浏览器拦截了剪贴板，请返回点“复制预览文案”。";
+        : "封面图已下载；浏览器拦截了剪贴板，请返回点“只复制文案”。";
       publishExportStatus(fallbackMessage);
       window.location.href = "https://www.xiaohongshu.com/explore";
     } catch (error) {
