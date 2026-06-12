@@ -405,7 +405,7 @@ export const externalSkillCandidates = [
     status: "优先试点",
     license: "MIT",
     summary: "支持检索、详情、发布和评论相关 Skill，适合拆出只读搜索与发布前填充流程。",
-    guardrail: "需要真实登录态和网页选择器；默认只接只读检索，发布仍需人工确认。",
+    guardrail: "需要真实登录状态和网页选择器；默认只接只读检索，发布仍需人工确认。",
     icon: Search
   },
   {
@@ -500,11 +500,11 @@ export const externalSkillCandidates = [
     title: "小红书发布安全参考",
     source: "leeguooooo/xhs-skill",
     href: "https://github.com/leeguooooo/xhs-skill",
-    module: "发布门禁 / 登录流程参考",
+    module: "发布确认 / 登录流程参考",
     status: "只做外部工具",
     license: "MIT",
-    summary: "强调二维码登录、登录状态整理、发布前门禁校验和内容审核，适合参考发布安全链路。",
-    guardrail: "当前不接自动发布；只吸收发布内容校验、真实话题池、发布前人工确认等门禁设计。",
+    summary: "强调二维码登录、登录状态整理、发布前确认规则和内容审核，适合参考发布安全链路。",
+    guardrail: "当前不接自动发布；只吸收发布内容校验、真实话题池、发布前人工确认等确认设计。",
     icon: ShieldCheck
   },
   {

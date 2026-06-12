@@ -833,7 +833,7 @@ export function TrendCollectorPanel({
             />
             <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs leading-5 text-muted">
-                短链只会标记为“待授权解析”，不会在这里绕过登录或风控。
+                短链只会标记为“待授权解析”，不会在这里绕过登录或平台限制。
               </p>
               <button
                 className={`${secondaryButtonClass} px-3`}
