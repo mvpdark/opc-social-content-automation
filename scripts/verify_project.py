@@ -342,9 +342,18 @@ def validate_content_production_contract() -> int:
     workspace_text = (
         ROOT / "frontend" / "components" / "workspace-client.tsx"
     ).read_text(encoding="utf-8")
+    android_text = (ROOT / "frontend" / "app" / "android" / "page.tsx").read_text(
+        encoding="utf-8"
+    )
     image_service_text = (
         ROOT / "backend" / "app" / "services" / "image_service.py"
     ).read_text(encoding="utf-8")
+    draft_prompt_text = (ROOT / "prompts" / "draft_generation.md").read_text(
+        encoding="utf-8"
+    )
+    humanization_prompt_text = (ROOT / "prompts" / "humanization.md").read_text(
+        encoding="utf-8"
+    )
 
     frontend_contract_snippets = [
         "latestContent={previewContent}",
@@ -381,6 +390,40 @@ def validate_content_production_contract() -> int:
         total += 1
         if snippet not in image_service_text:
             raise SystemExit(f"Missing content production backend contract: {snippet}")
+
+    particle_style_contracts = [
+        (
+            workspace_text,
+            [
+                'type ExpressionOptionKey = "emoji" | "punctuation" | "particles" | "meme" | "softCta";',
+                "particles: true",
+                'key: "particles"',
+                'label: "语气词"',
+                "哦、哟、呀、啊、嘛、呢、啦、哈",
+            ],
+            "PC writing particle style",
+        ),
+        (
+            android_text,
+            ["哦、哟、呀、啊、嘛、呢、啦、哈", "不要每句都堆"],
+            "Android writing particle style",
+        ),
+        (
+            draft_prompt_text,
+            ["Use conversational particles frequently but naturally", "Do not stack particles"],
+            "draft prompt particle style",
+        ),
+        (
+            humanization_prompt_text,
+            ["preserve more soft particles", "real creator or senior schoolmate"],
+            "humanization prompt particle style",
+        ),
+    ]
+    for text, snippets, contract_name in particle_style_contracts:
+        for snippet in snippets:
+            total += 1
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
 
     stale_gate_snippets = [
         "Only human-approved content can be used for image generation.",
