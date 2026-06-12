@@ -300,7 +300,7 @@ export const dashboardActionLinks = [
   {
     title: "补高赞图文参考",
     detail: "先采集公开图文和标题结构。",
-    href: "/?tab=research",
+    tab: "research",
     command: "去采集",
     status: "当前重点",
     icon: Radar
@@ -308,7 +308,7 @@ export const dashboardActionLinks = [
   {
     title: "沉淀写作参考",
     detail: "把确认过的样本整理进知识库。",
-    href: "/?tab=knowledge",
+    tab: "knowledge",
     command: "去知识库",
     status: "待补充",
     icon: BookOpenText
@@ -316,7 +316,7 @@ export const dashboardActionLinks = [
   {
     title: "一键生成营销图文",
     detail: "进入一键生成页生成文案和封面。",
-    href: "/?tab=content",
+    tab: "content",
     command: "去生成",
     status: "可开始",
     icon: PenLine

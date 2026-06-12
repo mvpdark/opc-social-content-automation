@@ -962,6 +962,7 @@ def validate_content_production_contract() -> int:
         "本次采集状态：",
         "当前状态：${job.status}",
         "图片状态：",
+        'href: "/?tab=',
         "{content.status}",
         "return status;",
         "非已批准内容",
