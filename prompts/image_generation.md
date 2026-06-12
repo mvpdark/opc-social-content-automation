@@ -39,5 +39,16 @@ High-attraction Xiaohongshu cover formula:
   text, cluttered infographic grids, fake platform UI, and official brand logos.
 - Avoid copying a previous generated cover style for the same project. Vary the
   scene, palette, layout, props, and graphic language across generations.
+- Before writing the final image prompt, choose one distinct cover route and name
+  it inside the prompt. Rotate across these routes when no route is provided:
+  minimal bold text, real study scene, phone-feed collage, academic blueprint,
+  magazine editorial, blackboard/classroom, cute social note.
+- If a recent or previous cover used a desk, sticky notes, coral/mint checklist,
+  paper-cutout headline, or red underline, pick a route that avoids at least
+  three of those repeated elements.
+- For keyword-led doctoral content, match the visual route to the title angle:
+  `水博` should feel like risk clarification or myth-busting; `硕升博` should
+  feel like route planning and sequence correction; `土博` should feel like
+  reality-check positioning; `升博` should feel like a practical starting map.
 
 Return an image prompt that is directly usable by the image provider.
