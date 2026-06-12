@@ -588,6 +588,7 @@ def validate_content_production_contract() -> int:
                 "raw_candidates",
                 "blocked_candidates",
                 "operator_wait_seconds",
+                "请点击“启动旧任务”",
             ],
             "shared collection job status helper",
         ),

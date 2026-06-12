@@ -82,7 +82,7 @@ export function formatCollectionJobStatus(
 
   if (job.status === "queued") {
     if (!job.result_summary?.auto_start) {
-      return `当前采集任务排队中${collected}。这条任务不会自动启动；请重新点击“创建并启动”。`;
+      return `当前采集任务排队中${collected}。这条旧任务不会自动启动；请点击“启动旧任务”。`;
     }
     return `当前采集任务${collectionJobStatusLabel(job.status)}${collected}。采集器正在启动，可见浏览器会自动打开。`;
   }
