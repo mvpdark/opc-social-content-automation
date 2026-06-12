@@ -186,7 +186,8 @@ def validate_safety_gates() -> int:
         ],
         "backend/app/api/deps.py": [
             "settings.auth_required",
-            "PLANNER_TEST_USER",
+            "DEFAULT_PLANNER_USER",
+            "默认运营员",
             "Missing bearer token.",
         ],
         "backend/app/main.py": [
@@ -496,6 +497,9 @@ def validate_content_production_contract() -> int:
     service_error_text = (
         ROOT / "frontend" / "lib" / "service-error-copy.ts"
     ).read_text(encoding="utf-8")
+    api_deps_text = (ROOT / "backend" / "app" / "api" / "deps.py").read_text(
+        encoding="utf-8"
+    )
     asset_url_text = (ROOT / "frontend" / "lib" / "asset-url.ts").read_text(
         encoding="utf-8"
     )
@@ -985,6 +989,7 @@ def validate_content_production_contract() -> int:
             or snippet in dashboard_data_text
             or snippet in app_shell_text
             or snippet in service_error_text
+            or snippet in api_deps_text
         ):
             raise SystemExit(f"Stale content production gate still present: {snippet}")
 

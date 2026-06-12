@@ -9,10 +9,10 @@ from app.models.user import User
 
 
 bearer_scheme = HTTPBearer(auto_error=False)
-PLANNER_TEST_USER = User(
+DEFAULT_PLANNER_USER = User(
     id=None,
-    phone="planner-test",
-    nickname="策划师测试模式",
+    phone="local-planner",
+    nickname="默认运营员",
     role="planner",
     password_hash="disabled-auth",
 )
@@ -23,7 +23,7 @@ def get_current_user(
     db: Session = Depends(get_db),
 ) -> User:
     if not settings.auth_required:
-        return PLANNER_TEST_USER
+        return DEFAULT_PLANNER_USER
 
     if credentials is None:
         raise HTTPException(
