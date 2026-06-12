@@ -37,6 +37,7 @@ import { getApiBase } from "@/lib/api-base";
 import {
   providerBindingDefaultsFromStatuses,
   providerKeyUpdatePayload,
+  sanitizeProviderStatusItems,
   type ProviderStatusItem
 } from "@/lib/provider-settings";
 import { sanitizeServiceErrorMessage } from "@/lib/service-error-copy";
@@ -244,7 +245,9 @@ async function fetchProviderStatuses() {
   if (!response.ok) {
     throw new Error(await readApiError(response, "服务状态读取失败。"));
   }
-  return (await response.json()) as ProviderStatusItem[];
+  return sanitizeProviderStatusItems(
+    (await response.json()) as ProviderStatusItem[]
+  );
 }
 
 async function authenticateMobileLogin(account: string, password: string) {
@@ -262,7 +265,9 @@ async function authenticateMobileLogin(account: string, password: string) {
       return {
         account: data.account.trim(),
         defaultKeysBound: Boolean(data.default_keys_bound),
-        providerStatuses: Array.isArray(data.provider_statuses) ? data.provider_statuses : []
+        providerStatuses: Array.isArray(data.provider_statuses)
+          ? sanitizeProviderStatusItems(data.provider_statuses)
+          : []
       };
     }
     if (response.status === 404 || response.status === 405) {
@@ -2162,7 +2167,9 @@ function SettingsScreen({
       if (!response.ok) {
         throw new Error(await readApiError(response, "服务配置应用失败。"));
       }
-      const statuses = (await response.json()) as ProviderStatusItem[];
+      const statuses = sanitizeProviderStatusItems(
+        (await response.json()) as ProviderStatusItem[]
+      );
       onProviderStatusesChange(statuses);
       onAction("服务配置已应用到当前工作台。");
       setCheckStatus(null);

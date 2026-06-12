@@ -1,3 +1,5 @@
+import { sanitizeServiceErrorMessage } from "./service-error-copy";
+
 export type ProviderStatusItem = {
   configured: boolean;
   model: string | null;
@@ -6,6 +8,13 @@ export type ProviderStatusItem = {
   provider: string;
   status: string;
 };
+
+export function sanitizeProviderStatusItems(statuses: ProviderStatusItem[]) {
+  return statuses.map((item) => ({
+    ...item,
+    note: sanitizeServiceErrorMessage(item.note)
+  }));
+}
 
 export type ProviderBindingDefaults = {
   draft: boolean;

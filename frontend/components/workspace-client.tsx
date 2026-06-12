@@ -63,6 +63,7 @@ import {
 import {
   providerBindingDefaultsFromStatuses,
   providerKeyUpdatePayload,
+  sanitizeProviderStatusItems,
   type ProviderStatusItem
 } from "@/lib/provider-settings";
 import {
@@ -837,7 +838,9 @@ async function fetchProviderStatuses() {
   if (!response.ok) {
     throw new Error(await readApiError(response, "服务状态读取失败。"));
   }
-  return (await response.json()) as ProviderStatusItem[];
+  return sanitizeProviderStatusItems(
+    (await response.json()) as ProviderStatusItem[]
+  );
 }
 
 async function authenticateWorkspaceLogin(account: string, password: string) {
@@ -856,7 +859,9 @@ async function authenticateWorkspaceLogin(account: string, password: string) {
       return {
         account: data.account.trim(),
         defaultKeysBound: Boolean(data.default_keys_bound),
-        providerStatuses: Array.isArray(data.provider_statuses) ? data.provider_statuses : []
+        providerStatuses: Array.isArray(data.provider_statuses)
+          ? sanitizeProviderStatusItems(data.provider_statuses)
+          : []
       };
     }
 
@@ -3091,7 +3096,9 @@ function SettingsView({
       if (!response.ok) {
         throw new Error(await readApiError(response, "服务配置应用失败。"));
       }
-      const statuses = (await response.json()) as ProviderStatusItem[];
+      const statuses = sanitizeProviderStatusItems(
+        (await response.json()) as ProviderStatusItem[]
+      );
       setProviderStatuses(statuses);
       setProviderStatusError(null);
       setCredentialStatus("服务配置已应用到当前工作台，页面不会展示完整密钥。");
