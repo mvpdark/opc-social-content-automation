@@ -1975,7 +1975,7 @@ function CreateScreen({
     <div className="space-y-4">
       <MobilePanel
         title="手机端生成"
-        action={<span className="text-xs font-semibold text-moss">服务已连接</span>}
+        action={<span className="text-xs font-semibold text-moss">生成入口</span>}
       >
         <label className="block">
           <span className="text-xs font-medium text-muted">选题</span>

@@ -688,6 +688,7 @@ def validate_content_production_contract() -> int:
         "查看修复命令",
         "优先命令",
         "查看本机环境",
+        "服务已连接",
     ]
     for snippet in stale_gate_snippets:
         total += 1
