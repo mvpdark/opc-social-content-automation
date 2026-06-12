@@ -2361,7 +2361,7 @@ function SettingsScreen({
           </button>
         </div>
       </MobilePanel>
-      <MobilePanel title="服务配置" action="此设备可配置">
+      <MobilePanel title="服务配置" action="仅本设备">
         <p className="mb-3 text-xs leading-5 text-muted">
           服务授权只保存在这台设备；应用后由当前工作台调用服务，不会展示完整内容。
         </p>
@@ -2371,7 +2371,7 @@ function SettingsScreen({
             const statusText = field.keyName === "workspaceToken"
               ? (localFilled ? "已填写" : "当前不用填")
               : localFilled
-                ? "当前设备已填写"
+                ? "本设备已填写"
                 : field.backendBound
                   ? "已保存"
                   : "未配置";
@@ -2427,7 +2427,7 @@ function SettingsScreen({
             type="button"
           >
             <Trash2 className="h-4 w-4" />
-            清空此设备保存
+            清空本设备保存
           </button>
         </div>
         {checkStatus ? (

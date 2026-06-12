@@ -3128,7 +3128,7 @@ function SettingsView({
               const statusText = field.keyName === "workspaceToken"
                 ? (localFilled ? "已填写" : "当前不用填")
                 : localFilled
-                  ? "当前设备已填写"
+                  ? "本设备已填写"
                   : field.backendBound
                     ? "已保存"
                     : "未配置";
@@ -3200,7 +3200,7 @@ function SettingsView({
                 type="button"
               >
                 <Trash2 className="h-4 w-4" />
-                清空此设备保存
+                清空本设备保存
               </button>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
@@ -3208,13 +3208,13 @@ function SettingsView({
                 保护 {credentials.workspaceToken ? "已填写" : "当前未开启"}
               </Pill>
               <Pill tone={credentials.draftApiKey || providerBindings.draft ? "green" : "amber"}>
-                撰稿 {credentials.draftApiKey ? "当前设备已填写" : providerBindings.draft ? "已保存" : "未配置"}
+                撰稿 {credentials.draftApiKey ? "本设备已填写" : providerBindings.draft ? "已保存" : "未配置"}
               </Pill>
               <Pill tone={credentials.imageApiKey || providerBindings.image ? "green" : "amber"}>
-                图片 {credentials.imageApiKey ? "当前设备已填写" : providerBindings.image ? "已保存" : "未配置"}
+                图片 {credentials.imageApiKey ? "本设备已填写" : providerBindings.image ? "已保存" : "未配置"}
               </Pill>
               <Pill tone={credentials.rewriteApiKey || providerBindings.rewrite ? "green" : "amber"}>
-                改写 {credentials.rewriteApiKey ? "当前设备已填写" : providerBindings.rewrite ? "已保存" : "未配置"}
+                改写 {credentials.rewriteApiKey ? "本设备已填写" : providerBindings.rewrite ? "已保存" : "未配置"}
               </Pill>
             </div>
           </div>
