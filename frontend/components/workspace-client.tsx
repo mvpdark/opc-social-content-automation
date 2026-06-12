@@ -3428,8 +3428,8 @@ function ExternalSkillRadarPanel() {
   return (
     <Panel
       action={<Pill tone="blue">只读调研</Pill>}
-      helper="把 GitHub 上适合本项目的 Skill/MCP 候选沉淀在这里；接入前先看许可证、登录态和发布风险。"
-      title="外部技能接入雷达"
+      helper="把 GitHub 上适合本项目的外部能力候选沉淀在这里；接入前先看许可证、登录态和发布风险。"
+      title="外部能力接入雷达"
     >
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
         {externalSkillCandidates.map((candidate) => (

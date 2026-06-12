@@ -448,29 +448,29 @@ export const externalSkillCandidates = [
     module: "链接解析 / 素材归档",
     status: "只做外部工具",
     license: "GPL-3.0",
-    summary: "成熟的作品信息、图片和视频下载工具，支持 API/MCP，适合用户主动提供链接后的资料归档。",
+    summary: "成熟的作品信息、图片和视频下载工具，适合用户主动提供链接后的资料归档。",
     guardrail: "GPL 项目不复制实现；只可作为独立进程、可选工具或接口设计参考。",
     icon: Download
   },
   {
-    title: "SocialDataX XHS MCP",
+    title: "SocialDataX 小红书情报服务",
     source: "devinchen2014/xiaohongshu-xhs-rednote-mcp",
     href: "https://github.com/devinchen2014/xiaohongshu-xhs-rednote-mcp",
     module: "只读社媒情报",
     status: "候选服务",
     license: "MIT 文档 / 托管服务",
-    summary: "托管 MCP，支持搜索、热榜、笔记详情、评论和博主信息，适合低频只读调研。",
+    summary: "托管检索服务，支持搜索、热榜、笔记详情、评论和博主信息，适合低频只读调研。",
     guardrail: "需要第三方 API Key；接入前确认数据来源、费用和隐私条款。",
     icon: ShieldCheck
   },
   {
-    title: "RedNote MCP",
+    title: "RedNote 小红书检索服务",
     source: "MilesCool/rednote-mcp",
     href: "https://github.com/MilesCool/rednote-mcp",
     module: "只读检索 / 竞品素材",
     status: "优先试点",
     license: "MIT",
-    summary: "MCP 形式的小红书搜索与内容提取工具，返回标题、正文、作者、互动数、图片和标签。",
+    summary: "小红书搜索与内容提取工具，返回标题、正文、作者、互动数、图片和标签。",
     guardrail: "首次需要人工登录；只接只读搜索和详情抽取，不允许默认评论、点赞或发布。",
     icon: Search
   },
@@ -489,10 +489,10 @@ export const externalSkillCandidates = [
     title: "xhs-cover-mcp",
     source: "xwchris/xhs-cover-mcp",
     href: "https://github.com/xwchris/xhs-cover-mcp",
-    module: "封面 MCP",
+    module: "封面候选服务",
     status: "候选服务",
     license: "需确认",
-    summary: "MCP Server 形式的小红书封面生成器，可用 npx 启动，适合做封面工作台的外部渲染器候选。",
+    summary: "小红书封面生成器，可用外部命令启动，适合做封面工作台的外部渲染器候选。",
     guardrail: "先确认许可证、字体素材、图片输出归属和 Windows 打包方式；不要替代人工复核。",
     icon: Image
   },
@@ -503,7 +503,7 @@ export const externalSkillCandidates = [
     module: "发布门禁 / 登录流程参考",
     status: "只做外部工具",
     license: "MIT",
-    summary: "强调二维码登录、Cookie 归一化、发布前门禁校验和内容审核，适合参考发布安全链路。",
+    summary: "强调二维码登录、登录状态整理、发布前门禁校验和内容审核，适合参考发布安全链路。",
     guardrail: "当前不接自动发布；只吸收 payload 校验、真实话题池、发布前人工确认等门禁设计。",
     icon: ShieldCheck
   },
@@ -519,14 +519,14 @@ export const externalSkillCandidates = [
     icon: BookOpenText
   },
   {
-    title: "skills CLI",
+    title: "技能发现工具",
     source: "vercel-labs/skills",
     href: "https://github.com/vercel-labs/skills",
     module: "技能发现 / 安装工具",
     status: "可选外部调用",
     license: "需确认",
-    summary: "开放 Agent Skills 安装与使用工具，支持 Codex、Claude Code、OpenCode、Cursor 等环境。",
-    guardrail: "只用于列出和拉取候选 Skill；接入前仍需人工审查来源、许可证和脚本权限。",
+    summary: "开放的 AI 能力包安装与使用工具，支持 Codex、Claude Code、OpenCode、Cursor 等环境。",
+    guardrail: "只用于列出和拉取候选能力包；接入前仍需人工审查来源、许可证和脚本权限。",
     icon: Sparkles
   }
 ] as const;
