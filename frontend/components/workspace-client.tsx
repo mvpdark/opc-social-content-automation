@@ -2969,7 +2969,7 @@ function SettingsView({
   onShowHelperTextChange: (nextValue: boolean) => void;
   showHelperText: boolean;
 }) {
-  const [credentialStatus, setCredentialStatus] = useState("凭证会保存在当前浏览器本机。");
+  const [credentialStatus, setCredentialStatus] = useState("凭证会保存在当前浏览器的此设备。");
   const [credentialBusy, setCredentialBusy] = useState(false);
   const [providerStatuses, setProviderStatuses] = useState<ProviderStatusItem[]>([]);
   const [providerStatusError, setProviderStatusError] = useState<string | null>(null);
@@ -3022,7 +3022,7 @@ function SettingsView({
 
   function clearCredentials() {
     onCredentialsChange(emptyCredentials);
-    setCredentialStatus("已清空本机保存的凭证。");
+    setCredentialStatus("已清空此设备保存的凭证。");
   }
 
   async function applyProviderKeys() {
@@ -3152,10 +3152,10 @@ function SettingsView({
               const statusText = field.keyName === "workspaceToken"
                 ? "测试免填"
                 : localFilled
-                  ? "本机已填"
+                  ? "此设备已填"
                   : field.backendBound
                     ? "已保存"
-                    : "未绑定";
+                    : "未保存";
               const statusToneClass = field.keyName === "workspaceToken" || localFilled || field.backendBound
                 ? "bg-mist text-moss"
                 : "bg-amber/15 text-[#8a5a00]";
@@ -3224,7 +3224,7 @@ function SettingsView({
                 type="button"
               >
                 <Trash2 className="h-4 w-4" />
-                清空本机凭证
+                清空此设备凭证
               </button>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
@@ -3232,13 +3232,13 @@ function SettingsView({
                 登录 {credentials.workspaceToken ? "已填" : "测试免填"}
               </Pill>
               <Pill tone={credentials.draftApiKey || providerBindings.draft ? "green" : "amber"}>
-                撰稿 {credentials.draftApiKey ? "本机已填" : providerBindings.draft ? "已保存" : "未绑定"}
+                撰稿 {credentials.draftApiKey ? "此设备已填" : providerBindings.draft ? "已保存" : "未保存"}
               </Pill>
               <Pill tone={credentials.imageApiKey || providerBindings.image ? "green" : "amber"}>
-                图片 {credentials.imageApiKey ? "本机已填" : providerBindings.image ? "已保存" : "未绑定"}
+                图片 {credentials.imageApiKey ? "此设备已填" : providerBindings.image ? "已保存" : "未保存"}
               </Pill>
               <Pill tone={credentials.rewriteApiKey || providerBindings.rewrite ? "green" : "amber"}>
-                改写 {credentials.rewriteApiKey ? "本机已填" : providerBindings.rewrite ? "已保存" : "未绑定"}
+                改写 {credentials.rewriteApiKey ? "此设备已填" : providerBindings.rewrite ? "已保存" : "未保存"}
               </Pill>
             </div>
           </div>

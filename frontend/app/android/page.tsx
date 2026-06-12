@@ -2131,7 +2131,7 @@ function SettingsScreen({
   function clearCredentials() {
     onCredentialsChange(emptyCredentials);
     setCheckStatus(null);
-    onAction("已清空手机本机保存的凭证。");
+    onAction("已清空此设备保存的凭证。");
   }
 
   async function applyProviderKeys() {
@@ -2257,7 +2257,7 @@ function SettingsScreen({
       </MobilePanel>
       <MobilePanel title="服务配置" action="手机可配置">
         <p className="mb-3 text-xs leading-5 text-muted">
-          凭证保存在当前手机浏览器本机；应用后由当前工作台调用服务，页面不会显示完整密钥。
+          凭证保存在当前手机浏览器的此设备；应用后由当前工作台调用服务，页面不会显示完整密钥。
         </p>
         <div className="space-y-3">
           {credentialFields.map((field) => {
@@ -2265,10 +2265,10 @@ function SettingsScreen({
             const statusText = field.keyName === "workspaceToken"
               ? "测试免填"
               : localFilled
-                ? "本机已填"
+                ? "此设备已填"
                 : field.backendBound
                   ? "已保存"
-                  : "未绑定";
+                  : "未保存";
             const statusClass = field.keyName === "workspaceToken" || localFilled || field.backendBound
               ? "bg-[#e5f2ec] text-moss"
               : "bg-[#fff3d8] text-[#8a5a00]";
@@ -2321,7 +2321,7 @@ function SettingsScreen({
             type="button"
           >
             <Trash2 className="h-4 w-4" />
-            清空本机凭证
+            清空此设备凭证
           </button>
         </div>
         {checkStatus ? (

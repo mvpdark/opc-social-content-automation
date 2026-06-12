@@ -509,6 +509,11 @@ def validate_content_production_contract() -> int:
         "后端服务",
         "后端现有配置",
         "直连后端",
+        "本机已填",
+        "未绑定",
+        "本机保存的凭证",
+        "当前浏览器本机",
+        "手机本机",
     ]
     for snippet in stale_gate_snippets:
         total += 1
