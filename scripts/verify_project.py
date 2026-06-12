@@ -500,6 +500,10 @@ def validate_content_production_contract() -> int:
         "登录令牌",
         "API Key 与令牌",
         "免令牌",
+        "后端运行时",
+        "后端已绑定",
+        "未回显",
+        "默认 Key 已绑定",
     ]
     for snippet in stale_gate_snippets:
         total += 1

@@ -2977,7 +2977,7 @@ function SettingsView({
   const [providerCheckBusy, setProviderCheckBusy] = useState(false);
   const canApplyProviderKeys = !credentialBusy;
   const canCheckProvider = !credentialBusy && !providerCheckBusy;
-  const providerApplyLabel = "应用服务 API Key";
+  const providerApplyLabel = "应用服务配置";
   const providerBindings = providerBindingDefaultsFromStatuses(providerStatuses);
 
   async function refreshProviderStatuses() {
@@ -3031,13 +3031,13 @@ function SettingsView({
     setCredentialBusy(true);
     setCredentialStatus(
       Object.keys(payload).length
-        ? "正在应用服务 API Key 到后端运行时。"
-        : "正在刷新后端默认绑定状态。"
+        ? "正在应用服务配置。"
+        : "正在刷新当前保存状态。"
     );
     try {
       if (!Object.keys(payload).length) {
         await refreshProviderStatuses();
-        setCredentialStatus("已刷新后端绑定状态；没有填写新 Key，不会覆盖。");
+        setCredentialStatus("已刷新保存状态；没有填写新密钥，不会覆盖。");
         setProviderCheckStatus(null);
         return;
       }
@@ -3053,15 +3053,15 @@ function SettingsView({
         body: JSON.stringify(payload)
       });
       if (!response.ok) {
-        throw new Error(await readApiError(response, "服务 API Key 应用失败。"));
+        throw new Error(await readApiError(response, "服务配置应用失败。"));
       }
       const statuses = (await response.json()) as ProviderStatusItem[];
       setProviderStatuses(statuses);
       setProviderStatusError(null);
-      setCredentialStatus("服务 API Key 已应用到当前后端运行时，响应未回显密钥。");
+      setCredentialStatus("服务配置已应用到当前工作台，页面不会显示完整密钥。");
       setProviderCheckStatus(null);
     } catch (error) {
-      setCredentialStatus(error instanceof Error ? error.message : "服务 API Key 应用失败。");
+      setCredentialStatus(error instanceof Error ? error.message : "服务配置应用失败。");
     } finally {
       setCredentialBusy(false);
     }
@@ -3129,7 +3129,7 @@ function SettingsView({
       keyName: "rewriteApiKey",
       label: "改写 API Key",
       placeholder: "留空则不覆盖后端现有配置",
-      helper: "改写和人味化服务使用；响应不会回显密钥。",
+      helper: "改写和人味化服务使用；页面不会显示完整密钥。",
       backendBound: providerBindings.rewrite
     }
   ];
@@ -3142,7 +3142,7 @@ function SettingsView({
     <div className="space-y-4">
       <Panel
         action={<Pill tone="blue">集中管理</Pill>}
-        helper="服务 API Key 集中填写；策划师测试阶段不再要求工作台登录凭证。"
+        helper="服务密钥集中填写；策划师测试阶段不再要求工作台登录凭证。"
         title="服务配置"
       >
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
@@ -3154,7 +3154,7 @@ function SettingsView({
                 : localFilled
                   ? "本机已填"
                   : field.backendBound
-                    ? "后端已绑定"
+                    ? "已保存"
                     : "未绑定";
               const statusToneClass = field.keyName === "workspaceToken" || localFilled || field.backendBound
                 ? "bg-mist text-moss"
@@ -3232,13 +3232,13 @@ function SettingsView({
                 登录 {credentials.workspaceToken ? "已填" : "测试免填"}
               </Pill>
               <Pill tone={credentials.draftApiKey || providerBindings.draft ? "green" : "amber"}>
-                撰稿 {credentials.draftApiKey ? "本机已填" : providerBindings.draft ? "后端已绑定" : "未绑定"}
+                撰稿 {credentials.draftApiKey ? "本机已填" : providerBindings.draft ? "已保存" : "未绑定"}
               </Pill>
               <Pill tone={credentials.imageApiKey || providerBindings.image ? "green" : "amber"}>
-                图片 {credentials.imageApiKey ? "本机已填" : providerBindings.image ? "后端已绑定" : "未绑定"}
+                图片 {credentials.imageApiKey ? "本机已填" : providerBindings.image ? "已保存" : "未绑定"}
               </Pill>
               <Pill tone={credentials.rewriteApiKey || providerBindings.rewrite ? "green" : "amber"}>
-                改写 {credentials.rewriteApiKey ? "本机已填" : providerBindings.rewrite ? "后端已绑定" : "未绑定"}
+                改写 {credentials.rewriteApiKey ? "本机已填" : providerBindings.rewrite ? "已保存" : "未绑定"}
               </Pill>
             </div>
           </div>

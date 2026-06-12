@@ -732,7 +732,7 @@ export default function AndroidPreviewPage() {
     setMobileAccount(account);
     setProviderStatuses(nextProviderStatuses);
     setActiveTab("home");
-    setStatus(defaultKeysBound ? `已登录：${account}，默认 Key 已绑定。` : `已登录：${account}，请检查默认 Key 状态。`);
+    setStatus(defaultKeysBound ? `已登录：${account}，默认服务配置已就绪。` : `已登录：${account}，请检查服务配置。`);
   }
 
   function logout() {
@@ -2140,14 +2140,14 @@ function SettingsScreen({
     setBusyAction("apply");
     onAction(
       Object.keys(payload).length
-        ? "正在应用服务 API Key 到后端运行时。"
-        : "正在刷新后端默认绑定状态。"
+        ? "正在应用服务配置。"
+        : "正在刷新当前保存状态。"
     );
     try {
       if (!Object.keys(payload).length) {
         const statuses = await fetchProviderStatuses();
         onProviderStatusesChange(statuses);
-        onAction("已刷新后端绑定状态；没有填写新 Key，不会覆盖。");
+        onAction("已刷新保存状态；没有填写新密钥，不会覆盖。");
         setCheckStatus(null);
         return;
       }
@@ -2158,14 +2158,14 @@ function SettingsScreen({
         body: JSON.stringify(payload)
       });
       if (!response.ok) {
-        throw new Error(await readApiError(response, "服务 API Key 应用失败。"));
+        throw new Error(await readApiError(response, "服务配置应用失败。"));
       }
       const statuses = (await response.json()) as ProviderStatusItem[];
       onProviderStatusesChange(statuses);
-      onAction("服务 API Key 已应用到后端运行时。");
+      onAction("服务配置已应用到当前工作台。");
       setCheckStatus(null);
     } catch (error) {
-      onAction(error instanceof Error ? error.message : "服务 API Key 应用失败。");
+      onAction(error instanceof Error ? error.message : "服务配置应用失败。");
     } finally {
       setBusyAction(null);
     }
@@ -2257,7 +2257,7 @@ function SettingsScreen({
       </MobilePanel>
       <MobilePanel title="服务配置" action="手机可配置">
         <p className="mb-3 text-xs leading-5 text-muted">
-          凭证保存在当前手机浏览器本机；应用后由后端运行时调用服务，响应不会回显密钥。
+          凭证保存在当前手机浏览器本机；应用后由当前工作台调用服务，页面不会显示完整密钥。
         </p>
         <div className="space-y-3">
           {credentialFields.map((field) => {
@@ -2267,7 +2267,7 @@ function SettingsScreen({
               : localFilled
                 ? "本机已填"
                 : field.backendBound
-                  ? "后端已绑定"
+                  ? "已保存"
                   : "未绑定";
             const statusClass = field.keyName === "workspaceToken" || localFilled || field.backendBound
               ? "bg-[#e5f2ec] text-moss"
@@ -2302,7 +2302,7 @@ function SettingsScreen({
             type="button"
           >
             {busyAction === "apply" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            {busyAction === "apply" ? "应用中" : "应用服务 API Key"}
+            {busyAction === "apply" ? "应用中" : "应用服务配置"}
           </button>
           <button
             className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-md border border-[#d6e8df] bg-white text-sm font-semibold text-ink active:scale-[0.99] disabled:opacity-60"
