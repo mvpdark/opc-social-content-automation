@@ -1981,14 +1981,14 @@ function GenerationLauncher({
   const generateButtonTitle = !hasTopic
       ? "先填写选题，再一键生成图文和封面"
       : draftProviderMissing
-        ? "去设置里填写并应用撰稿服务密钥"
+        ? "去设置里填写并应用撰稿服务授权"
       : draftProviderCheckFailed
-        ? "检测到撰稿服务不可用，请先去设置页更换或重新应用服务密钥"
+        ? "检测到撰稿服务不可用，请先去设置页更换或重新应用服务授权"
       : undefined;
   const launchStatusText = !hasTopic
       ? "先填写选题，再一键生成图文和封面。"
       : draftProviderMissing
-        ? "撰稿服务缺少服务密钥，先去设置页填写并应用。"
+        ? "撰稿服务缺少服务授权，先去设置页填写并应用。"
       : draftProviderCheckFailed
         ? draftCheckStatus?.message ?? "撰稿服务检测未通过，请先去设置页修复。"
       : statusText;
@@ -2243,7 +2243,7 @@ function GenerationLauncher({
     const refreshedImageProviderReady =
       liveImageProviderReady || hasLiveImageProvider(refreshedStatuses ?? []);
     if (!refreshedImageProviderReady) {
-      throw new Error("图片服务还没有完成可用性检查，请先到设置页应用图片服务密钥。");
+      throw new Error("图片服务还没有完成可用性检查，请先到设置页应用图片服务授权。");
     }
 
     const response = await fetch(`${API_BASE}/image/generate`, {
@@ -2462,7 +2462,7 @@ function GenerationLauncher({
                     const tone = needsProviderSettings && isDraft ? "red" : configured ? "green" : "amber";
                     const label =
                       needsProviderSettings && isDraft
-                        ? "密钥需检查"
+                        ? "授权需检查"
                         : configured
                           ? "已填写"
                           : "未填写";
@@ -2505,7 +2505,7 @@ function GenerationLauncher({
                 type="button"
               >
                 <Settings className="h-4 w-4" />
-                去设置检查撰稿服务密钥
+                去设置检查撰稿服务授权
               </button>
             ) : null}
             <div className="mt-4 border-l-4 border-amber pl-3 text-xs leading-5 text-muted">
@@ -2624,7 +2624,7 @@ function GeneratedPostExportCard({
       const refreshedImageProviderReady = imageProviderReady ||
         hasLiveImageProvider(refreshedStatuses ?? []);
       if (!refreshedImageProviderReady) {
-        throw new Error("图片服务还没有完成可用性检查，请先到设置页应用图片服务密钥后再点生成封面图。");
+        throw new Error("图片服务还没有完成可用性检查，请先到设置页应用图片服务授权后再点生成封面图。");
       }
       const response = await fetch(`${API_BASE}/image/generate`, {
         method: "POST",
@@ -2934,7 +2934,7 @@ function SettingsView({
   onShowHelperTextChange: (nextValue: boolean) => void;
   showHelperText: boolean;
 }) {
-  const [credentialStatus, setCredentialStatus] = useState("服务密钥只保存在这台设备。");
+  const [credentialStatus, setCredentialStatus] = useState("服务授权只保存在这台设备。");
   const [credentialBusy, setCredentialBusy] = useState(false);
   const [providerStatuses, setProviderStatuses] = useState<ProviderStatusItem[]>([]);
   const [providerStatusError, setProviderStatusError] = useState<string | null>(null);
@@ -3006,7 +3006,7 @@ function SettingsView({
     try {
       if (!Object.keys(payload).length) {
         await refreshProviderStatuses();
-        setCredentialStatus("已刷新保存状态；没有填写新密钥，不会覆盖。");
+        setCredentialStatus("已刷新保存状态；没有填写新的服务授权，不会覆盖。");
         setProviderCheckStatus(null);
         return;
       }
@@ -3029,7 +3029,7 @@ function SettingsView({
       );
       setProviderStatuses(statuses);
       setProviderStatusError(null);
-      setCredentialStatus("服务配置已应用到当前工作台，页面不会展示完整密钥。");
+      setCredentialStatus("服务配置已应用到当前工作台，页面不会展示完整内容。");
       setProviderCheckStatus(null);
     } catch (error) {
       setCredentialStatus(
@@ -3089,23 +3089,23 @@ function SettingsView({
     },
     {
       keyName: "draftApiKey",
-      label: "撰稿服务密钥",
+      label: "撰稿服务授权",
       placeholder: "留空则保留已有配置",
-      helper: "撰稿服务使用；只有更换密钥时才需要填写。",
+      helper: "撰稿服务使用；只有更换服务授权时才需要填写。",
       backendBound: providerBindings.draft
     },
     {
       keyName: "imageApiKey",
-      label: "图片服务密钥",
+      label: "图片服务授权",
       placeholder: "留空则保留已有配置",
       helper: "图片生成服务使用；封面会通过图片服务完成。",
       backendBound: providerBindings.image
     },
     {
       keyName: "rewriteApiKey",
-      label: "改写服务密钥",
+      label: "改写服务授权",
       placeholder: "留空则保留已有配置",
-      helper: "改写与口吻润色服务使用；页面不会展示完整密钥。",
+      helper: "改写与口吻润色服务使用；页面不会展示完整内容。",
       backendBound: providerBindings.rewrite
     }
   ];
@@ -3118,7 +3118,7 @@ function SettingsView({
     <div className="space-y-4">
       <Panel
         action={<Pill tone="blue">集中管理</Pill>}
-        helper="服务密钥集中填写；当前工作台未开启访问保护。"
+        helper="服务授权集中管理；当前工作台未开启访问保护。"
         title="服务配置"
       >
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">

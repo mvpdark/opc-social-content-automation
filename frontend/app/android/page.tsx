@@ -2204,7 +2204,7 @@ function SettingsScreen({
       if (!Object.keys(payload).length) {
         const statuses = await fetchProviderStatuses();
         onProviderStatusesChange(statuses);
-        onAction("已刷新保存状态；没有填写新密钥，不会覆盖。");
+        onAction("已刷新保存状态；没有填写新的服务授权，不会覆盖。");
         setCheckStatus(null);
         return;
       }
@@ -2283,21 +2283,21 @@ function SettingsScreen({
     },
     {
       keyName: "draftApiKey",
-      label: "撰稿服务密钥",
+      label: "撰稿服务授权",
       placeholder: "留空则保留已有配置",
       testId: "mobile-draft-key",
       backendBound: providerBindings.draft
     },
     {
       keyName: "imageApiKey",
-      label: "图片服务密钥",
+      label: "图片服务授权",
       placeholder: "留空则保留已有配置",
       testId: "mobile-image-key",
       backendBound: providerBindings.image
     },
     {
       keyName: "rewriteApiKey",
-      label: "改写服务密钥",
+      label: "改写服务授权",
       placeholder: "留空则保留已有配置",
       testId: "mobile-rewrite-key",
       backendBound: providerBindings.rewrite
@@ -2363,7 +2363,7 @@ function SettingsScreen({
       </MobilePanel>
       <MobilePanel title="服务配置" action="此设备可配置">
         <p className="mb-3 text-xs leading-5 text-muted">
-          服务密钥只保存在这台设备；应用后由当前工作台调用服务，不会展示完整密钥。
+          服务授权只保存在这台设备；应用后由当前工作台调用服务，不会展示完整内容。
         </p>
         <div className="space-y-3">
           {credentialFields.map((field) => {

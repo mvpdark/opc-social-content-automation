@@ -43,7 +43,7 @@ def _redacted_provider_error(provider: str, status_code: int | None = None) -> s
         "DeepSeek": "改写服务",
     }.get(provider, "模型服务")
     if status_code in {401, 403}:
-        return f"{provider_label}授权失败，请检查设置里的服务密钥和中转站地址。"
+        return f"{provider_label}授权失败，请检查设置里的服务授权和中转站地址。"
     if status_code == 404:
         return f"{provider_label}服务或接口地址不可用，请检查设置里的服务配置和中转站地址。"
     if status_code == 429:
@@ -88,7 +88,7 @@ def _redacted_provider_error_from_response(
     if status_code in {401, 403} and (
         "INVALID_API_KEY" in error_code or "invalid api key" in error_message
     ):
-        return f"{provider_label}服务密钥无效，请在设置页更换有效密钥后重新检测。"
+        return f"{provider_label}服务授权无效，请在设置页更换有效授权后重新检测。"
 
     return _redacted_provider_error(provider, status_code)
 
@@ -509,7 +509,7 @@ class ModelRouter:
             if not settings.openai_compatible_api_key:
                 raise HTTPException(
                     status_code=status.HTTP_501_NOT_IMPLEMENTED,
-                    detail="撰稿服务尚未配置服务密钥。",
+                    detail="撰稿服务尚未配置服务授权。",
                 )
             request_payload: dict[str, object] = {
                 "model": settings.draft_model,
@@ -565,7 +565,7 @@ class ModelRouter:
             if not api_key:
                 raise HTTPException(
                     status_code=status.HTTP_501_NOT_IMPLEMENTED,
-                    detail="图片服务尚未配置服务密钥。",
+                    detail="图片服务尚未配置服务授权。",
                 )
             base_url = (
                 settings.image_openai_compatible_base_url

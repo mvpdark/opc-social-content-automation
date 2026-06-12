@@ -215,7 +215,7 @@ def check_provider_connection(
             target=payload.target,
             configured=False,
             status="missing_key",
-            message="撰稿服务还没有填写服务密钥。",
+            message="撰稿服务还没有填写服务授权。",
         )
 
     try:
