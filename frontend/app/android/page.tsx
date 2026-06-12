@@ -1240,7 +1240,7 @@ function CollectScreen({
       const nextDate = autoEnabled ? scheduleNextRun(startedAt) : null;
       setLastJobId(data.id);
       setLastRunAt(startedAt.toISOString());
-      const message = `${runLabel}任务 #${data.id} 已创建，状态：${data.status}。${
+      const message = `${runLabel}任务已创建，状态：${data.status}。${
         nextDate ? ` 下次运行：${formatScheduleTime(nextDate.toISOString())}。` : ""
       }`;
       setScheduleMessage(message);
@@ -1430,7 +1430,7 @@ function CollectScreen({
           <div>下次运行：{formatScheduleTime(nextRunAt)}</div>
           <div>
             上次运行：{formatScheduleTime(lastRunAt)}
-            {lastJobId ? `，任务 #${lastJobId}` : ""}
+            {lastJobId ? "，已创建采集任务" : ""}
           </div>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2">

@@ -387,6 +387,9 @@ def validate_content_production_contract() -> int:
     android_text = (ROOT / "frontend" / "app" / "android" / "page.tsx").read_text(
         encoding="utf-8"
     )
+    trend_collector_text = (
+        ROOT / "frontend" / "components" / "trend-collector-panel.tsx"
+    ).read_text(encoding="utf-8")
     image_service_text = (
         ROOT / "backend" / "app" / "services" / "image_service.py"
     ).read_text(encoding="utf-8")
@@ -530,12 +533,17 @@ def validate_content_production_contract() -> int:
         "草稿 #",
         "文案 #",
         "封面图 #",
+        "任务 #",
+        "采集任务 #",
+        "后台采集器",
+        "后台不会自动消费",
     ]
     for snippet in stale_gate_snippets:
         total += 1
         if (
             snippet in workspace_text
             or snippet in android_text
+            or snippet in trend_collector_text
             or snippet in image_service_text
             or snippet in model_router_text
         ):

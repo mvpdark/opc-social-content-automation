@@ -278,24 +278,24 @@ function formatCollectionJobStatus(job: TrendCollectionJob) {
 
   if (job.status === "queued") {
     if (!job.result_summary?.auto_start) {
-      return `采集任务 #${job.id} 排队中${collectedItems}。这是一条旧版队列任务，后台不会自动消费；请重新点击“创建并启动”。`;
+      return `当前采集任务排队中${collectedItems}。这条任务不会自动启动；请重新点击“创建并启动”。`;
     }
-    return `采集任务 #${job.id} ${collectionStatusLabel(job.status)}${collectedItems}。后台采集器正在启动，可见浏览器会自动打开。`;
+    return `当前采集任务${collectionStatusLabel(job.status)}${collectedItems}。采集器正在启动，可见浏览器会自动打开。`;
   }
   if (job.status === "running") {
-    return `采集任务 #${job.id} ${collectionStatusLabel(job.status)}${collectedItems}。请留意自动打开的浏览器窗口；如果遇到登录或验证码，先人工处理。`;
+    return `当前采集任务${collectionStatusLabel(job.status)}${collectedItems}。请留意自动打开的浏览器窗口；如果遇到登录或验证码，先人工处理。`;
   }
   if (job.status === "completed") {
-    return `采集任务 #${job.id} ${collectionStatusLabel(job.status)}${collectedItems}。请人工确认来源后再保存知识摘要。`;
+    return `当前采集任务${collectionStatusLabel(job.status)}${collectedItems}。请人工确认来源后再保存知识摘要。`;
   }
   if (job.status === "needs_operator_review") {
-    return `采集任务 #${job.id} 需要人工处理${collectedItems}。公开搜索可能被登录墙、验证码或空结果拦截；人工确认后可直接重试。${errorText}`;
+    return `当前采集任务需要人工处理${collectedItems}。公开搜索可能被登录墙、验证码或空结果拦截；人工确认后可直接重试。${errorText}`;
   }
   if (job.status === "failed") {
-    return `采集任务 #${job.id} 执行失败${collectedItems}${errorText}。可以直接重新启动这条任务。`;
+    return `当前采集任务执行失败${collectedItems}${errorText}。可以直接重新启动这条任务。`;
   }
 
-  return `采集任务 #${job.id} 当前状态：${job.status}${collectedItems}${errorText}。`;
+  return `当前采集任务状态：${job.status}${collectedItems}${errorText}。`;
 }
 
 function isRestartableCollectionJob(job: TrendCollectionJob) {
@@ -458,7 +458,7 @@ export function TrendCollectorPanel({
           return;
         }
         if (!job) {
-          setStatusText(`采集任务 #${activeJobId} 暂时查不到状态，请稍后刷新。`);
+          setStatusText("当前采集任务暂时查不到状态，请稍后刷新。");
           timer = window.setTimeout(pollJobStatus, 3000);
           return;
         }
