@@ -3112,7 +3112,7 @@ function SettingsView({
     {
       keyName: "workspaceToken",
       label: "登录验证（可选）",
-      placeholder: "当前版本无需填写",
+      placeholder: "无需填写",
       helper: "当前工作台无需登录验证；以后开启正式登录时再填写。"
     },
     {
@@ -3146,7 +3146,7 @@ function SettingsView({
     <div className="space-y-4">
       <Panel
         action={<Pill tone="blue">集中管理</Pill>}
-        helper="服务密钥集中填写；当前版本不要求登录验证。"
+        helper="服务密钥集中填写；当前工作台不要求登录验证。"
         title="服务配置"
       >
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">

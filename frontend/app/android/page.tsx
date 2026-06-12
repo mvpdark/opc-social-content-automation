@@ -2211,7 +2211,7 @@ function SettingsScreen({
     {
       keyName: "workspaceToken",
       label: "登录验证（可选）",
-      placeholder: "当前版本无需填写",
+      placeholder: "无需填写",
       testId: "mobile-token"
     },
     {

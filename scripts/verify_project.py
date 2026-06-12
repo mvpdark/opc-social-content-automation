@@ -554,6 +554,8 @@ def validate_content_production_contract() -> int:
         "GitHub 上适合",
         "打开 GitHub",
         "当前版本免登录",
+        "当前版本无需填写",
+        "当前版本不要求登录验证",
         "正式发布前仍保留权限校验",
         "Bearer token",
         "服务端权限",
