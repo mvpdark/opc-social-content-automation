@@ -907,6 +907,7 @@ def validate_content_production_contract() -> int:
         "后端运行时",
         "后端已绑定",
         "未回显",
+        "默认服务 Key 已绑定",
         "默认 Key 已绑定",
         "重启后端",
         "后端正在运行",

@@ -2319,7 +2319,7 @@ function SettingsScreen({
             <div>
               <div className="text-xs font-black text-moss">当前账号</div>
               <h2 className="mt-1 text-[24px] font-black leading-7">{mobileAccount}</h2>
-              <p className="mt-2 text-sm font-medium leading-6 text-muted">默认服务 Key 已绑定，生成链路可直接使用。</p>
+              <p className="mt-2 text-sm font-medium leading-6 text-muted">默认服务已就绪，生成链路可直接使用。</p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-[18px] border border-white/70 bg-white/58 text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur">
               <ShieldCheck className="h-5 w-5" />
