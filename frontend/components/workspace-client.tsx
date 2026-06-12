@@ -2373,7 +2373,7 @@ function GenerationLauncher({
               <div className="text-xs font-medium text-muted">登录验证</div>
               <div className="mt-1 flex items-center justify-between gap-3">
                 <span className="text-sm font-medium">
-                  {workspaceToken ? "登录验证已配置" : "当前版本免登录"}
+                  {workspaceToken ? "登录验证已配置" : "无需登录验证"}
                 </span>
                 <button
                   aria-label="打开设置查看登录验证"
@@ -3113,7 +3113,7 @@ function SettingsView({
       keyName: "workspaceToken",
       label: "登录验证（可选）",
       placeholder: "当前版本无需填写",
-      helper: "当前版本免登录；以后开启正式登录时再填写。"
+      helper: "当前工作台无需登录验证；以后开启正式登录时再填写。"
     },
     {
       keyName: "draftApiKey",

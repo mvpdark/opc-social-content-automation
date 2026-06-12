@@ -2243,7 +2243,7 @@ function SettingsScreen({
         <div className="flex items-center justify-between gap-3 rounded-md border border-[#d6e8df] bg-white px-3 py-3">
           <div className="min-w-0">
             <div className="text-sm font-semibold text-ink">{mobileAccount}</div>
-            <div className="mt-1 text-xs text-muted">当前版本免登录；正式发布前仍保留权限校验。</div>
+            <div className="mt-1 text-xs text-muted">当前工作台无需登录验证；需要时可在设置中开启。</div>
           </div>
           <button
             className="flex h-10 shrink-0 touch-manipulation items-center gap-2 rounded-md border border-[#d6e8df] bg-[#f6fbf6] px-3 text-xs font-semibold text-ink active:scale-[0.98]"

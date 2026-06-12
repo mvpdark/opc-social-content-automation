@@ -553,6 +553,8 @@ def validate_content_production_contract() -> int:
         'title: "139 Xiaohongshu Skills"',
         "GitHub 上适合",
         "打开 GitHub",
+        "当前版本免登录",
+        "正式发布前仍保留权限校验",
         "Bearer token",
         "服务端权限",
         "测试门禁",

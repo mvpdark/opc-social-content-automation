@@ -735,7 +735,7 @@ export function TrendCollectorPanel({
             <div className={fieldLabelClass}>登录验证</div>
             <div className="mt-2 flex items-center justify-between gap-3">
               <span className="text-sm font-medium text-ink">
-                {workspaceToken ? "登录验证已配置" : "当前版本免登录"}
+                {workspaceToken ? "登录验证已配置" : "无需登录验证"}
               </span>
               <button
                 aria-label="打开设置查看登录验证"
