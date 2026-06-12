@@ -1870,8 +1870,10 @@ function CreateScreen({
     try {
       await copyText(buildEditableDraftCopy(draftPreview));
       onAction(generatedContent ? "当前草稿已复制。" : "当前预览文案已复制。");
+      return true;
     } catch (_error) {
       onAction("复制失败，请长按正文区域手动选择复制。");
+      return false;
     }
   }
 
@@ -2733,12 +2735,14 @@ function DraftPreviewEditor({
   generatedContent: GeneratedContent | null;
   onChange: (nextDraft: DraftPreviewState) => void;
   onClose: () => void;
-  onCopy: () => void;
+  onCopy: () => Promise<boolean>;
   onExportStatus: (message: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const [manualCopyText, setManualCopyText] = useState<string | null>(null);
   const [xhsExporting, setXhsExporting] = useState(false);
   const [xhsExportMessage, setXhsExportMessage] = useState<string | null>(null);
+  const manualCopyRef = useRef<HTMLTextAreaElement | null>(null);
   const titleLines = draft.title.split(/[，,]/).slice(0, 3);
   const bodyParagraphs = draft.body
     .split(/\n+/)
@@ -2749,11 +2753,28 @@ function DraftPreviewEditor({
     .map((tag) => tag.trim())
     .filter(Boolean);
 
+  useEffect(() => {
+    if (!manualCopyText) {
+      return;
+    }
+    manualCopyRef.current?.focus();
+    manualCopyRef.current?.select();
+  }, [manualCopyText]);
+
   function updatePoint(index: number, value: string) {
     onChange({
       ...draft,
       points: draft.points.map((point, pointIndex) => (pointIndex === index ? value : point))
     });
+  }
+
+  async function copyDraftTextOnly() {
+    setEditing(false);
+    const copied = await onCopy();
+    setManualCopyText(copied ? null : buildEditableDraftCopy(draft));
+    const message = copied ? "文案已复制，可以直接去小红书粘贴。" : "浏览器拦截了剪贴板，文案已展开，可长按全选复制。";
+    setXhsExportMessage(message);
+    onExportStatus(message);
   }
 
   async function handleOpenXiaohongshu() {
@@ -3004,18 +3025,6 @@ function DraftPreviewEditor({
                 </div>
               )}
 
-              {editing ? (
-                <button
-                  className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-md border border-[#eeeeee] bg-white text-sm font-semibold text-ink"
-                  data-testid="draft-preview-copy"
-                  onClick={onCopy}
-                  type="button"
-                >
-                  <Clipboard className="h-4 w-4" />
-                  复制预览文案
-                </button>
-              ) : null}
-
               <div className="mt-5 text-xs text-muted">
                 {editing ? "正在原地编辑 · 点右上角完成回到预览" : "发布前预览 · 不会自动发布"}
               </div>
@@ -3036,6 +3045,16 @@ function DraftPreviewEditor({
           </button>
           <button
             className="mb-2 flex h-10 w-full items-center justify-center gap-2 rounded-full border border-[#eeeeee] bg-white px-4 text-sm font-semibold text-ink active:scale-[0.99] disabled:opacity-50"
+            data-testid="draft-preview-copy"
+            disabled={xhsExporting}
+            onClick={copyDraftTextOnly}
+            type="button"
+          >
+            <Clipboard className="h-4 w-4" />
+            只复制文案
+          </button>
+          <button
+            className="mb-2 flex h-10 w-full items-center justify-center gap-2 rounded-full border border-[#eeeeee] bg-white px-4 text-sm font-semibold text-ink active:scale-[0.99] disabled:opacity-50"
             data-testid="draft-copy-preview-link"
             disabled={!generatedContent}
             onClick={copyPreviewLink}
@@ -3048,6 +3067,17 @@ function DraftPreviewEditor({
             <div className="mb-2 rounded-md bg-[#fff6e3] px-3 py-2 text-[11px] font-medium leading-4 text-[#8a5d16]">
               {xhsExportMessage}
             </div>
+          ) : null}
+          {manualCopyText ? (
+            <textarea
+              aria-label="手动复制文案"
+              className="mb-2 max-h-28 w-full resize-none rounded-[18px] border border-[#ffd78f] bg-[#fffaf0] px-3 py-2 text-xs leading-5 text-ink outline-none focus:border-[#ff2442] focus:ring-2 focus:ring-[#ff2442]/15"
+              data-testid="draft-manual-copy-text"
+              onFocus={(event) => event.currentTarget.select()}
+              readOnly
+              ref={manualCopyRef}
+              value={manualCopyText}
+            />
           ) : null}
           <div className="flex items-center justify-between">
             <button className="flex h-11 items-center gap-1 rounded-full px-2 text-sm font-semibold text-ink" type="button">
