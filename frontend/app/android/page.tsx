@@ -922,11 +922,11 @@ function HomeScreen({
       </div>
 
       <MobilePanel
-        title="今日任务"
+        title="今日待办"
         action={
           <button
             className="min-h-9 touch-manipulation rounded-md px-2 text-xs font-semibold text-moss active:bg-[#e5f2ec]"
-            onClick={() => onAction("今日 3 个任务都可以在手机端点开处理。")}
+            onClick={() => onAction("今日 3 个待办都可以在手机端点开处理。")}
             type="button"
           >
             全部
@@ -1112,7 +1112,7 @@ function CollectScreen({
         if (cancelled) {
           return;
         }
-        setScheduleMessage(error instanceof Error ? error.message : "采集任务状态刷新失败。");
+        setScheduleMessage(error instanceof Error ? error.message : "采集状态刷新失败。");
         timer = window.setTimeout(pollCollectionJob, 5000);
       }
     }
@@ -1151,14 +1151,14 @@ function CollectScreen({
       headers: authHeaders(credentials)
     });
     if (!response.ok) {
-      throw new Error(await readApiError(response, "采集任务状态刷新失败。"));
+      throw new Error(await readApiError(response, "采集状态刷新失败。"));
     }
     return (await response.json()) as MobileCollectionJob;
   }
 
   function saveSchedule() {
     if (!query.trim()) {
-      onAction("先填写关键词，再保存定时采集任务。");
+      onAction("先填写关键词，再保存定时采集设置。");
       return;
     }
     const nextDate = autoEnabled ? scheduleNextRun() : null;

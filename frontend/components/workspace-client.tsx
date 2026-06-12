@@ -1787,7 +1787,7 @@ function KnowledgeView() {
         </Panel>
         <Panel helper="当前知识库还没有真实图文样本，下一步应从趋势采集页补齐。" title="当前状态">
           <div className={`${subtleCardClass} px-4 py-4 text-sm leading-6 text-muted`}>
-            公开样本、内部资料、写作模板和来源链接已经拆成独立入口，等采集任务完成后即可沉淀为知识条目。
+            公开样本、内部资料、写作模板和来源链接已经拆成独立入口，等采集完成后即可沉淀为知识条目。
           </div>
         </Panel>
       </div>
@@ -2200,7 +2200,7 @@ function GenerationLauncher({
 
       if (isTestDraft(finalContent)) {
         setStatusText(
-          "当前是演示草稿，不会创建封面图。请配置真实撰稿服务后再一键生成。"
+          "当前是演示草稿，不会生成封面图。请配置真实撰稿服务后再一键生成。"
         );
         return;
       }
@@ -2274,7 +2274,7 @@ function GenerationLauncher({
             {exportContent ? "最近草稿" : "主入口"}
           </Pill>
         }
-        helper="一键生成会创建文案并尝试生成封面，不会自动发布；发布前仍需人工确认。"
+        helper="一键生成会生成文案并尝试生成封面，不会自动发布；发布前仍需人工确认。"
         title="一键生成图文+封面"
       >
         <div className="mb-4 rounded-md border border-steel/40 bg-steel/10 p-4">
@@ -2778,7 +2778,7 @@ function GeneratedPostExportCard({
         </div>
         {!imageProviderReady ? (
           <div className="mt-3 rounded-md border border-amber/40 bg-amber/10 p-3 text-xs leading-5 text-ink">
-            点击生成时会重新检测真实图片服务；检测未通过不会创建演示图片。
+            点击生成时会重新检测真实图片服务；检测未通过不会生成演示图片。
           </div>
         ) : null}
         {imageError ? (

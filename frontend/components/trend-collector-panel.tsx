@@ -334,7 +334,7 @@ export function TrendCollectorPanel({
       return null;
     }
     if (!response.ok) {
-      throw new Error("无法刷新采集任务状态，请检查应用服务。");
+      throw new Error("无法刷新采集状态，请检查应用服务。");
     }
     return (await response.json()) as TrendCollectionJob;
   }
@@ -413,7 +413,7 @@ export function TrendCollectorPanel({
         if (cancelled) {
           return;
         }
-        setStatusText(error instanceof Error ? error.message : "采集任务状态刷新失败。");
+        setStatusText(error instanceof Error ? error.message : "采集状态刷新失败。");
         timer = window.setTimeout(pollJobStatus, 5000);
       }
     }
