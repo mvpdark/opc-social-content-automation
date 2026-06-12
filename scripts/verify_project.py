@@ -517,6 +517,8 @@ def validate_content_production_contract() -> int:
         "Prompt 模板库",
         "Prompt 独立存放",
         "prompt 结构参考",
+        "封面 brief",
+        "从 brief 到复核",
         "Bearer token",
         "服务端权限",
         "测试门禁",

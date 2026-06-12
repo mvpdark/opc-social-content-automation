@@ -626,7 +626,7 @@ export const contentControls = [
 
 export const imageWorkflow = [
   {
-    title: "封面 brief",
+    title: "封面需求",
     detail: "从标题、三点清单和风格参考生成图片需求。",
     status: "可准备",
     icon: LayoutTemplate

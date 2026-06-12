@@ -2877,7 +2877,7 @@ function CoverView() {
       </Panel>
 
       <div className="space-y-4">
-        <Panel helper="从 brief 到复核的图片流程。" title="图片流程">
+        <Panel helper="从封面需求到人工复核的图片流程。" title="图片流程">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             {imageWorkflow.map((step) => (
               <div key={step.title} className={`${subtleCardClass} p-4`}>
