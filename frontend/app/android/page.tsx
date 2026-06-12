@@ -159,7 +159,7 @@ const bottomTabs: Array<{ id: MobileTab; icon: typeof Home; label: string }> = [
 ];
 
 const workItems = [
-  { label: "补高赞图文参考", state: "进入采集", icon: Radar, tab: "collect" },
+  { label: "补公开图文素材", state: "进入采集", icon: Radar, tab: "collect" },
   { label: "生成硕升博草稿", state: "进入创作", icon: PenLine, tab: "create" },
   { label: "复核封面标题", state: "查看封面", icon: Image, tab: "create" }
 ] satisfies Array<{
@@ -204,7 +204,7 @@ const sampleReferences = [
       "姐妹们，硕升博别一上来就套磁。[哭惹R]\n\n先确认研究方向、导师项目和自己的材料匹配度，再去写邮件，第一印象会稳很多。\n\n真正要先做的是：把方向拆清楚，把导师近期成果读一遍，把你能贡献什么写成一句话。",
     coverNotes: ["大字反常识标题", "三点清单", "低噪奶油底"],
     cue: "反常识开头 + 三点清单",
-    meta: "写作参考 · 来源待 PC 确认",
+    meta: "结构模板 · 非采集素材",
     takeaways: ["先打断常见误区", "再给 3 个动作", "结尾给温和提醒"],
     title: "不是先套磁，先确认这 3 件事"
   },
@@ -213,7 +213,7 @@ const sampleReferences = [
       "宝子，群发邮件真的不是越早越好～\n\n如果方向没拆清楚，邮件看起来就会像模板，导师也很难判断你到底适不适合他的组。\n\n先做一个小动作：把每位导师的研究主题、近两年成果、你能接上的经历放在同一张表里。",
     coverNotes: ["误区提醒", "邮件场景", "行动表格"],
     cue: "先打断误区，再给动作",
-    meta: "结构参考 · 非采集结果",
+    meta: "结构模板 · 非采集素材",
     takeaways: ["用场景切入", "指出群发风险", "给出表格化动作"],
     title: "硕升博申请别急着群发邮件"
   },
@@ -222,7 +222,7 @@ const sampleReferences = [
       "导师匹配前，先做一次方向自查！！[赞R]\n\n不是看导师名气有多大，而是看你的经历、兴趣和他正在做的项目能不能接上。\n\n可以从三个问题开始：我能研究什么？我已经做过什么？我为什么适合这个方向？",
     coverNotes: ["步骤化封面", "方向自查", "清爽正文"],
     cue: "步骤化封面 + 低噪正文",
-    meta: "封面参考 · 待人工复核",
+    meta: "封面模板 · 非采集素材",
     takeaways: ["问题式开头", "降低焦虑", "强调匹配逻辑"],
     title: "导师匹配前要做的方向自查"
   }
@@ -888,7 +888,7 @@ function HomeScreen({
           </div>
           <h2 className="mt-4 text-[25px] font-black leading-8">先采集，再生成</h2>
           <p className="mt-2 max-w-[230px] text-[13px] font-medium leading-5 text-ink/68">
-            先补高赞参考，再启动硕升博草稿，节奏更稳。
+            先补公开素材，再启动硕升博草稿，节奏更稳。
           </p>
           <div className="mt-4 flex items-center gap-2 text-[11px] font-bold text-ink/52">
             <span>采集参考</span>
@@ -1327,7 +1327,7 @@ function CollectScreen({
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-xs font-black text-moss">自动采集</div>
-              <h2 className="mt-1 text-xl font-black leading-6">把高赞参考变成素材池</h2>
+              <h2 className="mt-1 text-xl font-black leading-6">把公开参考变成素材池</h2>
             </div>
             <span className="rounded-[12px] bg-[#ff2442] px-3 py-1.5 text-[11px] font-black text-white">
               {autoEnabled ? "运行中" : "待开启"}
@@ -1517,7 +1517,7 @@ function CollectScreen({
         ) : null}
       </MobilePanel>
 
-      <MobilePanel title="高赞参考">
+      <MobilePanel title="结构模板">
         <div className="space-y-3">
           {sampleReferences.map((item, index) => (
             <button
@@ -2648,7 +2648,7 @@ function ReferencePreviewSheet({
               <ArrowLeft className="h-4 w-4" />
             </button>
             <div className="min-w-0 flex-1">
-              <div className="text-[11px] font-semibold text-moss">高赞参考</div>
+              <div className="text-[11px] font-semibold text-moss">结构模板</div>
               <h2 className="truncate text-lg font-semibold leading-6">参考预览</h2>
             </div>
             <span className="rounded-full bg-[#fff6e3] px-3 py-1 text-[11px] font-semibold text-[#8a5d16]">

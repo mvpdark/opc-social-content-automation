@@ -644,6 +644,17 @@ def validate_content_production_contract() -> int:
         if snippet not in android_text:
             raise SystemExit(f"Missing mobile Xiaohongshu copy contract: {snippet}")
 
+    mobile_static_reference_contract_snippets = [
+        "把公开参考变成素材池",
+        'MobilePanel title="结构模板"',
+        "结构模板 · 非采集素材",
+        "封面模板 · 非采集素材",
+    ]
+    for snippet in mobile_static_reference_contract_snippets:
+        total += 1
+        if snippet not in android_text:
+            raise SystemExit(f"Missing mobile static reference contract: {snippet}")
+
     mobile_xhs_export_start = android_text.index("async function handleOpenXiaohongshu")
     mobile_xhs_export_end = android_text.index(
         "async function copyPreviewLink",
@@ -951,6 +962,11 @@ def validate_content_production_contract() -> int:
         "浏览器可能拦截了剪贴板权限",
         "function formatMobileCollectionJobStatus",
         "const terminalJobStatuses = new Set",
+        'MobilePanel title="高赞参考"',
+        "把高赞参考变成素材池",
+        "来源待 PC 确认",
+        "非采集结果",
+        "待人工复核",
     ]
     for snippet in stale_gate_snippets:
         total += 1
