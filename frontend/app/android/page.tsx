@@ -675,7 +675,7 @@ export default function AndroidPreviewPage() {
 
 function MobileShell({ children }: { children: ReactNode }) {
   return (
-    <main className="min-h-[100dvh] bg-[#d8e6dc] px-0 py-0 text-ink sm:px-6 sm:py-6">
+    <main className="opc-mobile-shell min-h-[100dvh] bg-[#d8e6dc] px-0 py-0 text-ink sm:px-6 sm:py-6">
       <div
         className="relative mx-auto h-[100dvh] max-w-[430px] overflow-hidden bg-[#f8f5ec] bg-cover shadow-[0_24px_70px_rgba(20,48,41,0.18)] sm:h-[calc(100dvh-48px)] sm:min-h-[680px] sm:rounded-[30px] sm:border sm:border-white/80"
         style={{ backgroundImage: `url(${MOBILE_PAPER_TEXTURE})` }}
@@ -2336,7 +2336,7 @@ function BottomNav({ activeTab, onChange }: { activeTab: MobileTab; onChange: (t
               aria-pressed={active}
               key={tab.id}
               className={[
-                "flex min-h-[54px] touch-manipulation flex-col items-center justify-center gap-1 rounded-[18px] text-[11px] font-black active:scale-[0.98]",
+                "flex min-h-[54px] touch-manipulation flex-col items-center justify-center gap-1 rounded-[18px] text-[11px] font-black transition active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-moss/35",
                 active ? "bg-[#161817] text-white shadow-[0_10px_24px_rgba(22,24,23,0.16)]" : "text-muted active:bg-white/80"
               ].join(" ")}
               data-testid={`mobile-tab-${tab.id}`}

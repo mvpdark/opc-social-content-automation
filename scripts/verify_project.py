@@ -262,6 +262,9 @@ def validate_frontend_design_contract() -> int:
     app_shell_text = (
         ROOT / "frontend" / "components" / "app-shell.tsx"
     ).read_text(encoding="utf-8")
+    android_text = (ROOT / "frontend" / "app" / "android" / "page.tsx").read_text(
+        encoding="utf-8"
+    )
     middleware_text = (ROOT / "frontend" / "middleware.ts").read_text(encoding="utf-8")
 
     tab_ids = _extract_ts_array("workspaceTabIds", data_text)
@@ -376,6 +379,38 @@ def validate_frontend_design_contract() -> int:
             if snippet not in text:
                 raise SystemExit(f"Missing {contract_name} contract: {snippet}")
 
+    mobile_focus_contracts = [
+        (
+            css_text,
+            [
+                ".opc-mobile-shell :where(a, button):focus-visible",
+                "outline: 2px solid rgb(var(--moss) / 0.72)",
+                "box-shadow: 0 0 0 4px rgb(var(--moss) / 0.16)",
+            ],
+            "mobile focus visible style",
+        ),
+        (
+            android_text,
+            [
+                "opc-mobile-shell",
+                "focus-visible:ring-2 focus-visible:ring-moss/35",
+            ],
+            "mobile focus visible controls",
+        ),
+    ]
+    for text, snippets, contract_name in mobile_focus_contracts:
+        for snippet in snippets:
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
+
+    hidden_focus_markers = [
+        "focus-visible:outline-none focus-visible:ring-0",
+        ".opc-mobile-shell :where(a, button):focus-visible {\n  outline: none;\n  box-shadow: none;",
+    ]
+    for marker in hidden_focus_markers:
+        if marker in android_text or marker in css_text:
+            raise SystemExit(f"Hidden mobile focus marker is not allowed: {marker}")
+
     return (
         len(tab_ids)
         + len(style_ids)
@@ -385,6 +420,7 @@ def validate_frontend_design_contract() -> int:
         + len(pc_login_snippets)
         + len(app_shell_login_snippets)
         + sum(len(snippets) for _text, snippets, _name in one_click_entry_contracts)
+        + sum(len(snippets) for _text, snippets, _name in mobile_focus_contracts)
     )
 
 

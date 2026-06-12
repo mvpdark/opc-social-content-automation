@@ -232,6 +232,24 @@ li {
   border-color: rgb(var(--steel) / 0.86);
 }
 
+.opc-mobile-shell,
+.opc-mobile-shell * {
+  scrollbar-width: none;
+}
+
+.opc-mobile-shell::-webkit-scrollbar,
+.opc-mobile-shell *::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.opc-mobile-shell :where(a, button):focus-visible {
+  outline: 2px solid rgb(var(--moss) / 0.72);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgb(var(--moss) / 0.16);
+}
+
 .workspace-shell {
   position: relative;
   isolation: isolate;
