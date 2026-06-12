@@ -7,18 +7,30 @@ function trimTrailingSlash(value: string) {
 }
 
 
-function isLoopbackHostname(hostname: string) {
-  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+function normalizedHostname(hostname: string) {
+  return hostname.trim().toLowerCase();
 }
 
 
-function isLocalOrPrivateHostname(hostname: string) {
+function isLoopbackHostname(hostname: string) {
+  const normalized = normalizedHostname(hostname);
   return (
-    isLoopbackHostname(hostname) ||
-    hostname === "0.0.0.0" ||
-    hostname.startsWith("10.") ||
-    hostname.startsWith("192.168.") ||
-    /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)
+    normalized === "localhost" ||
+    normalized === "127.0.0.1" ||
+    normalized === "::1" ||
+    normalized === "[::1]"
+  );
+}
+
+
+export function isLocalOrPrivateHostname(hostname: string) {
+  const normalized = normalizedHostname(hostname);
+  return (
+    isLoopbackHostname(normalized) ||
+    normalized === "0.0.0.0" ||
+    normalized.startsWith("10.") ||
+    normalized.startsWith("192.168.") ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(normalized)
   );
 }
 

@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 
 import { PlatformIcon, PlatformLabel } from "@/components/platform-icon";
-import { getApiBase } from "@/lib/api-base";
+import { getApiBase, isLocalOrPrivateHostname } from "@/lib/api-base";
 import { resolveAssetUrl } from "@/lib/asset-url";
 import { copyText, tryCopyText } from "@/lib/clipboard";
 import {
@@ -2859,11 +2859,7 @@ function DraftPreviewEditor({
     const previewUrl = `${window.location.origin}/preview/${generatedContent.id}`;
     try {
       await copyText(previewUrl);
-      const isLocalPreview =
-        window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1" ||
-        window.location.hostname.startsWith("192.168.") ||
-        window.location.hostname.startsWith("10.");
+      const isLocalPreview = isLocalOrPrivateHostname(window.location.hostname);
       const message = isLocalPreview
         ? "预览链接已复制；当前是这台设备或同一网络地址，外部用户需要部署到公网后才能打开。"
         : "预览链接已复制，可以发给别人查看。";
