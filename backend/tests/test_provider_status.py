@@ -93,7 +93,7 @@ def test_provider_connection_check_redacts_provider_errors(monkeypatch) -> None:
     monkeypatch.setattr(settings, "openai_compatible_api_key", "secret-draft-key")
 
     def fail_draft(prompt_name: str, payload: dict[str, object]) -> str:
-        raise HTTPException(status_code=502, detail="撰稿服务授权失败，请检查设置里的 API Key 和中转站地址。")
+        raise HTTPException(status_code=502, detail="撰稿服务授权失败，请检查设置里的服务密钥和中转站地址。")
 
     monkeypatch.setattr(
         "app.services.workspace_service.model_router.draft_model",

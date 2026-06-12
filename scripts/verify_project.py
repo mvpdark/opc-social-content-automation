@@ -540,6 +540,7 @@ def validate_content_production_contract() -> int:
         "Agent Skills",
         "候选 Skill",
         "第三方 API Key",
+        "API Key",
         "RAG、长期阅读",
         "Codex Skill",
         "payload 校验",

@@ -66,6 +66,10 @@ import {
   type ProviderStatusItem
 } from "@/lib/provider-settings";
 import {
+  isServiceCredentialError,
+  sanitizeServiceErrorMessage
+} from "@/lib/service-error-copy";
+import {
   generatedContentStatusLabel,
   generatedImageStatusLabel
 } from "@/lib/status-labels";
@@ -777,11 +781,11 @@ async function readApiError(response: Response, fallback: string) {
   if (errorBody?.detail === "database_unavailable") {
     return "数据库暂时不可用：安装包或本地运行请重新启动；自部署模式请检查数据库连接设置和数据库服务。";
   }
-  return errorBody?.message ?? errorBody?.detail ?? fallback;
+  return sanitizeServiceErrorMessage(errorBody?.message ?? errorBody?.detail ?? fallback);
 }
 
 function normalizeRewriteServiceMessage(message: string) {
-  return message
+  return sanitizeServiceErrorMessage(message)
     .replace(/DeepSeek rewrite provider is not configured yet\./g, "改写服务尚未配置。")
     .replace(/DeepSeek/g, "改写服务");
 }
@@ -2142,13 +2146,18 @@ function GenerationLauncher({
         throw new Error(await readApiError(response, "撰稿服务检测失败。"));
       }
       const data = (await response.json()) as ProviderCheckResult;
-      setDraftCheckStatus(data);
-      setNeedsProviderSettings(data.status !== "ok");
+      const displayData = { ...data, message: sanitizeServiceErrorMessage(data.message) };
+      setDraftCheckStatus(displayData);
+      setNeedsProviderSettings(displayData.status !== "ok");
       setStatusText(
-        data.status === "ok" ? data.message : `检测未通过：${data.message}`
+        displayData.status === "ok"
+          ? displayData.message
+          : `检测未通过：${displayData.message}`
       );
     } catch (error) {
-      const message = error instanceof Error ? error.message : "撰稿服务检测失败。";
+      const message = sanitizeServiceErrorMessage(
+        error instanceof Error ? error.message : "撰稿服务检测失败。"
+      );
       setDraftCheckStatus({
         configured: false,
         message,
@@ -2245,7 +2254,7 @@ function GenerationLauncher({
           setNeedsProviderSettings(
             rawRewriteMessage.includes("DeepSeek") ||
               rawRewriteMessage.includes("授权失败") ||
-              rawRewriteMessage.includes("API Key")
+              isServiceCredentialError(rawRewriteMessage)
           );
           rewriteWarning = `改写服务未完成：${rewriteMessage}`;
           setStatusText(
@@ -2273,18 +2282,19 @@ function GenerationLauncher({
         setNeedsProviderSettings(
           coverMessage.includes("图片服务") ||
             coverMessage.includes("授权失败") ||
-            coverMessage.includes("API Key") ||
+            isServiceCredentialError(coverMessage) ||
             coverMessage.includes("image")
         );
-        setStatusText(`文案已生成，但封面图未完成：${coverMessage}`);
+        setStatusText(`文案已生成，但封面图未完成：${sanitizeServiceErrorMessage(coverMessage)}`);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "图文草稿生成失败。";
+      const rawMessage = error instanceof Error ? error.message : "图文草稿生成失败。";
+      const message = sanitizeServiceErrorMessage(rawMessage);
       setNeedsProviderSettings(
-        message.includes("授权失败") ||
-          message.includes("模型") ||
-          message.includes("接口") ||
-          message.includes("API Key")
+        rawMessage.includes("授权失败") ||
+          rawMessage.includes("模型") ||
+          rawMessage.includes("接口") ||
+          isServiceCredentialError(rawMessage)
       );
       setStatusText(message);
     } finally {
@@ -3081,7 +3091,9 @@ function SettingsView({
       setCredentialStatus("服务配置已应用到当前工作台，页面不会展示完整密钥。");
       setProviderCheckStatus(null);
     } catch (error) {
-      setCredentialStatus(error instanceof Error ? error.message : "服务配置应用失败。");
+      setCredentialStatus(
+        sanitizeServiceErrorMessage(error instanceof Error ? error.message : "服务配置应用失败。")
+      );
     } finally {
       setCredentialBusy(false);
     }
@@ -3108,11 +3120,14 @@ function SettingsView({
         throw new Error(await readApiError(response, "撰稿服务检测失败。"));
       }
       const data = (await response.json()) as ProviderCheckResult;
+      const message = sanitizeServiceErrorMessage(data.message);
       setProviderCheckStatus(
-        data.status === "ok" ? data.message : `检测未通过：${data.message}`
+        data.status === "ok" ? message : `检测未通过：${message}`
       );
     } catch (error) {
-      setProviderCheckStatus(error instanceof Error ? error.message : "撰稿服务检测失败。");
+      setProviderCheckStatus(
+        sanitizeServiceErrorMessage(error instanceof Error ? error.message : "撰稿服务检测失败。")
+      );
     } finally {
       setProviderCheckBusy(false);
     }

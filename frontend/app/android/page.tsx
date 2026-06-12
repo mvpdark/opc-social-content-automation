@@ -39,6 +39,7 @@ import {
   providerKeyUpdatePayload,
   type ProviderStatusItem
 } from "@/lib/provider-settings";
+import { sanitizeServiceErrorMessage } from "@/lib/service-error-copy";
 import { collectionJobStatusLabel } from "@/lib/status-labels";
 
 type MobileTab = "home" | "collect" | "create" | "settings";
@@ -280,7 +281,7 @@ async function readApiError(response: Response, fallback: string) {
   const errorBody = (await response.json().catch(() => null)) as
     | { detail?: string; message?: string }
     | null;
-  return errorBody?.message ?? errorBody?.detail ?? fallback;
+  return sanitizeServiceErrorMessage(errorBody?.message ?? errorBody?.detail ?? fallback);
 }
 
 function isGeneratedContent(value: unknown): value is GeneratedContent {
@@ -2166,7 +2167,9 @@ function SettingsScreen({
       onAction("服务配置已应用到当前工作台。");
       setCheckStatus(null);
     } catch (error) {
-      onAction(error instanceof Error ? error.message : "服务配置应用失败。");
+      onAction(
+        sanitizeServiceErrorMessage(error instanceof Error ? error.message : "服务配置应用失败。")
+      );
     } finally {
       setBusyAction(null);
     }
@@ -2185,10 +2188,17 @@ function SettingsScreen({
         throw new Error(await readApiError(response, "撰稿服务检测失败。"));
       }
       const data = (await response.json()) as ProviderCheckResult;
-      setCheckStatus(data);
-      onAction(data.status === "ok" ? data.message : `检测未通过：${data.message}`);
+      const displayData = { ...data, message: sanitizeServiceErrorMessage(data.message) };
+      setCheckStatus(displayData);
+      onAction(
+        displayData.status === "ok"
+          ? displayData.message
+          : `检测未通过：${displayData.message}`
+      );
     } catch (error) {
-      const message = error instanceof Error ? error.message : "撰稿服务检测失败。";
+      const message = sanitizeServiceErrorMessage(
+        error instanceof Error ? error.message : "撰稿服务检测失败。"
+      );
       setCheckStatus({
         configured: false,
         message,

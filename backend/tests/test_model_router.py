@@ -281,7 +281,7 @@ def test_openai_compatible_draft_provider_reports_invalid_key(
         model_router.draft_model("draft_generation", {"topic": "test"})
 
     assert exc.value.status_code == 502
-    assert "API Key 无效" in exc.value.detail
+    assert "服务密钥无效" in exc.value.detail
     assert secret not in exc.value.detail
 
 
