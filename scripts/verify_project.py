@@ -62,6 +62,7 @@ def validate_required_files() -> int:
         ROOT / "docs" / "RUNBOOK.md",
         ROOT / "docs" / "CLOUDFLARE_OPC.md",
         ROOT / "docs" / "SECURITY_NOTES.md",
+        ROOT / "docs" / "COMPETITOR_PLATFORM_RESEARCH.md",
         ROOT / "infra" / "cloudflare" / "opc-tunnel.example.yml",
         ROOT / "scripts" / "run_trend_collection_job.py",
         ROOT / "scripts" / "smoke_public_image_text_search.py",
