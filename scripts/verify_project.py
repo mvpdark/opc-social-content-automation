@@ -415,7 +415,7 @@ def validate_content_production_contract() -> int:
         "generationBusy={busyAction !== null}",
         "generationBusy: boolean",
         "一键生成还在继续",
-        "和封面图 #",
+        "文案和封面图已",
         'data-testid="cover-generate-button"',
         'data-testid="cover-generate-button-secondary"',
         'data-testid="xhs-preview-real-cover"',
@@ -527,6 +527,9 @@ def validate_content_production_contract() -> int:
         "当前手机浏览器的此设备",
         "手机可配置",
         "人味化",
+        "草稿 #",
+        "文案 #",
+        "封面图 #",
     ]
     for snippet in stale_gate_snippets:
         total += 1

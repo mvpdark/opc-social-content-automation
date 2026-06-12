@@ -1615,7 +1615,7 @@ function CreateScreen({
         if (active && latestCover) {
           setGeneratedCover(latestCover);
           saveStoredMobileCover(latestCover);
-          onAction(`已找回封面图 #${latestCover.id}。`);
+          onAction("已找回最近封面图。");
         }
       } catch (_error) {
         // Keep the cached cover visible if the network check fails.
@@ -1849,7 +1849,7 @@ function CreateScreen({
     if ("Notification" in window && Notification.permission === "granted") {
       const title = "一键生成完成";
       const options: NotificationOptions = {
-        body: `草稿 #${content.id} 和封面图 #${cover.id} 已生成。`,
+        body: "文案和封面图已生成。",
         icon: platform === "douyin" ? "/platform-icons/douyin.ico" : "/platform-icons/xiaohongshu.ico",
         tag: `opc-mobile-generation-${content.id}`
       };
@@ -1933,7 +1933,7 @@ function CreateScreen({
       });
       if (!imageResponse.ok) {
         throw new Error(
-          `草稿 #${data.id} 已生成，但封面图失败：${await readApiError(imageResponse, "封面图生成失败。")}`
+          `文案草稿已生成，但封面图失败：${await readApiError(imageResponse, "封面图生成失败。")}`
         );
       }
       const cover = (await imageResponse.json()) as GeneratedImageAsset;
@@ -1941,7 +1941,7 @@ function CreateScreen({
       saveStoredMobileCover(cover);
       finishProgress("已完成");
       void notifyGenerationComplete(data, cover);
-      onAction(`草稿 #${data.id} 已生成，封面图 #${cover.id} 已生成。`);
+      onAction("文案和封面图已生成。");
     } catch (error) {
       stopProgressTimer();
       setProgressLabel("生成失败");
@@ -1954,7 +1954,7 @@ function CreateScreen({
   async function copyDraft() {
     try {
       await copyText(buildEditableDraftCopy(draftPreview));
-      onAction(generatedContent ? `草稿 #${generatedContent.id} 已复制。` : "当前预览文案已复制。");
+      onAction(generatedContent ? "当前草稿已复制。" : "当前预览文案已复制。");
     } catch (_error) {
       onAction("复制失败，浏览器可能拦截了剪贴板权限。");
     }
@@ -2845,7 +2845,7 @@ function DraftPreviewEditor({
             </button>
             <div className="min-w-0 flex-1">
               <div className="text-[11px] font-semibold text-[#ff2442]">
-                {generatedContent ? `草稿 #${generatedContent.id}` : "本地草稿"}
+                {generatedContent ? "当前草稿" : "本地草稿"}
               </div>
               <h2 className="truncate text-lg font-semibold leading-6">图文预览</h2>
             </div>

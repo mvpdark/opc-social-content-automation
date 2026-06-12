@@ -2196,10 +2196,10 @@ function GenerationLauncher({
       if (!rewriteProviderReady) {
         rewriteWarning = "改写服务未配置或尚未确认，本次未走改写服务。";
         setStatusText(
-          `草稿 #${data.id} 已生成。改写服务未配置或尚未确认，本次未走改写服务，正在尝试生成封面图。`
+          "文案草稿已生成。改写服务未配置或尚未确认，本次未走改写服务，正在尝试生成封面图。"
         );
       } else {
-        setStatusText(`草稿 #${data.id} 已生成，正在调用改写服务做口吻润色。`);
+        setStatusText("文案草稿已生成，正在调用改写服务做口吻润色。");
         try {
           const rewriteResponse = await fetch(`${API_BASE}/content/rewrite`, {
             method: "POST",
@@ -2217,7 +2217,7 @@ function GenerationLauncher({
           finalContent = rewrittenContent;
           setLastContent(rewrittenContent);
           onGeneratedContent(rewrittenContent);
-          setStatusText(`草稿 #${rewrittenContent.id} 已完成改写，正在生成封面图。`);
+          setStatusText("文案已完成口吻润色，正在生成封面图。");
         } catch (rewriteError) {
           const rawRewriteMessage =
             rewriteError instanceof Error ? rewriteError.message : "改写服务处理失败。";
@@ -2229,14 +2229,14 @@ function GenerationLauncher({
           );
           rewriteWarning = `改写服务未完成：${rewriteMessage}`;
           setStatusText(
-            `草稿 #${data.id} 已生成，但改写服务未完成：${rewriteMessage} 正在尝试用当前草稿生成封面图。`
+            `文案草稿已生成，但改写服务未完成：${rewriteMessage} 正在尝试用当前草稿生成封面图。`
           );
         }
       }
 
       if (isTestDraft(finalContent)) {
         setStatusText(
-          `草稿 #${finalContent.id} 是演示草稿，不会创建封面图。请配置真实撰稿服务后再一键生成。`
+          "当前是演示草稿，不会创建封面图。请配置真实撰稿服务后再一键生成。"
         );
         return;
       }
@@ -2244,8 +2244,8 @@ function GenerationLauncher({
       try {
         const cover = await generateCoverForContent(finalContent);
         const completionMessage = rewriteWarning
-          ? `文案 #${finalContent.id} 和封面图 #${cover.id} 已生成，但${rewriteWarning}预览确认后即可复制文案。`
-          : `草稿 #${finalContent.id} 和封面图 #${cover.id} 已一键生成。预览确认后即可复制文案。`;
+          ? `文案和封面图已生成，但${rewriteWarning}预览确认后即可复制文案。`
+          : "文案和封面图已一键生成。预览确认后即可复制文案。";
         setStatusText(completionMessage);
       } catch (coverError) {
         const coverMessage =
@@ -2256,7 +2256,7 @@ function GenerationLauncher({
             coverMessage.includes("API Key") ||
             coverMessage.includes("image")
         );
-        setStatusText(`文案 #${finalContent.id} 已生成，但封面图未完成：${coverMessage}`);
+        setStatusText(`文案已生成，但封面图未完成：${coverMessage}`);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "图文草稿生成失败。";
@@ -2306,7 +2306,7 @@ function GenerationLauncher({
       <Panel
         action={
           <Pill tone={exportContent ? "green" : "blue"}>
-            {exportContent ? `草稿 #${exportContent.id}` : "主入口"}
+            {exportContent ? "最近草稿" : "主入口"}
           </Pill>
         }
         helper="一键生成会创建文案并尝试生成封面，不会自动发布；发布前仍需人工确认。"
@@ -2316,7 +2316,7 @@ function GenerationLauncher({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <Pill tone={exportContent ? "green" : "blue"}>
-                {exportContent ? `草稿 #${exportContent.id}` : "生产入口"}
+                {exportContent ? "最近草稿" : "生产入口"}
               </Pill>
               <h3 className="mt-3 text-lg font-semibold leading-6 text-ink">
                 选题确认后，点这里一键生成
@@ -3666,7 +3666,7 @@ function DraftPanel({
                 platform={previewPlatformId}
                 suffix="图文"
               />
-              <span>{content ? `草稿 #${preview.id}` : loading ? "正在读取最近草稿" : "等待草稿"}</span>
+              <span>{content ? "最近草稿" : loading ? "正在读取最近草稿" : "等待草稿"}</span>
             </div>
             <button
               className="mt-2 block w-full text-left text-base font-semibold leading-6 text-ink transition hover:text-coral"
