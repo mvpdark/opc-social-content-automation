@@ -37,6 +37,12 @@ import { getApiBase } from "@/lib/api-base";
 import { resolveAssetUrl } from "@/lib/asset-url";
 import { copyText, tryCopyText } from "@/lib/clipboard";
 import {
+  isGeneratedContent,
+  isGeneratedImageAsset,
+  type GeneratedContent,
+  type GeneratedImageAsset
+} from "@/lib/generated-assets";
+import {
   providerBindingDefaultsFromStatuses,
   providerKeyUpdatePayload,
   sanitizeProviderStatusItems,
@@ -58,22 +64,6 @@ type CredentialSettings = {
   imageApiKey: string;
   rewriteApiKey: string;
   workspaceToken: string;
-};
-
-type GeneratedContent = {
-  body: string;
-  id: number;
-  platform: string;
-  status: string;
-  tags: string[] | null;
-  title: string;
-};
-
-type GeneratedImageAsset = {
-  content_id: number;
-  id: number;
-  image_url: string;
-  status: string;
 };
 
 type ProviderCheckResult = {
@@ -282,36 +272,6 @@ async function readApiError(response: Response, fallback: string) {
     | { detail?: string; message?: string }
     | null;
   return sanitizeServiceErrorMessage(errorBody?.message ?? errorBody?.detail ?? fallback);
-}
-
-function isGeneratedContent(value: unknown): value is GeneratedContent {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const content = value as Partial<GeneratedContent>;
-  return (
-    typeof content.body === "string" &&
-    typeof content.id === "number" &&
-    typeof content.platform === "string" &&
-    typeof content.status === "string" &&
-    typeof content.title === "string" &&
-    (Array.isArray(content.tags) || content.tags === null || content.tags === undefined)
-  );
-}
-
-function isGeneratedImageAsset(value: unknown): value is GeneratedImageAsset {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const image = value as Partial<GeneratedImageAsset>;
-  return (
-    typeof image.content_id === "number" &&
-    typeof image.id === "number" &&
-    typeof image.image_url === "string" &&
-    typeof image.status === "string"
-  );
 }
 
 function readMobileStorage(key: string) {

@@ -59,6 +59,7 @@ def validate_required_files() -> int:
         ROOT / "frontend" / "middleware.ts",
         ROOT / "frontend" / "lib" / "api-base.ts",
         ROOT / "frontend" / "lib" / "asset-url.ts",
+        ROOT / "frontend" / "lib" / "generated-assets.ts",
         ROOT / "frontend" / "lib" / "status-labels.ts",
         ROOT / "frontend" / "lib" / "tags.ts",
         ROOT / "frontend" / "lib" / "xhs-stickers.tsx",
@@ -427,6 +428,9 @@ def validate_content_production_contract() -> int:
     clipboard_text = (ROOT / "frontend" / "lib" / "clipboard.ts").read_text(
         encoding="utf-8"
     )
+    generated_assets_text = (
+        ROOT / "frontend" / "lib" / "generated-assets.ts"
+    ).read_text(encoding="utf-8")
     xhs_stickers_text = (ROOT / "frontend" / "lib" / "xhs-stickers.tsx").read_text(
         encoding="utf-8"
     )
@@ -554,6 +558,18 @@ def validate_content_production_contract() -> int:
         if snippet not in tags_text:
             raise SystemExit(f"Missing tag format helper contract: {snippet}")
 
+    generated_asset_contract_snippets = [
+        "export type GeneratedContent",
+        "export type GeneratedImageAsset",
+        "export function isGeneratedContent",
+        "export function isGeneratedImageAsset",
+        "typeof image.image_url === \"string\"",
+    ]
+    for snippet in generated_asset_contract_snippets:
+        total += 1
+        if snippet not in generated_assets_text:
+            raise SystemExit(f"Missing generated asset helper contract: {snippet}")
+
     particle_style_contracts = [
         (
             workspace_text,
@@ -597,6 +613,10 @@ def validate_content_production_contract() -> int:
         "function xhsStickerFallback(code: string)",
         "function formatTags(tags: string[] | null)",
         "function formatTagLine(tags: string[] | null)",
+        "type GeneratedContent = {",
+        "type GeneratedImageAsset = {",
+        "function isGeneratedContent(value: unknown)",
+        "function isGeneratedImageAsset(value: unknown)",
         "canCopy && imageProviderReady && !imageBusy",
         "封面仍是版式预览，真实图片生成后会在这里替换。\" :",
         "假图",

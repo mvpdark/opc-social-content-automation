@@ -43,6 +43,12 @@ import { getApiBase } from "@/lib/api-base";
 import { resolveAssetUrl } from "@/lib/asset-url";
 import { copyText } from "@/lib/clipboard";
 import {
+  isGeneratedContent,
+  isGeneratedImageAsset,
+  type GeneratedContent,
+  type GeneratedImageAsset
+} from "@/lib/generated-assets";
+import {
   connectionStatuses,
   contentControls,
   coverReferences,
@@ -801,28 +807,6 @@ function normalizeRewriteServiceMessage(message: string) {
   );
 }
 
-type GeneratedContent = {
-  body: string;
-  created_at?: string;
-  id: number;
-  platform: string;
-  status: string;
-  tags: string[] | null;
-  title: string;
-};
-
-type GeneratedImageAsset = {
-  content_id: number;
-  created_at: string;
-  created_by: number | null;
-  error: string | null;
-  id: number;
-  image_url: string;
-  prompt: string | null;
-  status: string;
-  template: string | null;
-};
-
 type ProviderCheckResult = {
   configured: boolean;
   message: string;
@@ -915,34 +899,6 @@ function isTestDraft(content: GeneratedContent) {
     content.body.includes("codex_test") ||
     content.body.includes("【测试草稿】") ||
     content.body.includes("【演示草稿】")
-  );
-}
-
-function isGeneratedContent(value: unknown): value is GeneratedContent {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const content = value as Partial<GeneratedContent>;
-  return (
-    typeof content.body === "string" &&
-    typeof content.id === "number" &&
-    typeof content.platform === "string" &&
-    typeof content.status === "string" &&
-    typeof content.title === "string" &&
-    (Array.isArray(content.tags) || content.tags === null || content.tags === undefined)
-  );
-}
-
-function isGeneratedImageAsset(value: unknown): value is GeneratedImageAsset {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const image = value as Partial<GeneratedImageAsset>;
-  return (
-    typeof image.content_id === "number" &&
-    typeof image.id === "number" &&
-    typeof image.image_url === "string" &&
-    typeof image.status === "string"
   );
 }
 
