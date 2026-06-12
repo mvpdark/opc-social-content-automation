@@ -2213,33 +2213,42 @@ function SettingsScreen({
 
   return (
     <div className="space-y-4">
-      <section className="rounded-[26px] border border-white/70 bg-white/82 p-5 shadow-[0_18px_42px_rgba(31,58,49,0.10)] backdrop-blur">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="text-xs font-black text-moss">当前账号</div>
-            <h2 className="mt-1 text-[24px] font-black leading-7">{mobileAccount}</h2>
-            <p className="mt-2 text-sm font-medium leading-6 text-muted">默认服务 Key 已绑定，生成链路可直接使用。</p>
-          </div>
-          <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-[#e7f2ea] text-moss">
-            <ShieldCheck className="h-5 w-5" />
-          </div>
-        </div>
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          {[
-            ["撰稿", providerBindings.draft],
-            ["图片", providerBindings.image],
-            ["改写", providerBindings.rewrite]
-          ].map(([label, bound]) => (
-            <div
-              className={`rounded-[16px] px-3 py-2 text-center text-xs font-black ${
-                bound ? "bg-[#e7f2ea] text-moss" : "bg-[#fff3d8] text-[#8a5a00]"
-              }`}
-              key={String(label)}
-            >
-              <div>{label}</div>
-              <div className="mt-1 text-[10px]">{bound ? "已绑定" : "待配置"}</div>
+      <section className="relative overflow-hidden rounded-[26px] border border-white/70 bg-white/55 p-5 text-ink shadow-[0_18px_42px_rgba(31,58,49,0.10),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur-xl">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-cover bg-center opacity-45"
+          style={{ backgroundImage: `url(${MOBILE_COLLECTION_COLLAGE})` }}
+        />
+        <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,252,244,0.96)_0%,rgba(255,252,244,0.82)_48%,rgba(255,252,244,0.58)_100%)]" />
+        <div aria-hidden="true" className="absolute -right-10 -top-14 h-36 w-36 rounded-full bg-[#38bf6b]/12 blur-2xl" />
+        <div className="relative">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="text-xs font-black text-moss">当前账号</div>
+              <h2 className="mt-1 text-[24px] font-black leading-7">{mobileAccount}</h2>
+              <p className="mt-2 text-sm font-medium leading-6 text-muted">默认服务 Key 已绑定，生成链路可直接使用。</p>
             </div>
-          ))}
+            <div className="flex h-12 w-12 items-center justify-center rounded-[18px] border border-white/70 bg-white/58 text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            {[
+              ["撰稿", providerBindings.draft],
+              ["图片", providerBindings.image],
+              ["改写", providerBindings.rewrite]
+            ].map(([label, bound]) => (
+              <div
+                className={`rounded-[16px] border border-white/60 px-3 py-2 text-center text-xs font-black shadow-[inset_0_1px_0_rgba(255,255,255,0.74)] backdrop-blur ${
+                  bound ? "bg-[#e7f2ea]/88 text-moss" : "bg-[#fff6d8]/88 text-[#8a5a00]"
+                }`}
+                key={String(label)}
+              >
+                <div>{label}</div>
+                <div className="mt-1 text-[10px]">{bound ? "已绑定" : "待配置"}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
       <MobilePanel title="登录状态" action={mobileAccount}>
@@ -2751,14 +2760,14 @@ function DraftPreviewEditor({
     const draftText = buildEditableDraftCopy(draft);
     setEditing(false);
     setXhsExporting(true);
-    setXhsExportMessage("正在准备封面图和正文。");
-    onExportStatus("正在准备封面图和正文。");
+    setXhsExportMessage("正在复制文案并准备封面图。");
+    onExportStatus("正在复制文案并准备封面图。");
     try {
-      const coverFile = await buildXhsCoverFile(coverImageUrl, draft);
       const textCopied = await tryCopyText(draftText);
       if (!textCopied) {
         throw new Error("浏览器拦截了剪贴板，请点“复制预览文案”后再去小红书。");
       }
+      const coverFile = await buildXhsCoverFile(coverImageUrl, draft);
 
       const shareData: ShareData = {
         files: [coverFile],

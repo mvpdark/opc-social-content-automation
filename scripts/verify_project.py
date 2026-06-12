@@ -578,10 +578,28 @@ def validate_content_production_contract() -> int:
         if snippet not in android_text:
             raise SystemExit(f"Missing mobile Xiaohongshu copy contract: {snippet}")
 
+    mobile_xhs_export_start = android_text.index("async function handleOpenXiaohongshu")
+    mobile_xhs_export_end = android_text.index(
+        "async function copyPreviewLink",
+        mobile_xhs_export_start,
+    )
+    mobile_xhs_export_text = android_text[
+        mobile_xhs_export_start:mobile_xhs_export_end
+    ]
+    total += 1
+    if mobile_xhs_export_text.index("tryCopyText(draftText)") > mobile_xhs_export_text.index(
+        "buildXhsCoverFile(coverImageUrl, draft)"
+    ):
+        raise SystemExit(
+            "Mobile Xiaohongshu export must copy text before building the cover file."
+        )
+
     clipboard_contract_snippets = [
         "export async function copyText",
         "export async function tryCopyText",
         "navigator.clipboard?.writeText",
+        "textarea.focus()",
+        "textarea.setSelectionRange(0, textarea.value.length)",
         'document.execCommand("copy")',
     ]
     for snippet in clipboard_contract_snippets:

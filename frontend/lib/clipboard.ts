@@ -12,9 +12,13 @@ export async function copyText(text: string) {
   textarea.value = text;
   textarea.setAttribute("readonly", "true");
   textarea.style.position = "fixed";
+  textarea.style.left = "0";
   textarea.style.opacity = "0";
+  textarea.style.top = "0";
   document.body.appendChild(textarea);
+  textarea.focus();
   textarea.select();
+  textarea.setSelectionRange(0, textarea.value.length);
   const copied = document.execCommand("copy");
   textarea.remove();
   if (!copied) {
