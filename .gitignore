@@ -35,5 +35,5 @@ artifacts/
 .browser-sessions/
 .playwright-cli/
 .codex-remote-attachments/
-backend/uvicorn-*.log
-frontend/next-*.log
+backend/uvicorn-*.log*
+frontend/next-*.log*

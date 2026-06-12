@@ -6,6 +6,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 
@@ -22,6 +23,67 @@ def port_is_open(port: int) -> bool:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.settimeout(0.5)
         return sock.connect_ex(("127.0.0.1", port)) == 0
+
+
+def process_ids_on_port(port: int) -> set[int]:
+    if os.name == "nt":
+        result = subprocess.run(
+            ["netstat", "-ano", "-p", "tcp"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        pids: set[int] = set()
+        for line in result.stdout.splitlines():
+            parts = line.split()
+            if len(parts) < 5:
+                continue
+            local_address, state, pid_text = parts[1], parts[3], parts[4]
+            if state.upper() == "LISTENING" and local_address.endswith(f":{port}"):
+                try:
+                    pids.add(int(pid_text))
+                except ValueError:
+                    continue
+        return pids
+
+    lsof = shutil.which("lsof")
+    if not lsof:
+        return set()
+    result = subprocess.run(
+        [lsof, "-ti", f"tcp:{port}", "-sTCP:LISTEN"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    pids = set()
+    for pid_text in result.stdout.splitlines():
+        try:
+            pids.add(int(pid_text.strip()))
+        except ValueError:
+            continue
+    return pids
+
+
+def stop_processes_on_port(port: int) -> None:
+    pids = {pid for pid in process_ids_on_port(port) if pid != os.getpid()}
+    if not pids:
+        print(f"No process is listening on port {port}.")
+        return
+
+    for pid in sorted(pids):
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/PID", str(pid), "/F", "/T"], check=False)
+        else:
+            try:
+                os.kill(pid, 15)
+            except OSError:
+                pass
+        print(f"Stopped process pid={pid} on port {port}.")
+
+    for _ in range(20):
+        if not port_is_open(port):
+            return
+        time.sleep(0.25)
 
 
 def open_log(path: Path):
@@ -102,17 +164,28 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Start local OPC backend and frontend dev servers.")
     parser.add_argument("--backend-only", action="store_true", help="Only start the backend API.")
     parser.add_argument("--frontend-only", action="store_true", help="Only start the frontend app.")
+    parser.add_argument("--restart-backend", action="store_true", help="Stop the backend port before starting.")
+    parser.add_argument("--restart-frontend", action="store_true", help="Stop the frontend port before starting.")
     parser.add_argument("--status", action="store_true", help="Only print whether local services are running.")
     args = parser.parse_args()
 
     if args.backend_only and args.frontend_only:
         raise SystemExit("Choose at most one of --backend-only or --frontend-only.")
-    if args.status and (args.backend_only or args.frontend_only):
-        raise SystemExit("--status cannot be combined with --backend-only or --frontend-only.")
+    if args.status and (
+        args.backend_only or args.frontend_only or args.restart_backend or args.restart_frontend
+    ):
+        raise SystemExit(
+            "--status cannot be combined with --backend-only, --frontend-only, or restart flags."
+        )
 
     if args.status:
         print_status()
         return
+
+    if args.restart_backend and not args.frontend_only:
+        stop_processes_on_port(8010)
+    if args.restart_frontend and not args.backend_only:
+        stop_processes_on_port(3000)
 
     if not args.frontend_only:
         start_backend()

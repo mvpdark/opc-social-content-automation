@@ -217,6 +217,8 @@ def validate_safety_gates() -> int:
             "8010",
             "3000",
             "port_is_open",
+            "process_ids_on_port",
+            "--restart-frontend",
             "--status",
             "LEGACY_TEXT_BOMS",
             "PYTHONIOENCODING",
@@ -420,6 +422,8 @@ def validate_frontend_design_contract() -> int:
         "MOBILE_CREATE_CARD_BG",
         "create-card-bg.png",
         "style={{ backgroundImage: `url(${MOBILE_CREATE_CARD_BG})` }}",
+        "MOBILE_HEADER_ICON_BUTTON_CLASS",
+        "className={MOBILE_HEADER_ICON_BUTTON_CLASS}",
     ]
     for snippet in mobile_shell_contracts:
         if snippet not in android_text:

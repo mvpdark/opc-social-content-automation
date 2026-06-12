@@ -107,6 +107,8 @@ const MOBILE_LAST_COVER_STORAGE_KEY = "opc_mobile_last_generated_cover_v1";
 const MOBILE_PAPER_TEXTURE = "/mobile-assets/paper-texture.png";
 const MOBILE_COLLECTION_COLLAGE = "/mobile-assets/collection-collage.png";
 const MOBILE_CREATE_CARD_BG = "/mobile-assets/create-card-bg.png";
+const MOBILE_HEADER_ICON_BUTTON_CLASS =
+  "flex h-10 w-10 shrink-0 touch-manipulation items-center justify-center rounded-[16px] border border-white/70 bg-white/40 text-ink shadow-[0_10px_26px_rgba(28,54,45,0.10),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-xl active:scale-[0.98]";
 
 const emptyCredentials: CredentialSettings = {
   draftApiKey: "",
@@ -815,11 +817,15 @@ function MobileHeader({ activeTab, onNotify }: { activeTab: MobileTab; onNotify:
   };
 
   return (
-    <header className="border-b border-white/60 bg-[#fbf8ef]/78 px-4 pb-3 pt-[calc(12px+env(safe-area-inset-top))] backdrop-blur-xl">
-      <div className="flex items-center justify-between gap-3">
+    <header className="relative overflow-hidden border-b border-white/55 bg-white/40 px-4 pb-3 pt-[calc(12px+env(safe-area-inset-top))] shadow-[0_16px_38px_rgba(31,58,49,0.10),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur-2xl">
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.52),rgba(255,255,255,0.16)_46%,rgba(210,230,216,0.22))]"
+      />
+      <div className="relative flex items-center justify-between gap-3">
         <button
           aria-label="返回 PC 工作台"
-          className="flex h-10 w-10 shrink-0 touch-manipulation items-center justify-center rounded-[16px] border border-white/70 bg-white/82 text-ink shadow-[0_10px_24px_rgba(28,54,45,0.08)] active:scale-[0.98]"
+          className={MOBILE_HEADER_ICON_BUTTON_CLASS}
           onClick={() => {
             window.location.href = getPcReturnHref();
           }}
@@ -835,7 +841,7 @@ function MobileHeader({ activeTab, onNotify }: { activeTab: MobileTab; onNotify:
         </div>
         <button
           aria-label="查看通知状态"
-          className="flex h-10 w-10 shrink-0 touch-manipulation items-center justify-center rounded-[16px] border border-white/70 bg-white/82 text-ink shadow-[0_10px_24px_rgba(28,54,45,0.08)] active:scale-[0.98]"
+          className={MOBILE_HEADER_ICON_BUTTON_CLASS}
           onClick={onNotify}
           title="通知状态"
           type="button"
@@ -856,16 +862,16 @@ function HomeScreen({
 }) {
   return (
     <div className="space-y-4">
-      <section className="relative overflow-hidden rounded-[26px] bg-[#151815] p-4 text-white shadow-[0_22px_46px_rgba(20,36,31,0.22)]">
+      <section className="relative overflow-hidden rounded-[26px] border border-white/70 bg-white/55 p-4 text-ink shadow-[0_22px_46px_rgba(31,58,49,0.12),inset_0_1px_0_rgba(255,255,255,0.70)] backdrop-blur-xl">
         <div
           aria-hidden="true"
-          className="absolute inset-y-0 right-0 w-[62%] bg-cover bg-center opacity-24"
+          className="absolute inset-0 bg-cover bg-center opacity-55"
           style={{ backgroundImage: `url(${MOBILE_COLLECTION_COLLAGE})` }}
         />
-        <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(90deg,#151815_0%,rgba(21,24,21,0.92)_48%,rgba(21,24,21,0.42)_100%)]" />
+        <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,252,244,0.94)_0%,rgba(255,252,244,0.78)_48%,rgba(255,252,244,0.44)_100%)]" />
         <div className="relative">
           <div className="flex items-center justify-between gap-3">
-            <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-black text-white/72">
+            <span className="rounded-full bg-[#e7f2ea]/90 px-2.5 py-1 text-[11px] font-black text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]">
               今天先做
             </span>
             <span className="rounded-full bg-[#fff6d8] px-2.5 py-1 text-[11px] font-black text-[#6f5412]">
@@ -873,19 +879,19 @@ function HomeScreen({
             </span>
           </div>
           <h2 className="mt-4 text-[25px] font-black leading-8">先采集，再生成</h2>
-          <p className="mt-2 max-w-[230px] text-[13px] font-medium leading-5 text-white/74">
+          <p className="mt-2 max-w-[230px] text-[13px] font-medium leading-5 text-ink/68">
             先补高赞参考，再启动硕升博草稿，节奏更稳。
           </p>
-          <div className="mt-4 flex items-center gap-2 text-[11px] font-bold text-white/60">
+          <div className="mt-4 flex items-center gap-2 text-[11px] font-bold text-ink/52">
             <span>采集参考</span>
-            <span className="h-px flex-1 bg-white/16" />
+            <span className="h-px flex-1 bg-ink/12" />
             <span>撰稿</span>
-            <span className="h-px flex-1 bg-white/16" />
+            <span className="h-px flex-1 bg-ink/12" />
             <span>封面</span>
           </div>
         </div>
         <button
-          className="relative mt-4 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-[17px] bg-white text-sm font-black text-ink shadow-[0_12px_28px_rgba(0,0,0,0.14)] active:scale-[0.99]"
+          className="relative mt-4 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-[17px] border border-white/75 bg-white/82 text-sm font-black text-ink shadow-[0_12px_28px_rgba(31,58,49,0.10),inset_0_1px_0_rgba(255,255,255,0.82)] backdrop-blur active:scale-[0.99]"
           onClick={() => onChangeTab("create", "已进入创作预览，手机端按钮现在可直接操作。")}
           type="button"
         >
@@ -1879,40 +1885,40 @@ function CreateScreen({
 
   return (
     <div className="space-y-4">
-      <section className="relative overflow-hidden rounded-[26px] bg-[#181712] p-4 text-white shadow-[0_22px_48px_rgba(22,24,23,0.20)]">
+      <section className="relative overflow-hidden rounded-[26px] border border-white/70 bg-white/55 p-4 text-ink shadow-[0_22px_48px_rgba(31,58,49,0.12),inset_0_1px_0_rgba(255,255,255,0.70)] backdrop-blur-xl">
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-cover bg-center"
+          className="absolute inset-0 bg-cover bg-center opacity-85"
           style={{ backgroundImage: `url(${MOBILE_CREATE_CARD_BG})` }}
         />
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-[linear-gradient(90deg,rgba(18,20,17,0.96)_0%,rgba(18,20,17,0.74)_48%,rgba(18,20,17,0.28)_100%)]"
+          className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,252,244,0.94)_0%,rgba(255,252,244,0.76)_48%,rgba(255,252,244,0.36)_100%)]"
         />
         <div
           aria-hidden="true"
-          className="absolute -right-12 -top-14 h-40 w-40 rounded-full bg-[#ff2442]/22 blur-2xl"
+          className="absolute -right-12 -top-14 h-40 w-40 rounded-full bg-[#ff2442]/12 blur-2xl"
         />
         <div className="relative">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-xs font-black text-white/62">一键生产</div>
+              <div className="text-xs font-black text-moss">一键生产</div>
               <h2 className="mt-1 text-[25px] font-black leading-8">撰稿 + 封面图</h2>
             </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-white/12">
-              <Sparkles className="h-5 w-5 text-white" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-[16px] border border-white/70 bg-white/62 text-[#ff2442] shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] backdrop-blur">
+              <Sparkles className="h-5 w-5" />
             </div>
           </div>
           <div className="mt-4 grid grid-cols-[minmax(0,1fr)_74px] gap-2">
-            <div className="rounded-[17px] border border-white/10 bg-[#1c211d]/52 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md">
-              <div className="text-[11px] font-black text-white/45">当前状态</div>
-              <div className="mt-1 truncate text-xs font-black text-white/78">{heroProgressLabel}</div>
+            <div className="rounded-[17px] border border-white/70 bg-white/50 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.74)] backdrop-blur-md">
+              <div className="text-[11px] font-black text-ink/45">当前状态</div>
+              <div className="mt-1 truncate text-xs font-black text-ink/72">{heroProgressLabel}</div>
             </div>
-            <div className="flex items-center justify-center rounded-[17px] bg-white/90 text-center text-xs font-black text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur">
+            <div className="flex items-center justify-center rounded-[17px] border border-[#ffdbe2] bg-[#fff5f7]/86 text-center text-xs font-black text-[#a2152c] shadow-[inset_0_1px_0_rgba(255,255,255,0.82)] backdrop-blur">
               {heroProgressValue}
             </div>
           </div>
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/14">
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-ink/10">
             <div
               className="h-full rounded-full bg-[#ff2442] transition-all duration-500"
               style={{ width: `${heroProgressPercent}%` }}
@@ -2280,7 +2286,7 @@ function SettingsScreen({
                 </span>
               </span>
               <input
-                className="mt-2 h-11 w-full rounded-md border border-[#d6e8df] bg-white px-3 text-sm font-medium text-ink outline-none"
+                className="mt-2 h-11 w-full rounded-full border border-[#d6e8df] bg-white px-4 text-sm font-medium text-ink outline-none focus:border-moss focus:ring-2 focus:ring-moss/15"
                 data-testid={field.testId}
                 onChange={(event) => updateCredential(field.keyName, event.target.value)}
                 placeholder={field.placeholder}
@@ -2293,7 +2299,7 @@ function SettingsScreen({
         </div>
         <div className="mt-4 grid grid-cols-1 gap-2">
           <button
-            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-md bg-ink text-sm font-semibold text-paper active:scale-[0.99] disabled:opacity-60"
+            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full bg-ink text-sm font-semibold text-paper active:scale-[0.99] disabled:opacity-60"
             data-testid="mobile-apply-keys"
             disabled={busyAction === "apply"}
             onClick={applyProviderKeys}
@@ -2303,7 +2309,7 @@ function SettingsScreen({
             {busyAction === "apply" ? "应用中" : "应用服务配置"}
           </button>
           <button
-            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-md border border-[#d6e8df] bg-white text-sm font-semibold text-ink active:scale-[0.99] disabled:opacity-60"
+            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full border border-[#d6e8df] bg-white text-sm font-semibold text-ink active:scale-[0.99] disabled:opacity-60"
             data-testid="mobile-check-draft"
             disabled={busyAction === "check"}
             onClick={checkDraftProvider}
@@ -2313,7 +2319,7 @@ function SettingsScreen({
             {busyAction === "check" ? "检测中" : "检测撰稿连接"}
           </button>
           <button
-            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-md border border-[#d6e8df] bg-white text-sm font-semibold text-ink active:scale-[0.99]"
+            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full border border-[#d6e8df] bg-white text-sm font-semibold text-ink active:scale-[0.99]"
             data-testid="mobile-clear-credentials"
             onClick={clearCredentials}
             type="button"
@@ -2323,7 +2329,7 @@ function SettingsScreen({
           </button>
         </div>
         {checkStatus ? (
-          <div className="mt-3 rounded-md border border-[#d6e8df] bg-white px-3 py-2 text-xs leading-5 text-muted">
+          <div className="mt-3 rounded-[22px] border border-[#d6e8df] bg-white px-4 py-2 text-xs leading-5 text-muted">
             {checkStatus.status === "ok" ? "检测通过：" : "检测未通过："}
             {checkStatus.message}
           </div>
@@ -2344,9 +2350,13 @@ function BottomNav({ activeTab, onChange }: { activeTab: MobileTab; onChange: (t
   return (
     <nav
       aria-label="安卓端主导航"
-      className="absolute bottom-0 left-0 right-0 z-20 border-t border-white/70 bg-[#fffaf1]/88 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl sm:rounded-b-[30px]"
+      className="absolute bottom-0 left-0 right-0 z-20 overflow-hidden border-t border-white/60 bg-white/40 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-18px_42px_rgba(31,58,49,0.12),inset_0_1px_0_rgba(255,255,255,0.70)] backdrop-blur-2xl sm:rounded-b-[30px]"
     >
-      <div className="grid grid-cols-4 gap-1">
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.54),rgba(255,255,255,0.20)_58%,rgba(216,230,220,0.26))]"
+      />
+      <div className="relative grid grid-cols-4 gap-1">
         {bottomTabs.map((tab) => {
           const active = tab.id === activeTab;
           return (
@@ -2355,8 +2365,10 @@ function BottomNav({ activeTab, onChange }: { activeTab: MobileTab; onChange: (t
               aria-pressed={active}
               key={tab.id}
               className={[
-                "flex min-h-[54px] touch-manipulation flex-col items-center justify-center gap-1 rounded-[18px] text-[11px] font-black transition active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-moss/35",
-                active ? "bg-[#161817] text-white shadow-[0_10px_24px_rgba(22,24,23,0.16)]" : "text-muted active:bg-white/80"
+                "flex min-h-[54px] touch-manipulation flex-col items-center justify-center gap-1 rounded-[18px] border text-[11px] font-black shadow-[inset_0_1px_0_rgba(255,255,255,0.52)] backdrop-blur-xl transition active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-moss/35",
+                active
+                  ? "border-white/30 bg-black/70 text-white shadow-[0_12px_28px_rgba(18,24,20,0.20),inset_0_1px_0_rgba(255,255,255,0.14)]"
+                  : "border-white/0 bg-white/10 text-muted active:bg-white/40"
               ].join(" ")}
               data-testid={`mobile-tab-${tab.id}`}
               onClick={() => onChange(tab.id)}
@@ -2378,7 +2390,7 @@ function MobilePanel({ action, children, title }: { action?: ReactNode; children
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-[15px] font-black">{title}</h2>
         {typeof action === "string" ? (
-          <span className="rounded-[12px] bg-[#e7f2ea] px-2.5 py-1 text-xs font-black text-moss">{action}</span>
+          <span className="rounded-full bg-[#e7f2ea] px-2.5 py-1 text-xs font-black text-moss">{action}</span>
         ) : (
           action
         )}
@@ -3068,7 +3080,7 @@ function SettingRow({
 }) {
   return (
     <button
-      className="flex min-h-[56px] w-full touch-manipulation items-center justify-between gap-3 rounded-md border border-[#d6e8df] bg-white px-3 py-3 text-left active:scale-[0.99] active:border-moss"
+      className="flex min-h-[56px] w-full touch-manipulation items-center justify-between gap-3 rounded-full border border-[#d6e8df] bg-white px-4 py-3 text-left active:scale-[0.99] active:border-moss"
       data-testid={testId}
       onClick={onClick}
       type="button"
@@ -3077,7 +3089,7 @@ function SettingRow({
         <CheckCircle2 className={["h-4 w-4", positive ? "text-moss" : "text-amber"].join(" ")} />
         <span className="text-sm font-semibold">{label}</span>
       </div>
-      <span className="text-xs font-medium text-muted">{state}</span>
+      <span className="shrink-0 rounded-full bg-[#eef6f1] px-2.5 py-1 text-xs font-semibold text-muted">{state}</span>
     </button>
   );
 }
