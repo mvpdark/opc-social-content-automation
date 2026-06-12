@@ -523,6 +523,10 @@ def validate_content_production_contract() -> int:
         "真实配置检测",
         "当前保存配置",
         "DATABASE_URL",
+        "页面不会显示完整密钥",
+        "当前手机浏览器的此设备",
+        "手机可配置",
+        "人味化",
     ]
     for snippet in stale_gate_snippets:
         total += 1

@@ -2255,9 +2255,9 @@ function SettingsScreen({
           </button>
         </div>
       </MobilePanel>
-      <MobilePanel title="服务配置" action="手机可配置">
+      <MobilePanel title="服务配置" action="此设备可配置">
         <p className="mb-3 text-xs leading-5 text-muted">
-          凭证保存在当前手机浏览器的此设备；应用后由当前工作台调用服务，页面不会显示完整密钥。
+          服务密钥只保存在这台设备；应用后由当前工作台调用服务，不会展示完整密钥。
         </p>
         <div className="space-y-3">
           {credentialFields.map((field) => {

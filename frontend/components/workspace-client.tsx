@@ -2199,7 +2199,7 @@ function GenerationLauncher({
           `草稿 #${data.id} 已生成。改写服务未配置或尚未确认，本次未走改写服务，正在尝试生成封面图。`
         );
       } else {
-        setStatusText(`草稿 #${data.id} 已生成，正在调用改写服务做人味化处理。`);
+        setStatusText(`草稿 #${data.id} 已生成，正在调用改写服务做口吻润色。`);
         try {
           const rewriteResponse = await fetch(`${API_BASE}/content/rewrite`, {
             method: "POST",
@@ -2207,7 +2207,7 @@ function GenerationLauncher({
             body: JSON.stringify({
               content_id: data.id,
               instruction:
-                "按当前选题和风格做人味化改写，保留事实边界、关键词、标签语境和合规限制，不制造录取承诺。"
+                "按当前选题和风格做口吻润色，保留事实边界、关键词、标签语境和合规限制，不制造录取承诺。"
             })
           });
           if (!rewriteResponse.ok) {
@@ -3058,7 +3058,7 @@ function SettingsView({
       const statuses = (await response.json()) as ProviderStatusItem[];
       setProviderStatuses(statuses);
       setProviderStatusError(null);
-      setCredentialStatus("服务配置已应用到当前工作台，页面不会显示完整密钥。");
+      setCredentialStatus("服务配置已应用到当前工作台，页面不会展示完整密钥。");
       setProviderCheckStatus(null);
     } catch (error) {
       setCredentialStatus(error instanceof Error ? error.message : "服务配置应用失败。");
@@ -3129,7 +3129,7 @@ function SettingsView({
       keyName: "rewriteApiKey",
       label: "改写服务密钥",
       placeholder: "留空则保留已有配置",
-      helper: "改写和人味化服务使用；页面不会显示完整密钥。",
+      helper: "改写与口吻润色服务使用；页面不会展示完整密钥。",
       backendBound: providerBindings.rewrite
     }
   ];
