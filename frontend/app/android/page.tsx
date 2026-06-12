@@ -1971,7 +1971,7 @@ function CreateScreen({
       await copyText(buildEditableDraftCopy(draftPreview));
       onAction(generatedContent ? "当前草稿已复制。" : "当前预览文案已复制。");
     } catch (_error) {
-      onAction("复制失败，浏览器可能拦截了剪贴板权限。");
+      onAction("复制失败，请长按正文区域手动选择复制。");
     }
   }
 
@@ -2851,7 +2851,7 @@ function DraftPreviewEditor({
       setXhsExportMessage(message);
       onExportStatus(message);
     } catch (_error) {
-      const message = "复制预览链接失败，浏览器可能拦截了剪贴板权限。";
+      const message = `复制预览链接失败，请长按手动复制：${previewUrl}`;
       setXhsExportMessage(message);
       onExportStatus(message);
     }

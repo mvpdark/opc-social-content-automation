@@ -711,6 +711,7 @@ def validate_content_production_contract() -> int:
         "文案仍在剪贴板里",
         "复制封面+文案，去小红书",
         "文案和封面图已复制",
+        "浏览器可能拦截了剪贴板权限",
     ]
     for snippet in stale_gate_snippets:
         total += 1
