@@ -43,6 +43,7 @@ SUPPORTED_PLATFORMS = {"xiaohongshu", "douyin"}
 VIDEO_COLLECTION_DISABLED_DETAIL = (
     "Video collection is disabled until a separate transcript and rights review workflow is implemented."
 )
+AUTO_START_COLLECTION_MESSAGE = "Queued; the safe visible-browser collector will start automatically."
 URL_RE = re.compile(r"https?://[^\s<>'\"，。；、)）】]+", re.IGNORECASE)
 SUPPORTED_XHS_HOSTS = {
     "xiaohongshu.com",
@@ -267,7 +268,7 @@ def create_collection_job(
         status="queued",
         safety_profile=build_safety_profile(payload),
         result_summary={
-            "message": "Queued; the safe visible-browser collector will start automatically.",
+            "message": AUTO_START_COLLECTION_MESSAGE,
             "auto_start": True,
             "collected_items": 0,
         },
@@ -276,6 +277,20 @@ def create_collection_job(
     db.commit()
     db.refresh(job)
     return job
+
+
+def mark_collection_job_for_auto_start(job: TrendCollectionJob) -> None:
+    summary = dict(job.result_summary or {})
+    summary.update(
+        {
+            "message": AUTO_START_COLLECTION_MESSAGE,
+            "auto_start": True,
+            "collected_items": int(summary.get("collected_items") or 0),
+        }
+    )
+    job.status = "queued"
+    job.error = None
+    job.result_summary = summary
 
 
 def list_collection_jobs(

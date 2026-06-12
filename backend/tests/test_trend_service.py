@@ -1,6 +1,7 @@
 import pytest
 from fastapi import HTTPException
 
+from app.models.trend_collection_job import TrendCollectionJob
 from app.models.trend_content import TrendContent
 from app.schemas.trend import TrendCollectionJobCreate
 from app.schemas.trend import TrendLinkImportRequest
@@ -10,6 +11,7 @@ from app.services.trend_service import (
     build_platform_search_target,
     build_safety_profile,
     ensure_trend_sources_reviewed,
+    mark_collection_job_for_auto_start,
     render_trend_knowledge_digest,
 )
 
@@ -117,6 +119,31 @@ def test_build_safety_profile_rejects_video_until_review_workflow_exists() -> No
 
     assert exc.value.status_code == 422
     assert "Video collection is disabled" in exc.value.detail
+
+
+def test_mark_collection_job_for_auto_start_resets_restartable_job() -> None:
+    job = TrendCollectionJob(
+        platform="xiaohongshu",
+        keyword="硕升博",
+        status="needs_operator_review",
+        safety_profile={},
+        result_summary={
+            "message": "No public results found.",
+            "collected_items": 2,
+            "trend_ids": [4, 5],
+        },
+        error="Login wall detected.",
+    )
+
+    mark_collection_job_for_auto_start(job)
+
+    assert job.status == "queued"
+    assert job.error is None
+    assert job.result_summary is not None
+    assert job.result_summary["auto_start"] is True
+    assert job.result_summary["collected_items"] == 2
+    assert job.result_summary["trend_ids"] == [4, 5]
+    assert "automatically" in str(job.result_summary["message"])
 
 
 def test_render_trend_knowledge_digest_includes_sources() -> None:

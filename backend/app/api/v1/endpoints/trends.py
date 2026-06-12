@@ -27,6 +27,7 @@ from app.services.trend_service import (
     create_trend_knowledge_digest,
     create_trend_asset,
     list_collection_jobs,
+    mark_collection_job_for_auto_start,
     trend_report as build_trend_report,
 )
 from app.services.trend_browser_collector import run_browser_collection_job
@@ -67,20 +68,6 @@ def _run_collection_job_in_background(job_id: int) -> None:
             db.commit()
     finally:
         db.close()
-
-
-def _mark_job_for_auto_start(job: TrendCollectionJob) -> None:
-    summary = dict(job.result_summary or {})
-    summary.update(
-        {
-            "message": "Queued; the safe visible-browser collector will start automatically.",
-            "auto_start": True,
-            "collected_items": int(summary.get("collected_items") or 0),
-        }
-    )
-    job.status = "queued"
-    job.error = None
-    job.result_summary = summary
 
 
 @router.get("/list", response_model=list[TrendRead])
@@ -203,7 +190,7 @@ def start_trend_collection_job(
             detail="Completed trend collection jobs cannot be restarted.",
         )
 
-    _mark_job_for_auto_start(job)
+    mark_collection_job_for_auto_start(job)
     db.commit()
     db.refresh(job)
     background_tasks.add_task(_run_collection_job_in_background, job.id)
