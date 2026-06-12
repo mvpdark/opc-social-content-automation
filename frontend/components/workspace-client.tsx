@@ -248,7 +248,7 @@ const expressionOptions = [
   },
   {
     key: "softCta",
-    label: "软 CTA",
+    label: "温柔引导",
     enabled: "结尾用温和提醒引导咨询，不制造焦虑，不承诺结果",
     disabled: "结尾只给中性建议"
   }
@@ -3903,7 +3903,7 @@ function DraftPanel({
 
 function PublishingTable() {
   return (
-    <Panel helper="平台交付历史和当前门控状态。" title="发布记录">
+    <Panel helper="平台交付历史和当前确认状态。" title="发布记录">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[520px] border-collapse text-left text-sm">
           <thead className="bg-mist text-xs text-muted">

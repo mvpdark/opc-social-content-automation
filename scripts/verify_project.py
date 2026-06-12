@@ -578,6 +578,8 @@ def validate_content_production_contract() -> int:
         "外部命令启动",
         "Windows 打包方式",
         "许可：{candidate.license}",
+        "软 CTA",
+        "当前门控状态",
         "Bearer token",
         "服务端权限",
         "测试门禁",
