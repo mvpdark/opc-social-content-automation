@@ -623,7 +623,6 @@ export default function AndroidPreviewPage() {
   if (!authLoaded || !mobileAccount) {
     return (
       <MobileShell>
-        <StatusBar />
         <LoginScreen
           loading={!authLoaded}
           onLogin={login}
@@ -634,7 +633,6 @@ export default function AndroidPreviewPage() {
 
   return (
     <MobileShell>
-      <StatusBar />
       <MobileHeader
         activeTab={activeTab}
         onNotify={() => setStatus("暂无新通知，发布前确认和安全规则仍保持开启。")}
@@ -807,15 +805,6 @@ function LoginScreen({
   );
 }
 
-function StatusBar() {
-  return (
-    <div className="flex h-8 items-center justify-between px-5 text-[11px] font-black text-ink">
-      <span>9:41</span>
-      <span>5G  82%</span>
-    </div>
-  );
-}
-
 function MobileHeader({ activeTab, onNotify }: { activeTab: MobileTab; onNotify: () => void }) {
   const titles: Record<MobileTab, string> = {
     home: "今日工作台",
@@ -825,7 +814,7 @@ function MobileHeader({ activeTab, onNotify }: { activeTab: MobileTab; onNotify:
   };
 
   return (
-    <header className="border-b border-white/60 bg-[#fbf8ef]/78 px-4 pb-3 pt-2 backdrop-blur-xl">
+    <header className="border-b border-white/60 bg-[#fbf8ef]/78 px-4 pb-3 pt-[calc(12px+env(safe-area-inset-top))] backdrop-blur-xl">
       <div className="flex items-center justify-between gap-3">
         <button
           aria-label="返回 PC 工作台"
@@ -866,32 +855,41 @@ function HomeScreen({
 }) {
   return (
     <div className="space-y-4">
-      <section className="relative overflow-hidden rounded-[26px] bg-[#171a18] p-5 text-white shadow-[0_22px_46px_rgba(20,36,31,0.24)]">
+      <section className="relative overflow-hidden rounded-[26px] bg-[#151815] p-4 text-white shadow-[0_22px_46px_rgba(20,36,31,0.22)]">
         <div
           aria-hidden="true"
-          className="absolute inset-x-0 bottom-0 h-32 bg-cover bg-center opacity-30"
+          className="absolute inset-y-0 right-0 w-[62%] bg-cover bg-center opacity-24"
           style={{ backgroundImage: `url(${MOBILE_COLLECTION_COLLAGE})` }}
         />
-        <div className="relative flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="text-xs font-bold text-white/70">今天优先级</div>
-            <h2 className="mt-2 text-[28px] font-black leading-8">先采集，再生成</h2>
-            <p className="mt-3 max-w-[250px] text-sm font-medium leading-6 text-white/76">
-              当前适合补充高赞图文参考，然后启动一篇硕升博草稿。
-            </p>
+        <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(90deg,#151815_0%,rgba(21,24,21,0.92)_48%,rgba(21,24,21,0.42)_100%)]" />
+        <div className="relative">
+          <div className="flex items-center justify-between gap-3">
+            <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-black text-white/72">
+              今天先做
+            </span>
+            <span className="rounded-full bg-[#fff6d8] px-2.5 py-1 text-[11px] font-black text-[#6f5412]">
+              3 项待处理
+            </span>
           </div>
-          <div className="rounded-[18px] bg-white/12 px-3.5 py-2.5 text-center shadow-inner">
-            <div className="text-3xl font-black">3</div>
-            <div className="text-[11px] text-white/65">待处理</div>
+          <h2 className="mt-4 text-[25px] font-black leading-8">先采集，再生成</h2>
+          <p className="mt-2 max-w-[230px] text-[13px] font-medium leading-5 text-white/74">
+            先补高赞参考，再启动硕升博草稿，节奏更稳。
+          </p>
+          <div className="mt-4 flex items-center gap-2 text-[11px] font-bold text-white/60">
+            <span>采集参考</span>
+            <span className="h-px flex-1 bg-white/16" />
+            <span>撰稿</span>
+            <span className="h-px flex-1 bg-white/16" />
+            <span>封面</span>
           </div>
         </div>
         <button
-          className="relative mt-6 flex h-[52px] w-full touch-manipulation items-center justify-center gap-2 rounded-[18px] bg-white text-sm font-black text-ink shadow-[0_12px_28px_rgba(0,0,0,0.16)] active:scale-[0.99]"
+          className="relative mt-4 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-[17px] bg-white text-sm font-black text-ink shadow-[0_12px_28px_rgba(0,0,0,0.14)] active:scale-[0.99]"
           onClick={() => onChangeTab("create", "已进入创作预览，手机端按钮现在可直接操作。")}
           type="button"
         >
           <PenLine className="h-4 w-4" />
-          查看创作预览
+          打开创作入口
         </button>
       </section>
 
@@ -1870,34 +1868,45 @@ function CreateScreen({
     }
   }
 
+  const heroProgressPercent = busy ? progressPercent : generatedContent ? 100 : 0;
+  const heroProgressLabel = busy
+    ? progressLabel
+    : generatedContent
+      ? "草稿和封面可继续编辑"
+      : "点击下方按钮开始生成";
+  const heroProgressValue = busy ? `${progressPercent}%` : generatedContent ? "已就绪" : "未开始";
+
   return (
     <div className="space-y-4">
-      <section className="relative overflow-hidden rounded-[26px] bg-[#161817] p-5 text-white shadow-[0_22px_48px_rgba(22,24,23,0.22)]">
+      <section className="relative overflow-hidden rounded-[26px] bg-[#151815] p-4 text-white shadow-[0_22px_48px_rgba(22,24,23,0.20)]">
         <div
           aria-hidden="true"
-          className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-[#ff2442]/24 blur-2xl"
+          className="absolute -right-12 -top-14 h-40 w-40 rounded-full bg-[#ff2442]/22 blur-2xl"
         />
         <div className="relative">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-xs font-black text-white/65">一键生产</div>
-              <h2 className="mt-1 text-[26px] font-black leading-8">撰稿 + 封面图</h2>
+              <div className="text-xs font-black text-white/62">一键生产</div>
+              <h2 className="mt-1 text-[25px] font-black leading-8">撰稿 + 封面图</h2>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-white/12">
+            <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-white/12">
               <Sparkles className="h-5 w-5 text-white" />
             </div>
           </div>
-          <div className="mt-5 rounded-[18px] bg-white/10 p-3">
-            <div className="flex items-center justify-between text-xs font-bold text-white/70">
-              <span>{busy ? progressLabel : generatedContent ? "最近草稿已就绪" : "等待开始"}</span>
-              <span>{busy || progressPercent === 100 ? `${progressPercent}%` : "0%"}</span>
+          <div className="mt-4 grid grid-cols-[minmax(0,1fr)_74px] gap-2">
+            <div className="rounded-[17px] bg-white/10 px-3 py-3">
+              <div className="text-[11px] font-black text-white/45">当前状态</div>
+              <div className="mt-1 truncate text-xs font-black text-white/78">{heroProgressLabel}</div>
             </div>
-            <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/16">
-              <div
-                className="h-full rounded-full bg-[#ff2442] transition-all duration-500"
-                style={{ width: `${busy || progressPercent === 100 ? progressPercent : 0}%` }}
-              />
+            <div className="flex items-center justify-center rounded-[17px] bg-white text-center text-xs font-black text-ink">
+              {heroProgressValue}
             </div>
+          </div>
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/14">
+            <div
+              className="h-full rounded-full bg-[#ff2442] transition-all duration-500"
+              style={{ width: `${heroProgressPercent}%` }}
+            />
           </div>
         </div>
       </section>
@@ -1908,7 +1917,7 @@ function CreateScreen({
         <label className="block">
           <span className="text-xs font-medium text-muted">选题</span>
           <input
-            className="mt-2 h-11 w-full rounded-md border border-[#d6e8df] bg-white px-3 text-sm font-medium text-ink outline-none"
+            className="mt-2 h-12 w-full rounded-full border border-[#d6e8df] bg-white px-4 text-sm font-medium text-ink outline-none"
             data-testid="mobile-topic"
             onChange={(event) => setTopic(event.target.value)}
             value={topic}
@@ -1917,7 +1926,7 @@ function CreateScreen({
         <label className="mt-3 block">
           <span className="text-xs font-medium text-muted">目标人群</span>
           <input
-            className="mt-2 h-11 w-full rounded-md border border-[#d6e8df] bg-white px-3 text-sm font-medium text-ink outline-none"
+            className="mt-2 h-12 w-full rounded-full border border-[#d6e8df] bg-white px-4 text-sm font-medium text-ink outline-none"
             data-testid="mobile-audience"
             onChange={(event) => setTargetAudience(event.target.value)}
             value={targetAudience}

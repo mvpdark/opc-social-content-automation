@@ -411,6 +411,23 @@ def validate_frontend_design_contract() -> int:
         if marker in android_text or marker in css_text:
             raise SystemExit(f"Hidden mobile focus marker is not allowed: {marker}")
 
+    mobile_shell_contracts = [
+        "pt-[calc(12px+env(safe-area-inset-top))]",
+        "opc-mobile-shell",
+    ]
+    for snippet in mobile_shell_contracts:
+        if snippet not in android_text:
+            raise SystemExit(f"Missing mobile shell contract: {snippet}")
+
+    fake_mobile_status_markers = [
+        "function StatusBar()",
+        "9:41",
+        "5G  82%",
+    ]
+    for marker in fake_mobile_status_markers:
+        if marker in android_text:
+            raise SystemExit(f"Fake mobile status marker is not allowed: {marker}")
+
     return (
         len(tab_ids)
         + len(style_ids)
@@ -421,6 +438,7 @@ def validate_frontend_design_contract() -> int:
         + len(app_shell_login_snippets)
         + sum(len(snippets) for _text, snippets, _name in one_click_entry_contracts)
         + sum(len(snippets) for _text, snippets, _name in mobile_focus_contracts)
+        + len(mobile_shell_contracts)
     )
 
 
