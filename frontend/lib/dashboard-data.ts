@@ -119,7 +119,7 @@ export const themeTemplates: Array<{
   },
   {
     label: "知识沉淀",
-    description: "资料归档、RAG、长期阅读",
+    description: "资料归档、智能检索、长期阅读",
     style: "editorial"
   },
   {
@@ -426,7 +426,7 @@ export const externalSkillCandidates = [
     module: "封面生成",
     status: "优先试点",
     license: "需确认",
-    summary: "Codex Skill 形式的小红书封面生成器，覆盖多种风格，贴近当前封面工作台。",
+    summary: "小红书封面能力包，覆盖多种风格，贴近当前封面工作台。",
     guardrail: "先确认许可证和生成素材归属，再决定是否接入为可选能力。",
     icon: Image
   },
@@ -504,7 +504,7 @@ export const externalSkillCandidates = [
     status: "只做外部工具",
     license: "MIT",
     summary: "强调二维码登录、登录状态整理、发布前门禁校验和内容审核，适合参考发布安全链路。",
-    guardrail: "当前不接自动发布；只吸收 payload 校验、真实话题池、发布前人工确认等门禁设计。",
+    guardrail: "当前不接自动发布；只吸收发布内容校验、真实话题池、发布前人工确认等门禁设计。",
     icon: ShieldCheck
   },
   {
@@ -525,7 +525,7 @@ export const externalSkillCandidates = [
     module: "技能发现 / 安装工具",
     status: "可选外部调用",
     license: "需确认",
-    summary: "开放的 AI 能力包安装与使用工具，支持 Codex、Claude Code、OpenCode、Cursor 等环境。",
+    summary: "开放的 AI 能力包安装与使用工具，支持常见 AI 工作环境。",
     guardrail: "只用于列出和拉取候选能力包；接入前仍需人工审查来源、许可证和脚本权限。",
     icon: Sparkles
   }
