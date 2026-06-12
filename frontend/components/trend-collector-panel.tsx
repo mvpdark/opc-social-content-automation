@@ -752,7 +752,7 @@ export function TrendCollectorPanel({
               ) : (
                 <Play className="h-4 w-4" />
               )}
-              {busyAction === "job" ? "正在创建" : createJobLabel}
+              {busyAction === "job" ? "正在开始" : createJobLabel}
             </button>
             <button
               aria-label={saveDigestLabel}

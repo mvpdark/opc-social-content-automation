@@ -263,7 +263,7 @@ def _database_items() -> list[dict[str, object]]:
             message=(
                 "Redis 端口可连接。"
                 if redis_open
-                else "Redis 未运行；趋势任务队列相关能力会受限。"
+                else "Redis 未运行；趋势采集排队相关能力会受限。"
             ),
             fix=None if redis_open else "安装 Docker 后运行 docker compose up -d redis。",
         ),
