@@ -3105,7 +3105,7 @@ function SettingsView({
       keyName: "workspaceToken",
       label: "登录令牌（可选）",
       placeholder: "策划师测试模式下不用填写",
-      helper: "当前测试阶段已免登录；以后恢复正式登录时再填写 Bearer token。"
+      helper: "当前测试阶段已免登录；以后恢复正式登录时再填写登录凭证。"
     },
     {
       keyName: "draftApiKey",

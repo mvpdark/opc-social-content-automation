@@ -45,7 +45,7 @@ def _redacted_provider_error(provider: str, status_code: int | None = None) -> s
     if status_code in {401, 403}:
         return f"{provider_label}授权失败，请检查设置里的 API Key 和中转站地址。"
     if status_code == 404:
-        return f"{provider_label}模型或接口地址不可用，请检查模型名和中转站地址。"
+        return f"{provider_label}服务或接口地址不可用，请检查设置里的服务配置和中转站地址。"
     if status_code == 429:
         return f"{provider_label}请求过于频繁或额度不足，请稍后重试或检查账户额度。"
     if status_code is not None:
@@ -98,7 +98,7 @@ def _redacted_provider_timeout(provider: str, timeout_seconds: float) -> str:
     timeout_text = f"{timeout_seconds:g}"
     return (
         f"{provider_label}响应超时（超过 {timeout_text} 秒）。"
-        "请稍后重试；如果反复出现，请降低输出长度或更换可用模型/中转站。"
+        "请稍后重试；如果反复出现，请降低输出长度或更换可用服务配置/中转站。"
     )
 
 

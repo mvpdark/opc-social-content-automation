@@ -1891,7 +1891,7 @@ function CreateScreen({
     setBusy(true);
     setGeneratedCover(null);
     clearStoredMobileCover();
-    startProgress("AIGC 撰稿中");
+    startProgress("撰稿服务生成中");
     try {
       const response = await fetch(`${API_BASE}/content/generate`, {
         method: "POST",
@@ -2078,7 +2078,7 @@ function CreateScreen({
           </div>
         ) : null}
         <p className="mt-2 text-[11px] leading-5 text-muted">
-          会先调用 AIGC 撰稿，再自动生成封面图；不会自动发布。
+          会先生成文案，再自动生成封面图；不会自动发布。
         </p>
       </MobilePanel>
 
@@ -2242,7 +2242,7 @@ function SettingsScreen({
         <div className="flex items-center justify-between gap-3 rounded-md border border-[#d6e8df] bg-white px-3 py-3">
           <div className="min-w-0">
             <div className="text-sm font-semibold text-ink">{mobileAccount}</div>
-            <div className="mt-1 text-xs text-muted">测试门禁已通过；正式发布前仍需接入服务端权限。</div>
+            <div className="mt-1 text-xs text-muted">当前为测试免登录；正式发布前仍保留权限校验。</div>
           </div>
           <button
             className="flex h-10 shrink-0 touch-manipulation items-center gap-2 rounded-md border border-[#d6e8df] bg-[#f6fbf6] px-3 text-xs font-semibold text-ink active:scale-[0.98]"

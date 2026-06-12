@@ -485,6 +485,12 @@ def validate_content_production_contract() -> int:
         "本次未走 DeepSeek",
         "DeepSeek 改写未完成",
         "image2 Key",
+        "AIGC 撰稿",
+        "Bearer token",
+        "服务端权限",
+        "测试门禁",
+        "模型名",
+        "可用模型/中转站",
     ]
     for snippet in stale_gate_snippets:
         total += 1

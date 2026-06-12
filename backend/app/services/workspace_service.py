@@ -246,7 +246,7 @@ def check_provider_connection(
             target=payload.target,
             configured=True,
             status="failed",
-            message="撰稿服务返回为空，请检查模型或中转站配置。",
+            message="撰稿服务返回为空，请检查服务配置或中转站配置。",
         )
 
     return ProviderConnectionCheckResponse(
