@@ -1677,6 +1677,14 @@ function CreateScreen({
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined" || !window.isSecureContext || !("serviceWorker" in navigator)) {
+      return;
+    }
+
+    void navigator.serviceWorker.register("/opc-mobile-sw.js").catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
     if (!busy || progressPercent <= 0) {
       return;
     }
@@ -1810,7 +1818,7 @@ function CreateScreen({
     }
 
     if ("Notification" in window && Notification.permission === "default") {
-      void Notification.requestPermission();
+      void Notification.requestPermission().catch(() => undefined);
     }
   }
 
@@ -1837,18 +1845,37 @@ function CreateScreen({
     }
   }
 
+  async function showCompletionNotification(content: GeneratedContent, cover: GeneratedImageAsset) {
+    if ("Notification" in window && Notification.permission === "granted") {
+      const title = "一键生成完成";
+      const options: NotificationOptions = {
+        body: `草稿 #${content.id} 和封面图 #${cover.id} 已生成。`,
+        icon: platform === "douyin" ? "/platform-icons/douyin.ico" : "/platform-icons/xiaohongshu.ico",
+        tag: `opc-mobile-generation-${content.id}`
+      };
+
+      try {
+        if ("serviceWorker" in navigator) {
+          const registration = await navigator.serviceWorker.getRegistration();
+          if (registration?.showNotification) {
+            await registration.showNotification(title, options);
+            return;
+          }
+        }
+
+        new Notification(title, options);
+      } catch (_error) {
+        // Some mobile browsers only allow ServiceWorkerRegistration.showNotification().
+      }
+    }
+  }
+
   async function notifyGenerationComplete(content: GeneratedContent, cover: GeneratedImageAsset) {
     const soundPlayed = await playCompletionSound();
     if (navigator.vibrate) {
       navigator.vibrate([80, 40, 80]);
     }
-    if ("Notification" in window && Notification.permission === "granted") {
-      new Notification("一键生成完成", {
-        body: `草稿 #${content.id} 和封面图 #${cover.id} 已生成。`,
-        icon: platform === "douyin" ? "/platform-icons/douyin.ico" : "/platform-icons/xiaohongshu.ico",
-        tag: `opc-mobile-generation-${content.id}`
-      });
-    }
+    await showCompletionNotification(content, cover);
     if (!soundPlayed && !completionSoundReadyRef.current) {
       onAction("已完成；提示音被浏览器拦截了，下次请先点一次一键生成按钮解锁声音。");
     }
