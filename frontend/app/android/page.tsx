@@ -2792,12 +2792,14 @@ function DraftPreviewEditor({
   async function handleOpenXiaohongshu() {
     const draftText = buildEditableDraftCopy(draft);
     setEditing(false);
+    setManualCopyText(null);
     setXhsExporting(true);
     publishExportStatus("正在复制文案并准备封面图。");
     try {
       const textCopied = await tryCopyText(draftText);
       if (!textCopied) {
-        throw new Error(`浏览器拦截了剪贴板，请点“${XHS_COPY_TEXT_ONLY_LABEL}”后再去小红书。`);
+        setManualCopyText(draftText);
+        throw new Error("浏览器拦截了剪贴板，文案已展开，可长按全选复制。");
       }
       const coverFile = await buildXhsCoverFile(coverImageUrl, draft);
 
@@ -2818,27 +2820,30 @@ function DraftPreviewEditor({
           const errorName = error instanceof DOMException ? error.name : "";
           if (errorName === "AbortError") {
             const restored = await tryCopyText(draftText);
+            setManualCopyText(restored ? null : draftText);
             const abortMessage = restored
               ? "已取消系统分享；文案已重新复制，可以直接去小红书粘贴。"
-              : `已取消系统分享；浏览器拦截了剪贴板，请点“${XHS_COPY_TEXT_ONLY_LABEL}”。`;
+              : `已取消系统分享；文案已展开，可长按全选复制，也可以点“${XHS_COPY_TEXT_ONLY_LABEL}”重试。`;
             publishExportStatus(abortMessage);
             return;
           }
           throw error;
         }
         const sharedCopyRestored = await tryCopyText(draftText);
+        setManualCopyText(sharedCopyRestored ? null : draftText);
         const sharedMessage = sharedCopyRestored
           ? "已交给系统分享；文案已重新复制，如果小红书没有自动带入正文，请直接粘贴。"
-          : `已交给系统分享；如果小红书没有自动带入正文，请返回点“${XHS_COPY_TEXT_ONLY_LABEL}”。`;
+          : `已交给系统分享；如果小红书没有自动带入正文，文案已展开，可长按全选复制，也可以点“${XHS_COPY_TEXT_ONLY_LABEL}”重试。`;
         publishExportStatus(sharedMessage);
         return;
       }
 
       downloadFile(coverFile);
       const fallbackTextRestored = await tryCopyText(draftText);
+      setManualCopyText(fallbackTextRestored ? null : draftText);
       const fallbackMessage = fallbackTextRestored
         ? "文案已复制，封面图已下载；正在打开小红书，请新建图文后粘贴正文。"
-        : `封面图已下载；浏览器拦截了剪贴板，请返回点“${XHS_COPY_TEXT_ONLY_LABEL}”。`;
+        : "封面图已下载；浏览器拦截了剪贴板，文案已展开，可长按全选复制。";
       publishExportStatus(fallbackMessage);
       window.location.href = "https://www.xiaohongshu.com/explore";
     } catch (error) {

@@ -577,6 +577,10 @@ def validate_content_production_contract() -> int:
         "function publishExportStatus(message: string)",
         "function toggleEditing()",
         "setManualCopyText(null)",
+        "setManualCopyText(draftText)",
+        "setManualCopyText(restored ? null : draftText)",
+        "setManualCopyText(sharedCopyRestored ? null : draftText)",
+        "setManualCopyText(fallbackTextRestored ? null : draftText)",
         "isLocalOrPrivateHostname(window.location.hostname)",
         "setManualCopyText(copied ? null : previewUrl)",
         "async function copyDraftTextOnly()",
@@ -587,7 +591,7 @@ def validate_content_production_contract() -> int:
         "浏览器拦截了剪贴板，文案已展开，可长按全选复制。",
         "浏览器拦截了剪贴板，预览链接已展开，可长按全选复制。",
         "文案已重新复制",
-        "浏览器拦截了剪贴板，请点“${XHS_COPY_TEXT_ONLY_LABEL}”",
+        "文案已展开，可长按全选复制，也可以点“${XHS_COPY_TEXT_ONLY_LABEL}”重试。",
         "复制文案+封面，去小红书",
     ]
     for snippet in mobile_xhs_copy_contract_snippets:
