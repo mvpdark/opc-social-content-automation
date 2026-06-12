@@ -497,6 +497,9 @@ def validate_content_production_contract() -> int:
         "codex_test 测试 Provider",
         "流程联调",
         "OPC TEST ASSET",
+        "登录令牌",
+        "API Key 与令牌",
+        "免令牌",
     ]
     for snippet in stale_gate_snippets:
         total += 1

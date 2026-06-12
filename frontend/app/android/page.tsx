@@ -2209,7 +2209,7 @@ function SettingsScreen({
   }> = [
     {
       keyName: "workspaceToken",
-      label: "登录令牌（可选）",
+      label: "登录凭证（可选）",
       placeholder: "测试模式可不填",
       testId: "mobile-token"
     },
@@ -2255,7 +2255,7 @@ function SettingsScreen({
           </button>
         </div>
       </MobilePanel>
-      <MobilePanel title="API Key 与令牌" action="手机可配置">
+      <MobilePanel title="服务配置" action="手机可配置">
         <p className="mb-3 text-xs leading-5 text-muted">
           凭证保存在当前手机浏览器本机；应用后由后端运行时调用服务，响应不会回显密钥。
         </p>

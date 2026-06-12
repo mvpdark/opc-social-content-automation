@@ -2369,10 +2369,10 @@ function GenerationLauncher({
               <div className="text-xs font-medium text-muted">登录门控</div>
               <div className="mt-1 flex items-center justify-between gap-3">
                 <span className="text-sm font-medium">
-                  {workspaceToken ? "令牌已配置" : "策划师测试模式免令牌"}
+                  {workspaceToken ? "登录凭证已配置" : "测试模式免登录凭证"}
                 </span>
                 <button
-                  aria-label="打开设置查看登录令牌"
+                  aria-label="打开设置查看登录凭证"
                   className="glass-control rounded-md border px-2 py-1 text-xs font-medium text-ink"
                   onClick={onOpenSettings}
                   type="button"
@@ -3107,7 +3107,7 @@ function SettingsView({
   }> = [
     {
       keyName: "workspaceToken",
-      label: "登录令牌（可选）",
+      label: "登录凭证（可选）",
       placeholder: "策划师测试模式下不用填写",
       helper: "当前测试阶段已免登录；以后恢复正式登录时再填写登录凭证。"
     },
@@ -3142,8 +3142,8 @@ function SettingsView({
     <div className="space-y-4">
       <Panel
         action={<Pill tone="blue">集中管理</Pill>}
-        helper="服务 API Key 集中填写；策划师测试阶段不再要求工作台登录令牌。"
-        title="API Key 与令牌"
+        helper="服务 API Key 集中填写；策划师测试阶段不再要求工作台登录凭证。"
+        title="服务配置"
       >
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
