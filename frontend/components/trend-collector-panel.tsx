@@ -47,6 +47,7 @@ type TrendCollectionJob = {
   status: string;
   result_summary: {
     message?: string;
+    auto_start?: boolean;
     collected_items?: number;
     trend_ids?: number[];
   } | null;
@@ -276,7 +277,7 @@ function formatCollectionJobStatus(job: TrendCollectionJob) {
   const errorText = job.error ? `；${job.error}` : "";
 
   if (job.status === "queued") {
-    if (!job.result_summary?.message?.includes("automatically")) {
+    if (!job.result_summary?.auto_start) {
       return `采集任务 #${job.id} 排队中${collectedItems}。这是一条旧版队列任务，后台不会自动消费；请重新点击“创建并启动”。`;
     }
     return `采集任务 #${job.id} ${collectionStatusLabel(job.status)}${collectedItems}。后台采集器正在启动，可见浏览器会自动打开。`;
@@ -391,7 +392,7 @@ export function TrendCollectorPanel({
         setStatusText(formatCollectionJobStatus(latestJob));
         if (
           !terminalJobStatuses.has(latestJob.status) &&
-          latestJob.result_summary?.message?.includes("automatically")
+          latestJob.result_summary?.auto_start
         ) {
           setActiveJobId(latestJob.id);
         }

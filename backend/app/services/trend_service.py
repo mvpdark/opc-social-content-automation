@@ -268,6 +268,7 @@ def create_collection_job(
         safety_profile=build_safety_profile(payload),
         result_summary={
             "message": "Queued; the safe visible-browser collector will start automatically.",
+            "auto_start": True,
             "collected_items": 0,
         },
     )
