@@ -1676,7 +1676,7 @@ function DependencyDoctorPanel() {
           检测依赖
         </button>
       }
-      helper="开发/测试换电脑时先看这里；Windows 安装包只检查内置运行环境和项目依赖。"
+      helper="换设备或首次安装时先看这里；Windows 安装包会检查运行环境和项目依赖。"
       title="环境检测与一键修复"
     >
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[280px_1fr]">
@@ -1688,7 +1688,7 @@ function DependencyDoctorPanel() {
                 {dependencyReport
                   ? `已检测 ${totalCount} 项`
                   : dependencyBusy
-                    ? "正在检测本机环境"
+                    ? "正在检测当前设备"
                     : "尚未完成检测"}
               </p>
             </div>
@@ -1723,12 +1723,12 @@ function DependencyDoctorPanel() {
             ) : (
               <Terminal className="h-4 w-4" />
             )}
-            {dependencyReport && !hasDependencyIssues ? "无需修复" : "查看修复命令"}
+            {dependencyReport && !hasDependencyIssues ? "无需修复" : "查看修复方案"}
           </button>
           <p className="mt-2 text-[11px] leading-5 text-muted">
             {hasDependencyIssues ? (
               <>
-                优先命令：<span className="font-mono text-ink">{primaryRepairStep}</span>
+                推荐处理：<span className="font-mono text-ink">{primaryRepairStep}</span>
               </>
             ) : dependencyReport ? (
               "当前环境满足运行要求。"
@@ -1783,7 +1783,7 @@ function DependencyDoctorPanel() {
             </div>
           ) : (
             <div className={`${subtleCardClass} p-4 text-sm text-muted`}>
-              点击“检测依赖”查看本机环境。
+              点击“检测依赖”查看当前设备状态。
             </div>
           )}
 

@@ -683,6 +683,11 @@ def validate_content_production_contract() -> int:
         "清空此设备凭证",
         "当前浏览器的此设备",
         "凭证会保存在",
+        "开发/测试换电脑",
+        "正在检测本机环境",
+        "查看修复命令",
+        "优先命令",
+        "查看本机环境",
     ]
     for snippet in stale_gate_snippets:
         total += 1
