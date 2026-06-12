@@ -979,6 +979,8 @@ def validate_content_production_contract() -> int:
         "任务已创建",
         "自动创建采集任务",
         "已创建采集任务",
+        "采集任务创建失败",
+        "请重新创建一个任务",
         'MobilePanel title="高赞参考"',
         "把高赞参考变成素材池",
         "来源待 PC 确认",

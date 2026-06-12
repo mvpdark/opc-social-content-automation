@@ -1217,7 +1217,7 @@ function CollectScreen({
         })
       });
       if (!response.ok) {
-        throw new Error(await readApiError(response, "采集任务创建失败。"));
+        throw new Error(await readApiError(response, "开始采集失败。"));
       }
       const data = (await response.json()) as MobileCollectionJob;
       const nextDate = autoEnabled ? scheduleNextRun(startedAt) : null;
@@ -1231,7 +1231,7 @@ function CollectScreen({
       onAction(message);
     } catch (error) {
       const nextDate = autoEnabled ? scheduleNextRun(startedAt) : null;
-      const message = error instanceof Error ? error.message : "采集任务创建失败。";
+      const message = error instanceof Error ? error.message : "开始采集失败。";
       setScheduleMessage(
         `${runLabel}失败：${message}${nextDate ? ` 下次重试：${formatScheduleTime(nextDate.toISOString())}。` : ""}`
       );

@@ -481,13 +481,13 @@ export function TrendCollectorPanel({
         })
       });
       if (!response.ok) {
-        throw new Error("采集任务创建失败；如果已恢复正式登录，请检查登录验证。");
+        throw new Error("开始采集失败；如果已恢复正式登录，请检查登录验证。");
       }
       const data = (await response.json()) as TrendCollectionJob;
       setActiveJobId(data.id);
       showCollectionJob(data);
     } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "采集任务创建失败。");
+      setStatusText(error instanceof Error ? error.message : "开始采集失败。");
     } finally {
       setBusyAction(null);
     }
@@ -507,7 +507,7 @@ export function TrendCollectorPanel({
         }
       });
       if (!response.ok) {
-        throw new Error("旧采集任务启动失败，请重新创建一个任务。");
+        throw new Error("旧采集任务启动失败，请重新开始一次采集。");
       }
       const data = (await response.json()) as TrendCollectionJob;
       setActiveJobId(data.id);
