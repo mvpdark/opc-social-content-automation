@@ -2796,7 +2796,7 @@ function GeneratedPostExportCard({
               />
             </div>
             <div className="rounded-md border border-line bg-mist/60 p-4 text-xs leading-6 text-muted">
-              <div className="font-semibold text-ink">图片状态：{generatedImageStatusLabel(imageAsset.status)}</div>
+              <div className="font-semibold text-ink">封面图：{generatedImageStatusLabel(imageAsset.status)}</div>
               <div className="mt-2">
                 未确认内容生成的封面会保持待确认状态。粘贴到{platformLabel}前，请确认标题、图中文字、封面暗示和正文一致。
               </div>
