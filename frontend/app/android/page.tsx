@@ -196,7 +196,7 @@ const taskActionCopy: Record<MobileTab, string> = {
   home: "已回到首页。",
   collect: "已打开采集页，可以切平台、编辑关键词和查看参考卡片。",
   create: "已打开创作页，可以切换版式并进入生成入口。",
-  settings: "已打开设置页，可以查看配置和安全门状态。"
+  settings: "已打开设置页，可以查看配置和发布确认状态。"
 };
 
 const sampleReferences = [
@@ -766,7 +766,7 @@ export default function AndroidPreviewPage() {
           <StatusBar />
           <MobileHeader
             activeTab={activeTab}
-            onNotify={() => setStatus("暂无新通知，发布前确认和安全门仍保持开启。")}
+            onNotify={() => setStatus("暂无新通知，发布前确认和安全规则仍保持开启。")}
           />
           <section className="min-h-0 flex-1 overflow-y-auto px-3 pb-[calc(96px+env(safe-area-inset-bottom))] pt-3 sm:px-4">
             <div
@@ -2332,11 +2332,11 @@ function SettingsScreen({
           </div>
         ) : null}
       </MobilePanel>
-      <MobilePanel title="安全门">
+      <MobilePanel title="安全规则">
         <div className="space-y-2">
-          <SettingRow label="采集先于生成" onClick={() => onAction("安全门已确认：采集先于生成。")} state="启用" testId="gate-collect-first" positive />
-          <SettingRow label="发布需人工确认" onClick={() => onAction("安全门已确认：发布仍需人工确认。")} state="强制" testId="gate-manual-review" positive />
-          <SettingRow label="图片标题需复核" onClick={() => onAction("安全门已确认：图片标题需要复核。")} state="提醒" testId="gate-cover-review" />
+          <SettingRow label="采集先于生成" onClick={() => onAction("安全规则已确认：采集先于生成。")} state="启用" testId="gate-collect-first" positive />
+          <SettingRow label="发布需人工确认" onClick={() => onAction("安全规则已确认：发布仍需人工确认。")} state="强制" testId="gate-manual-review" positive />
+          <SettingRow label="图片标题需复核" onClick={() => onAction("安全规则已确认：图片标题需要复核。")} state="提醒" testId="gate-cover-review" />
         </div>
       </MobilePanel>
     </div>

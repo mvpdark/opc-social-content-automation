@@ -106,7 +106,7 @@ export function AppShell({
             </div>
             {showHelperText ? (
               <p className="mt-2 text-xs leading-5 text-muted">
-                发布前仍需人工确认；单独确认页已暂停，避免误操作。
+                系统不会自动发布，确认后再复制到小红书提交。
               </p>
             ) : null}
             <div className="mt-4 border-t border-line pt-4">
