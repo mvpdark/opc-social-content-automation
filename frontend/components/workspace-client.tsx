@@ -1721,7 +1721,7 @@ function DependencyDoctorPanel() {
                 ))}
               </div>
               <p className="mt-3 text-xs leading-5 text-muted">
-                当前按钮只生成修复命令，不直接执行系统安装；Windows 安装包模式不需要 Docker，自部署模式才会提示 Docker。
+                当前只生成修复建议，不会直接安装系统组件；Windows 安装包模式不需要 Docker，自部署模式才会提示 Docker。
               </p>
             </div>
           ) : null}

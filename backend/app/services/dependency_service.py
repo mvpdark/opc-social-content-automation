@@ -145,7 +145,7 @@ def _python_package_item(distribution: str, minimum: str) -> dict[str, object]:
             status="missing",
             detected=None,
             minimum=minimum,
-            message=f"Python 包 {distribution} 未安装在当前后端环境。",
+            message=f"Python 包 {distribution} 未安装在当前应用运行环境。",
             fix=r'cd backend && ..\.venv\Scripts\python.exe -m pip install -e ".[dev,collector]"',
         )
     status = "ok" if _meets_minimum(detected, minimum) else "outdated"
@@ -274,7 +274,7 @@ def dependency_report() -> dict[str, object]:
     items: list[dict[str, object]] = [
         _item(
             name="Python",
-            category="运行时",
+            category="基础环境",
             required=True,
             status="ok"
             if sys.version_info >= (3, 11)
@@ -290,7 +290,7 @@ def dependency_report() -> dict[str, object]:
         ),
         _version_item(
             name="Node.js",
-            category="运行时",
+            category="基础环境",
             command=["node", "--version"],
             minimum="20.0.0",
             required=True,
@@ -298,7 +298,7 @@ def dependency_report() -> dict[str, object]:
         ),
         _version_item(
             name="npm",
-            category="运行时",
+            category="基础环境",
             command=["npm", "--version"],
             minimum="10.0.0",
             required=True,
