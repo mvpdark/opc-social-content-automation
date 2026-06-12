@@ -207,6 +207,8 @@ def validate_safety_gates() -> int:
             "3000",
             "port_is_open",
             "--status",
+            "LEGACY_TEXT_BOMS",
+            "PYTHONIOENCODING",
         ],
         "scripts/setup_local.py": [
             "python scripts/start_local.py",
@@ -355,6 +357,7 @@ def validate_frontend_design_contract() -> int:
                 "一键生成图文+封面",
                 "可在一键生成页细调",
                 "去一键生成",
+                "数据库暂时不可用：安装包/测试模式请重新运行本地启动",
             ],
             "workspace one-click entry",
         ),

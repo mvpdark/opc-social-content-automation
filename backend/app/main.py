@@ -46,7 +46,10 @@ def create_app() -> FastAPI:
             status_code=503,
             content={
                 "detail": "database_unavailable",
-                "message": "Database is not reachable. Check DATABASE_URL and local PostgreSQL service status.",
+                "message": (
+                    "Database is not reachable. For desktop or test mode, rerun the local startup helper; "
+                    "for self-hosting, check DATABASE_URL and the database service."
+                ),
             },
         )
 

@@ -755,7 +755,7 @@ function clearStoredWorkspaceAccount() {
 async function readApiError(response: Response, fallback: string) {
   const errorBody = (await response.json().catch(() => null)) as ApiErrorBody | null;
   if (errorBody?.detail === "database_unavailable") {
-    return "数据库暂时不可用，请检查 PostgreSQL 服务和 DATABASE_URL。";
+    return "数据库暂时不可用：安装包/测试模式请重新运行本地启动；自部署模式请检查 DATABASE_URL 和数据库服务。";
   }
   return errorBody?.message ?? errorBody?.detail ?? fallback;
 }

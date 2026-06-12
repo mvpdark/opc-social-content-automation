@@ -15,6 +15,7 @@ FRONTEND = ROOT / "frontend"
 VENV_PYTHON = ROOT / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 BACKEND_LOG = BACKEND / "uvicorn-8010.log"
 FRONTEND_LOG = FRONTEND / "next-3000.log"
+LEGACY_TEXT_BOMS = (b"\xff\xfe", b"\xfe\xff")
 
 
 def port_is_open(port: int) -> bool:
@@ -25,15 +26,24 @@ def port_is_open(port: int) -> bool:
 
 def open_log(path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists() and path.read_bytes()[:2] in LEGACY_TEXT_BOMS:
+        legacy_path = path.with_suffix(path.suffix + ".legacy")
+        if legacy_path.exists():
+            legacy_path.unlink()
+        path.replace(legacy_path)
     return path.open("ab")
 
 
 def start_process(command: list[str], *, cwd: Path, log_path: Path) -> int:
     flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
     log_file = open_log(log_path)
+    env = os.environ.copy()
+    env.setdefault("PYTHONUTF8", "1")
+    env.setdefault("PYTHONIOENCODING", "utf-8")
     process = subprocess.Popen(
         command,
         cwd=cwd,
+        env=env,
         stdout=log_file,
         stderr=subprocess.STDOUT,
         creationflags=flags,

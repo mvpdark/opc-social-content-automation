@@ -23,4 +23,7 @@ def test_database_connection_errors_are_reported_as_service_unavailable() -> Non
     response = client.get("/raise-operational-error")
 
     assert response.status_code == 503
-    assert response.json()["detail"] == "database_unavailable"
+    body = response.json()
+    assert body["detail"] == "database_unavailable"
+    assert "local startup helper" in body["message"]
+    assert "self-hosting" in body["message"]
