@@ -199,7 +199,7 @@ export const navigation: Array<{
   { id: "dashboard", label: "指挥台", icon: BarChart3 },
   { id: "research", label: "趋势采集", icon: Radar },
   { id: "knowledge", label: "知识库", icon: BookOpenText },
-  { id: "content", label: "一键生成", icon: PenLine },
+  { id: "content", label: "创作项目", icon: PenLine },
   { id: "cover", label: "封面", icon: Image },
   { id: "delivery", label: "发布助手", icon: Users },
   { id: "settings", label: "设置", icon: Settings }
@@ -219,8 +219,8 @@ export const tabMeta: Record<WorkspaceTab, { title: string; description: string 
     description: "管理趋势摘要、内部资料、写作参考和可检索资产。"
   },
   content: {
-    title: "一键生成",
-    description: "围绕知识库一键生成文案和封面，并保留发布前人工确认边界。"
+    title: "创作项目",
+    description: "先选择项目，再进入对应的一键生成流程，并保留发布前人工确认边界。"
   },
   cover: {
     title: "封面工作台",
