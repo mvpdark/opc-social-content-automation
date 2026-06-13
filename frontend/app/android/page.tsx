@@ -38,6 +38,8 @@ import { resolveAssetUrl } from "@/lib/asset-url";
 import { copyText, tryCopyText } from "@/lib/clipboard";
 import {
   COLLECTION_JOB_TERMINAL_STATUSES,
+  collectionJobDiagnosticItems,
+  type CollectionJobDiagnosticItem,
   formatCollectionJobStatus,
   type CollectionJobStatusSnapshot
 } from "@/lib/collection-job-status";
@@ -95,7 +97,10 @@ type LinkImportTarget = {
   }>;
 };
 
-type MobileCollectionJob = CollectionJobStatusSnapshot;
+type MobileCollectionJob = CollectionJobStatusSnapshot & {
+  created_at?: string;
+  updated_at?: string;
+};
 
 type DraftPreviewState = {
   body: string;
@@ -150,6 +155,19 @@ type CollectionScheduleStorage = {
   platform: MobilePlatform;
   scheduleMessage: string;
 };
+
+function mobileDiagnosticToneClass(tone: CollectionJobDiagnosticItem["tone"]) {
+  if (tone === "good") {
+    return "border-moss/25 bg-moss/10";
+  }
+  if (tone === "warning") {
+    return "border-[#f3c96b]/40 bg-[#fff5d8]";
+  }
+  if (tone === "danger") {
+    return "border-coral/30 bg-coral/10";
+  }
+  return "border-[#d6e8df] bg-white";
+}
 
 const bottomTabs: Array<{ id: MobileTab; icon: typeof Home; label: string }> = [
   { id: "home", icon: Home, label: "首页" },
@@ -982,6 +1000,7 @@ function CollectScreen({
   const [lastJobId, setLastJobId] = useState<number | null>(null);
   const [activeCollectionJobId, setActiveCollectionJobId] = useState<number | null>(null);
   const [scheduleMessage, setScheduleMessage] = useState("定时采集未启用。");
+  const [diagnosticItems, setDiagnosticItems] = useState<CollectionJobDiagnosticItem[]>([]);
   const [sourceReviewed, setSourceReviewed] = useState(false);
   const [linkText, setLinkText] = useState("");
   const [linkResult, setLinkResult] = useState<LinkImportTarget | null>(null);
@@ -1058,6 +1077,38 @@ function CollectScreen({
   }, [autoEnabled, nextRunAt, platform, query, maxItems, intervalMinutes, credentials]);
 
   useEffect(() => {
+    if (lastJobId || activeCollectionJobId !== null || !credentials.workspaceToken.trim()) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    async function restoreLatestJob() {
+      try {
+        const job = await fetchLatestCollectionJob();
+        if (cancelled || !job) {
+          return;
+        }
+        setLastJobId(job.id);
+        setLastRunAt(job.updated_at ?? job.created_at ?? null);
+        setScheduleMessage(formatCollectionJobStatus(job, "mobile"));
+        setDiagnosticItems(collectionJobDiagnosticItems(job));
+        if (!COLLECTION_JOB_TERMINAL_STATUSES.has(job.status)) {
+          setActiveCollectionJobId(job.id);
+        }
+      } catch {
+        // No saved mobile job yet, or the current account cannot read collection history.
+      }
+    }
+
+    void restoreLatestJob();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeCollectionJobId, credentials.workspaceToken, lastJobId]);
+
+  useEffect(() => {
     if (!lastJobId || activeCollectionJobId !== null) {
       return undefined;
     }
@@ -1071,6 +1122,7 @@ function CollectScreen({
           return;
         }
         setScheduleMessage(formatCollectionJobStatus(job, "mobile"));
+        setDiagnosticItems(collectionJobDiagnosticItems(job));
         if (!COLLECTION_JOB_TERMINAL_STATUSES.has(job.status)) {
           setActiveCollectionJobId(job.id);
         }
@@ -1102,6 +1154,7 @@ function CollectScreen({
         }
         const message = formatCollectionJobStatus(job, "mobile");
         setScheduleMessage(message);
+        setDiagnosticItems(collectionJobDiagnosticItems(job));
         if (COLLECTION_JOB_TERMINAL_STATUSES.has(job.status)) {
           setActiveCollectionJobId(null);
           onAction(message);
@@ -1113,6 +1166,7 @@ function CollectScreen({
           return;
         }
         setScheduleMessage(error instanceof Error ? error.message : "采集状态刷新失败。");
+        setDiagnosticItems([]);
         timer = window.setTimeout(pollCollectionJob, 5000);
       }
     }
@@ -1144,6 +1198,17 @@ function CollectScreen({
     const nextDate = new Date(fromDate.getTime() + safeInterval * 60_000);
     setNextRunAt(nextDate.toISOString());
     return nextDate;
+  }
+
+  async function fetchLatestCollectionJob() {
+    const response = await fetch(`${API_BASE}/trends/jobs?limit=1`, {
+      headers: authHeaders(credentials)
+    });
+    if (!response.ok) {
+      throw new Error(await readApiError(response, "最近采集状态读取失败。"));
+    }
+    const jobs = (await response.json()) as MobileCollectionJob[];
+    return jobs[0] ?? null;
   }
 
   async function fetchCollectionJobStatus(jobId: number) {
@@ -1224,6 +1289,7 @@ function CollectScreen({
       setLastJobId(data.id);
       setLastRunAt(startedAt.toISOString());
       setActiveCollectionJobId(data.id);
+      setDiagnosticItems(collectionJobDiagnosticItems(data));
       const message = `${runLabel}已开始，${formatCollectionJobStatus(data, "mobile")}${
         nextDate ? ` 下次运行：${formatScheduleTime(nextDate.toISOString())}。` : ""
       }`;
@@ -1235,6 +1301,7 @@ function CollectScreen({
       setScheduleMessage(
         `${runLabel}失败：${message}${nextDate ? ` 下次重试：${formatScheduleTime(nextDate.toISOString())}。` : ""}`
       );
+      setDiagnosticItems([]);
       onAction(message);
     } finally {
       scheduleRunningRef.current = false;
@@ -1429,6 +1496,20 @@ function CollectScreen({
         </label>
         <div className="mt-3 rounded-[22px] border border-[#d6e8df] bg-white px-4 py-3 text-xs leading-5 text-muted">
           <div>{scheduleMessage}</div>
+          {diagnosticItems.length ? (
+            <div className="mt-3 grid grid-cols-2 gap-2" data-testid="mobile-collection-diagnostic-grid">
+              {diagnosticItems.map((item) => (
+                <div
+                  className={`rounded-[16px] border px-3 py-2 ${mobileDiagnosticToneClass(item.tone)}`}
+                  data-tone={item.tone}
+                  key={`${item.label}-${item.value}`}
+                >
+                  <div className="text-[11px] text-muted">{item.label}</div>
+                  <div className="mt-1 truncate text-xs font-black text-ink">{item.value}</div>
+                </div>
+              ))}
+            </div>
+          ) : null}
           <div>下次运行：{formatScheduleTime(nextRunAt)}</div>
           <div>
             上次运行：{formatScheduleTime(lastRunAt)}
