@@ -23,7 +23,7 @@ from app.services.model_router import (
 
 IMAGE_GENERATABLE_STATUSES = {"draft", "rewritten", "review_pending", "approved"}
 REMOTE_IMAGE_DOWNLOAD_TIMEOUT_SECONDS = 30.0
-REMOTE_IMAGE_MAX_BYTES = 12 * 1024 * 1024
+REMOTE_IMAGE_MAX_BYTES = 32 * 1024 * 1024
 IMAGE_MEDIA_TYPE_EXTENSIONS = {
     "image/gif": ".gif",
     "image/jpeg": ".jpg",
@@ -39,7 +39,7 @@ COVER_TEMPLATES = [
         "name": "Xiaohongshu cover",
         "platform": "xiaohongshu",
         "aspect_ratio": "3:4",
-        "description": "1K vertical 3:4 title-led cover for notes and carousel posts.",
+        "description": "2K vertical 3:4 title-led cover for notes and carousel posts.",
     },
     {
         "id": "douyin-cover",

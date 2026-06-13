@@ -159,7 +159,7 @@ Image generation can use an OpenAI-compatible image generation endpoint:
 ```bash
 IMAGE_PROVIDER=openai_compatible
 IMAGE_MODEL=gpt-image-2
-IMAGE_SIZE=1024x1360
+IMAGE_SIZE=2048x2736
 IMAGE_RESPONSE_FORMAT=
 IMAGE_TIMEOUT_SECONDS=180
 IMAGE_OPENAI_COMPATIBLE_BASE_URL=https://your-compatible-provider.example/v1

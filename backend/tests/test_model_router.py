@@ -164,8 +164,8 @@ def test_codex_test_image_provider_creates_svg(monkeypatch: pytest.MonkeyPatch) 
     generated_file = GENERATED_ASSET_ROOT / filename
     assert generated_file.exists()
     svg_text = generated_file.read_text(encoding="utf-8")
-    assert 'width="1024"' in svg_text
-    assert 'height="1360"' in svg_text
+    assert 'width="2048"' in svg_text
+    assert 'height="2736"' in svg_text
     assert "本地检查素材" in svg_text
     assert "流程联调" not in svg_text
     generated_file.unlink()
@@ -423,7 +423,7 @@ def test_openai_compatible_image_provider_accepts_remote_url(
     request_json = requests[0]["json"]
     assert isinstance(request_json, dict)
     assert request_json["model"] == "gpt-image-2"
-    assert request_json["size"] == "1024x1360"
+    assert request_json["size"] == "2048x2736"
     assert "primary cover headline must copy the content title verbatim" in str(
         request_json["prompt"]
     )

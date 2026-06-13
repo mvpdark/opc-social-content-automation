@@ -20,13 +20,13 @@ TOKEN_RE = re.compile(r"[\w\u4e00-\u9fff]+", re.UNICODE)
 FILENAME_RE = re.compile(r"[^a-zA-Z0-9_-]+")
 IMAGE_PIXEL_SIZE_BY_ASPECT_RATIO = {
     "1:1": (1080, 1080),
-    "3:4": (1024, 1360),
+    "3:4": (2048, 2736),
     "4:5": (1080, 1350),
     "9:16": (900, 1600),
 }
 IMAGE_PROVIDER_SIZE_BY_ASPECT_RATIO = {
     "1:1": "1024x1024",
-    "3:4": "1024x1360",
+    "3:4": "2048x2736",
     "4:5": "1024x1280",
     "9:16": "1024x1820",
 }
@@ -111,8 +111,8 @@ def _redacted_provider_error_from_response(
 
     if status_code == 400 and "invalid size" in error_message:
         return (
-            f"{provider_label}不支持当前图片尺寸；请使用宽高均为 16 倍数的 1K 尺寸，"
-            "例如 1024x1360。"
+            f"{provider_label}不支持当前图片尺寸；请使用宽高均为 16 倍数的 2K 尺寸，"
+            "例如 2048x2736。"
         )
 
     return _redacted_provider_error(provider, status_code)

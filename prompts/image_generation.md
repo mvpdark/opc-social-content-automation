@@ -7,8 +7,8 @@ Core rules:
 
 - Use the content title, body, platform, selected cover template, aspect ratio,
   tags, style notes, `visual_direction`, and `style_reference`.
-- For Xiaohongshu covers using `3:4`, target a 1K-wide mobile canvas:
-  1024px wide by about 1360px tall, with the same vertical cover feel used in
+- For Xiaohongshu covers using `3:4`, target a 2K-wide mobile canvas:
+  2048px wide by about 2736px tall, with the same vertical cover feel used in
   Xiaohongshu notes.
 - The primary cover headline must copy the content title verbatim unless the
   payload provides a shorter approved cover headline.
