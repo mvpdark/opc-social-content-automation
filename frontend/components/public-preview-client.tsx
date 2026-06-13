@@ -149,7 +149,9 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
           <h1 className="mt-4 text-xl font-bold leading-7">{content.title}</h1>
           <div className="mt-3 space-y-3 text-[15px] leading-7 text-ink">
             {paragraphs.length ? (
-              paragraphs.map((paragraph) => <p key={paragraph}>{renderXhsExpressionText(paragraph)}</p>)
+              paragraphs.map((paragraph, index) => (
+                <p key={`${index}-${paragraph}`}>{renderXhsExpressionText(paragraph)}</p>
+              ))
             ) : (
               <p>{renderXhsExpressionText(content.body)}</p>
             )}

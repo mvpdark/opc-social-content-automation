@@ -3325,8 +3325,8 @@ function ReferencePreviewSheet({
             </div>
 
             <div className="mt-4 space-y-3 text-[15px] leading-7 text-ink">
-              {reference.body.split(/\n+/).map((paragraph) => (
-                <p key={paragraph}>{renderXhsExpressionText(paragraph)}</p>
+              {reference.body.split(/\n+/).map((paragraph, index) => (
+                <p key={`${index}-${paragraph}`}>{renderXhsExpressionText(paragraph)}</p>
               ))}
             </div>
 
@@ -4016,8 +4016,8 @@ function DraftPreviewEditor({
               ) : (
                 <div className="mt-3 space-y-3 text-[15px] leading-7 text-ink">
                   {bodyParagraphs.length ? (
-                    bodyParagraphs.map((paragraph) => (
-                      <p key={paragraph}>{renderXhsExpressionText(paragraph)}</p>
+                    bodyParagraphs.map((paragraph, index) => (
+                      <p key={`${index}-${paragraph}`}>{renderXhsExpressionText(paragraph)}</p>
                     ))
                   ) : (
                     <p>{renderXhsExpressionText(draft.body)}</p>

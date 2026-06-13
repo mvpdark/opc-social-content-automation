@@ -4448,8 +4448,8 @@ function DraftPanel({
                   className="mt-3 space-y-3 text-sm leading-7 text-ink/82"
                   data-testid="xhs-preview-full-body"
                 >
-                  {paragraphs.map((paragraph) => (
-                    <p key={paragraph}>{renderXhsExpressionText(paragraph)}</p>
+                  {paragraphs.map((paragraph, index) => (
+                    <p key={`${index}-${paragraph}`}>{renderXhsExpressionText(paragraph)}</p>
                   ))}
                 </div>
                 {tagLine ? <div className="mt-5 text-sm font-medium leading-6 text-steel">{tagLine}</div> : null}
