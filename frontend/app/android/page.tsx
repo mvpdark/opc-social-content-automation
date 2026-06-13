@@ -152,6 +152,10 @@ const CREDENTIAL_STORAGE_KEY = "opc_workspace_credentials_v1";
 const COLLECTION_SCHEDULE_STORAGE_KEY = "opc_mobile_collection_schedule_v1";
 const MOBILE_COVER_HYDRATION_RETRY_LIMIT = 10;
 const MOBILE_COVER_HYDRATION_RETRY_MS = 3000;
+const XHS_COVER_WIDTH = 1024;
+const XHS_COVER_HEIGHT = 1365;
+const XHS_COVER_BASE_WIDTH = 900;
+const XHS_COVER_BASE_HEIGHT = 1200;
 const MOBILE_PAPER_TEXTURE = "/mobile-assets/paper-texture.png";
 const MOBILE_COLLECTION_COLLAGE = "/mobile-assets/collection-collage.png";
 const MOBILE_CREATE_CARD_BG = "/mobile-assets/create-card-bg.png";
@@ -524,8 +528,8 @@ function canvasToPngBlob(canvas: HTMLCanvasElement) {
 async function buildCoverFileFromImage(src: string, title: string) {
   const image = await loadImage(src);
   const canvas = document.createElement("canvas");
-  canvas.width = image.naturalWidth || 900;
-  canvas.height = image.naturalHeight || 1200;
+  canvas.width = image.naturalWidth || XHS_COVER_WIDTH;
+  canvas.height = image.naturalHeight || XHS_COVER_HEIGHT;
   const context = canvas.getContext("2d");
   if (!context) {
     throw new Error("浏览器不支持封面图处理。");
@@ -537,18 +541,19 @@ async function buildCoverFileFromImage(src: string, title: string) {
 
 async function buildFallbackCoverFile(draft: DraftPreviewState) {
   const canvas = document.createElement("canvas");
-  canvas.width = 900;
-  canvas.height = 1200;
+  canvas.width = XHS_COVER_WIDTH;
+  canvas.height = XHS_COVER_HEIGHT;
   const context = canvas.getContext("2d");
   if (!context) {
     throw new Error("浏览器不支持封面图处理。");
   }
-  const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+  context.scale(canvas.width / XHS_COVER_BASE_WIDTH, canvas.height / XHS_COVER_BASE_HEIGHT);
+  const gradient = context.createLinearGradient(0, 0, XHS_COVER_BASE_WIDTH, XHS_COVER_BASE_HEIGHT);
   gradient.addColorStop(0, "#fff7df");
   gradient.addColorStop(0.52, "#d9f1e5");
   gradient.addColorStop(1, "#f7cdbf");
   context.fillStyle = gradient;
-  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillRect(0, 0, XHS_COVER_BASE_WIDTH, XHS_COVER_BASE_HEIGHT);
 
   context.fillStyle = "#0f1412";
   context.font = "800 72px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
@@ -3643,7 +3648,7 @@ function buildLocalDraftHistoryCoverUrl(content: GeneratedContent) {
         `<text x="86" y="${392 + index * 92}" class="title">${escapeSvgText(line)}</text>`
     )
     .join("");
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200">
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${XHS_COVER_WIDTH}" height="${XHS_COVER_HEIGHT}" viewBox="0 0 ${XHS_COVER_BASE_WIDTH} ${XHS_COVER_BASE_HEIGHT}">
 <defs>
 <linearGradient id="cover-bg" x1="0" y1="0" x2="1" y2="1">
 <stop offset="0%" stop-color="${palette.backgroundStart}"/>
@@ -3656,7 +3661,7 @@ function buildLocalDraftHistoryCoverUrl(content: GeneratedContent) {
 .meta{font:700 30px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;fill:#5f6a61}
 </style>
 </defs>
-<rect width="900" height="1200" fill="url(#cover-bg)"/>
+<rect width="${XHS_COVER_BASE_WIDTH}" height="${XHS_COVER_BASE_HEIGHT}" fill="url(#cover-bg)"/>
 <rect x="64" y="74" width="190" height="78" rx="39" fill="rgba(255,255,255,0.78)"/>
 <text x="100" y="126" class="label">${escapeSvgText(tag.slice(0, 8))}</text>
 <path d="M92 278H808" stroke="${palette.accent}" stroke-width="8" stroke-linecap="round" opacity="0.16"/>
