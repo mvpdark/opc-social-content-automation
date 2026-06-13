@@ -898,6 +898,7 @@ def validate_content_production_contract() -> int:
         "canCopy && imageProviderReady && !imageBusy",
         "封面仍是版式预览，真实图片生成后会在这里替换。\" :",
         "模拟小红书图文卡片",
+        "legacyDemoMarker",
         "假图",
         "假封面图",
         "本次未走 DeepSeek",

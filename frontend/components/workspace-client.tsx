@@ -884,6 +884,13 @@ const blockedPublishTerms = [
   "必上岸"
 ];
 
+const localDraftMarkers = [
+  "codex_test",
+  "\u3010\u6d4b\u8bd5\u8349\u7a3f\u3011",
+  "\u3010\u6f14\u793a\u8349\u7a3f\u3011",
+  "\u3010\u672c\u5730\u68c0\u67e5\u8349\u7a3f\u3011"
+];
+
 function buildPlatformCopy(content: GeneratedContent) {
   const tagLine = formatTagLine(content.tags);
   return [content.title.trim(), content.body.trim(), tagLine].filter(Boolean).join("\n\n");
@@ -895,13 +902,7 @@ function complianceWarnings(content: GeneratedContent) {
 }
 
 function isTestDraft(content: GeneratedContent) {
-  const legacyDemoMarker = `【${"演示"}草稿】`;
-  return (
-    content.body.includes("codex_test") ||
-    content.body.includes("【测试草稿】") ||
-    content.body.includes(legacyDemoMarker) ||
-    content.body.includes("【本地检查草稿】")
-  );
+  return localDraftMarkers.some((marker) => content.body.includes(marker));
 }
 
 function loadStoredGeneratedContent() {
