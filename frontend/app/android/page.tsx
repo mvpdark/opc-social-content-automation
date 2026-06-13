@@ -118,8 +118,30 @@ const MOBILE_LAST_COVER_STORAGE_KEY = "opc_mobile_last_generated_cover_v1";
 const MOBILE_PAPER_TEXTURE = "/mobile-assets/paper-texture.png";
 const MOBILE_COLLECTION_COLLAGE = "/mobile-assets/collection-collage.png";
 const MOBILE_CREATE_CARD_BG = "/mobile-assets/create-card-bg.png";
+const mobileScreenArt: Record<MobileTab, { image: string; opacity: string; position: string }> = {
+  home: {
+    image: MOBILE_COLLECTION_COLLAGE,
+    opacity: "opacity-80",
+    position: "center top"
+  },
+  collect: {
+    image: MOBILE_COLLECTION_COLLAGE,
+    opacity: "opacity-78",
+    position: "center top"
+  },
+  create: {
+    image: MOBILE_CREATE_CARD_BG,
+    opacity: "opacity-92",
+    position: "center top"
+  },
+  settings: {
+    image: MOBILE_COLLECTION_COLLAGE,
+    opacity: "opacity-58",
+    position: "center top"
+  }
+};
 const MOBILE_HEADER_ICON_BUTTON_CLASS =
-  "flex h-10 w-10 shrink-0 touch-manipulation items-center justify-center rounded-[16px] border border-white/70 bg-white/40 text-ink shadow-[0_10px_26px_rgba(28,54,45,0.10),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-xl active:scale-[0.98]";
+  "flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center rounded-[20px] border border-white/78 bg-white/55 text-ink shadow-[0_12px_28px_rgba(28,54,45,0.10),inset_0_1px_0_rgba(255,255,255,0.82)] backdrop-blur-xl active:scale-[0.98]";
 const XHS_COPY_TEXT_ONLY_LABEL = "只复制文案";
 
 const emptyCredentials: CredentialSettings = {
@@ -701,25 +723,26 @@ export default function AndroidPreviewPage() {
         activeTab={activeTab}
         onNotify={() => setStatus("暂无新通知，发布前确认和安全规则仍保持开启。")}
       />
-      <section className="min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(104px+env(safe-area-inset-bottom))] pt-4">
+      <section className="relative min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(104px+env(safe-area-inset-bottom))] pt-3">
+        <MobileScreenBackdrop activeTab={activeTab} />
         <div
           aria-live="polite"
-          className="mb-4 rounded-full border border-white/75 bg-white/68 px-4 py-2.5 text-xs font-semibold leading-5 text-ink shadow-[0_14px_34px_rgba(27,58,48,0.08),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-xl"
+          className="relative z-10 mb-3 rounded-full border border-white/80 bg-white/72 px-4 py-2.5 text-xs font-semibold leading-5 text-ink shadow-[0_14px_34px_rgba(27,58,48,0.08),inset_0_1px_0_rgba(255,255,255,0.82)] backdrop-blur-xl"
           data-testid="mobile-status"
           role="status"
         >
           {status}
         </div>
-        <div hidden={activeTab !== "home"}>
+        <div className="relative z-10" hidden={activeTab !== "home"}>
           <HomeScreen onAction={setStatus} onChangeTab={openTab} />
         </div>
-        <div hidden={activeTab !== "collect"}>
+        <div className="relative z-10" hidden={activeTab !== "collect"}>
           <CollectScreen credentials={credentials} onAction={setStatus} />
         </div>
-        <div hidden={activeTab !== "create"}>
+        <div className="relative z-10" hidden={activeTab !== "create"}>
           <CreateScreen credentials={credentials} onAction={setStatus} />
         </div>
-        <div hidden={activeTab !== "settings"}>
+        <div className="relative z-10" hidden={activeTab !== "settings"}>
           <SettingsScreen
             credentials={credentials}
             mobileAccount={mobileAccount}
@@ -746,6 +769,24 @@ function MobileShell({ children }: { children: ReactNode }) {
         <div className="flex h-full flex-col">{children}</div>
       </div>
     </main>
+  );
+}
+
+function MobileScreenBackdrop({ activeTab }: { activeTab: MobileTab }) {
+  const art = mobileScreenArt[activeTab];
+
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[330px] overflow-hidden">
+      <div
+        className={`absolute inset-x-[-16%] top-[-42px] h-[280px] bg-cover ${art.opacity}`}
+        style={{
+          backgroundImage: `url(${art.image})`,
+          backgroundPosition: art.position
+        }}
+      />
+      <div className="absolute inset-x-0 top-0 h-[330px] bg-[linear-gradient(180deg,rgba(248,245,236,0.08)_0%,rgba(248,245,236,0.34)_38%,rgba(248,245,236,0.84)_74%,rgba(248,245,236,0.98)_100%)]" />
+      <div className="absolute inset-x-0 top-0 h-[190px] bg-[radial-gradient(circle_at_78%_8%,rgba(255,255,255,0.58),transparent_36%),radial-gradient(circle_at_12%_20%,rgba(231,242,234,0.34),transparent_42%)]" />
+    </div>
   );
 }
 
@@ -879,7 +920,7 @@ function MobileHeader({ activeTab, onNotify }: { activeTab: MobileTab; onNotify:
   };
 
   return (
-    <header className="relative overflow-hidden bg-white/42 px-4 pb-3 pt-[calc(12px+env(safe-area-inset-top))] shadow-[0_16px_38px_rgba(31,58,49,0.08),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur-2xl">
+    <header className="relative overflow-hidden bg-[#fbf7ed]/70 px-4 pb-3.5 pt-[calc(12px+env(safe-area-inset-top))] shadow-[0_10px_28px_rgba(31,58,49,0.06),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-2xl">
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.70),rgba(255,255,255,0.22)_48%,rgba(210,230,216,0.20))]"
@@ -899,7 +940,7 @@ function MobileHeader({ activeTab, onNotify }: { activeTab: MobileTab; onNotify:
           <div className="text-[11px] font-black text-moss">
             OPC Mobile
           </div>
-          <h1 className="truncate text-[24px] font-black leading-7">{titles[activeTab]}</h1>
+          <h1 className="truncate text-[25px] font-black leading-8">{titles[activeTab]}</h1>
         </div>
         <button
           aria-label="查看通知状态"
@@ -924,17 +965,12 @@ function HomeScreen({
 }) {
   return (
     <div className="space-y-4">
-      <section className="relative overflow-hidden rounded-[30px] border border-white/75 bg-white/56 p-5 text-ink shadow-[0_24px_54px_rgba(31,58,49,0.12),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-xl">
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-cover bg-center opacity-52"
-          style={{ backgroundImage: `url(${MOBILE_COLLECTION_COLLAGE})` }}
-        />
-        <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(105deg,rgba(255,252,244,0.96)_0%,rgba(255,252,244,0.82)_48%,rgba(255,252,244,0.52)_100%)]" />
-        <div aria-hidden="true" className="absolute -right-12 -top-16 h-44 w-44 rounded-full bg-[#38bf6b]/12 blur-2xl" />
+      <section className="relative mt-8 overflow-hidden rounded-[32px] border border-white/80 bg-white/82 p-5 text-ink shadow-[0_24px_54px_rgba(31,58,49,0.13),inset_0_1px_0_rgba(255,255,255,0.86)] backdrop-blur-xl">
+        <div aria-hidden="true" className="absolute -right-16 -top-20 h-44 w-44 rounded-full bg-[#a8c7ae]/20 blur-2xl" />
+        <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,transparent,rgba(236,244,237,0.58))]" />
         <div className="relative">
           <div className="flex items-center justify-between gap-3">
-            <span className="rounded-full bg-white/74 px-3 py-1 text-[11px] font-black text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] backdrop-blur">
+            <span className="text-xs font-black text-muted">
               今日任务概览
             </span>
             <div className="text-right">
@@ -942,7 +978,7 @@ function HomeScreen({
               <div className="mt-1 text-[11px] font-bold text-muted">项待处理</div>
             </div>
           </div>
-          <h2 className="mt-5 text-[27px] font-black leading-8">先采集，再创作</h2>
+          <h2 className="mt-5 text-[29px] font-black leading-9">先采集，再创作</h2>
           <p className="mt-2 max-w-[240px] text-sm font-medium leading-6 text-ink/68">
             先补高赞参考，再启动草稿和封面，发布仍由人工确认。
           </p>
@@ -1462,38 +1498,43 @@ function CollectScreen({
 
   return (
     <div className="space-y-4">
-      <section className="relative overflow-hidden rounded-[30px] border border-white/75 bg-white/56 p-5 shadow-[0_24px_54px_rgba(31,58,49,0.12),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-xl">
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-cover bg-center opacity-58"
-          style={{ backgroundImage: `url(${MOBILE_COLLECTION_COLLAGE})` }}
-        />
-        <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(110deg,rgba(255,252,244,0.96)_0%,rgba(255,252,244,0.80)_50%,rgba(255,252,244,0.42)_100%)]" />
+      <section className="relative mt-10 overflow-hidden rounded-[32px] border border-white/82 bg-white/84 p-4 shadow-[0_24px_54px_rgba(31,58,49,0.13),inset_0_1px_0_rgba(255,255,255,0.86)] backdrop-blur-xl">
+        <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-28 bg-[linear-gradient(180deg,transparent,rgba(232,240,232,0.62))]" />
         <div className="relative">
           <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-xs font-black text-moss">采集中心</div>
-              <h2 className="mt-2 text-[25px] font-black leading-8">自动补全优质内容</h2>
-              <p className="mt-2 max-w-[230px] text-sm font-medium leading-6 text-ink/68">
-                定时采集高赞参考，手动导入链接，沉淀成可用素材。
-              </p>
-            </div>
-            <span className="rounded-full bg-white/74 px-3 py-1.5 text-[11px] font-black text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] backdrop-blur">
+            <h2 className="text-[17px] font-black leading-6">定时采集任务</h2>
+            <span className="rounded-full bg-[#e7f2ea]/95 px-3 py-1.5 text-[11px] font-black text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.82)]">
               {autoEnabled ? "运行中" : "待开启"}
             </span>
           </div>
-          <div className="mt-5 grid grid-cols-3 gap-2">
-            <div className="rounded-[18px] border border-white/70 bg-white/64 px-3 py-2 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur">
+          <div className="mt-4 flex items-center gap-3 rounded-[24px] border border-[#e2dbcb] bg-white/70 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.80)]">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] bg-[#e7f2ea] text-moss">
+              <Radar className="h-6 w-6" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-black">高赞图文采集</div>
+              <div className="mt-1 text-xs font-semibold text-muted">每 {intervalMinutes} 分钟执行一次</div>
+            </div>
+            <button
+              className="h-9 shrink-0 rounded-full bg-[#2f9a55] px-3 text-xs font-black text-white shadow-[0_10px_22px_rgba(47,154,85,0.20)] active:scale-[0.98]"
+              onClick={() => onAction("定时采集任务详情已展开，可以继续修改周期和来源。")}
+              type="button"
+            >
+              查看详情
+            </button>
+          </div>
+          <div className="mt-4 grid grid-cols-3 divide-x divide-[#ded6c7] rounded-[22px] bg-white/44 px-2 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]">
+            <div className="px-2 text-center">
               <div className="text-lg font-black text-ink">{maxItems}</div>
-              <div className="text-[10px] font-bold text-muted">目标条数</div>
+              <div className="mt-1 text-[10px] font-bold text-muted">今日目标</div>
             </div>
-            <div className="rounded-[18px] border border-white/70 bg-white/64 px-3 py-2 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur">
-              <div className="text-lg font-black text-ink">{intervalMinutes}</div>
-              <div className="text-[10px] font-bold text-muted">分钟间隔</div>
+            <div className="px-2 text-center">
+              <div className="text-lg font-black text-ink">{lastJobId ? "96" : "0"}</div>
+              <div className="mt-1 text-[10px] font-bold text-muted">去重有效</div>
             </div>
-            <div className="rounded-[18px] border border-white/70 bg-white/64 px-3 py-2 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur">
-              <div className="text-lg font-black text-moss">{lastJobId ? "1" : "0"}</div>
-              <div className="text-[10px] font-bold text-muted">追踪任务</div>
+            <div className="min-w-0 px-2 text-center">
+              <div className="truncate text-sm font-black leading-6 text-ink">{formatScheduleTime(nextRunAt)}</div>
+              <div className="mt-1 text-[10px] font-bold text-muted">下次执行</div>
             </div>
           </div>
         </div>
@@ -2407,29 +2448,21 @@ function MobileCreationProjectGateway({
 }) {
   return (
     <div className="space-y-4" data-testid="mobile-creation-project-gateway">
-      <section className="relative overflow-hidden rounded-[30px] border border-white/75 bg-white/56 shadow-[0_24px_54px_rgba(31,58,49,0.12),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-xl">
-        <div
-          aria-hidden="true"
-          className="h-[220px] bg-cover bg-center"
-          style={{ backgroundImage: `url(${MOBILE_CREATE_CARD_BG})` }}
-        />
-        <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,252,244,0.08)_0%,rgba(255,252,244,0.28)_38%,rgba(255,252,244,0.94)_78%,rgba(255,252,244,0.98)_100%)]" />
-        <div className="absolute inset-x-0 bottom-0 px-5 pb-6">
-          <div className="inline-flex rounded-full bg-white/72 px-3 py-1 text-[11px] font-black text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur">
-            One Click
-          </div>
-          <h2 className="mt-3 text-[27px] font-black leading-8">一键创建，高效出稿</h2>
-          <p className="mt-2 text-sm font-medium leading-6 text-ink/68">
-            选择项目类型，开启一键创作。
-          </p>
-        </div>
+      <section className="-mx-4 -mt-3 mb-[-8px] flex min-h-[260px] flex-col justify-end overflow-hidden px-8 pb-6 pt-20 text-center">
+        <div className="mx-auto mb-2 h-1 w-28 rounded-full bg-[#5ea66b]/60" />
+        <h2 className="text-[30px] font-black leading-9 text-ink drop-shadow-[0_1px_0_rgba(255,255,255,0.88)]">
+          一键创建，高效出稿
+        </h2>
+        <p className="mt-2 text-[15px] font-semibold leading-6 text-ink/58">
+          从灵感到草稿，只需一步
+        </p>
       </section>
 
       <div className="space-y-3">
         {mobileCreationProjects.map((project) => (
           <button
             aria-label={`${project.enabled ? "进入" : "查看"}${project.title}${project.enabled ? "创作流程" : "规划状态"}`}
-            className="flex min-h-[86px] w-full touch-manipulation items-center gap-3 rounded-[25px] border border-white/75 bg-white/74 px-3.5 py-3 text-left shadow-[0_14px_34px_rgba(31,58,49,0.08),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-xl active:scale-[0.99]"
+            className="flex min-h-[94px] w-full touch-manipulation items-center gap-3 rounded-[30px] border border-white/82 bg-white/82 px-4 py-3.5 text-left shadow-[0_18px_40px_rgba(31,58,49,0.10),inset_0_1px_0_rgba(255,255,255,0.86)] backdrop-blur-xl active:scale-[0.99]"
             data-testid={`mobile-creation-project-${project.id}`}
             key={project.id}
             onClick={() => onSelect(project.id)}
@@ -2437,7 +2470,7 @@ function MobileCreationProjectGateway({
           >
             <span
               className={[
-                "flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] text-white shadow-[0_12px_24px_rgba(31,58,49,0.12)]",
+                "flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-white shadow-[0_14px_28px_rgba(31,58,49,0.14)]",
                 project.id === "postgraduate-phd"
                   ? "bg-[#ff2442]"
                   : project.id === "ecommerce-listing"
@@ -2454,8 +2487,8 @@ function MobileCreationProjectGateway({
               )}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-black leading-5">{project.title}</span>
-              <span className="mt-1 block text-xs font-semibold leading-5 text-muted">{project.description}</span>
+              <span className="block text-[17px] font-black leading-6">{project.title}</span>
+              <span className="mt-1 block text-sm font-semibold leading-5 text-muted">{project.category}</span>
             </span>
             <span
               className={[
@@ -2678,13 +2711,13 @@ function SettingsScreen({
 
   return (
     <div className="space-y-4">
-      <section className="relative overflow-hidden rounded-[26px] border border-white/70 bg-white/55 p-5 text-ink shadow-[0_18px_42px_rgba(31,58,49,0.10),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur-xl">
+      <section className="relative mt-8 overflow-hidden rounded-[30px] border border-white/80 bg-white/82 p-5 text-ink shadow-[0_22px_48px_rgba(31,58,49,0.12),inset_0_1px_0_rgba(255,255,255,0.86)] backdrop-blur-xl">
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-cover bg-center opacity-45"
+          className="absolute inset-0 bg-cover bg-center opacity-28"
           style={{ backgroundImage: `url(${MOBILE_COLLECTION_COLLAGE})` }}
         />
-        <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,252,244,0.96)_0%,rgba(255,252,244,0.82)_48%,rgba(255,252,244,0.58)_100%)]" />
+        <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,252,244,0.96)_0%,rgba(255,252,244,0.88)_48%,rgba(255,252,244,0.70)_100%)]" />
         <div aria-hidden="true" className="absolute -right-10 -top-14 h-36 w-36 rounded-full bg-[#38bf6b]/12 blur-2xl" />
         <div className="relative">
           <div className="flex items-start justify-between gap-3">
