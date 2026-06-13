@@ -229,7 +229,7 @@ def build_safety_profile(payload: TrendCollectionJobCreate) -> dict[str, object]
     if payload.min_delay_seconds >= payload.max_delay_seconds:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="min_delay_seconds must be lower than max_delay_seconds.",
+            detail="最小采集间隔必须小于最大采集间隔。",
         )
     if payload.content_kind != "image_text":
         raise HTTPException(
@@ -347,20 +347,20 @@ def render_trend_knowledge_digest(
     if not items:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No collected trend assets matched the digest request.",
+            detail="没有找到符合条件的采集素材，无法生成知识摘要。",
         )
 
     source_ids = [item.id for item in items]
-    keyword = payload.keyword or "recent collected trends"
-    platform = payload.platform or "multi-platform"
-    title = f"Trend digest: {keyword} ({platform})"
+    keyword = payload.keyword or "最近采集趋势"
+    platform = payload.platform or "多平台"
+    title = f"趋势摘要：{keyword}（{platform}）"
     lines = [
         f"# {title}",
         "",
-        "This knowledge entry summarizes collected public trend assets for drafting reference.",
-        "It is not a publishing approval and should be reviewed before use in content production.",
+        "这条知识库内容汇总已采集的公开趋势素材，仅作为撰稿参考。",
+        "它不是发布批准；进入内容生产前仍需要人工复核来源和结论。",
         "",
-        "## Source themes",
+        "## 主题标签",
     ]
 
     tag_counts: Counter[str] = Counter()
@@ -373,36 +373,36 @@ def render_trend_knowledge_digest(
     if tag_counts:
         lines.extend(f"- {tag}: {count}" for tag, count in tag_counts.most_common(12))
     else:
-        lines.append("- No tags were captured.")
+        lines.append("- 未采集到标签。")
 
-    lines.extend(["", "## Collected examples"])
+    lines.extend(["", "## 采集样例"])
     for index, item in enumerate(items, start=1):
         metrics = (
-            f"likes={item.likes}, favorites={item.favorites}, "
-            f"comments={item.comments}, shares={item.shares}"
+            f"点赞={item.likes}，收藏={item.favorites}，"
+            f"评论={item.comments}，分享={item.shares}"
         )
-        author = item.author or "unknown author"
-        url = item.url or "no url"
+        author = item.author or "未知作者"
+        url = item.url or "无来源链接"
         excerpt = re.sub(r"\s+", " ", item.content).strip()[:260]
         lines.extend(
             [
                 f"{index}. {item.title}",
-                f"   Platform: {item.platform}; Author: {author}; Metrics: {metrics}",
-                f"   Source: {url}",
-                f"   Notes: {excerpt}",
+                f"   平台：{item.platform}；作者：{author}；互动数据：{metrics}",
+                f"   来源：{url}",
+                f"   摘要：{excerpt}",
             ]
         )
         if item.video_transcript:
             transcript_excerpt = re.sub(r"\s+", " ", item.video_transcript).strip()[:220]
-            lines.append(f"   Video transcript: {transcript_excerpt}")
+            lines.append(f"   视频转写摘要：{transcript_excerpt}")
 
     lines.extend(
         [
             "",
-            "## Drafting guardrails",
-            "- Treat trend assets as inspiration and citation context, not direct copy.",
-            "- Avoid making unsupported outcome promises about admissions or supervisors.",
-            "- Use human review before any generated content is published.",
+            "## 撰稿安全边界",
+            "- 趋势素材只能作为灵感和引用背景，不能直接搬运。",
+            "- 不要对录取、导师匹配或申请结果做无依据承诺。",
+            "- 任何生成内容发布前都必须人工复核。",
         ]
     )
     return title, "\n".join(lines), source_ids
@@ -440,7 +440,7 @@ def ensure_trend_sources_reviewed(source_reviewed: bool) -> None:
     if not source_reviewed:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Trend sources must be reviewed before creating a knowledge digest.",
+            detail="生成知识摘要前，请先人工确认采集来源。",
         )
 
 

@@ -212,11 +212,11 @@ def test_render_trend_knowledge_digest_includes_sources() -> None:
 
     title, content, source_ids = render_trend_knowledge_digest([item], payload)
 
-    assert title == "Trend digest: 博士申请 (douyin)"
+    assert title == "趋势摘要：博士申请（douyin）"
     assert source_ids == [7]
     assert "博士申请时间线" in content
-    assert "Video transcript" in content
-    assert "human review" in content
+    assert "视频转写摘要" in content
+    assert "发布前都必须人工复核" in content
 
 
 def test_ensure_trend_sources_reviewed_rejects_unreviewed_sources() -> None:
@@ -224,7 +224,7 @@ def test_ensure_trend_sources_reviewed_rejects_unreviewed_sources() -> None:
         ensure_trend_sources_reviewed(False)
 
     assert exc.value.status_code == 409
-    assert "reviewed" in exc.value.detail
+    assert "人工确认采集来源" in exc.value.detail
 
 
 def test_ensure_trend_sources_reviewed_allows_reviewed_sources() -> None:
