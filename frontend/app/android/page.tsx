@@ -129,6 +129,8 @@ const MOBILE_LAST_CONTENT_STORAGE_KEY = "opc_mobile_last_generated_content_v1";
 const MOBILE_LAST_COVER_STORAGE_KEY = "opc_mobile_last_generated_cover_v1";
 const MOBILE_DRAFT_HISTORY_STORAGE_KEY = "opc_mobile_draft_history_v1";
 const MOBILE_DELETED_DRAFT_IDS_STORAGE_KEY = "opc_mobile_deleted_draft_ids_v1";
+const MOBILE_COVER_HYDRATION_RETRY_LIMIT = 10;
+const MOBILE_COVER_HYDRATION_RETRY_MS = 3000;
 const MOBILE_PAPER_TEXTURE = "/mobile-assets/paper-texture.png";
 const MOBILE_COLLECTION_COLLAGE = "/mobile-assets/collection-collage.png";
 const MOBILE_CREATE_CARD_BG = "/mobile-assets/create-card-bg.png";
@@ -2174,6 +2176,7 @@ function CreateScreen({
 
   useEffect(() => {
     let active = true;
+    let coverHydrationRetryTimer: number | null = null;
 
     async function fetchLatestCover(contentId: number) {
       try {
@@ -2222,7 +2225,30 @@ function CreateScreen({
       }
     }
 
-    async function hydrateMissingHistoryCovers(items: MobileDraftHistoryItem[]) {
+    function scheduleMissingCoverRetry(items: MobileDraftHistoryItem[], attempt: number) {
+      if (!active || attempt >= MOBILE_COVER_HYDRATION_RETRY_LIMIT) {
+        return;
+      }
+
+      if (coverHydrationRetryTimer !== null) {
+        window.clearTimeout(coverHydrationRetryTimer);
+      }
+
+      coverHydrationRetryTimer = window.setTimeout(() => {
+        coverHydrationRetryTimer = null;
+        if (!active) {
+          return;
+        }
+
+        const latestStoredHistory = readStoredMobileDraftHistory().filter(
+          (item) => item.content.platform === platform
+        );
+        const retryItems = latestStoredHistory.length ? latestStoredHistory : items;
+        void hydrateMissingHistoryCovers(retryItems, attempt + 1);
+      }, MOBILE_COVER_HYDRATION_RETRY_MS);
+    }
+
+    async function hydrateMissingHistoryCovers(items: MobileDraftHistoryItem[], attempt = 0) {
       const missingCoverIds = items
         .filter((item) => !item.cover)
         .map((item) => item.content.id)
@@ -2234,11 +2260,16 @@ function CreateScreen({
       const covers = (await Promise.all(missingCoverIds.map(fetchLatestCover))).filter(
         (cover): cover is GeneratedImageAsset => Boolean(cover)
       );
-      if (!active || !covers.length) {
+      if (!active) {
+        return;
+      }
+      if (!covers.length) {
+        scheduleMissingCoverRetry(items, attempt);
         return;
       }
 
       const coverByContentId = new Map(covers.map((cover) => [cover.content_id, cover]));
+      const stillMissingCover = missingCoverIds.some((contentId) => !coverByContentId.has(contentId));
       setDraftHistory((currentItems) => {
         const normalized = normalizeMobileDraftHistory(
           currentItems.map((item) => ({
@@ -2265,6 +2296,10 @@ function CreateScreen({
         }
         return currentCover;
       });
+
+      if (stillMissingCover) {
+        scheduleMissingCoverRetry(items, attempt);
+      }
     }
 
     async function loadLatestContent() {
@@ -2368,6 +2403,9 @@ function CreateScreen({
     void loadLatestContent();
     return () => {
       active = false;
+      if (coverHydrationRetryTimer !== null) {
+        window.clearTimeout(coverHydrationRetryTimer);
+      }
     };
   }, [platform, onAction]);
 
