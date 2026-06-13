@@ -124,6 +124,7 @@ const COLLECTION_SCHEDULE_STORAGE_KEY = "opc_mobile_collection_schedule_v1";
 const MOBILE_LAST_CONTENT_STORAGE_KEY = "opc_mobile_last_generated_content_v1";
 const MOBILE_LAST_COVER_STORAGE_KEY = "opc_mobile_last_generated_cover_v1";
 const MOBILE_DRAFT_HISTORY_STORAGE_KEY = "opc_mobile_draft_history_v1";
+const MOBILE_DELETED_DRAFT_IDS_STORAGE_KEY = "opc_mobile_deleted_draft_ids_v1";
 const MOBILE_PAPER_TEXTURE = "/mobile-assets/paper-texture.png";
 const MOBILE_COLLECTION_COLLAGE = "/mobile-assets/collection-collage.png";
 const MOBILE_CREATE_CARD_BG = "/mobile-assets/create-card-bg.png";
@@ -449,6 +450,44 @@ function saveStoredMobileContent(content: GeneratedContent) {
   writeMobileStorage(MOBILE_LAST_CONTENT_STORAGE_KEY, JSON.stringify(content));
 }
 
+function readStoredDeletedDraftIds() {
+  const raw = readMobileStorage(MOBILE_DELETED_DRAFT_IDS_STORAGE_KEY);
+  if (!raw) {
+    return new Set<number>();
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return new Set<number>();
+    }
+    return new Set(parsed.filter((value): value is number => Number.isInteger(value)));
+  } catch (_error) {
+    return new Set<number>();
+  }
+}
+
+function saveStoredDeletedDraftIds(ids: Set<number>) {
+  writeMobileStorage(
+    MOBILE_DELETED_DRAFT_IDS_STORAGE_KEY,
+    JSON.stringify(Array.from(ids).slice(-80))
+  );
+}
+
+function rememberDeletedDraftId(contentId: number) {
+  const deletedDraftIds = readStoredDeletedDraftIds();
+  deletedDraftIds.add(contentId);
+  saveStoredDeletedDraftIds(deletedDraftIds);
+}
+
+function filterDeletedMobileDraftHistory(items: MobileDraftHistoryItem[]) {
+  const deletedDraftIds = readStoredDeletedDraftIds();
+  if (!deletedDraftIds.size) {
+    return items;
+  }
+  return items.filter((item) => !deletedDraftIds.has(item.content.id));
+}
+
 function isMobileDraftHistoryItem(value: unknown): value is MobileDraftHistoryItem {
   if (!value || typeof value !== "object") {
     return false;
@@ -501,16 +540,19 @@ function readStoredMobileDraftHistory() {
     if (!Array.isArray(parsed)) {
       return [];
     }
-    return normalizeMobileDraftHistory(parsed.filter(isMobileDraftHistoryItem));
+    return filterDeletedMobileDraftHistory(
+      normalizeMobileDraftHistory(parsed.filter(isMobileDraftHistoryItem))
+    );
   } catch (_error) {
     return [];
   }
 }
 
 function saveStoredMobileDraftHistory(items: MobileDraftHistoryItem[]) {
+  const visibleItems = filterDeletedMobileDraftHistory(normalizeMobileDraftHistory(items));
   writeMobileStorage(
     MOBILE_DRAFT_HISTORY_STORAGE_KEY,
-    JSON.stringify(normalizeMobileDraftHistory(items))
+    JSON.stringify(visibleItems)
   );
 }
 
@@ -1979,7 +2021,22 @@ function CreateScreen({
     onAction(item.pinned ? "已取消置顶草稿。" : "已置顶草稿。");
   }
 
-  function deleteDraftHistoryItem(item: MobileDraftHistoryItem) {
+  async function deleteDraftHistoryItem(item: MobileDraftHistoryItem) {
+    setDraftActionContentId(null);
+    try {
+      const response = await fetch(`${API_BASE}/content/${item.content.id}`, {
+        headers: authHeaders(credentials),
+        method: "DELETE"
+      });
+      if (!response.ok && response.status !== 404) {
+        throw new Error(await readApiError(response, "草稿删除失败，请稍后再试。"));
+      }
+    } catch (error) {
+      onAction(error instanceof Error ? error.message : "草稿删除失败，请稍后再试。");
+      return;
+    }
+
+    rememberDeletedDraftId(item.content.id);
     const nextItems = persistDraftHistory(
       draftHistory.filter((draftItem) => draftItem.content.id !== item.content.id)
     );
@@ -2005,8 +2062,7 @@ function CreateScreen({
         setPreviewOpen(false);
       }
     }
-    setDraftActionContentId(null);
-    onAction("已从本机草稿历史删除。");
+    onAction("已删除草稿，刷新后也不会再出现。");
   }
 
   useEffect(() => {
@@ -2058,9 +2114,11 @@ function CreateScreen({
           return;
         }
 
+        const deletedDraftIds = readStoredDeletedDraftIds();
         const latestItems = data
           .filter(isGeneratedContent)
           .filter((content) => content.platform === platform)
+          .filter((content) => !deletedDraftIds.has(content.id))
           .map((content) => ({
             content,
             cover: null,
@@ -2105,18 +2163,25 @@ function CreateScreen({
       }
     }
 
+    const deletedDraftIds = readStoredDeletedDraftIds();
     const storedContent = readStoredMobileContent();
+    const visibleStoredContent =
+      storedContent && !deletedDraftIds.has(storedContent.id) ? storedContent : null;
     const storedCover = readStoredMobileCover();
     const storedHistory = readStoredMobileDraftHistory().filter(
       (item) => item.content.platform === platform
     );
-    if (storedContent?.platform === platform) {
+    if (storedContent && !visibleStoredContent) {
+      removeMobileStorage(MOBILE_LAST_CONTENT_STORAGE_KEY);
+      clearStoredMobileCover();
+    }
+    if (visibleStoredContent?.platform === platform) {
       const normalized = normalizeMobileDraftHistory([
         {
-          content: storedContent,
-          cover: storedCover?.content_id === storedContent.id ? storedCover : null,
+          content: visibleStoredContent,
+          cover: storedCover?.content_id === visibleStoredContent.id ? storedCover : null,
           pinned: false,
-          saved_at: storedContent.created_at ?? new Date().toISOString()
+          saved_at: visibleStoredContent.created_at ?? new Date().toISOString()
         },
         ...storedHistory
       ]);
@@ -2124,13 +2189,13 @@ function CreateScreen({
     } else {
       setDraftHistory(storedHistory);
     }
-    if (storedContent?.platform === platform) {
-      setGeneratedContent(storedContent);
-      setDraftPreview(draftStateFromContent(storedContent));
-      if (storedCover?.content_id === storedContent.id) {
+    if (visibleStoredContent?.platform === platform) {
+      setGeneratedContent(visibleStoredContent);
+      setDraftPreview(draftStateFromContent(visibleStoredContent));
+      if (storedCover?.content_id === visibleStoredContent.id) {
         setGeneratedCover(storedCover);
       }
-      void loadLatestCover(storedContent.id);
+      void loadLatestCover(visibleStoredContent.id);
     }
 
     void loadLatestContent();

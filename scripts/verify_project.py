@@ -760,6 +760,21 @@ def validate_content_production_contract() -> int:
         if snippet not in android_text:
             raise SystemExit(f"Missing mobile static reference contract: {snippet}")
 
+    mobile_draft_delete_contract_snippets = [
+        "MOBILE_DELETED_DRAFT_IDS_STORAGE_KEY",
+        "function rememberDeletedDraftId(contentId: number)",
+        "function filterDeletedMobileDraftHistory(items: MobileDraftHistoryItem[])",
+        "async function deleteDraftHistoryItem(item: MobileDraftHistoryItem)",
+        "await fetch(`${API_BASE}/content/${item.content.id}`",
+        'method: "DELETE"',
+        "rememberDeletedDraftId(item.content.id)",
+        "已删除草稿，刷新后也不会再出现。",
+    ]
+    for snippet in mobile_draft_delete_contract_snippets:
+        total += 1
+        if snippet not in android_text:
+            raise SystemExit(f"Missing mobile draft delete contract: {snippet}")
+
     mobile_xhs_export_start = android_text.index("async function handleOpenXiaohongshu")
     mobile_xhs_export_end = android_text.index(
         "async function copyPreviewLink",
