@@ -61,6 +61,20 @@ For Xiaohongshu:
   data is absent, say that exact school ranking needs verified sources and
   provide a dimension-based ranking framework instead of drifting to supervisor
   matching or research-plan advice.
+- If the topic contains `路线`, `怎么选`, `选择`, or `路径`, write a route or
+  decision post: compare route buckets, fit criteria, decision order, and who
+  should avoid each route. Do not drift into a generic timeline-only draft.
+- If the topic contains `导师`, `匹配`, or `套磁`, write around supervisor fit:
+  research direction, recent papers/projects, overlap evidence, email timing,
+  and what to prepare before contact. Do not turn it into a ranking or schedule
+  post.
+- If the topic contains `时间线`, `时间节点`, `什么时候`, or `时间怎么排`, write around
+  stages and deadlines: 12-9 months, 9-6 months, 6-3 months, last month, and
+  what should be done at each stage. Do not turn it into mentor matching.
+- If the topic contains `咨询`, `转化`, `上班族`, `私域`, or `获客`, write around
+  consultation conversion: user needs, budget, project fit, objection handling,
+  follow-up rhythm, and compliant sales language. Do not invent offers or
+  promise admissions outcomes.
 - Mention uncertainty carefully instead of making guaranteed-outcome claims.
 - Do not include hashtags in the body; the application appends tags separately.
 

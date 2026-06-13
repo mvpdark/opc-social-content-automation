@@ -32,6 +32,50 @@ RANKING_DRAFT_TERMS = (
     "预算",
     "毕业难度",
 )
+ROUTE_TOPIC_TERMS = ("路线", "怎么选", "选择", "路径")
+ROUTE_DRAFT_TERMS = ("路线", "路径", "选择", "适配", "判断", "对比", "方案")
+MENTOR_TOPIC_TERMS = ("导师", "匹配", "套磁")
+MENTOR_DRAFT_TERMS = ("导师", "匹配", "研究方向", "论文", "课题", "成果", "套磁", "邮件")
+TIMELINE_TOPIC_TERMS = ("时间线", "时间节点", "时间怎么排", "什么时候")
+TIMELINE_DRAFT_TERMS = ("时间线", "时间节点", "阶段", "提前", "月份", "DDL", "安排", "节奏")
+SALES_TOPIC_TERMS = ("咨询", "转化", "上班族", "私域", "获客")
+SALES_DRAFT_TERMS = ("咨询", "需求", "预算", "适配", "沟通", "话术", "转化", "项目")
+
+
+@dataclass(frozen=True)
+class TopicIntentRule:
+    topic_terms: tuple[str, ...]
+    draft_terms: tuple[str, ...]
+    label: str
+    guidance: str
+
+
+TOPIC_INTENT_RULES = (
+    TopicIntentRule(
+        topic_terms=ROUTE_TOPIC_TERMS,
+        draft_terms=ROUTE_DRAFT_TERMS,
+        label="路线/选择",
+        guidance="请围绕路线对比、选择标准、适配人群和判断步骤展开。",
+    ),
+    TopicIntentRule(
+        topic_terms=MENTOR_TOPIC_TERMS,
+        draft_terms=MENTOR_DRAFT_TERMS,
+        label="导师匹配",
+        guidance="请围绕研究方向、导师成果、论文/课题交集和套磁前准备展开。",
+    ),
+    TopicIntentRule(
+        topic_terms=TIMELINE_TOPIC_TERMS,
+        draft_terms=TIMELINE_DRAFT_TERMS,
+        label="时间安排",
+        guidance="请围绕申请阶段、时间节点、提前准备和执行节奏展开。",
+    ),
+    TopicIntentRule(
+        topic_terms=SALES_TOPIC_TERMS,
+        draft_terms=SALES_DRAFT_TERMS,
+        label="咨询转化",
+        guidance="请围绕用户需求、预算、项目适配、沟通话术和转化路径展开。",
+    ),
+)
 
 
 @dataclass(frozen=True)
@@ -95,6 +139,16 @@ def _is_water_ranking_topic(payload: ContentGenerateRequest) -> bool:
 
 def _draft_topic_relevance_issue(payload: ContentGenerateRequest, draft: str) -> str | None:
     if not _is_water_ranking_topic(payload):
+        topic_text = " ".join([payload.topic, *(payload.tags or [])])
+        for rule in TOPIC_INTENT_RULES:
+            if _contains_any(topic_text, rule.topic_terms) and not _contains_any(
+                draft,
+                rule.draft_terms,
+            ):
+                return (
+                    f"撰稿结果偏离选题：当前选题是“{payload.topic}”，但草稿没有围绕{rule.label}展开。"
+                    f"{rule.guidance}"
+                )
         return None
 
     has_route_term = _contains_any(draft, WATER_ROUTE_TOPIC_TERMS)

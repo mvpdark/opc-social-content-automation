@@ -1,3 +1,5 @@
+import pytest
+
 from app.schemas.content import ContentGenerateRequest
 from app.services.content_service import _draft_topic_relevance_issue
 
@@ -32,3 +34,52 @@ def test_water_ranking_topic_accepts_dimension_based_ranking_draft() -> None:
     )
 
     assert issue is None
+
+
+@pytest.mark.parametrize(
+    ("topic", "bad_draft", "good_draft", "expected_label"),
+    [
+        (
+            "硕升博申请路线怎么选",
+            "先看导师近三年论文，再写套磁邮件。",
+            "硕升博路线要按预算、出勤、认证和毕业难度做选择判断。",
+            "路线/选择",
+        ),
+        (
+            "导师匹配前要做的方向自查",
+            "先按 12-9 个月、9-6 个月安排申请时间线。",
+            "导师匹配前先看研究方向、近期论文、课题交集和套磁邮件证据。",
+            "导师匹配",
+        ),
+        (
+            "在职博士申请时间线怎么排",
+            "先做项目预算榜，再看认证和学校池。",
+            "时间线要拆成 12-9 个月、9-6 个月、6-3 个月和最后阶段。",
+            "时间安排",
+        ),
+        (
+            "适合上班族的博士项目怎么咨询",
+            "先整理研究方向，再看导师成果。",
+            "咨询时先问需求、预算、项目适配，再安排沟通话术和跟进节奏。",
+            "咨询转化",
+        ),
+    ],
+)
+def test_topic_intent_relevance_rejects_drift_and_accepts_matching_draft(
+    topic: str,
+    bad_draft: str,
+    good_draft: str,
+    expected_label: str,
+) -> None:
+    payload = ContentGenerateRequest(
+        platform="xiaohongshu",
+        topic=topic,
+        tags=[],
+    )
+
+    issue = _draft_topic_relevance_issue(payload, bad_draft)
+
+    assert issue is not None
+    assert topic in issue
+    assert expected_label in issue
+    assert _draft_topic_relevance_issue(payload, good_draft) is None

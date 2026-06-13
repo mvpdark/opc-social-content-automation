@@ -111,6 +111,39 @@ def test_codex_test_draft_provider_keeps_water_ranking_topic(
     assert "研究方向、目标导师和时间节点" not in result
 
 
+@pytest.mark.parametrize(
+    ("topic", "expected_terms", "forbidden_terms"),
+    [
+        ("硕升博申请路线怎么选", ("路线", "选择", "适配"), ("群发邮件",)),
+        ("导师匹配前要做的方向自查", ("导师", "匹配", "论文"), ("12-9 个月",)),
+        ("在职博士申请时间线怎么排", ("时间线", "12-9 个月", "DDL"), ("预算友好榜",)),
+        ("适合上班族的博士项目怎么咨询", ("咨询", "需求", "转化"), ("近期论文",)),
+    ],
+)
+def test_codex_test_draft_provider_matches_recommended_topic_intent(
+    monkeypatch: pytest.MonkeyPatch,
+    topic: str,
+    expected_terms: tuple[str, ...],
+    forbidden_terms: tuple[str, ...],
+) -> None:
+    monkeypatch.setattr(settings, "draft_provider", "codex_test")
+
+    result = model_router.draft_model(
+        "draft_generation",
+        {
+            "platform": "xiaohongshu",
+            "topic": topic,
+            "tags": [],
+        },
+    )
+
+    assert topic in result
+    for term in expected_terms:
+        assert term in result
+    for term in forbidden_terms:
+        assert term not in result
+
+
 def test_codex_test_image_provider_creates_svg(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "image_provider", "codex_test")
     monkeypatch.setattr(settings, "test_static_url_prefix", "/static/generated")
