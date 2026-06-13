@@ -2365,7 +2365,7 @@ function SettingsScreen({
     {
       keyName: "workspaceToken",
       label: "访问保护（可选）",
-      placeholder: "无需填写",
+      placeholder: "未开启时留空",
       testId: "mobile-token"
     },
     {
@@ -2456,7 +2456,7 @@ function SettingsScreen({
           {credentialFields.map((field) => {
             const localFilled = credentials[field.keyName].trim().length > 0;
             const statusText = field.keyName === "workspaceToken"
-              ? (localFilled ? "已填写" : "无需填写")
+              ? (localFilled ? "已填写" : "未开启")
               : localFilled
                 ? "本设备已填写"
                 : field.backendBound

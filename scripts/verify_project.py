@@ -599,6 +599,24 @@ def validate_content_production_contract() -> int:
         if snippet not in image_service_text:
             raise SystemExit(f"Missing content production backend contract: {snippet}")
 
+    settings_access_contracts = [
+        (
+            workspace_text,
+            ["placeholder: \"未开启时留空\"", "? (localFilled ? \"已填写\" : \"未开启\")"],
+            "PC access protection settings copy",
+        ),
+        (
+            android_text,
+            ["placeholder: \"未开启时留空\"", "? (localFilled ? \"已填写\" : \"未开启\")"],
+            "mobile access protection settings copy",
+        ),
+    ]
+    for text, snippets, contract_name in settings_access_contracts:
+        for snippet in snippets:
+            total += 1
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
+
     status_label_contract_snippets = [
         "export function collectionJobStatusLabel",
         "export function generatedContentStatusLabel",
@@ -1018,6 +1036,7 @@ def validate_content_production_contract() -> int:
         "手机本机",
         "当前不用填",
         "当前未开启",
+        "无需填写",
         "当前工作台未开启访问保护",
         "正在刷新当前保存状态",
         "服务配置已应用到当前工作台",
