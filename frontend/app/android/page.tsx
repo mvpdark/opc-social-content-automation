@@ -226,7 +226,7 @@ const taskActionCopy: Record<MobileTab, string> = {
   home: "已回到首页。",
   collect: "已打开采集页，可以切平台、编辑关键词和查看参考卡片。",
   create: "已打开创作项目页，先选择项目再进入生成入口。",
-  settings: "已打开设置页，可以查看配置和发布确认状态。"
+  settings: "已打开设置页，可以查看账号状态和发布确认状态。"
 };
 
 const mobileCreationProjects = [
