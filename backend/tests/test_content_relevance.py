@@ -1,7 +1,11 @@
+import re
+from pathlib import Path
+
 import pytest
 
 from app.schemas.content import ContentGenerateRequest
 from app.services.content_service import _draft_topic_relevance_issue
+from app.services.topic_intent import first_matching_topic_intent
 
 
 def test_water_ranking_topic_rejects_generic_application_draft() -> None:
@@ -168,3 +172,67 @@ def test_topic_intent_relevance_rejects_drift_and_accepts_matching_draft(
     assert topic in issue
     assert expected_label in issue
     assert _draft_topic_relevance_issue(payload, good_draft) is None
+
+
+@pytest.mark.parametrize(
+    ("topic", "tags", "expected_label"),
+    [
+        (
+            "怎么判断导师是否适合自己",
+            ["导师选择", "博士申请", "导师匹配", "研究方向"],
+            "导师匹配",
+        ),
+        (
+            "什么时候开始联系导师",
+            ["联系导师", "套磁", "博士申请", "申请时间线"],
+            "时间安排",
+        ),
+        (
+            "博士项目咨询前必问5个问题",
+            ["博士咨询", "项目筛选", "在职博士", "私域转化"],
+            "咨询转化",
+        ),
+        (
+            "私域里怎么筛选博士咨询客户",
+            ["私域运营", "博士咨询", "线索筛选", "项目适配"],
+            "咨询转化",
+        ),
+    ],
+)
+def test_recommended_topic_title_intent_takes_priority_over_generic_tags(
+    topic: str,
+    tags: list[str],
+    expected_label: str,
+) -> None:
+    rule = first_matching_topic_intent(topic, tags)
+
+    assert rule is not None
+    assert rule.label == expected_label
+
+
+def test_generation_topic_presets_align_with_backend_intents() -> None:
+    project_root = Path(__file__).resolve().parents[2]
+    preset_text = (project_root / "frontend" / "lib" / "topic-presets.ts").read_text(
+        encoding="utf-8"
+    )
+    preset_objects = re.findall(
+        r'\{\s*(audience:.*?topic:\s*"[^"]+"\s*)\}',
+        preset_text,
+        re.S,
+    )
+    compatible_labels = {
+        "榜单型": {"榜单/筛选"},
+        "路线型": {"路线/选择", "背景补强"},
+        "导师型": {"导师匹配"},
+        "时间型": {"时间安排"},
+        "转化型": {"咨询转化"},
+    }
+
+    assert len(preset_objects) >= 20
+    for raw_preset in preset_objects:
+        fields = dict(re.findall(r'(\w+):\s*"([^"]*)"', raw_preset))
+        tags = [tag.strip() for tag in re.split(r"[,，、;；]+", fields["tags"]) if tag.strip()]
+        rule = first_matching_topic_intent(fields["topic"], tags)
+
+        assert rule is not None, fields["key"]
+        assert rule.label in compatible_labels[fields["desktopLabel"]], fields["key"]

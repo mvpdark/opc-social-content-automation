@@ -173,6 +173,20 @@ TOPIC_INTENT_RULES = (
     ),
 )
 
+STRONG_TOPIC_TERMS_BY_RULE = {
+    "timeline": (
+        "时间线",
+        "时间节点",
+        "时间怎么排",
+        "什么时候",
+        "材料清单",
+        "优先级",
+        "先准备",
+        "一年内",
+    ),
+    "sales": ("咨询", "转化", "私域", "获客", "含金量", "怎么回答"),
+}
+
 
 def contains_any(text: str, terms: tuple[str, ...]) -> bool:
     normalized = text.lower()
@@ -181,6 +195,27 @@ def contains_any(text: str, terms: tuple[str, ...]) -> bool:
 
 def joined_topic_text(topic: str, tags: list[str] | None = None) -> str:
     return " ".join([topic, *(tags or [])])
+
+
+def _topic_intent_score(text: str, rule: TopicIntentRule) -> int:
+    normalized = text.lower()
+    strong_terms = STRONG_TOPIC_TERMS_BY_RULE.get(rule.key, ())
+    return sum(
+        2 if term in strong_terms else 1
+        for term in rule.topic_terms
+        if term.lower() in normalized
+    )
+
+
+def _best_matching_topic_intent(text: str) -> TopicIntentRule | None:
+    scored_rules = [
+        (score, rule)
+        for rule in TOPIC_INTENT_RULES
+        if (score := _topic_intent_score(text, rule)) > 0
+    ]
+    if not scored_rules:
+        return None
+    return max(scored_rules, key=lambda item: item[0])[1]
 
 
 def is_water_ranking_topic(topic: str, tags: list[str] | None = None) -> bool:
@@ -195,8 +230,4 @@ def first_matching_topic_intent(
     topic: str,
     tags: list[str] | None = None,
 ) -> TopicIntentRule | None:
-    topic_text = joined_topic_text(topic, tags)
-    return next(
-        (rule for rule in TOPIC_INTENT_RULES if contains_any(topic_text, rule.topic_terms)),
-        None,
-    )
+    return _best_matching_topic_intent(topic) or _best_matching_topic_intent(" ".join(tags or []))
