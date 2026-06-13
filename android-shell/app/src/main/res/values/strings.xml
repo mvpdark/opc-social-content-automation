@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">OMPC工作站</string>
+    <string name="start_url">https://opc.mvpdark.top/android?shell=android</string>
+</resources>

@@ -1427,6 +1427,52 @@ def validate_content_production_contract() -> int:
     return total
 
 
+def validate_android_shell_contract() -> int:
+    main_activity = (
+        ROOT
+        / "android-shell"
+        / "app"
+        / "src"
+        / "main"
+        / "java"
+        / "top"
+        / "mvpdark"
+        / "opc"
+        / "MainActivity.java"
+    )
+    if not main_activity.exists():
+        return 0
+
+    text = main_activity.read_text(encoding="utf-8")
+    required_snippets = [
+        'target.addJavascriptInterface(new OmpcBridge(), "OMPCAndroid")',
+        "public String shareToXiaohongshu(",
+        "copyTextToClipboard(title, text)",
+        "ShareLaunchResult shareResult = launchXiaohongshuShare(",
+        'return shareResult.ok ? "ok" : "error:" + shareResult.message;',
+        "CountDownLatch latch = new CountDownLatch(1)",
+        "shareImageToXiaohongshu(Uri imageUri, String title, String text)",
+        "没找到可以接收封面图的发布入口",
+    ]
+    forbidden_snippets = [
+        'openXiaohongshu(Uri.parse("https://www.xiaohongshu.com/explore"))',
+        'openXiaohongshu(Uri.parse("https://www.xiaohongshu.com/discovery"))',
+    ]
+
+    total = 0
+    for snippet in required_snippets:
+        total += 1
+        if snippet not in text:
+            raise SystemExit(f"Missing Android shell share contract: {snippet}")
+    for snippet in forbidden_snippets:
+        total += 1
+        if snippet in text:
+            raise SystemExit(
+                f"Android shell must not use misleading Xiaohongshu home fallback: {snippet}"
+            )
+    return total
+
+
 def _iter_text_hygiene_files() -> list[Path]:
     files: list[Path] = []
     for root in TEXT_HYGIENE_ROOTS:
@@ -1486,6 +1532,7 @@ def main() -> None:
         "safety_gates_checked": validate_safety_gates(),
         "frontend_design_contract_checked": validate_frontend_design_contract(),
         "content_production_contract_checked": validate_content_production_contract(),
+        "android_shell_contract_checked": validate_android_shell_contract(),
         "text_hygiene_files_checked": validate_text_hygiene(),
     }
     if not args.keep_cache:

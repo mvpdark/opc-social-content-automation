@@ -35,6 +35,11 @@ artifacts/
 .browser-sessions/
 .playwright-cli/
 .android-build/
+android-shell/.gradle/
+android-shell/build/
+android-shell/app/build/
+android-shell/keystore/
+android-shell/local.properties
 .codex-remote-attachments/
 backend/uvicorn-*.log*
 frontend/next-*.log*
