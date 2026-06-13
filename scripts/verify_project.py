@@ -1073,6 +1073,7 @@ def validate_content_production_contract() -> int:
         "演示草稿不可",
         "当前运营 lane",
         "压力测试",
+        "Search target could not be prepared",
         'MobilePanel title="高赞参考"',
         "把高赞参考变成素材池",
         "来源待 PC 确认",

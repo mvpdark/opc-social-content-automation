@@ -322,7 +322,7 @@ export function TrendCollectorPanel({
     const params = new URLSearchParams({ platform, keyword: keyword.trim() });
     const response = await fetch(`${API_BASE}/trends/search-target?${params.toString()}`);
     if (!response.ok) {
-      throw new Error("Search target could not be prepared.");
+      throw new Error("搜索目标准备失败，请稍后重试或检查应用服务。");
     }
     const nextTarget = (await response.json()) as SearchTarget;
     setTarget(nextTarget);
