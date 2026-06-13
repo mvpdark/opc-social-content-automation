@@ -18,6 +18,7 @@ def test_documented_api_paths_are_registered() -> None:
         "/api/content/{content_id}/reviews",
         "/api/content/{content_id}/ai-review",
         "/api/knowledge/upload",
+        "/api/knowledge/list",
         "/api/knowledge/search",
         "/api/trends/list",
         "/api/trends/report",

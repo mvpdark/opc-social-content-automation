@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
@@ -50,6 +50,11 @@ import {
   type GeneratedImageAsset
 } from "@/lib/generated-assets";
 import {
+  fetchKnowledgeItems,
+  knowledgeItemExcerpt,
+  type KnowledgeItem
+} from "@/lib/knowledge-api";
+import {
   providerBindingDefaultsFromStatuses,
   sanitizeProviderStatusItems,
   type ProviderStatusItem
@@ -85,7 +90,7 @@ import {
 } from "@/lib/topic-presets";
 import { renderXhsExpressionText } from "@/lib/xhs-stickers";
 
-type MobileTab = "home" | "collect" | "create" | "settings";
+type MobileTab = "home" | "collect" | "knowledge" | "create" | "settings";
 type MobilePlatform = "douyin" | "xiaohongshu";
 
 type OmpcAndroidBridge = {
@@ -166,6 +171,11 @@ const mobileScreenArt: Record<MobileTab, { image: string; opacity: string; posit
     opacity: "opacity-92",
     position: "center top"
   },
+  knowledge: {
+    image: MOBILE_COLLECTION_COLLAGE,
+    opacity: "opacity-72",
+    position: "center top"
+  },
   settings: {
     image: MOBILE_COLLECTION_COLLAGE,
     opacity: "opacity-58",
@@ -226,14 +236,15 @@ function mobileDiagnosticToneClass(tone: CollectionJobDiagnosticItem["tone"]) {
 const bottomTabs: Array<{ id: MobileTab; icon: typeof Home; label: string }> = [
   { id: "home", icon: Home, label: "首页" },
   { id: "collect", icon: Radar, label: "采集" },
+  { id: "knowledge", icon: BookOpenText, label: "知识" },
   { id: "create", icon: PenLine, label: "创作" },
   { id: "settings", icon: Settings, label: "设置" }
 ];
 
 const workItems = [
   { label: "补公开图文素材", state: "进入采集", icon: Radar, tab: "collect" },
-  { label: "生成硕升博草稿", state: "进入创作", icon: PenLine, tab: "create" },
-  { label: "复核封面标题", state: "查看封面", icon: Image, tab: "create" }
+  { label: "查看知识库", state: "进入知识", icon: BookOpenText, tab: "knowledge" },
+  { label: "生成硕升博草稿", state: "进入创作", icon: PenLine, tab: "create" }
 ] satisfies Array<{
   icon: typeof Radar;
   label: string;
@@ -243,7 +254,7 @@ const workItems = [
 
 const progressSteps = [
   { label: "采集", state: "当前", icon: Database, tab: "collect" },
-  { label: "知识库", state: "就绪", icon: BookOpenText, tab: "settings" },
+  { label: "知识库", state: "可查看", icon: BookOpenText, tab: "knowledge" },
   { label: "确认", state: "待处理", icon: ShieldCheck, tab: "create" }
 ] satisfies Array<{
   icon: typeof Database;
@@ -254,7 +265,7 @@ const progressSteps = [
 
 const quickMetrics = [
   { label: "趋势素材", value: "0", tone: "blue", tab: "collect" },
-  { label: "知识条目", value: "0", tone: "green", tab: "settings" },
+  { label: "知识条目", value: "查看", tone: "green", tab: "knowledge" },
   { label: "待确认", value: "0", tone: "coral", tab: "create" }
 ] satisfies Array<{
   label: string;
@@ -265,11 +276,11 @@ const quickMetrics = [
 
 const taskActionCopy: Record<MobileTab, string> = {
   home: "已回到首页。",
-  collect: "已打开采集页，可以切平台、编辑关键词和查看参考卡片。",
+  collect: "已打开采集页，可以切换平台、编辑关键词和保存知识摘要。",
+  knowledge: "已打开知识库，可以查看最近入库内容或搜索知识条目。",
   create: "已打开创作项目页，先选择项目再进入生成入口。",
-  settings: "已打开设置页，可以查看账号状态和发布确认状态。"
+  settings: "已打开设置页，可以查看账号状态和发布确认规则。"
 };
-
 const mobileCreationProjects = [
   {
     id: "postgraduate-phd",
@@ -794,6 +805,9 @@ export default function AndroidPreviewPage() {
         <div className="relative z-10" hidden={activeTab !== "collect"}>
           <CollectScreen credentials={credentials} onAction={setStatus} />
         </div>
+        <div className="relative z-10" hidden={activeTab !== "knowledge"}>
+          <KnowledgeScreen onAction={setStatus} />
+        </div>
         <div className="relative z-10" hidden={activeTab !== "create"}>
           <CreateScreen credentials={credentials} onAction={setStatus} />
         </div>
@@ -977,6 +991,7 @@ function MobileHeader({
   const titles: Record<MobileTab, string> = {
     home: "今日工作台",
     collect: "趋势采集",
+    knowledge: "知识库",
     create: "创作项目",
     settings: "设置"
   };
@@ -1067,7 +1082,7 @@ function HomeScreen({
           {[
             { icon: <Radar className="h-5 w-5" />, label: "采集管理", tab: "collect" as const },
             { icon: <PenLine className="h-5 w-5" />, label: "创作项目", tab: "create" as const },
-            { icon: <Database className="h-5 w-5" />, label: "数据中心", tab: "settings" as const },
+            { icon: <BookOpenText className="h-5 w-5" />, label: "知识库", tab: "knowledge" as const },
             { icon: <Settings className="h-5 w-5" />, label: "系统设置", tab: "settings" as const }
           ].map((item) => (
             <button
@@ -1870,6 +1885,177 @@ function CollectScreen({
           }}
         />
       ) : null}
+    </div>
+  );
+}
+
+function KnowledgeScreen({ onAction }: { onAction: (message: string) => void }) {
+  const [items, setItems] = useState<KnowledgeItem[]>([]);
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState("正在读取最近入库内容...");
+
+  async function loadKnowledge(nextQuery = query, announce = false) {
+    const normalizedQuery = nextQuery.trim();
+    setLoading(true);
+    setStatus(normalizedQuery ? "正在搜索知识库..." : "正在读取最近入库内容...");
+    try {
+      const data = await fetchKnowledgeItems(API_BASE, {
+        limit: 20,
+        query: normalizedQuery
+      });
+      setItems(data);
+      const nextStatus = data.length
+        ? normalizedQuery
+          ? `找到 ${data.length} 条相关知识。`
+          : `已显示最近 ${data.length} 条知识。`
+        : normalizedQuery
+          ? "没有找到匹配知识，可以换个关键词。"
+            : "知识库还没有条目，先从采集页保存知识摘要。";
+      setStatus(nextStatus);
+      if (announce) {
+        onAction(nextStatus);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "知识库读取失败，请稍后再试。";
+      setItems([]);
+      setStatus(message);
+      if (announce) {
+        onAction(message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadKnowledge("");
+  }, []);
+
+  async function copyKnowledgeItem(item: KnowledgeItem) {
+    try {
+      await copyText(`${item.title}\n\n${item.content}`);
+      onAction("知识条目已复制到剪贴板。");
+    } catch (error) {
+      onAction(error instanceof Error ? error.message : "复制失败，请手动选择内容。");
+    }
+  }
+
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void loadKnowledge(query, true);
+  }
+
+  return (
+    <div className="space-y-4">
+      <section className="relative mt-8 overflow-hidden rounded-[30px] border border-white/[0.88] bg-[rgba(255,253,247,0.92)] p-5 text-ink shadow-[0_18px_42px_rgba(31,58,49,0.11),inset_0_1px_0_rgba(255,255,255,0.90)] backdrop-blur-sm">
+        <div aria-hidden="true" className="absolute -right-14 -top-16 h-40 w-40 rounded-full bg-[#70b47d]/[0.18] blur-2xl" />
+        <div className="relative">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="text-xs font-black text-moss">已入库素材</div>
+              <h2 className="mt-1 text-[28px] font-black leading-8">知识库</h2>
+              <p className="mt-2 text-sm font-medium leading-6 text-muted">
+                查看采集后保存的知识摘要，创作时优先引用这里的事实。
+              </p>
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-[20px] border border-white/[0.84] bg-[#e7f2ea] text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.84)]">
+              <BookOpenText className="h-5 w-5" />
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="rounded-[22px] bg-[rgba(255,255,255,0.72)] px-3 py-3">
+              <div className="text-[20px] font-black text-ink">{items.length}</div>
+              <div className="mt-1 text-[11px] font-bold text-muted">当前显示</div>
+            </div>
+            <div className="rounded-[22px] bg-[#e7f2ea]/[0.82] px-3 py-3">
+              <div className="text-[20px] font-black text-moss">{query.trim() ? "搜索" : "最近"}</div>
+              <div className="mt-1 text-[11px] font-bold text-muted">查看模式</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <MobilePanel title="搜索知识库">
+        <form className="space-y-3" onSubmit={submitSearch}>
+          <label className="block">
+            <span className="text-xs font-bold text-muted">关键词</span>
+            <div className="mt-2 flex h-[50px] items-center gap-2 rounded-full border border-white/[0.84] bg-[rgba(255,253,247,0.92)] px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.88)]">
+              <Search className="h-4 w-4 shrink-0 text-muted" />
+              <input
+                className="min-w-0 flex-1 bg-transparent text-base font-semibold text-ink outline-none"
+                data-testid="mobile-knowledge-search-input"
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="例如：水博 排名 学校"
+                value={query}
+              />
+            </div>
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              className="flex h-11 touch-manipulation items-center justify-center gap-2 rounded-full bg-[#2f9a55] text-sm font-black text-white shadow-[0_14px_28px_rgba(47,154,85,0.22)] active:scale-[0.99] disabled:opacity-60"
+              disabled={loading}
+              type="submit"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              搜索
+            </button>
+            <button
+              className="flex h-11 touch-manipulation items-center justify-center gap-2 rounded-full border border-white/[0.84] bg-[rgba(255,253,247,0.88)] text-sm font-black text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.84)] active:scale-[0.99] disabled:opacity-60"
+              disabled={loading}
+              onClick={() => {
+                setQuery("");
+                void loadKnowledge("", true);
+              }}
+              type="button"
+            >
+              <BookOpenText className="h-4 w-4" />
+              最近
+            </button>
+          </div>
+          <p className="text-xs font-semibold leading-5 text-muted" data-testid="mobile-knowledge-status">
+            {status}
+          </p>
+        </form>
+      </MobilePanel>
+
+      <MobilePanel action={`${items.length} 条`} title="知识条目">
+        <div className="space-y-3" data-testid="mobile-knowledge-list">
+          {items.map((item) => (
+            <article
+              className="rounded-[24px] border border-white/[0.84] bg-[rgba(255,253,247,0.88)] p-3 shadow-[0_10px_24px_rgba(31,58,49,0.06),inset_0_1px_0_rgba(255,255,255,0.86)]"
+              data-testid="mobile-knowledge-item"
+              key={item.id}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-[11px] font-black text-moss">#{item.id}</div>
+                  <h3 className="mt-1 line-clamp-2 text-sm font-black leading-5">{item.title}</h3>
+                </div>
+                <span className="shrink-0 rounded-full bg-[#e7f2ea]/[0.92] px-2 py-1 text-[10px] font-black text-moss">
+                  {item.category || "未分类"}
+                </span>
+              </div>
+              <p className="mt-2 text-xs font-medium leading-5 text-muted">
+                {knowledgeItemExcerpt(item, 116)}
+              </p>
+              <button
+                className="mt-3 flex h-9 w-full touch-manipulation items-center justify-center gap-2 rounded-full border border-white/[0.84] bg-white/[0.72] text-xs font-black text-ink active:scale-[0.99]"
+                onClick={() => void copyKnowledgeItem(item)}
+                type="button"
+              >
+                <Clipboard className="h-4 w-4" />
+                复制条目
+              </button>
+            </article>
+          ))}
+          {!loading && items.length === 0 ? (
+            <div className="rounded-[24px] border border-white/[0.84] bg-[rgba(255,253,247,0.88)] px-4 py-5 text-sm font-semibold leading-6 text-muted">
+              这里还没有可以显示的知识。先到采集页确认来源，再保存知识摘要。
+            </div>
+          ) : null}
+        </div>
+      </MobilePanel>
     </div>
   );
 }
@@ -3091,7 +3277,7 @@ function BottomNav({ activeTab, onChange }: { activeTab: MobileTab; onChange: (t
         aria-hidden="true"
         className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.66),rgba(255,255,255,0.20)_62%,rgba(216,230,220,0.20))]"
       />
-      <div className="relative grid grid-cols-4 gap-1.5">
+      <div className="relative grid grid-cols-5 gap-1">
         {bottomTabs.map((tab) => {
           const active = tab.id === activeTab;
           return (

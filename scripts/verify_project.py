@@ -477,6 +477,46 @@ def validate_frontend_design_contract() -> int:
         if snippet not in android_text:
             raise SystemExit(f"Missing mobile shell contract: {snippet}")
 
+    knowledge_api_text = (ROOT / "frontend" / "lib" / "knowledge-api.ts").read_text(
+        encoding="utf-8"
+    )
+    knowledge_visibility_contracts = [
+        (
+            workspace_text,
+            [
+                "function KnowledgeView()",
+                "fetchKnowledgeItems(API_BASE",
+                'data-testid="knowledge-list"',
+                'data-testid="knowledge-search-input"',
+            ],
+            "PC knowledge library visibility",
+        ),
+        (
+            android_text,
+            [
+                '"knowledge"',
+                '{ id: "knowledge", icon: BookOpenText, label: "知识" }',
+                "function KnowledgeScreen",
+                'data-testid="mobile-knowledge-list"',
+                "data-testid={`mobile-tab-${tab.id}`}",
+            ],
+            "mobile knowledge library visibility",
+        ),
+        (
+            knowledge_api_text,
+            [
+                "fetchKnowledgeItems",
+                "/knowledge/${path}",
+                'const path = query ? "search" : "list"',
+            ],
+            "shared knowledge API reader",
+        ),
+    ]
+    for text, snippets, contract_name in knowledge_visibility_contracts:
+        for snippet in snippets:
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
+
     fake_mobile_status_markers = [
         "function StatusBar()",
         "9:41",
@@ -498,6 +538,7 @@ def validate_frontend_design_contract() -> int:
         + sum(len(snippets) for _text, snippets, _name in one_click_entry_contracts)
         + sum(len(snippets) for _text, snippets, _name in mobile_focus_contracts)
         + len(mobile_shell_contracts)
+        + sum(len(snippets) for _text, snippets, _name in knowledge_visibility_contracts)
     )
 
 

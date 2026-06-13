@@ -7,6 +7,36 @@ from app.schemas.knowledge import KnowledgeSearchResult, KnowledgeUploadRequest
 from app.services.model_router import model_router
 
 
+def repair_utf8_mojibake(value: str) -> str:
+    try:
+        repaired = value.encode("latin1").decode("utf-8")
+    except UnicodeError:
+        return value
+
+    if "\ufffd" in repaired:
+        return value
+
+    original_cjk_count = sum("\u4e00" <= char <= "\u9fff" for char in value)
+    repaired_cjk_count = sum("\u4e00" <= char <= "\u9fff" for char in repaired)
+    return repaired if repaired_cjk_count > original_cjk_count else value
+
+
+def _knowledge_result(
+    item: KnowledgeBase,
+    *,
+    match_type: str,
+    score: float | None,
+) -> KnowledgeSearchResult:
+    return KnowledgeSearchResult(
+        id=item.id,
+        title=repair_utf8_mojibake(item.title),
+        content=repair_utf8_mojibake(item.content),
+        category=item.category,
+        score=score,
+        match_type=match_type,
+    )
+
+
 def build_knowledge_embedding(title: str, content: str, category: str | None) -> list[float]:
     source_text = "\n".join(part for part in [title, category or "", content] if part)
     return model_router.embedding_model(source_text)
@@ -54,11 +84,8 @@ def vector_search(
         statement = statement.where(KnowledgeBase.category == category)
     rows = db.execute(statement.order_by(distance).limit(limit)).all()
     return [
-        KnowledgeSearchResult(
-            id=item.id,
-            title=item.title,
-            content=item.content,
-            category=item.category,
+        _knowledge_result(
+            item,
             score=max(0.0, 1.0 - float(score)),
             match_type="vector",
         )
@@ -79,13 +106,27 @@ def keyword_search(
     statement = _apply_category_filter(statement, category)
     items = db.scalars(statement.order_by(desc(KnowledgeBase.id)).limit(limit)).all()
     return [
-        KnowledgeSearchResult(
-            id=item.id,
-            title=item.title,
-            content=item.content,
-            category=item.category,
+        _knowledge_result(
+            item,
             score=None,
             match_type="keyword",
+        )
+        for item in items
+    ]
+
+
+def list_knowledge_items(
+    db: Session,
+    category: str | None,
+    limit: int,
+) -> list[KnowledgeSearchResult]:
+    statement = _apply_category_filter(select(KnowledgeBase), category)
+    items = db.scalars(statement.order_by(desc(KnowledgeBase.id)).limit(limit)).all()
+    return [
+        _knowledge_result(
+            item,
+            score=None,
+            match_type="recent",
         )
         for item in items
     ]

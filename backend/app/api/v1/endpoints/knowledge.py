@@ -5,7 +5,11 @@ from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.knowledge import KnowledgeSearchResult, KnowledgeUploadRequest
-from app.services.knowledge_service import create_knowledge_item, search_knowledge_items
+from app.services.knowledge_service import (
+    create_knowledge_item,
+    list_knowledge_items,
+    search_knowledge_items,
+)
 
 
 router = APIRouter()
@@ -20,6 +24,15 @@ def upload_knowledge(
     _ = current_user
     item = create_knowledge_item(db, payload)
     return KnowledgeSearchResult.model_validate(item)
+
+
+@router.get("/list", response_model=list[KnowledgeSearchResult])
+def list_knowledge(
+    db: Session = Depends(get_db),
+    limit: int = Query(default=20, ge=1, le=50),
+    category: str | None = Query(default=None, max_length=80),
+) -> list[KnowledgeSearchResult]:
+    return list_knowledge_items(db=db, category=category, limit=limit)
 
 
 @router.get("/search", response_model=list[KnowledgeSearchResult])

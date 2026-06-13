@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   useEffect,
@@ -55,6 +55,11 @@ import {
   type GeneratedContent,
   type GeneratedImageAsset
 } from "@/lib/generated-assets";
+import {
+  fetchKnowledgeItems,
+  knowledgeItemExcerpt,
+  type KnowledgeItem
+} from "@/lib/knowledge-api";
 import {
   contentControls,
   coverReferences,
@@ -1925,43 +1930,147 @@ function ResearchView({
 }
 
 function KnowledgeView() {
+  const [items, setItems] = useState<KnowledgeItem[]>([]);
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("正在读取知识库...");
+
+  async function loadKnowledge(nextQuery = query) {
+    const normalizedQuery = nextQuery.trim();
+    setLoading(true);
+    setMessage(normalizedQuery ? "正在搜索知识库..." : "正在读取最近入库内容...");
+    try {
+      const data = await fetchKnowledgeItems(API_BASE, {
+        limit: 24,
+        query: normalizedQuery
+      });
+      setItems(data);
+      setMessage(
+        data.length
+          ? normalizedQuery
+            ? `找到 ${data.length} 条相关知识。`
+            : `已显示最近 ${data.length} 条知识。`
+          : normalizedQuery
+            ? "没有找到匹配知识，可以换个关键词。"
+            : "知识库还没有条目，先从采集页保存知识摘要。"
+      );
+    } catch (error) {
+      setItems([]);
+      setMessage(error instanceof Error ? error.message : "知识库读取失败，请稍后再试。");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadKnowledge("");
+  }, []);
+
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void loadKnowledge(query);
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
-      <Panel helper="先保存来源、摘要、标签和人工确认状态，再进入可检索资产。" title="知识资产">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {knowledgeAssets.map((asset) => (
-            <div key={asset.title} className={`${subtleCardClass} p-4`}>
-              <div className="flex items-start gap-3">
-                <IconBox tone="green">
-                  <asset.icon className="h-4 w-4" />
-                </IconBox>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="text-sm font-semibold">{asset.title}</h3>
-                    <Pill>{asset.status}</Pill>
-                  </div>
-                  <p className="mt-2 text-xs leading-5 text-muted">{asset.detail}</p>
-                </div>
-              </div>
+      <Panel helper="查看已经入库的采集摘要、写作素材和人工确认后的知识条目。" title="知识库">
+        <form className="mb-4 grid gap-3 md:grid-cols-[1fr_auto_auto]" onSubmit={submitSearch}>
+          <label className="min-w-0">
+            <span className="text-xs font-medium text-muted">搜索知识条目</span>
+            <div className="glass-control mt-2 flex h-10 items-center gap-2 rounded-md border px-3">
+              <Search className="h-4 w-4 text-muted" />
+              <input
+                className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+                data-testid="knowledge-search-input"
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="例如：水博 排名 学校 认证"
+                value={query}
+              />
             </div>
+          </label>
+          <button
+            className="mt-auto flex h-10 items-center justify-center gap-2 rounded-md bg-moss px-4 text-sm font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={loading}
+            type="submit"
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            搜索
+          </button>
+          <button
+            className={`${secondaryButtonClass} mt-auto h-10 px-4 disabled:cursor-not-allowed disabled:opacity-60`}
+            disabled={loading}
+            onClick={() => {
+              setQuery("");
+              void loadKnowledge("");
+            }}
+            type="button"
+          >
+            <RotateCcw className="h-4 w-4" />
+            刷新
+          </button>
+        </form>
+
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <p className="text-sm text-muted" data-testid="knowledge-list-status">
+            {message}
+          </p>
+          <Pill tone={items.length ? "green" : "neutral"}>{items.length} 条</Pill>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2" data-testid="knowledge-list">
+          {items.map((item) => (
+            <article className={`${subtleCardClass} p-4`} data-testid="knowledge-item" key={item.id}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-moss">#{item.id}</p>
+                  <h3 className="mt-1 line-clamp-2 text-sm font-semibold leading-5">{item.title}</h3>
+                </div>
+                <Pill>{item.category || "未分类"}</Pill>
+              </div>
+              <p className="mt-3 text-xs leading-5 text-muted">{knowledgeItemExcerpt(item, 128)}</p>
+              <div className="mt-3 flex items-center justify-between text-[11px] font-medium text-muted">
+                <span>{item.match_type === "recent" ? "最近入库" : "检索结果"}</span>
+                {typeof item.score === "number" ? <span>匹配 {Math.round(item.score * 100)}%</span> : null}
+              </div>
+            </article>
           ))}
         </div>
+
+        {!loading && items.length === 0 ? (
+          <div className={`${subtleCardClass} mt-3 px-4 py-5 text-sm leading-6 text-muted`}>
+            这里会展示采集页保存的知识摘要。先在“采集”里确认来源，再保存知识摘要，之后创作会优先引用这里的内容。
+          </div>
+        ) : null}
       </Panel>
 
       <div className="space-y-4">
         <Panel helper="系统默认不跳过的项目规则。" title="入库规则">
           <SafetyGateList />
         </Panel>
-        <Panel helper="知识库还没有真实图文样本，下一步从趋势采集页补齐。" title="知识库进度">
-          <div className={`${subtleCardClass} px-4 py-4 text-sm leading-6 text-muted`}>
-            公开样本、内部资料、写作模板和来源链接已经拆成独立入口，等采集完成后即可沉淀为知识条目。
+        <Panel helper="这些是知识资产的类型说明，不是虚构样本。" title="知识资产类型">
+          <div className="grid grid-cols-1 gap-3">
+            {knowledgeAssets.map((asset) => (
+              <div key={asset.title} className={`${subtleCardClass} p-4`}>
+                <div className="flex items-start gap-3">
+                  <IconBox tone="green">
+                    <asset.icon className="h-4 w-4" />
+                  </IconBox>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <h3 className="text-sm font-semibold">{asset.title}</h3>
+                      <Pill>{asset.status}</Pill>
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-muted">{asset.detail}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </Panel>
       </div>
     </div>
   );
 }
-
 function ContentView({
   defaultWritingStyle,
   initialProject,
