@@ -745,6 +745,25 @@ function isInterfaceStyle(value: string | null): value is InterfaceStyle {
   return interfaceStyles.some((style) => style.id === value);
 }
 
+function ThemeSwatches({
+  compact = false,
+  style
+}: {
+  compact?: boolean;
+  style: InterfaceStyle;
+}) {
+  const sizeClass = compact ? "h-1.5 w-7" : "h-2.5 w-8";
+  const marginClass = compact ? "mt-2" : "mt-3";
+
+  return (
+    <span aria-hidden="true" className={`theme-${style} ${marginClass} flex gap-1`}>
+      <span className={`${sizeClass} rounded-sm bg-steel`} />
+      <span className={`${sizeClass} rounded-sm bg-moss`} />
+      <span className={`${sizeClass} rounded-sm bg-coral`} />
+    </span>
+  );
+}
+
 function isWritingStylePresetId(value: string | null): value is WritingStylePresetId {
   return writingStylePresets.some((style) => style.id === value);
 }
@@ -3271,9 +3290,9 @@ function SettingsView({
                   <div className="text-sm font-semibold">运营模板</div>
                   <div className="mt-1 text-xs text-muted">按工作场景快速套用合适风格。</div>
                 </div>
-                <div className="text-xs text-muted">不影响导航和功能状态。</div>
+                <div className="text-xs text-muted">当前共 {themeTemplates.length} 个模板。</div>
               </div>
-              <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2 2xl:grid-cols-3">
+              <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
                 {themeTemplates.map((template) => {
                   const selected = template.style === interfaceStyle;
                   return (
@@ -3296,14 +3315,7 @@ function SettingsView({
                       <span className="mt-1 block text-xs leading-5 text-muted">
                         {template.description}
                       </span>
-                      <span
-                        aria-hidden="true"
-                        className={`theme-${template.style} mt-2 flex gap-1`}
-                      >
-                        <span className="h-1.5 w-7 rounded-sm bg-steel" />
-                        <span className="h-1.5 w-7 rounded-sm bg-moss" />
-                        <span className="h-1.5 w-7 rounded-sm bg-coral" />
-                      </span>
+                      <ThemeSwatches compact style={template.style} />
                     </a>
                   );
                 })}
@@ -3342,11 +3354,7 @@ function SettingsView({
                       <span className="mt-1 block text-xs leading-5 text-muted">
                         {style.description}
                       </span>
-                      <span className="mt-3 flex gap-1">
-                        <span className="h-2.5 w-8 rounded-sm bg-steel" />
-                        <span className="h-2.5 w-8 rounded-sm bg-moss" />
-                        <span className="h-2.5 w-8 rounded-sm bg-coral" />
-                      </span>
+                      <ThemeSwatches style={style.id} />
                     </a>
                   );
                 })}
