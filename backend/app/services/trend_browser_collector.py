@@ -51,6 +51,16 @@ BLOCKED_MARKERS = (
 )
 
 
+def collection_session_dir(
+    platform: str,
+    keyword: str = "",
+    session_label: str | None = None,
+) -> Path:
+    label = str(session_label or platform or f"{platform}-{keyword}")
+    safe_label = re.sub(r"[^a-zA-Z0-9_.-]+", "-", label).strip("-")[:80]
+    return BROWSER_SESSION_ROOT / (safe_label or f"{platform}-session")
+
+
 @dataclass(frozen=True)
 class CollectedTrendAsset:
     platform: str
@@ -188,9 +198,12 @@ def _blocked_candidate_count(raw_items: list[dict[str, Any]]) -> int:
 
 def _session_dir(job: TrendCollectionJob) -> Path:
     profile = job.safety_profile or {}
-    label = str(profile.get("session_label") or f"{job.platform}-{job.keyword}")
-    safe_label = re.sub(r"[^a-zA-Z0-9_.-]+", "-", label).strip("-")[:80]
-    return BROWSER_SESSION_ROOT / (safe_label or f"job-{job.id}")
+    session_label = profile.get("session_label")
+    return collection_session_dir(
+        platform=job.platform,
+        keyword=job.keyword,
+        session_label=str(session_label) if session_label else None,
+    )
 
 
 def _target_url(job: TrendCollectionJob) -> str:

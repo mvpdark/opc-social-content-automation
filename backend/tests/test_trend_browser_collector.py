@@ -6,6 +6,7 @@ from app.services.trend_browser_collector import (
     _blocked_candidate_count,
     _content_kind,
     _operator_wait_seconds,
+    collection_session_dir,
     extract_candidate_assets,
     normalize_visible_text,
 )
@@ -13,6 +14,17 @@ from app.services.trend_browser_collector import (
 
 def test_normalize_visible_text_collapses_whitespace() -> None:
     assert normalize_visible_text("  硕升博\n\n申请\t规划  ") == "硕升博 申请 规划"
+
+
+def test_collection_session_dir_uses_fixed_platform_profile() -> None:
+    session_dir = collection_session_dir(
+        platform="xiaohongshu",
+        keyword="硕升博",
+        session_label="xiaohongshu",
+    )
+
+    assert session_dir.name == "xiaohongshu"
+    assert session_dir.parent.name == ".browser-sessions"
 
 
 def test_extract_candidate_assets_uses_visible_text_and_deduplicates() -> None:
