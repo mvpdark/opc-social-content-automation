@@ -23,6 +23,8 @@ export type CollectionJobStatusSnapshot = {
   error: string | null;
 };
 
+const COLLECTION_RETRY_HINT = "也可以换一个更具体的关键词，或粘贴小红书链接导入。";
+
 function collectionJobStatusParts(job: CollectionJobStatusSnapshot) {
   const summary = job.result_summary;
   const collected =
@@ -72,10 +74,10 @@ export function formatCollectionJobStatus(
       return `采集已完成${collected}${diagnosticText}。请人工确认来源后再保存知识摘要。`;
     }
     if (job.status === "needs_operator_review") {
-      return `需要人工处理${collected}${diagnosticText}。可能是登录墙、验证码或空结果，处理后可重新运行。${errorText}`;
+      return `需要人工处理${collected}${diagnosticText}。可能是登录墙、验证码或空结果，处理后可重新运行；${COLLECTION_RETRY_HINT}${errorText}`;
     }
     if (job.status === "failed") {
-      return `采集失败${collected}${diagnosticText}${errorText}。可以重新运行一次。`;
+      return `采集失败${collected}${diagnosticText}${errorText}。可以重新运行一次；${COLLECTION_RETRY_HINT}`;
     }
     return `采集进度：${collectionJobStatusLabel(job.status)}${collected}${diagnosticText}${errorText}。`;
   }
@@ -93,10 +95,10 @@ export function formatCollectionJobStatus(
     return `本次采集${collectionJobStatusLabel(job.status)}${collected}${diagnosticText}。请人工确认来源后再保存知识摘要。`;
   }
   if (job.status === "needs_operator_review") {
-    return `本次采集需要人工处理${collected}${diagnosticText}。公开搜索可能被登录墙、验证码或空结果拦截；人工确认后可直接重试。${errorText}`;
+    return `本次采集需要人工处理${collected}${diagnosticText}。公开搜索可能被登录墙、验证码或空结果拦截；人工确认后可直接重试，也可以换关键词或粘贴小红书链接导入。${errorText}`;
   }
   if (job.status === "failed") {
-    return `本次采集失败${collected}${diagnosticText}${errorText}。可以直接重新采集一次。`;
+    return `本次采集失败${collected}${diagnosticText}${errorText}。可以直接重新采集一次，也可以换关键词或粘贴小红书链接导入。`;
   }
 
   return `采集进度：${collectionJobStatusLabel(job.status)}${collected}${diagnosticText}${errorText}。`;
