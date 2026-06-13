@@ -1250,6 +1250,8 @@ def validate_content_production_contract() -> int:
         "收藏 86",
         "分享 32",
         "项待处理",
+        'data-testid="draft-card"',
+        'testId="draft-cover-image"',
         "进入一键生成页创建文案",
         "草稿请求",
         "待创建",
