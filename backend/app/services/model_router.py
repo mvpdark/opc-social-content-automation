@@ -24,7 +24,7 @@ def load_prompt(name: str) -> str:
     if not prompt_path.exists():
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Prompt template is missing: {name}",
+            detail=f"缺少提示词模板：{name}",
         )
     return prompt_path.read_text(encoding="utf-8")
 
@@ -59,6 +59,11 @@ def _provider_display_label(provider: str) -> str:
         "OpenAI-compatible image provider": "图片服务",
         "DeepSeek": "改写服务",
     }.get(provider, "模型服务")
+
+
+def _provider_response_shape_error(provider: str, problem: str) -> str:
+    provider_label = _provider_display_label(provider)
+    return f"{provider_label}返回格式异常：{problem}。请检查模型类型、服务地址和响应格式。"
 
 
 def _redacted_provider_error_from_response(
@@ -147,7 +152,7 @@ def _extract_chat_content(provider: str, data: dict[str, object]) -> str:
     except (KeyError, IndexError, TypeError) as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"{provider} response did not include message content.",
+            detail=_provider_response_shape_error(provider, "没有返回正文内容"),
         ) from exc
 
     if isinstance(content, list):
@@ -160,7 +165,7 @@ def _extract_chat_content(provider: str, data: dict[str, object]) -> str:
     if not isinstance(content, str) or not content.strip():
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"{provider} response content was empty.",
+            detail=_provider_response_shape_error(provider, "返回内容为空"),
         )
     return content.strip()
 
@@ -203,7 +208,7 @@ def _post_chat_completion(
     if not isinstance(data, dict):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"{provider} response was not a JSON object.",
+            detail=_provider_response_shape_error(provider, "没有返回有效 JSON 对象"),
         )
     return data
 
@@ -241,7 +246,7 @@ def _post_image_generation(
     if not isinstance(data, dict):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"{provider} response was not a JSON object.",
+            detail=_provider_response_shape_error(provider, "没有返回有效 JSON 对象"),
         )
     return data
 
@@ -446,13 +451,13 @@ def _extract_image_url(provider: str, data: dict[str, object], payload: dict[str
     if not isinstance(items, list) or not items:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"{provider} response did not include image data.",
+            detail=_provider_response_shape_error(provider, "没有返回图片数据"),
         )
     first = items[0]
     if not isinstance(first, dict):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"{provider} response image data was invalid.",
+            detail=_provider_response_shape_error(provider, "图片数据结构无效"),
         )
 
     url = first.get("url")
@@ -472,13 +477,13 @@ def _extract_image_url(provider: str, data: dict[str, object], payload: dict[str
         except ValueError as exc:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"{provider} response image payload was invalid.",
+                detail=_provider_response_shape_error(provider, "图片数据解码失败"),
             ) from exc
         return f"{settings.test_static_url_prefix.rstrip('/')}/{filename}"
 
     raise HTTPException(
         status_code=status.HTTP_502_BAD_GATEWAY,
-        detail=f"{provider} response did not include a supported image field.",
+        detail=_provider_response_shape_error(provider, "没有返回可用图片链接或图片数据"),
     )
 
 
