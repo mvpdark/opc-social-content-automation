@@ -29,6 +29,20 @@ def test_provider_status_does_not_expose_secret_values(monkeypatch) -> None:
     assert {item["status"] for item in payload} == {"configured"}
 
 
+def test_codex_test_provider_status_notes_keep_production_boundary(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "draft_provider", "codex_test")
+    monkeypatch.setattr(settings, "image_provider", "codex_test")
+    monkeypatch.setattr(settings, "openai_compatible_api_key", None)
+    monkeypatch.setattr(settings, "image_openai_compatible_api_key", None)
+
+    payload = {item.name: item for item in provider_status_items()}
+
+    assert payload["Draft generation"].configured is True
+    assert payload["Draft generation"].note == "本地草稿检查可用；正式撰稿仍需真实模型服务。"
+    assert payload["Image generation"].configured is True
+    assert payload["Image generation"].note == "本地连通性检查可用；正式封面仍需真实图片服务。"
+
+
 def test_apply_provider_keys_updates_runtime_without_exposing_values(monkeypatch) -> None:
     draft_secret = "draft-secret"
     image_secret = "image-secret"

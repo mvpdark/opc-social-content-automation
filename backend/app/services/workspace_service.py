@@ -139,7 +139,7 @@ def provider_status_items() -> list[ProviderStatusItem]:
         settings.image_openai_compatible_api_key or settings.openai_compatible_api_key
     )
 
-    image_note = "演示图片服务已就绪。"
+    image_note = "本地连通性检查可用；正式封面仍需真实图片服务。"
     if settings.image_provider == "openai_compatible":
         image_note = "图片服务已配置，可用于生成封面。"
 
@@ -153,7 +153,7 @@ def provider_status_items() -> list[ProviderStatusItem]:
             note=(
                 "撰稿服务已配置。"
                 if settings.draft_provider == "openai_compatible"
-                else "演示撰稿服务已就绪。"
+                else "本地草稿检查可用；正式撰稿仍需真实模型服务。"
             ),
         ),
         ProviderStatusItem(

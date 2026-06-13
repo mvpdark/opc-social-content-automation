@@ -1038,6 +1038,8 @@ def validate_content_production_contract() -> int:
         "测试环境请运行",
         "测试图片服务已就绪",
         "测试撰稿服务已就绪",
+        "演示图片服务已就绪",
+        "演示撰稿服务已就绪",
         '{busyAction === "job" ? "正在创建"',
         "趋势任务队列",
         "今日任务",
