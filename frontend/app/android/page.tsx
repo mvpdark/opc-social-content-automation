@@ -2180,6 +2180,12 @@ function SettingsScreen({
   const [busyAction, setBusyAction] = useState<"apply" | "check" | null>(null);
   const [checkStatus, setCheckStatus] = useState<ProviderCheckResult | null>(null);
   const providerBindings = providerBindingDefaultsFromStatuses(providerStatuses);
+  const providerStatusLoaded = providerStatuses.length > 0;
+  const providerSummary = !providerStatusLoaded
+    ? "正在读取服务配置状态。"
+    : providerBindings.draft && providerBindings.image && providerBindings.rewrite
+      ? "默认服务已就绪，生成链路可直接使用。"
+      : "服务配置未完整，生成前请补齐授权。";
 
   function updateCredential(key: keyof CredentialSettings, value: string) {
     onCredentialsChange({ ...credentials, [key]: value });
@@ -2198,7 +2204,7 @@ function SettingsScreen({
     onAction(
       Object.keys(payload).length
         ? "正在应用服务配置。"
-        : "正在刷新当前保存状态。"
+        : "正在刷新保存状态。"
     );
     try {
       if (!Object.keys(payload).length) {
@@ -2221,7 +2227,7 @@ function SettingsScreen({
         (await response.json()) as ProviderStatusItem[]
       );
       onProviderStatusesChange(statuses);
-      onAction("服务配置已应用到当前工作台。");
+      onAction("服务配置已应用到工作台。");
       setCheckStatus(null);
     } catch (error) {
       onAction(
@@ -2319,7 +2325,7 @@ function SettingsScreen({
             <div>
               <div className="text-xs font-black text-moss">当前账号</div>
               <h2 className="mt-1 text-[24px] font-black leading-7">{mobileAccount}</h2>
-              <p className="mt-2 text-sm font-medium leading-6 text-muted">默认服务已就绪，生成链路可直接使用。</p>
+              <p className="mt-2 text-sm font-medium leading-6 text-muted">{providerSummary}</p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-[18px] border border-white/70 bg-white/58 text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur">
               <ShieldCheck className="h-5 w-5" />
@@ -2363,7 +2369,7 @@ function SettingsScreen({
       </MobilePanel>
       <MobilePanel title="服务配置" action="仅本设备">
         <p className="mb-3 text-xs leading-5 text-muted">
-          服务授权只保存在这台设备；应用后由当前工作台调用服务，不会展示完整内容。
+          服务授权只保存在这台设备；应用后由工作台调用服务，不会展示完整内容。
         </p>
         <div className="space-y-3">
           {credentialFields.map((field) => {

@@ -3004,7 +3004,7 @@ function SettingsView({
     setCredentialStatus(
       Object.keys(payload).length
         ? "正在应用服务配置。"
-        : "正在刷新当前保存状态。"
+        : "正在刷新保存状态。"
     );
     try {
       if (!Object.keys(payload).length) {
@@ -3032,7 +3032,7 @@ function SettingsView({
       );
       setProviderStatuses(statuses);
       setProviderStatusError(null);
-      setCredentialStatus("服务配置已应用到当前工作台，页面不会展示完整内容。");
+      setCredentialStatus("服务配置已应用到工作台，页面不会展示完整内容。");
       setProviderCheckStatus(null);
     } catch (error) {
       setCredentialStatus(
