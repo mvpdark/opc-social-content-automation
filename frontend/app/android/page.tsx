@@ -60,6 +60,22 @@ import {
 } from "@/lib/service-error-copy";
 import { formatTagLine } from "@/lib/tags";
 import {
+  buildEditableDraftCopy,
+  clearStoredMobileContent,
+  clearStoredMobileCover,
+  normalizeMobileDraftHistory,
+  readStoredDeletedDraftIds,
+  readStoredMobileContent,
+  readStoredMobileCover,
+  readStoredMobileDraftHistory,
+  rememberDeletedDraftId,
+  saveStoredMobileContent,
+  saveStoredMobileCover,
+  saveStoredMobileDraftHistory,
+  type DraftPreviewState,
+  type MobileDraftHistoryItem
+} from "@/lib/mobile-draft-storage";
+import {
   buildTopicCoverStyleNotes,
   generationTopicPresets,
   type GenerationTopicPreset
@@ -99,20 +115,6 @@ type MobileCollectionJob = CollectionJobStatusSnapshot & {
   updated_at?: string;
 };
 
-type DraftPreviewState = {
-  body: string;
-  points: string[];
-  tags: string;
-  title: string;
-};
-
-type MobileDraftHistoryItem = {
-  content: GeneratedContent;
-  cover: GeneratedImageAsset | null;
-  pinned: boolean;
-  saved_at: string;
-};
-
 const defaultMobileDraftPreview: DraftPreviewState = {
   body:
     "很多人一上来就急着群发邮件，但研究方向、读博动机和导师匹配没想清楚，反而容易浪费第一印象。",
@@ -125,10 +127,6 @@ const API_BASE = getApiBase();
 const MOBILE_AUTH_STORAGE_KEY = "opc_mobile_auth_v1";
 const CREDENTIAL_STORAGE_KEY = "opc_workspace_credentials_v1";
 const COLLECTION_SCHEDULE_STORAGE_KEY = "opc_mobile_collection_schedule_v1";
-const MOBILE_LAST_CONTENT_STORAGE_KEY = "opc_mobile_last_generated_content_v1";
-const MOBILE_LAST_COVER_STORAGE_KEY = "opc_mobile_last_generated_cover_v1";
-const MOBILE_DRAFT_HISTORY_STORAGE_KEY = "opc_mobile_draft_history_v1";
-const MOBILE_DELETED_DRAFT_IDS_STORAGE_KEY = "opc_mobile_deleted_draft_ids_v1";
 const MOBILE_COVER_HYDRATION_RETRY_LIMIT = 10;
 const MOBILE_COVER_HYDRATION_RETRY_MS = 3000;
 const MOBILE_PAPER_TEXTURE = "/mobile-assets/paper-texture.png";
@@ -436,163 +434,6 @@ function removeMobileStorage(key: string) {
   } catch (_error) {
     return false;
   }
-}
-
-function readStoredMobileContent() {
-  const raw = readMobileStorage(MOBILE_LAST_CONTENT_STORAGE_KEY);
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    return isGeneratedContent(parsed) ? parsed : null;
-  } catch (_error) {
-    return null;
-  }
-}
-
-function saveStoredMobileContent(content: GeneratedContent) {
-  writeMobileStorage(MOBILE_LAST_CONTENT_STORAGE_KEY, JSON.stringify(content));
-}
-
-function readStoredDeletedDraftIds() {
-  const raw = readMobileStorage(MOBILE_DELETED_DRAFT_IDS_STORAGE_KEY);
-  if (!raw) {
-    return new Set<number>();
-  }
-
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return new Set<number>();
-    }
-    return new Set(parsed.filter((value): value is number => Number.isInteger(value)));
-  } catch (_error) {
-    return new Set<number>();
-  }
-}
-
-function saveStoredDeletedDraftIds(ids: Set<number>) {
-  writeMobileStorage(
-    MOBILE_DELETED_DRAFT_IDS_STORAGE_KEY,
-    JSON.stringify(Array.from(ids).slice(-80))
-  );
-}
-
-function rememberDeletedDraftId(contentId: number) {
-  const deletedDraftIds = readStoredDeletedDraftIds();
-  deletedDraftIds.add(contentId);
-  saveStoredDeletedDraftIds(deletedDraftIds);
-}
-
-function filterDeletedMobileDraftHistory(items: MobileDraftHistoryItem[]) {
-  const deletedDraftIds = readStoredDeletedDraftIds();
-  if (!deletedDraftIds.size) {
-    return items;
-  }
-  return items.filter((item) => !deletedDraftIds.has(item.content.id));
-}
-
-function isMobileDraftHistoryItem(value: unknown): value is MobileDraftHistoryItem {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const item = value as Partial<MobileDraftHistoryItem>;
-  return (
-    isGeneratedContent(item.content) &&
-    (item.cover === null || item.cover === undefined || isGeneratedImageAsset(item.cover)) &&
-    typeof item.pinned === "boolean" &&
-    typeof item.saved_at === "string"
-  );
-}
-
-function normalizeMobileDraftHistory(items: MobileDraftHistoryItem[]) {
-  const byId = new Map<number, MobileDraftHistoryItem>();
-  items.forEach((item) => {
-    const existing = byId.get(item.content.id);
-    if (!existing) {
-      byId.set(item.content.id, item);
-      return;
-    }
-
-    byId.set(item.content.id, {
-      content: item.content,
-      cover: item.cover ?? existing.cover,
-      pinned: existing.pinned || item.pinned,
-      saved_at: item.saved_at > existing.saved_at ? item.saved_at : existing.saved_at
-    });
-  });
-
-  return Array.from(byId.values())
-    .sort((left, right) => {
-      if (left.pinned !== right.pinned) {
-        return left.pinned ? -1 : 1;
-      }
-      return right.saved_at.localeCompare(left.saved_at);
-    })
-    .slice(0, 20);
-}
-
-function readStoredMobileDraftHistory() {
-  const raw = readMobileStorage(MOBILE_DRAFT_HISTORY_STORAGE_KEY);
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-    return filterDeletedMobileDraftHistory(
-      normalizeMobileDraftHistory(parsed.filter(isMobileDraftHistoryItem))
-    );
-  } catch (_error) {
-    return [];
-  }
-}
-
-function saveStoredMobileDraftHistory(items: MobileDraftHistoryItem[]) {
-  const visibleItems = filterDeletedMobileDraftHistory(normalizeMobileDraftHistory(items));
-  writeMobileStorage(
-    MOBILE_DRAFT_HISTORY_STORAGE_KEY,
-    JSON.stringify(visibleItems)
-  );
-}
-
-function readStoredMobileCover() {
-  const raw = readMobileStorage(MOBILE_LAST_COVER_STORAGE_KEY);
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    return isGeneratedImageAsset(parsed) ? parsed : null;
-  } catch (_error) {
-    return null;
-  }
-}
-
-function saveStoredMobileCover(cover: GeneratedImageAsset) {
-  writeMobileStorage(MOBILE_LAST_COVER_STORAGE_KEY, JSON.stringify(cover));
-}
-
-function clearStoredMobileCover() {
-  removeMobileStorage(MOBILE_LAST_COVER_STORAGE_KEY);
-}
-
-function buildEditableDraftCopy(draft: DraftPreviewState) {
-  return [
-    draft.title.trim(),
-    draft.body.trim(),
-    draft.points.map((point, index) => `${index + 1}. ${point.trim()}`).join("\n"),
-    draft.tags.trim()
-  ]
-    .filter(Boolean)
-    .join("\n\n");
 }
 
 function sanitizeFilename(value: string) {
@@ -2117,7 +1958,7 @@ function CreateScreen({
         setGeneratedContent(null);
         setGeneratedCover(null);
         setDraftPreview(defaultMobileDraftPreview);
-        removeMobileStorage(MOBILE_LAST_CONTENT_STORAGE_KEY);
+        clearStoredMobileContent();
         clearStoredMobileCover();
         setPreviewOpen(false);
       }
@@ -2372,7 +2213,7 @@ function CreateScreen({
       (item) => item.content.platform === platform
     );
     if (storedContent && !visibleStoredContent) {
-      removeMobileStorage(MOBILE_LAST_CONTENT_STORAGE_KEY);
+      clearStoredMobileContent();
       clearStoredMobileCover();
     }
     if (visibleStoredContent?.platform === platform) {

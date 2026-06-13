@@ -508,6 +508,10 @@ def validate_content_production_contract() -> int:
     android_text = (ROOT / "frontend" / "app" / "android" / "page.tsx").read_text(
         encoding="utf-8"
     )
+    mobile_draft_storage_text = (
+        ROOT / "frontend" / "lib" / "mobile-draft-storage.ts"
+    ).read_text(encoding="utf-8")
+    mobile_draft_contract_text = f"{android_text}\n{mobile_draft_storage_text}"
     public_preview_text = (
         ROOT / "frontend" / "components" / "public-preview-client.tsx"
     ).read_text(encoding="utf-8")
@@ -832,7 +836,7 @@ def validate_content_production_contract() -> int:
     ]
     for snippet in mobile_draft_delete_contract_snippets:
         total += 1
-        if snippet not in android_text:
+        if snippet not in mobile_draft_contract_text:
             raise SystemExit(f"Missing mobile draft delete contract: {snippet}")
 
     mobile_xhs_export_start = android_text.index("async function handleOpenXiaohongshu")
