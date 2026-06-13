@@ -88,7 +88,7 @@ def _redacted_provider_error_from_response(
     if status_code in {401, 403} and (
         "INVALID_API_KEY" in error_code or "invalid api key" in error_message
     ):
-        return f"{provider_label}服务授权无效，请在设置页更换有效授权后重新检测。"
+        return f"{provider_label}授权无效，请在设置页更换有效授权后重新检测。"
 
     return _redacted_provider_error(provider, status_code)
 
@@ -303,7 +303,7 @@ def _test_draft(payload: dict[str, object]) -> str:
 
     return "\n".join(
         [
-            f"【演示草稿】{topic}",
+            f"【本地检查草稿】{topic}",
             "",
             f"面向：{audience}",
             f"平台：{platform}",
@@ -313,7 +313,7 @@ def _test_draft(payload: dict[str, object]) -> str:
             f"参考上下文：{source_line}",
             f"标签：{tag_line}",
             "",
-            "风险提示：这是演示模式生成的草稿，只用于流程测试，正式发布前必须经过人工审核。",
+            "风险提示：这是本地检查模式生成的草稿，只用于流程验证，正式发布前必须经过人工审核。",
         ]
     )
 
@@ -330,15 +330,15 @@ def _aspect_ratio_size(aspect_ratio: str) -> tuple[int, int]:
 
 def _wrap_svg_text(text: str, width: int = 12, max_lines: int = 4) -> list[str]:
     lines = textwrap.wrap(text, width=width)[:max_lines]
-    return lines or ["OPC 演示封面"]
+    return lines or ["OPC 本地检查封面"]
 
 
 def _test_image(payload: dict[str, object]) -> str:
-    title = str(payload.get("title") or "OPC 演示封面")
+    title = str(payload.get("title") or "OPC 本地检查封面")
     platform = str(payload.get("platform") or "multi")
     aspect_ratio = str(payload.get("aspect_ratio") or "3:4")
     template = payload.get("template")
-    template_name = "演示封面模板"
+    template_name = "本地检查封面模板"
     if isinstance(template, dict):
         template_name = str(template.get("name") or template_name)
 
@@ -356,7 +356,7 @@ def _test_image(payload: dict[str, object]) -> str:
         f'<text x="72" y="{260 + index * 78}" class="title">{html.escape(line)}</text>'
         for index, line in enumerate(title_lines)
     )
-    tag_line = html.escape(f"{platform} · {template_name} · 演示模式")
+    tag_line = html.escape(f"{platform} · {template_name} · 本地检查模式")
     body_line = html.escape("仅用于流程测试，正式发布前需要人工审核")
 
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">
@@ -379,7 +379,7 @@ def _test_image(payload: dict[str, object]) -> str:
   {title_spans}
   <text x="72" y="{height - 178}" class="body">{body_line}</text>
   <rect x="72" y="{height - 124}" width="236" height="52" rx="10" fill="#182033"/>
-  <text x="96" y="{height - 89}" class="mark">演示素材</text>
+  <text x="96" y="{height - 89}" class="mark">本地检查素材</text>
 </svg>
 """
     target.write_text(svg, encoding="utf-8")

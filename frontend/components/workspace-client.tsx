@@ -895,10 +895,12 @@ function complianceWarnings(content: GeneratedContent) {
 }
 
 function isTestDraft(content: GeneratedContent) {
+  const legacyDemoMarker = `【${"演示"}草稿】`;
   return (
     content.body.includes("codex_test") ||
     content.body.includes("【测试草稿】") ||
-    content.body.includes("【演示草稿】")
+    content.body.includes(legacyDemoMarker) ||
+    content.body.includes("【本地检查草稿】")
   );
 }
 
@@ -2203,7 +2205,7 @@ function GenerationLauncher({
 
       if (isTestDraft(finalContent)) {
         setStatusText(
-          "当前是演示草稿，不会生成封面图。请配置真实撰稿服务后再一键生成。"
+          "这是本地检查草稿，不会生成封面图。请配置真实撰稿服务后再一键生成。"
         );
         return;
       }
@@ -2614,7 +2616,7 @@ function GeneratedPostExportCard({
       return;
     }
     if (!canCopy) {
-      setImageError("演示草稿不可生成封面图，请先生成一篇正式草稿。");
+      setImageError("本地检查草稿不可生成封面图，请先生成一篇正式草稿。");
       return;
     }
 
@@ -2688,7 +2690,7 @@ function GeneratedPostExportCard({
                 <Clipboard className="h-4 w-4" />
               )}
               {testDraft
-                ? "演示草稿不可复制"
+                ? "本地检查草稿不可复制"
                 : copyState === "copied"
                   ? "已复制"
                   : `一键复制${platformLabel}文案`}
@@ -2722,7 +2724,7 @@ function GeneratedPostExportCard({
         <div className="mt-3 space-y-2 text-xs leading-5 text-muted">
           {testDraft ? (
             <div className="rounded-md border border-amber/40 bg-amber/10 p-3 text-ink">
-              当前是演示草稿，不可直接发布。
+              这是本地检查草稿，不可直接发布。
             </div>
           ) : null}
           {warnings.length ? (

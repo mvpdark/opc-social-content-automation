@@ -38,8 +38,8 @@ def test_codex_test_draft_provider(monkeypatch: pytest.MonkeyPatch) -> None:
         },
     )
 
-    assert "【演示草稿】硕升博申请节奏" in result
-    assert "演示模式生成的草稿" in result
+    assert "【本地检查草稿】硕升博申请节奏" in result
+    assert "本地检查模式生成的草稿" in result
     assert "codex_test 测试 Provider" not in result
     assert "申请时间线" in result
 
@@ -109,7 +109,7 @@ def test_codex_test_image_provider_creates_svg(monkeypatch: pytest.MonkeyPatch) 
     generated_file = GENERATED_ASSET_ROOT / filename
     assert generated_file.exists()
     svg_text = generated_file.read_text(encoding="utf-8")
-    assert "演示素材" in svg_text
+    assert "本地检查素材" in svg_text
     assert "流程联调" not in svg_text
     generated_file.unlink()
 
@@ -131,7 +131,7 @@ def test_openai_compatible_draft_provider_requires_key(
         model_router.draft_model("draft_generation", {"topic": "test"})
 
     assert exc.value.status_code == 501
-    assert "撰稿服务尚未配置服务密钥" in exc.value.detail
+    assert "撰稿服务尚未配置服务授权" in exc.value.detail
 
 
 def test_openai_compatible_draft_provider_calls_chat_completion(
@@ -281,7 +281,7 @@ def test_openai_compatible_draft_provider_reports_invalid_key(
         model_router.draft_model("draft_generation", {"topic": "test"})
 
     assert exc.value.status_code == 502
-    assert "服务密钥无效" in exc.value.detail
+    assert "撰稿服务授权无效" in exc.value.detail
     assert secret not in exc.value.detail
 
 
@@ -296,7 +296,7 @@ def test_openai_compatible_image_provider_requires_key(
         model_router.image_model("image_generation", {"title": "test"})
 
     assert exc.value.status_code == 501
-    assert "图片服务尚未配置服务密钥" in exc.value.detail
+    assert "图片服务尚未配置服务授权" in exc.value.detail
 
 
 def test_openai_compatible_image_provider_accepts_remote_url(
