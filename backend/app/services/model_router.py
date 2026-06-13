@@ -11,6 +11,7 @@ import httpx
 from fastapi import HTTPException, status
 
 from app.core.config import settings
+from app.services.topic_intent import first_matching_topic_intent, is_water_ranking_topic
 
 
 PROMPT_ROOT = Path(__file__).resolve().parents[3] / "prompts"
@@ -289,14 +290,9 @@ def _test_draft(payload: dict[str, object]) -> str:
     source_line = "、".join(source_titles) if source_titles else "暂无知识库引用"
     tag_line = " ".join(f"#{tag}" for tag in tags) if tags else "#硕升博 #博士申请"
     is_xiaohongshu = platform == "xiaohongshu"
-    is_water_ranking_topic = any(term in topic for term in ("水博", "海外博士", "境外博士")) and any(
-        term in topic for term in ("排名", "排行", "榜", "榜单", "必看")
-    )
-    is_route_topic = any(term in topic for term in ("路线", "怎么选", "选择", "路径"))
-    is_mentor_topic = any(term in topic for term in ("导师", "匹配", "套磁"))
-    is_timeline_topic = any(term in topic for term in ("时间线", "时间节点", "什么时候", "时间怎么排"))
-    is_sales_topic = any(term in topic for term in ("咨询", "转化", "上班族", "私域", "获客"))
-    if is_xiaohongshu and is_water_ranking_topic:
+    is_water_ranking = is_water_ranking_topic(topic, tags)
+    topic_intent = first_matching_topic_intent(topic, tags)
+    if is_xiaohongshu and is_water_ranking:
         body_lines = [
             "👉💧姐妹们，想看水博排名，先别急着找一张“万能榜单”哈！！[哇R]",
             "水博/海外博士这种内容，真正有用的不是谁把学校名字排得最满，而是把认证、预算、毕业难度和适配人群拆清楚。",
@@ -311,7 +307,7 @@ def _test_draft(payload: dict[str, object]) -> str:
             "🎓等知识库补齐真实学校/项目后，再把具体学校放进榜单；没核实前只给筛选框架，不假装有内部排名。",
             "💓宝子，榜单不是为了制造焦虑，是帮你少踩坑呀～",
         ]
-    elif is_xiaohongshu and is_route_topic:
+    elif is_xiaohongshu and topic_intent and topic_intent.key == "route":
         body_lines = [
             "👉💧姐妹们，硕升博路线真的不是看谁名字更响就选谁呀！！[哇R]",
             "路线选择要先看适配，不是先看热闹。国内、海外、在职、项目型博士，每条路的时间、预算和毕业要求都不一样。",
@@ -325,7 +321,7 @@ def _test_draft(payload: dict[str, object]) -> str:
             "🔥路线不是越多越好，而是越能匹配你现在的工作和未来目标越稳。",
             "💓先把选择标准定下来，再去看项目，会少很多反复纠结哦～",
         ]
-    elif is_xiaohongshu and is_mentor_topic:
+    elif is_xiaohongshu and topic_intent and topic_intent.key == "mentor":
         body_lines = [
             "👉💧姐妹们，导师匹配前真的别先群发邮件呀！！[哭惹R]",
             "导师匹配不是看谁 title 大，而是看你的研究方向能不能被老师接住。",
@@ -339,7 +335,7 @@ def _test_draft(payload: dict[str, object]) -> str:
             "🔥导师不是被模板打动的，是被“你为什么适合这个方向”打动的。",
             "💓先把匹配证据准备好，再联系导师会稳很多呀～",
         ]
-    elif is_xiaohongshu and is_timeline_topic:
+    elif is_xiaohongshu and topic_intent and topic_intent.key == "timeline":
         body_lines = [
             "👉💧在职博士申请时间线，真的不是等简章出来才开始哦！！[笑哭R]",
             "时间安排要倒推：你不是只要赶报名，而是要提前把方向、材料、推荐和项目筛选都排好。",
@@ -353,7 +349,7 @@ def _test_draft(payload: dict[str, object]) -> str:
             "🔥时间线不是制造焦虑，是帮你把任务拆小，避免最后一周爆炸。",
             "💓宝子，越早拆阶段，越不容易被 DDL 追着跑～",
         ]
-    elif is_xiaohongshu and is_sales_topic:
+    elif is_xiaohongshu and topic_intent and topic_intent.key == "sales":
         body_lines = [
             "👉💧上班族咨询博士项目，第一句真的别只问“有没有名额”呀！！[哇R]",
             "更稳的咨询转化，是先判断需求和适配，再给项目建议，不要一上来就推方案。",
@@ -384,7 +380,7 @@ def _test_draft(payload: dict[str, object]) -> str:
             "😎宝子，如果现在还没想清楚方向，先别逼自己立刻发邮件～[赞R]",
             "💓先把底层逻辑捋顺，再去套磁会稳很多。",
         ]
-    elif is_water_ranking_topic:
+    elif is_water_ranking:
         body_lines = [
             "水博排名类内容应先确认认证、预算、毕业难度和适配人群，不能在缺少核实资料时编学校名。",
             "可以先做四类榜单维度：认证优先、预算友好、毕业压力、在职友好。",

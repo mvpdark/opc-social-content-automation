@@ -13,69 +13,14 @@ from app.models.user import User
 from app.schemas.content import ContentGenerateRequest, ContentRewriteRequest
 from app.services.knowledge_service import search_knowledge_items
 from app.services.model_router import load_platform_style_reference, load_prompt, model_router
+from app.services.topic_intent import (
+    RANKING_DRAFT_TERMS,
+    WATER_ROUTE_TOPIC_TERMS,
+    contains_any,
+    first_matching_topic_intent,
+    is_water_ranking_topic,
+)
 from app.services.web_search_service import build_live_web_search_context
-
-
-WATER_ROUTE_TOPIC_TERMS = ("水博", "海外博士", "境外博士")
-RANKING_TOPIC_TERMS = ("排名", "排行", "榜", "榜单", "必看")
-RANKING_DRAFT_TERMS = (
-    "排名",
-    "排行",
-    "榜",
-    "榜单",
-    "梯队",
-    "学校池",
-    "项目池",
-    "路线池",
-    "清单",
-    "认证",
-    "预算",
-    "毕业难度",
-)
-ROUTE_TOPIC_TERMS = ("路线", "怎么选", "选择", "路径")
-ROUTE_DRAFT_TERMS = ("路线", "路径", "选择", "适配", "判断", "对比", "方案")
-MENTOR_TOPIC_TERMS = ("导师", "匹配", "套磁")
-MENTOR_DRAFT_TERMS = ("导师", "匹配", "研究方向", "论文", "课题", "成果", "套磁", "邮件")
-TIMELINE_TOPIC_TERMS = ("时间线", "时间节点", "时间怎么排", "什么时候")
-TIMELINE_DRAFT_TERMS = ("时间线", "时间节点", "阶段", "提前", "月份", "DDL", "安排", "节奏")
-SALES_TOPIC_TERMS = ("咨询", "转化", "上班族", "私域", "获客")
-SALES_DRAFT_TERMS = ("咨询", "需求", "预算", "适配", "沟通", "话术", "转化", "项目")
-
-
-@dataclass(frozen=True)
-class TopicIntentRule:
-    topic_terms: tuple[str, ...]
-    draft_terms: tuple[str, ...]
-    label: str
-    guidance: str
-
-
-TOPIC_INTENT_RULES = (
-    TopicIntentRule(
-        topic_terms=ROUTE_TOPIC_TERMS,
-        draft_terms=ROUTE_DRAFT_TERMS,
-        label="路线/选择",
-        guidance="请围绕路线对比、选择标准、适配人群和判断步骤展开。",
-    ),
-    TopicIntentRule(
-        topic_terms=MENTOR_TOPIC_TERMS,
-        draft_terms=MENTOR_DRAFT_TERMS,
-        label="导师匹配",
-        guidance="请围绕研究方向、导师成果、论文/课题交集和套磁前准备展开。",
-    ),
-    TopicIntentRule(
-        topic_terms=TIMELINE_TOPIC_TERMS,
-        draft_terms=TIMELINE_DRAFT_TERMS,
-        label="时间安排",
-        guidance="请围绕申请阶段、时间节点、提前准备和执行节奏展开。",
-    ),
-    TopicIntentRule(
-        topic_terms=SALES_TOPIC_TERMS,
-        draft_terms=SALES_DRAFT_TERMS,
-        label="咨询转化",
-        guidance="请围绕用户需求、预算、项目适配、沟通话术和转化路径展开。",
-    ),
-)
 
 
 @dataclass(frozen=True)
@@ -124,35 +69,22 @@ def _knowledge_context(
     ]
 
 
-def _contains_any(text: str, terms: tuple[str, ...]) -> bool:
-    normalized = text.lower()
-    return any(term.lower() in normalized for term in terms)
-
-
 def _is_water_ranking_topic(payload: ContentGenerateRequest) -> bool:
-    topic_text = " ".join([payload.topic, *(payload.tags or [])])
-    return _contains_any(topic_text, WATER_ROUTE_TOPIC_TERMS) and _contains_any(
-        payload.topic,
-        RANKING_TOPIC_TERMS,
-    )
+    return is_water_ranking_topic(payload.topic, payload.tags)
 
 
 def _draft_topic_relevance_issue(payload: ContentGenerateRequest, draft: str) -> str | None:
     if not _is_water_ranking_topic(payload):
-        topic_text = " ".join([payload.topic, *(payload.tags or [])])
-        for rule in TOPIC_INTENT_RULES:
-            if _contains_any(topic_text, rule.topic_terms) and not _contains_any(
-                draft,
-                rule.draft_terms,
-            ):
-                return (
-                    f"撰稿结果偏离选题：当前选题是“{payload.topic}”，但草稿没有围绕{rule.label}展开。"
-                    f"{rule.guidance}"
-                )
+        rule = first_matching_topic_intent(payload.topic, payload.tags)
+        if rule and not contains_any(draft, rule.draft_terms):
+            return (
+                f"撰稿结果偏离选题：当前选题是“{payload.topic}”，但草稿没有围绕{rule.label}展开。"
+                f"{rule.guidance}"
+            )
         return None
 
-    has_route_term = _contains_any(draft, WATER_ROUTE_TOPIC_TERMS)
-    has_ranking_structure = _contains_any(draft, RANKING_DRAFT_TERMS)
+    has_route_term = contains_any(draft, WATER_ROUTE_TOPIC_TERMS)
+    has_ranking_structure = contains_any(draft, RANKING_DRAFT_TERMS)
     if has_route_term and has_ranking_structure:
         return None
 
