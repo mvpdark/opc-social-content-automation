@@ -51,7 +51,9 @@ import {
 } from "@/lib/generated-assets";
 import {
   fetchKnowledgeItems,
+  knowledgeCategoryLabel,
   knowledgeItemExcerpt,
+  knowledgeItemTitle,
   type KnowledgeItem
 } from "@/lib/knowledge-api";
 import {
@@ -2113,20 +2115,20 @@ function KnowledgeScreen({ onAction }: { onAction: (message: string) => void }) 
         <div className="space-y-3" data-testid="mobile-knowledge-list">
           {items.map((item) => (
             <article
-              className="rounded-[24px] border border-white/[0.84] bg-[rgba(255,253,247,0.88)] p-3 shadow-[0_10px_24px_rgba(31,58,49,0.06),inset_0_1px_0_rgba(255,255,255,0.86)]"
+              className="overflow-hidden rounded-[24px] border border-white/[0.84] bg-[rgba(255,253,247,0.88)] p-3 shadow-[0_10px_24px_rgba(31,58,49,0.06),inset_0_1px_0_rgba(255,255,255,0.86)]"
               data-testid="mobile-knowledge-item"
               key={item.id}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-[11px] font-black text-moss">#{item.id}</div>
-                  <h3 className="mt-1 line-clamp-2 text-sm font-black leading-5">{item.title}</h3>
+              <div className="min-w-0">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="shrink-0 text-[11px] font-black text-moss">#{item.id}</span>
+                  <span className="max-w-[132px] truncate rounded-full bg-[#e7f2ea]/[0.92] px-2 py-1 text-[10px] font-black text-moss">
+                    {knowledgeCategoryLabel(item.category)}
+                  </span>
                 </div>
-                <span className="shrink-0 rounded-full bg-[#e7f2ea]/[0.92] px-2 py-1 text-[10px] font-black text-moss">
-                  {item.category || "未分类"}
-                </span>
+                <h3 className="mt-2 line-clamp-2 break-words text-[15px] font-black leading-5">{knowledgeItemTitle(item)}</h3>
               </div>
-              <p className="mt-2 text-xs font-medium leading-5 text-muted">
+              <p className="mt-2 line-clamp-3 break-words text-[12px] font-semibold leading-5 text-muted">
                 {knowledgeItemExcerpt(item, 116)}
               </p>
               <button

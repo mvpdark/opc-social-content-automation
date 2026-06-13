@@ -57,7 +57,9 @@ import {
 } from "@/lib/generated-assets";
 import {
   fetchKnowledgeItems,
+  knowledgeCategoryLabel,
   knowledgeItemExcerpt,
+  knowledgeItemTitle,
   type KnowledgeItem
 } from "@/lib/knowledge-api";
 import {
@@ -2019,15 +2021,15 @@ function KnowledgeView() {
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2" data-testid="knowledge-list">
           {items.map((item) => (
-            <article className={`${subtleCardClass} p-4`} data-testid="knowledge-item" key={item.id}>
+            <article className={`${subtleCardClass} overflow-hidden p-4`} data-testid="knowledge-item" key={item.id}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-moss">#{item.id}</p>
-                  <h3 className="mt-1 line-clamp-2 text-sm font-semibold leading-5">{item.title}</h3>
+                  <h3 className="mt-1 line-clamp-2 break-words text-sm font-semibold leading-5">{knowledgeItemTitle(item)}</h3>
                 </div>
-                <Pill>{item.category || "未分类"}</Pill>
+                <Pill>{knowledgeCategoryLabel(item.category)}</Pill>
               </div>
-              <p className="mt-3 text-xs leading-5 text-muted">{knowledgeItemExcerpt(item, 128)}</p>
+              <p className="mt-3 line-clamp-3 break-words text-xs leading-5 text-muted">{knowledgeItemExcerpt(item, 128)}</p>
               <div className="mt-3 flex items-center justify-between text-[11px] font-medium text-muted">
                 <span>{item.match_type === "recent" ? "最近入库" : "检索结果"}</span>
                 {typeof item.score === "number" ? <span>匹配 {Math.round(item.score * 100)}%</span> : null}
