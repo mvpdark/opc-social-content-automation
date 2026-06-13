@@ -937,7 +937,7 @@ export function TrendCollectorPanel({
             <div className="flex items-center justify-between gap-3 py-3">
               <span className="text-muted">内容类型</span>
               <span className="font-medium">
-                {target?.content_kind === "image_text" ? "仅图文" : "未准备"}
+                {target?.content_kind === "image_text" ? "仅图文" : "待打开搜索"}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3 py-3">
@@ -949,7 +949,7 @@ export function TrendCollectorPanel({
             <div className="flex items-center justify-between gap-3 py-3">
               <span className="text-muted">目标链接</span>
               <span className="min-w-0 truncate text-right font-medium">
-                {target?.search_url ?? "未准备"}
+                {target?.search_url ?? "先打开搜索生成"}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3 py-3">
@@ -960,7 +960,7 @@ export function TrendCollectorPanel({
             </div>
             <div className="flex items-center justify-between gap-3 py-3">
               <span className="text-muted">登录状态保存</span>
-              <span className="font-medium text-moss">默认关闭</span>
+              <span className="font-medium text-moss">默认不保存</span>
             </div>
             <div className="flex items-center justify-between gap-3 py-3">
               <span className="text-muted">采集方式</span>
