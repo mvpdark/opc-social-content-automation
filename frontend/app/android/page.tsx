@@ -382,12 +382,6 @@ function clearStoredMobileCover() {
   removeMobileStorage(MOBILE_LAST_COVER_STORAGE_KEY);
 }
 
-function buildPlatformCopy(content: GeneratedContent) {
-  return [content.title.trim(), content.body.trim(), formatTagLine(content.tags)]
-    .filter(Boolean)
-    .join("\n\n");
-}
-
 function buildEditableDraftCopy(draft: DraftPreviewState) {
   return [
     draft.title.trim(),
@@ -1928,7 +1922,7 @@ function CreateScreen({
     }
   }
 
-  async function showCompletionNotification(content: GeneratedContent, cover: GeneratedImageAsset) {
+  async function showCompletionNotification(content: GeneratedContent) {
     if ("Notification" in window && Notification.permission === "granted") {
       const title = "一键生成完成";
       const options: NotificationOptions = {
@@ -1953,12 +1947,12 @@ function CreateScreen({
     }
   }
 
-  async function notifyGenerationComplete(content: GeneratedContent, cover: GeneratedImageAsset) {
+  async function notifyGenerationComplete(content: GeneratedContent) {
     const soundPlayed = await playCompletionSound();
     if (navigator.vibrate) {
       navigator.vibrate([80, 40, 80]);
     }
-    await showCompletionNotification(content, cover);
+    await showCompletionNotification(content);
     if (!soundPlayed && !completionSoundReadyRef.current) {
       onAction("已完成；提示音被浏览器拦截了，下次请先点一次一键生成按钮解锁声音。");
     }
@@ -2023,7 +2017,7 @@ function CreateScreen({
       setGeneratedCover(cover);
       saveStoredMobileCover(cover);
       finishProgress("已完成");
-      void notifyGenerationComplete(data, cover);
+      void notifyGenerationComplete(data);
       onAction("文案和封面图已生成。");
     } catch (error) {
       stopProgressTimer();

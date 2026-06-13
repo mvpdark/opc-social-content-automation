@@ -49,7 +49,6 @@ import {
   type GeneratedImageAsset
 } from "@/lib/generated-assets";
 import {
-  connectionStatuses,
   contentControls,
   coverReferences,
   draftPreview,
@@ -2231,7 +2230,7 @@ function GenerationLauncher({
       }
 
       try {
-        const cover = await generateCoverForContent(finalContent);
+        await generateCoverForContent(finalContent);
         const completionMessage = rewriteWarning
           ? `文案和封面图已生成，但${rewriteWarning}预览确认后即可复制文案。`
           : "文案和封面图已一键生成。预览确认后即可复制文案。";

@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   Database,
   Download,
-  ExternalLink,
   FileText,
   Image,
   LayoutTemplate,
@@ -334,27 +333,6 @@ export const publishingRecords = [
     status: "待批准"
   }
 ];
-
-export const connectionStatuses = [
-  {
-    credentialKey: "draftApiKey",
-    name: "撰稿服务",
-    note: "设置页应用后用于生成初稿；前端不展示具体供应商和底层配置。",
-    icon: PenLine
-  },
-  {
-    credentialKey: "rewriteApiKey",
-    name: "改写服务",
-    note: "设置页应用后用于正文自然润色和风格修正；仍需人工审阅。",
-    icon: Wand2
-  },
-  {
-    credentialKey: "imageApiKey",
-    name: "图片服务",
-    note: "设置页应用后用于封面素材生成；标题和文字必须二次复核。",
-    icon: Image
-  }
-] as const;
 
 export const externalSkillCandidates = [
   {
