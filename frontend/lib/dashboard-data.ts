@@ -3,7 +3,6 @@ import {
   BarChart3,
   BookOpenText,
   CheckCircle2,
-  Clock3,
   Database,
   Download,
   ExternalLink,
@@ -268,33 +267,6 @@ export const pipeline = [
     icon: Send
   }
 ] as const;
-
-export const commandFocus = [
-  {
-    title: "先补高赞图文参考",
-    detail: "采集同类小红书图文，整理开头、标题、封面和评论触发点。",
-    state: "今天重点",
-    icon: Radar
-  },
-  {
-    title: "把参考沉淀进知识库",
-    detail: "保存来源摘要前必须人工确认，避免把不可靠样本写进资产库。",
-    state: "需确认",
-    icon: BookOpenText
-  },
-  {
-    title: "生成后先人工确认",
-    detail: "初稿、改写、封面都不自动发布。",
-    state: "强制",
-    icon: ShieldCheck
-  }
-];
-
-export const nextActions = [
-  "检查图文采集流程是否稳定开始",
-  "把高赞标题和封面风格整理成写作参考",
-  "用参考生成一篇新草稿并人工确认"
-];
 
 export const queues = [
   { name: "采集记录", count: 0, owner: "运营", status: "待样本" },
@@ -623,10 +595,4 @@ export const safetyGates = [
   { label: "写作模板独立存放", state: "启用", icon: FileText },
   { label: "发布需人工确认", state: "强制", icon: ShieldCheck },
   { label: "图片标题需复核", state: "提醒", icon: AlertTriangle }
-];
-
-export const timeline = [
-  { label: "采集公开样本", helper: "先看真实内容", icon: Radar },
-  { label: "保存知识摘要", helper: "人工确认来源", icon: BookOpenText },
-  { label: "生成并确认", helper: "不自动发布", icon: Clock3 }
 ];
