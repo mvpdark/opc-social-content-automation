@@ -1037,10 +1037,12 @@ function renderXhsExpressionText(text: string) {
 
 export function WorkspaceClient({
   hasInitialTheme,
+  initialProject,
   initialStyle,
   initialTab
 }: {
   hasInitialTheme: boolean;
+  initialProject: string | null;
   initialStyle: InterfaceStyle;
   initialTab: WorkspaceTab;
 }) {
@@ -1190,6 +1192,7 @@ export function WorkspaceClient({
       {activeTab === "content" ? (
         <ContentView
           defaultWritingStyle={defaultWritingStyle}
+          initialProject={initialProject}
           onOpenSettings={() => handleTabChange("settings")}
           workspaceToken={credentials.workspaceToken}
         />
@@ -1887,23 +1890,19 @@ function KnowledgeView() {
 
 function ContentView({
   defaultWritingStyle,
+  initialProject,
   onOpenSettings,
   workspaceToken
 }: {
   defaultWritingStyle: WritingStylePresetId;
+  initialProject: string | null;
   onOpenSettings: () => void;
   workspaceToken: string;
 }) {
   const [selectedCreationProjectId, setSelectedCreationProjectId] =
-    useState<CreationProjectId | null>(() => {
-      if (typeof window === "undefined") {
-        return null;
-      }
-      const project = findEnabledCreationProject(
-        new URLSearchParams(window.location.search).get("project")
-      );
-      return project?.id ?? null;
-    });
+    useState<CreationProjectId | null>(
+      () => findEnabledCreationProject(initialProject)?.id ?? null
+    );
   const [previewContent, setPreviewContent] = useState<GeneratedContent | null>(null);
   const [previewImageAsset, setPreviewImageAsset] = useState<GeneratedImageAsset | null>(null);
   const [previewLoading, setPreviewLoading] = useState(true);

@@ -25,12 +25,18 @@ function coerceInterfaceStyle(value: string | string[] | undefined): InterfaceSt
 export default async function Home({
   searchParams
 }: {
-  searchParams?: Promise<{ tab?: string | string[]; theme?: string | string[] }>;
+  searchParams?: Promise<{
+    project?: string | string[];
+    tab?: string | string[];
+    theme?: string | string[];
+  }>;
 }) {
   const params = searchParams ? await searchParams : {};
+  const project = Array.isArray(params.project) ? params.project[0] : params.project ?? null;
   return (
     <WorkspaceClient
       hasInitialTheme={params.theme !== undefined}
+      initialProject={project}
       initialStyle={coerceInterfaceStyle(params.theme)}
       initialTab={coerceWorkspaceTab(params.tab)}
     />
