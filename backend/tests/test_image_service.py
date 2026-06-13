@@ -1,4 +1,5 @@
 import pytest
+import httpx
 from fastapi import HTTPException
 
 from app.models.content import Content
@@ -32,6 +33,18 @@ class FakeImageSession:
     def refresh(self, item: object) -> None:
         if isinstance(item, GeneratedImage):
             item.id = item.id or 1
+
+
+class FakeCommitSession:
+    def __init__(self) -> None:
+        self.committed = False
+        self.flushed = False
+
+    def flush(self) -> None:
+        self.flushed = True
+
+    def commit(self) -> None:
+        self.committed = True
 
 
 def make_content(status: str = "draft") -> Content:
@@ -92,6 +105,11 @@ def test_image_prompt_payload_includes_visual_direction(
         return "https://cdn.test/cover.png"
 
     monkeypatch.setattr(image_service.model_router, "image_model", fake_image_model)
+    monkeypatch.setattr(
+        image_service,
+        "localize_image_url",
+        lambda image_url, content_id, template: image_url,
+    )
     monkeypatch.setattr(image_service, "record_generation_log", lambda **_kwargs: None)
 
     image = generate_image_asset(
@@ -106,18 +124,33 @@ def test_image_prompt_payload_includes_visual_direction(
     assert "instructions" in captured["visual_direction"]
 
 
-def test_draft_image_generation_is_marked_needs_review(
+def test_draft_image_generation_downloads_remote_cover_before_saving(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
 ) -> None:
     content = make_content()
     user = User(id=1, role="promoter", phone="test", password_hash="hash")
     db = FakeImageSession(content)
+    remote_url = "https://cdn.test/cover.png"
+
+    def fake_get(url: str, **kwargs: object) -> httpx.Response:
+        assert url == remote_url
+        assert kwargs["follow_redirects"] is True
+        return httpx.Response(
+            200,
+            content=b"cover-bytes",
+            headers={"content-type": "image/png"},
+            request=httpx.Request("GET", url),
+        )
 
     monkeypatch.setattr(
         image_service.model_router,
         "image_model",
-        lambda _prompt_name, _payload: "https://cdn.test/cover.png",
+        lambda _prompt_name, _payload: remote_url,
     )
+    monkeypatch.setattr(image_service.httpx, "get", fake_get)
+    monkeypatch.setattr(image_service, "GENERATED_ASSET_ROOT", tmp_path)
+    monkeypatch.setattr(image_service.settings, "test_static_url_prefix", "/static/generated")
     monkeypatch.setattr(image_service, "record_generation_log", lambda **_kwargs: None)
 
     image = generate_image_asset(
@@ -127,4 +160,47 @@ def test_draft_image_generation_is_marked_needs_review(
     )
 
     assert image.status == "needs_review"
-    assert image.image_url == "https://cdn.test/cover.png"
+    assert image.image_url.startswith("/static/generated/remote-cover-1-xiaohongshu-cover-")
+    filename = image.image_url.rsplit("/", 1)[-1]
+    assert (tmp_path / filename).read_bytes() == b"cover-bytes"
+
+
+def test_localize_image_url_converts_public_static_url_to_local_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(image_service.settings, "test_static_url_prefix", "/static/generated")
+
+    assert (
+        image_service.localize_image_url(
+            "https://opc.mvpdark.top/static/generated/already-local.png",
+            content_id=1,
+            template="xiaohongshu-cover",
+        )
+        == "/static/generated/already-local.png"
+    )
+
+
+def test_ensure_images_are_local_commits_updated_remote_records(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    image = GeneratedImage(
+        content_id=1,
+        created_by=1,
+        image_url="https://cdn.test/old-cover.png",
+        template="xiaohongshu-cover",
+        prompt="test",
+        status="needs_review",
+    )
+    db = FakeCommitSession()
+
+    monkeypatch.setattr(
+        image_service,
+        "localize_image_url",
+        lambda image_url, content_id, template: "/static/generated/old-cover.png",
+    )
+
+    image_service.ensure_images_are_local(db, [image])  # type: ignore[arg-type]
+
+    assert image.image_url == "/static/generated/old-cover.png"
+    assert db.flushed is True
+    assert db.committed is True

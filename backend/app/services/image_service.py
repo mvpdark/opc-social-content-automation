@@ -1,17 +1,37 @@
 import hashlib
+from pathlib import Path
+from urllib.parse import urlparse
 
+import httpx
 from fastapi import HTTPException, status
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.content import Content
 from app.models.generated_image import GeneratedImage
 from app.models.user import User
 from app.schemas.image import ImageGenerateRequest
 from app.services.content_service import PromptPackage, record_generation_log
-from app.services.model_router import load_platform_style_reference, load_prompt, model_router
+from app.services.model_router import (
+    FILENAME_RE,
+    GENERATED_ASSET_ROOT,
+    load_platform_style_reference,
+    load_prompt,
+    model_router,
+)
 
 IMAGE_GENERATABLE_STATUSES = {"draft", "rewritten", "review_pending", "approved"}
+REMOTE_IMAGE_DOWNLOAD_TIMEOUT_SECONDS = 30.0
+REMOTE_IMAGE_MAX_BYTES = 12 * 1024 * 1024
+IMAGE_MEDIA_TYPE_EXTENSIONS = {
+    "image/gif": ".gif",
+    "image/jpeg": ".jpg",
+    "image/jpg": ".jpg",
+    "image/png": ".png",
+    "image/svg+xml": ".svg",
+    "image/webp": ".webp",
+}
 
 COVER_TEMPLATES = [
     {
@@ -137,11 +157,116 @@ def list_cover_templates() -> list[dict[str, str]]:
     return COVER_TEMPLATES
 
 
+def _static_url_prefix() -> str:
+    return settings.test_static_url_prefix.rstrip("/")
+
+
+def _is_generated_static_url(image_url: str) -> bool:
+    prefix = _static_url_prefix()
+    normalized_url = image_url.strip()
+    if normalized_url.startswith(f"{prefix}/"):
+        return True
+
+    parsed = urlparse(normalized_url)
+    return parsed.path.startswith(f"{prefix}/")
+
+
+def _is_remote_url(image_url: str) -> bool:
+    return urlparse(image_url.strip()).scheme in {"http", "https"}
+
+
+def _image_extension_from_response(image_url: str, content_type: str) -> str:
+    media_type = content_type.split(";", 1)[0].strip().lower()
+    if media_type in IMAGE_MEDIA_TYPE_EXTENSIONS:
+        return IMAGE_MEDIA_TYPE_EXTENSIONS[media_type]
+
+    suffix = Path(urlparse(image_url).path).suffix.lower()
+    if suffix in set(IMAGE_MEDIA_TYPE_EXTENSIONS.values()):
+        return suffix
+
+    return ".png"
+
+
+def _image_download_timeout() -> float:
+    return min(float(settings.image_timeout_seconds), REMOTE_IMAGE_DOWNLOAD_TIMEOUT_SECONDS)
+
+
+def _download_remote_image(image_url: str) -> tuple[bytes, str]:
+    try:
+        response = httpx.get(
+            image_url,
+            follow_redirects=True,
+            timeout=_image_download_timeout(),
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="图片服务返回了远程封面，但保存到本地失败，请稍后重试。",
+        ) from exc
+
+    content = response.content
+    if not content:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="图片服务返回了空封面，无法保存到本地。",
+        )
+    if len(content) > REMOTE_IMAGE_MAX_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="图片服务返回的封面过大，无法保存到本地。",
+        )
+
+    return content, response.headers.get("content-type", "")
+
+
+def localize_image_url(image_url: str, content_id: int, template: str) -> str:
+    normalized_url = image_url.strip()
+    if not normalized_url or not _is_remote_url(normalized_url):
+        return normalized_url
+    if _is_generated_static_url(normalized_url):
+        parsed = urlparse(normalized_url)
+        return parsed.path
+
+    content, content_type = _download_remote_image(normalized_url)
+    extension = _image_extension_from_response(normalized_url, content_type)
+    digest = hashlib.sha256(content).hexdigest()[:12]
+    template_slug = FILENAME_RE.sub("-", template.lower()).strip("-")[:24] or "cover"
+    filename = f"remote-cover-{content_id}-{template_slug}-{digest}{extension}"
+    GENERATED_ASSET_ROOT.mkdir(parents=True, exist_ok=True)
+    target = GENERATED_ASSET_ROOT / filename
+    target.write_bytes(content)
+    return f"{_static_url_prefix()}/{filename}"
+
+
+def ensure_images_are_local(db: Session, images: list[GeneratedImage]) -> None:
+    changed = False
+    for image in images:
+        if not image.image_url or not _is_remote_url(image.image_url):
+            continue
+        try:
+            localized_url = localize_image_url(
+                image.image_url,
+                content_id=image.content_id,
+                template=image.template or "cover",
+            )
+        except HTTPException:
+            continue
+        if localized_url != image.image_url:
+            image.image_url = localized_url
+            changed = True
+    if changed:
+        db.flush()
+        db.commit()
+
+
 def list_images(db: Session, content_id: int | None, limit: int) -> list[GeneratedImage]:
     statement = select(GeneratedImage).order_by(desc(GeneratedImage.created_at)).limit(limit)
     if content_id is not None:
         statement = statement.where(GeneratedImage.content_id == content_id)
-    return list(db.scalars(statement).all())
+    images = list(db.scalars(statement).all())
+    ensure_images_are_local(db, images)
+    return images
 
 
 def get_content_for_image(db: Session, content_id: int) -> Content:
@@ -243,6 +368,11 @@ def generate_image_asset(
     )
     try:
         image_url = model_router.image_model(package.prompt_name, package.payload)
+        image_url = localize_image_url(
+            image_url,
+            content_id=content.id,
+            template=payload.template,
+        )
     except HTTPException as exc:
         record_generation_log(
             db=db,
