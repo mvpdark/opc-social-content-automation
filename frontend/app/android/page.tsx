@@ -2963,7 +2963,7 @@ function DraftPreviewEditor({
     const copied = await onCopy();
     setManualCopyText(draftText);
     const message = copied
-      ? "文案已复制；下方也保留了正文，可长按全选再确认。"
+      ? "已尝试复制文案；下方也保留了正文，可长按全选再确认。"
       : "浏览器拦截了剪贴板，文案已展开，可长按全选复制。";
     publishExportStatus(message);
   }
@@ -2992,7 +2992,7 @@ function DraftPreviewEditor({
         (typeof navigator.canShare !== "function" || navigator.canShare({ files: [coverFile] }));
 
       if (canShareFiles) {
-        publishExportStatus("文案已复制，正在打开系统分享；选择小红书即可带入封面图。");
+        publishExportStatus("已尝试复制文案，正在打开系统分享；选择小红书即可带入封面图。");
         try {
           await navigator.share(shareData);
         } catch (error) {
@@ -3001,7 +3001,7 @@ function DraftPreviewEditor({
             const restored = await tryCopyText(draftText);
             setManualCopyText(draftText);
             const abortMessage = restored
-              ? "已取消系统分享；文案已重新复制，下方也保留了正文，可长按全选确认。"
+              ? "已取消系统分享；已重新尝试复制文案，下方也保留了正文，可长按全选确认。"
               : `已取消系统分享；文案已展开，可长按全选复制，也可以点“${XHS_COPY_TEXT_ONLY_LABEL}”重试。`;
             publishExportStatus(abortMessage);
             return;
@@ -3011,7 +3011,7 @@ function DraftPreviewEditor({
         const sharedCopyRestored = await tryCopyText(draftText);
         setManualCopyText(draftText);
         const sharedMessage = sharedCopyRestored
-          ? "已交给系统分享；文案已重新复制，下方也保留了正文。如果小红书没有自动带入正文，请直接粘贴。"
+          ? "已交给系统分享；已重新尝试复制文案，下方也保留了正文。如果小红书没有自动带入正文，请直接粘贴。"
           : `已交给系统分享；如果小红书没有自动带入正文，文案已展开，可长按全选复制，也可以点“${XHS_COPY_TEXT_ONLY_LABEL}”重试。`;
         publishExportStatus(sharedMessage);
         return;
@@ -3021,7 +3021,7 @@ function DraftPreviewEditor({
       const fallbackTextRestored = await tryCopyText(draftText);
       setManualCopyText(draftText);
       const fallbackMessage = fallbackTextRestored
-        ? "文案已复制，封面图已下载；下方也保留了正文。正在打开小红书，请新建图文后粘贴正文。"
+        ? "已尝试复制文案，封面图已下载；下方也保留了正文。正在打开小红书，请新建图文后粘贴正文。"
         : "封面图已下载；浏览器拦截了剪贴板，文案已展开，可长按全选复制。";
       publishExportStatus(fallbackMessage);
       window.location.href = "https://www.xiaohongshu.com/explore";
