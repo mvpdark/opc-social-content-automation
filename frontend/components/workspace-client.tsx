@@ -208,7 +208,7 @@ const creationProjects = [
   },
   {
     id: "ecommerce-listing",
-    title: "商品上架项目",
+    title: "2.抖音商品自动化",
     category: "电商转化",
     status: "规划中",
     statusTone: "amber",
@@ -220,7 +220,7 @@ const creationProjects = [
   },
   {
     id: "private-domain-sales",
-    title: "私域成交项目",
+    title: "3.私域商品自动化",
     category: "销售跟进",
     status: "规划中",
     statusTone: "amber",

@@ -230,7 +230,7 @@ const mobileCreationProjects = [
   },
   {
     id: "ecommerce-listing",
-    title: "商品上架项目",
+    title: "2.抖音商品自动化",
     category: "电商转化",
     status: "规划中",
     description: "面向商品标题、卖点、详情页结构、FAQ 和客服话术。",
@@ -241,7 +241,7 @@ const mobileCreationProjects = [
   },
   {
     id: "private-domain-sales",
-    title: "私域成交项目",
+    title: "3.私域商品自动化",
     category: "销售跟进",
     status: "规划中",
     description: "面向朋友圈、社群跟进、异议处理和成交 SOP。",
@@ -2323,22 +2323,23 @@ function MobileCreationProjectGateway({
   generatedContent: GeneratedContent | null;
   onSelect: (projectId: MobileCreationProjectId) => void;
 }) {
-  const liveProject =
-    mobileCreationProjects.find((project) => project.enabled) ?? mobileCreationProjects[0];
-  const roadmapProjects = mobileCreationProjects.filter((project) => !project.enabled);
-
   return (
     <div className="space-y-4" data-testid="mobile-creation-project-gateway">
-      <button
-        aria-label={`进入${liveProject.title}创作流程`}
-        className="flex h-10 w-full touch-manipulation items-center justify-center gap-2 rounded-[13px] bg-[#111312] px-4 text-xs font-black text-white shadow-[0_10px_20px_rgba(22,24,23,0.12)] active:scale-[0.99]"
-        data-testid={`mobile-creation-project-${liveProject.id}`}
-        onClick={() => onSelect(liveProject.id)}
-        type="button"
-      >
-        <PenLine className="h-3.5 w-3.5" />
-        进入{liveProject.title}
-      </button>
+      <div className="space-y-2">
+        {mobileCreationProjects.map((project) => (
+          <button
+            aria-label={`${project.enabled ? "进入" : "查看"}${project.title}${project.enabled ? "创作流程" : "规划状态"}`}
+            className="flex h-10 w-full touch-manipulation items-center justify-center gap-2 rounded-[13px] bg-[#111312] px-4 text-xs font-black text-white shadow-[0_10px_20px_rgba(22,24,23,0.12)] active:scale-[0.99]"
+            data-testid={`mobile-creation-project-${project.id}`}
+            key={project.id}
+            onClick={() => onSelect(project.id)}
+            type="button"
+          >
+            <PenLine className="h-3.5 w-3.5" />
+            进入{project.title}
+          </button>
+        ))}
+      </div>
 
       <MobilePanel
         title="项目状态"
@@ -2349,38 +2350,6 @@ function MobileCreationProjectGateway({
         </div>
       </MobilePanel>
 
-      <MobilePanel title="后续项目卡片" action="路线图">
-        <div className="space-y-3">
-          {roadmapProjects.map((project) => (
-            <article
-              className="rounded-[22px] border border-white/70 bg-white/68 p-3 opacity-80 shadow-[0_10px_28px_rgba(31,58,49,0.07)]"
-              data-testid={`mobile-creation-project-${project.id}`}
-              key={project.id}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-[11px] font-black text-muted">{project.category}</div>
-                  <h3 className="mt-1 text-base font-black leading-6">{project.title}</h3>
-                </div>
-                <span className="rounded-full border border-[#f3c96b]/40 bg-[#fff5d8] px-2.5 py-1 text-[11px] font-black text-[#8a5d16]">
-                  {project.status}
-                </span>
-              </div>
-              <p className="mt-2 text-xs font-medium leading-5 text-muted">{project.description}</p>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {project.workflow.map((step) => (
-                  <span
-                    className="rounded-full border border-[#d6e8df] bg-white/72 px-2 py-1 text-[10px] font-bold text-muted"
-                    key={step}
-                  >
-                    {step}
-                  </span>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
-      </MobilePanel>
     </div>
   );
 }
