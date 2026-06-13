@@ -2878,18 +2878,21 @@ function DraftPreviewEditor({
 
   async function copyDraftTextOnly() {
     setEditing(false);
+    const draftText = buildEditableDraftCopy(draft);
     const copied = await onCopy();
-    setManualCopyText(copied ? null : buildEditableDraftCopy(draft));
-    const message = copied ? "文案已复制，可以直接去小红书粘贴。" : "浏览器拦截了剪贴板，文案已展开，可长按全选复制。";
+    setManualCopyText(draftText);
+    const message = copied
+      ? "文案已复制；下方也保留了正文，可长按全选再确认。"
+      : "浏览器拦截了剪贴板，文案已展开，可长按全选复制。";
     publishExportStatus(message);
   }
 
   async function handleOpenXiaohongshu() {
     const draftText = buildEditableDraftCopy(draft);
     setEditing(false);
-    setManualCopyText(null);
+    setManualCopyText(draftText);
     setXhsExporting(true);
-    publishExportStatus("正在复制文案并准备封面图。");
+    publishExportStatus("正在复制文案并准备封面图；下方会保留正文兜底。");
     try {
       const textCopied = await tryCopyText(draftText);
       if (!textCopied) {
@@ -2915,9 +2918,9 @@ function DraftPreviewEditor({
           const errorName = error instanceof DOMException ? error.name : "";
           if (errorName === "AbortError") {
             const restored = await tryCopyText(draftText);
-            setManualCopyText(restored ? null : draftText);
+            setManualCopyText(draftText);
             const abortMessage = restored
-              ? "已取消系统分享；文案已重新复制，可以直接去小红书粘贴。"
+              ? "已取消系统分享；文案已重新复制，下方也保留了正文，可长按全选确认。"
               : `已取消系统分享；文案已展开，可长按全选复制，也可以点“${XHS_COPY_TEXT_ONLY_LABEL}”重试。`;
             publishExportStatus(abortMessage);
             return;
@@ -2925,9 +2928,9 @@ function DraftPreviewEditor({
           throw error;
         }
         const sharedCopyRestored = await tryCopyText(draftText);
-        setManualCopyText(sharedCopyRestored ? null : draftText);
+        setManualCopyText(draftText);
         const sharedMessage = sharedCopyRestored
-          ? "已交给系统分享；文案已重新复制，如果小红书没有自动带入正文，请直接粘贴。"
+          ? "已交给系统分享；文案已重新复制，下方也保留了正文。如果小红书没有自动带入正文，请直接粘贴。"
           : `已交给系统分享；如果小红书没有自动带入正文，文案已展开，可长按全选复制，也可以点“${XHS_COPY_TEXT_ONLY_LABEL}”重试。`;
         publishExportStatus(sharedMessage);
         return;
@@ -2935,9 +2938,9 @@ function DraftPreviewEditor({
 
       downloadFile(coverFile);
       const fallbackTextRestored = await tryCopyText(draftText);
-      setManualCopyText(fallbackTextRestored ? null : draftText);
+      setManualCopyText(draftText);
       const fallbackMessage = fallbackTextRestored
-        ? "文案已复制，封面图已下载；正在打开小红书，请新建图文后粘贴正文。"
+        ? "文案已复制，封面图已下载；下方也保留了正文。正在打开小红书，请新建图文后粘贴正文。"
         : "封面图已下载；浏览器拦截了剪贴板，文案已展开，可长按全选复制。";
       publishExportStatus(fallbackMessage);
       window.location.href = "https://www.xiaohongshu.com/explore";
