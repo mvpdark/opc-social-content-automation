@@ -91,7 +91,8 @@ def test_build_safety_profile_defaults_to_account_safety() -> None:
     assert profile["speed_policy"] == "account_safety_first"
     assert profile["human_like_scrolling"] is True
     assert profile["session_persistence"] is True
-    assert profile["cookie_persistence"] is False
+    assert profile["cookie_persistence"] is True
+    assert profile["session_label"] == "xiaohongshu"
     assert profile["content_kind"] == "image_text"
     assert profile["video_collection_enabled"] is False
     assert profile["operator_wait_seconds"] == 30

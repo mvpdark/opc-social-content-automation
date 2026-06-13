@@ -43,7 +43,7 @@ SUPPORTED_PLATFORMS = {"xiaohongshu", "douyin"}
 VIDEO_COLLECTION_DISABLED_DETAIL = (
     "视频采集暂未启用；需要先补齐转写、版权和人工复核流程。"
 )
-AUTO_START_COLLECTION_MESSAGE = "已排队；安全可见浏览器采集器会自动启动。"
+AUTO_START_COLLECTION_MESSAGE = "已排队；安全采集浏览器会自动启动。"
 URL_RE = re.compile(r"https?://[^\s<>'\"，。；、)）】]+", re.IGNORECASE)
 SUPPORTED_XHS_HOSTS = {
     "xiaohongshu.com",
@@ -179,7 +179,7 @@ def build_xhs_link_import_target(payload: TrendLinkImportRequest) -> TrendLinkIm
         links=links,
         safety_notes=[
             "这里只提取并分类链接，不抓取笔记详情或媒体文件。",
-            "xhslink.com 短链只通过操作者授权的可见浏览器或合规采集器解析。",
+            "xhslink.com 短链只通过操作者授权的登录浏览器或合规采集器解析。",
             "默认不下载媒体；先保存笔记元数据，入知识库前必须人工复核。",
             "默认不保存 Cookie；只有后续显式启用授权采集器时才会持久化。",
             "XHS-Downloader 仅作为产品和架构参考；当前实现是独立 clean-room 代码。",
@@ -216,8 +216,8 @@ def build_platform_search_target(platform: str, keyword: str) -> PlatformSearchT
         requires_manual_login=False,
         automation_mode="public_first_visible_browser",
         safety_notes=[
-            "先在可见浏览器里尝试公开搜索。",
-            "只有公开结果被拦截时，才让操作者处理登录或验证码。",
+            "先在采集浏览器里尝试公开搜索。",
+            "只有公开结果被拦截时，才让操作者打开登录浏览器处理登录或验证码。",
             "不要绕过平台访问控制，也不要采集非公开内容。",
             "保持随机延迟和接近人工的滚动节奏。",
             "采集到的笔记先作为趋势素材保存，再人工确认后进入知识摘要。",
@@ -237,6 +237,8 @@ def build_safety_profile(payload: TrendCollectionJobCreate) -> dict[str, object]
             detail=VIDEO_COLLECTION_DISABLED_DETAIL,
         )
 
+    session_label = payload.session_label or payload.platform
+
     return {
         "collector": "playwright_assisted",
         "human_like_scrolling": True,
@@ -246,8 +248,8 @@ def build_safety_profile(payload: TrendCollectionJobCreate) -> dict[str, object]
         },
         "randomized_interaction_paths": True,
         "session_persistence": payload.persist_session,
-        "cookie_persistence": payload.persist_cookies,
-        "session_label": payload.session_label,
+        "cookie_persistence": payload.persist_cookies or payload.persist_session,
+        "session_label": session_label,
         "max_items": payload.max_items,
         "operator_wait_seconds": payload.operator_wait_seconds,
         "content_kind": payload.content_kind,

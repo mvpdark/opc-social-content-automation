@@ -276,11 +276,11 @@ def _store_assets(
 
     job.status = "completed" if stored else "needs_operator_review"
     if stored:
-        message = "已从操作者辅助的可见浏览器会话采集公开图文素材。"
+        message = "已从持久化采集浏览器会话采集公开图文素材。"
     elif blocked_candidate_count:
         message = (
             "未找到可采集的公开图文素材。当前页面可能被登录、验证、页脚备案或平台外壳文本拦截；"
-            "请只在合规允许时完成可见浏览器处理，然后重试。"
+            "请只在合规允许时打开登录浏览器处理，然后重试。"
         )
     elif raw_candidate_count:
         message = (
@@ -289,7 +289,7 @@ def _store_assets(
         )
     else:
         message = (
-            "未找到可采集的公开图文素材。请确认搜索页面已在可见浏览器中加载，然后重试。"
+            "未找到可采集的公开图文素材。请确认登录浏览器已完成登录，然后重试。"
         )
     job.result_summary = {
         "message": message,
@@ -352,7 +352,7 @@ def run_browser_collection_job(
 
     job.status = "running"
     job.result_summary = {
-        "message": "可见浏览器采集已启动。",
+        "message": "采集浏览器已启动。",
         "target_url": target_url,
         "content_kind": content_kind,
         "collected_items": 0,
@@ -405,9 +405,9 @@ def run_browser_collection_job(
             context.close()
     except PlaywrightTimeoutError as exc:
         job.status = "needs_operator_review"
-        job.error = "可见浏览器加载平台页面超时。"
+        job.error = "采集浏览器加载平台页面超时。"
         job.result_summary = {
-            "message": "请先重试公开搜索；只有公开结果被拦截时，再处理登录或验证码。",
+            "message": "请先重试公开搜索；只有公开结果被拦截时，再打开登录浏览器处理登录或验证码。",
             "target_url": target_url,
             "collected_items": 0,
         }
@@ -415,7 +415,7 @@ def run_browser_collection_job(
         raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail=job.error) from exc
     except Exception as exc:
         job.status = "failed"
-        job.error = "可见浏览器采集失败，请检查本机浏览器环境和会话状态。"
+        job.error = "采集浏览器采集失败，请检查本机浏览器环境和会话状态。"
         job.result_summary = {
             "message": job.error,
             "target_url": target_url,

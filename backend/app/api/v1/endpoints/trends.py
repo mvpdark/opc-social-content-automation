@@ -43,7 +43,7 @@ def _run_collection_job_in_background(job_id: int) -> None:
         run_browser_collection_job(
             db=db,
             job_id=job_id,
-            headless=False,
+            headless=True,
             max_scrolls=6,
         )
     except HTTPException as exc:

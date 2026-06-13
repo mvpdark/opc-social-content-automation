@@ -99,7 +99,7 @@ export function collectionJobDiagnosticItems(
   if (job.status === "queued" && !summary?.auto_start) {
     pushDiagnosticItem(items, "下一步", "点击继续上次采集", "warning");
   } else if (job.status === "running") {
-    pushDiagnosticItem(items, "下一步", "留意可见浏览器", "neutral");
+    pushDiagnosticItem(items, "下一步", "必要时打开登录浏览器", "neutral");
   } else if (job.status === "completed") {
     pushDiagnosticItem(items, "下一步", "人工确认来源后保存摘要", "good");
   } else if (job.status === "needs_operator_review") {
@@ -119,10 +119,10 @@ export function formatCollectionJobStatus(
 
   if (surface === "mobile") {
     if (job.status === "queued") {
-      return `正在排队${collected}，可见浏览器即将打开。`;
+      return `正在排队${collected}，采集浏览器即将启动。`;
     }
     if (job.status === "running") {
-      return `正在采集中${collected}${waitText}。遇到登录或验证码时，先在浏览器里人工处理。`;
+      return `正在采集中${collected}${waitText}。遇到登录或验证码时，先打开登录浏览器人工处理。`;
     }
     if (job.status === "completed") {
       return `采集已完成${collected}${diagnosticText}。请人工确认来源后再保存知识摘要。`;
@@ -140,10 +140,10 @@ export function formatCollectionJobStatus(
     if (!job.result_summary?.auto_start) {
       return `上次采集仍在排队${collected}。它不会自动开始；请点击“继续上次采集”。`;
     }
-    return `本次采集${collectionJobStatusLabel(job.status)}${collected}。采集器正在启动，可见浏览器会自动打开。`;
+    return `本次采集${collectionJobStatusLabel(job.status)}${collected}。采集浏览器正在启动。`;
   }
   if (job.status === "running") {
-    return `本次采集${collectionJobStatusLabel(job.status)}${collected}${waitText}。请留意自动打开的浏览器窗口；如果遇到登录或验证码，先人工处理。`;
+    return `本次采集${collectionJobStatusLabel(job.status)}${collected}${waitText}。采集浏览器会隐藏运行；如果遇到登录或验证码，请先打开登录浏览器人工处理。`;
   }
   if (job.status === "completed") {
     return `本次采集${collectionJobStatusLabel(job.status)}${collected}${diagnosticText}。请人工确认来源后再保存知识摘要。`;

@@ -497,8 +497,9 @@ export function TrendCollectorPanel({
           min_delay_seconds: minDelay,
           max_delay_seconds: maxDelay,
           operator_wait_seconds: 30,
+          session_label: platform,
           persist_session: true,
-          persist_cookies: false
+          persist_cookies: true
         })
       });
       if (!response.ok) {
@@ -961,12 +962,12 @@ export function TrendCollectorPanel({
             </div>
             <div className="flex items-center justify-between gap-3 py-3">
               <span className="text-muted">登录状态保存</span>
-              <span className="font-medium text-moss">默认不保存</span>
+              <span className="font-medium text-moss">固定会话保存</span>
             </div>
             <div className="flex items-center justify-between gap-3 py-3">
               <span className="text-muted">采集方式</span>
               <span className="font-medium">
-                {target?.automation_mode ?? "可见浏览器"}
+                {target?.automation_mode ?? "采集浏览器"}
               </span>
             </div>
           </div>

@@ -1271,8 +1271,9 @@ function CollectScreen({
           min_delay_seconds: 4,
           max_delay_seconds: 12,
           operator_wait_seconds: 30,
+          session_label: platform,
           persist_session: true,
-          persist_cookies: false
+          persist_cookies: true
         })
       });
       if (!response.ok) {
