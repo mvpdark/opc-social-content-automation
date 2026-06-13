@@ -1058,11 +1058,11 @@ function HomeScreen({
         <div className="relative">
           <div className="flex items-center justify-between gap-3">
             <span className="text-xs font-black text-muted">
-              今日任务概览
+              当前流程
             </span>
             <div className="text-right">
-              <div className="text-[34px] font-black leading-8 text-moss">3</div>
-              <div className="mt-1 text-[11px] font-bold text-muted">项待处理</div>
+              <div className="text-[24px] font-black leading-8 text-moss">采集优先</div>
+              <div className="mt-1 text-[11px] font-bold text-muted">人工确认发布</div>
             </div>
           </div>
           <h2 className="mt-5 text-[29px] font-black leading-9">先采集，再创作</h2>
@@ -1103,10 +1103,10 @@ function HomeScreen({
         </div>
       </MobilePanel>
 
-      <MobilePanel title="最近草稿" action="本地草稿">
+      <MobilePanel title="历史草稿" action="草稿入口">
         <button
           className="flex w-full touch-manipulation gap-3 rounded-[26px] border border-white/[0.86] bg-[rgba(255,253,247,0.88)] p-3 text-left shadow-[0_10px_26px_rgba(31,58,49,0.06),inset_0_1px_0_rgba(255,255,255,0.86)] active:scale-[0.99]"
-          onClick={() => onChangeTab("create", "已打开最近草稿入口。")}
+          onClick={() => onChangeTab("create", "已打开历史草稿入口。")}
           type="button"
         >
           <div
@@ -1116,11 +1116,11 @@ function HomeScreen({
           />
           <div className="min-w-0 flex-1">
             <div className="inline-flex rounded-full bg-[#e7f2ea] px-2 py-1 text-[10px] font-black text-moss">草稿</div>
-            <h3 className="mt-2 text-sm font-black leading-5">硕升博申请第一步，不是先套磁</h3>
-            <div className="mt-2 flex items-center gap-3 text-[11px] font-semibold text-muted">
-              <span>星标 128</span>
-              <span>收藏 86</span>
-              <span>分享 32</span>
+            <h3 className="mt-2 text-sm font-black leading-5">查看已生成的图文草稿</h3>
+            <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-semibold text-muted">
+              <span className="rounded-full bg-white/[0.78] px-2 py-1">封面预览</span>
+              <span className="rounded-full bg-white/[0.78] px-2 py-1">复制文案</span>
+              <span className="rounded-full bg-white/[0.78] px-2 py-1">人工确认</span>
             </div>
           </div>
           <ChevronRight className="mt-1 h-4 w-4 text-muted" />

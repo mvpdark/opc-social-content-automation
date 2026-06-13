@@ -2356,11 +2356,11 @@ function CreationProjectGateway({
           <div className="mt-5 space-y-3">
             <div className={`${subtleCardClass} p-4`}>
               <div className="text-sm font-semibold">
-                {latestContent ? "已有最近草稿" : loading ? "正在读取草稿" : "还没有草稿"}
+                {latestContent ? "已有历史草稿" : loading ? "正在读取草稿" : "还没有草稿"}
               </div>
               <p className="mt-1 text-xs leading-5 text-muted">
                 {latestContent
-                  ? "进入「1.硕升博推广」后，可以继续预览、复制或重新生成。"
+                  ? "进入「1.硕升博推广」后，可以从历史草稿中预览、复制或重新生成。"
                   : "先点「1.硕升博推广」卡片，再填写选题生成文案和封面。"}
               </p>
             </div>
