@@ -1,3 +1,5 @@
+import re
+
 from sqlalchemy import Select, desc, or_, select
 from sqlalchemy.orm import Session
 
@@ -21,6 +23,22 @@ def repair_utf8_mojibake(value: str) -> str:
     return repaired if repaired_cjk_count > original_cjk_count else value
 
 
+def replace_unrecoverable_garbled_text(value: str) -> str:
+    if "???" not in value:
+        return value
+
+    question_count = value.count("?")
+    visible_count = len(value.strip())
+    if visible_count and question_count / visible_count > 0.5:
+        return "原始中文已损坏，请重新采集或人工修复。"
+
+    return re.sub(r"\?{3,}", "【原始中文已损坏】", value)
+
+
+def normalize_knowledge_text(value: str) -> str:
+    return replace_unrecoverable_garbled_text(repair_utf8_mojibake(value))
+
+
 def _knowledge_result(
     item: KnowledgeBase,
     *,
@@ -29,8 +47,8 @@ def _knowledge_result(
 ) -> KnowledgeSearchResult:
     return KnowledgeSearchResult(
         id=item.id,
-        title=repair_utf8_mojibake(item.title),
-        content=repair_utf8_mojibake(item.content),
+        title=normalize_knowledge_text(item.title),
+        content=normalize_knowledge_text(item.content),
         category=item.category,
         score=score,
         match_type=match_type,
