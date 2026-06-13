@@ -2781,7 +2781,7 @@ function GeneratedPostExportCard({
         </div>
         {!imageProviderReady ? (
           <div className="mt-3 rounded-md border border-amber/40 bg-amber/10 p-3 text-xs leading-5 text-ink">
-            点击生成时会重新检测真实图片服务；检测未通过不会生成演示图片。
+            点击生成时会重新检测真实图片服务；检测未通过会停止生成，不会补替代封面。
           </div>
         ) : null}
         {imageError ? (
@@ -2898,7 +2898,7 @@ function DeliveryView() {
       </Panel>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-        <Panel helper="当前运营 lane 的积压状态。" title="工作队列">
+        <Panel helper="运营队列里的待处理事项。" title="工作队列">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {queues.map((queue) => (
               <div key={queue.name} className={`${subtleCardClass} px-4 py-3`}>

@@ -1052,6 +1052,8 @@ def validate_content_production_contract() -> int:
         "不会创建封面图",
         "会创建文案",
         "不会创建演示图片",
+        "不会生成演示图片",
+        "当前运营 lane",
         "压力测试",
         'MobilePanel title="高赞参考"',
         "把高赞参考变成素材池",
