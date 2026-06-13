@@ -7,6 +7,8 @@ import { PlatformLabel } from "@/components/platform-icon";
 import { getApiBase } from "@/lib/api-base";
 import {
   COLLECTION_JOB_TERMINAL_STATUSES,
+  collectionJobDiagnosticItems,
+  type CollectionJobDiagnosticItem,
   formatCollectionJobStatus,
   isRestartableCollectionJob,
   type CollectionJobStatusSnapshot
@@ -260,6 +262,19 @@ function restartCollectionJobLabel(status: string | null) {
   return "继续采集";
 }
 
+function diagnosticToneClass(tone: CollectionJobDiagnosticItem["tone"]) {
+  if (tone === "good") {
+    return "border-moss/35 bg-moss/10";
+  }
+  if (tone === "warning") {
+    return "border-amber/35 bg-amber/10";
+  }
+  if (tone === "danger") {
+    return "border-coral/35 bg-coral/10";
+  }
+  return "border-line bg-paper/75";
+}
+
 export function TrendCollectorPanel({
   onOpenSettings,
   workspaceToken
@@ -277,6 +292,7 @@ export function TrendCollectorPanel({
   const [linkImportText, setLinkImportText] = useState("");
   const [linkImportTarget, setLinkImportTarget] = useState<LinkImportTarget | null>(null);
   const [statusText, setStatusText] = useState("准备进行公开优先的图文采集。");
+  const [diagnosticItems, setDiagnosticItems] = useState<CollectionJobDiagnosticItem[]>([]);
   const [busyAction, setBusyAction] = useState<"target" | "job" | "restart" | "digest" | "link" | null>(null);
   const [activeJobId, setActiveJobId] = useState<number | null>(null);
   const [restartableJobId, setRestartableJobId] = useState<number | null>(null);
@@ -342,6 +358,7 @@ export function TrendCollectorPanel({
 
   function showCollectionJob(job: TrendCollectionJob) {
     setStatusText(formatCollectionJobStatus(job));
+    setDiagnosticItems(collectionJobDiagnosticItems(job));
     if (isRestartableCollectionJob(job)) {
       setRestartableJobId(job.id);
       setRestartableJobStatus(job.status);
@@ -401,6 +418,7 @@ export function TrendCollectorPanel({
         }
         if (!job) {
           setStatusText("暂时查不到这次采集状态，请稍后刷新。");
+          setDiagnosticItems([]);
           timer = window.setTimeout(pollJobStatus, 3000);
           return;
         }
@@ -415,6 +433,7 @@ export function TrendCollectorPanel({
           return;
         }
         setStatusText(error instanceof Error ? error.message : "采集状态刷新失败。");
+        setDiagnosticItems([]);
         timer = window.setTimeout(pollJobStatus, 5000);
       }
     }
@@ -489,6 +508,7 @@ export function TrendCollectorPanel({
       showCollectionJob(data);
     } catch (error) {
       setStatusText(error instanceof Error ? error.message : "开始采集失败。");
+      setDiagnosticItems([]);
     } finally {
       setBusyAction(null);
     }
@@ -515,6 +535,7 @@ export function TrendCollectorPanel({
       showCollectionJob(data);
     } catch (error) {
       setStatusText(error instanceof Error ? error.message : "继续上次采集失败。");
+      setDiagnosticItems([]);
     } finally {
       setBusyAction(null);
     }
@@ -863,6 +884,20 @@ export function TrendCollectorPanel({
             <div className="min-w-0">
               <div className="text-sm font-semibold">采集状态</div>
               <p className="mt-1 text-sm leading-5 text-muted">{statusText}</p>
+              {diagnosticItems.length ? (
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2" data-testid="collection-diagnostic-grid">
+                  {diagnosticItems.map((item) => (
+                    <div
+                      className={`rounded-md border px-3 py-2 text-xs ${diagnosticToneClass(item.tone)}`}
+                      data-tone={item.tone}
+                      key={`${item.label}-${item.value}`}
+                    >
+                      <div className="text-muted">{item.label}</div>
+                      <div className="mt-1 truncate font-semibold text-ink">{item.value}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
               {restartableJobId !== null ? (
                 <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                   <button

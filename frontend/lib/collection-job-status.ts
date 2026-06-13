@@ -23,7 +23,25 @@ export type CollectionJobStatusSnapshot = {
   error: string | null;
 };
 
+export type CollectionJobDiagnosticItem = {
+  label: string;
+  value: string;
+  tone: "neutral" | "good" | "warning" | "danger";
+};
+
 const COLLECTION_RETRY_HINT = "也可以换一个更具体的关键词，或粘贴小红书链接导入。";
+
+function pushDiagnosticItem(
+  items: CollectionJobDiagnosticItem[],
+  label: string,
+  value: string | number | null | undefined,
+  tone: CollectionJobDiagnosticItem["tone"] = "neutral"
+) {
+  if (value === null || value === undefined || value === "") {
+    return;
+  }
+  items.push({ label, value: String(value), tone });
+}
 
 function collectionJobStatusParts(job: CollectionJobStatusSnapshot) {
   const summary = job.result_summary;
@@ -55,6 +73,42 @@ export function isRestartableCollectionJob(job: CollectionJobStatusSnapshot) {
     job.status === "needs_operator_review" ||
     job.status === "failed"
   );
+}
+
+export function collectionJobDiagnosticItems(
+  job: CollectionJobStatusSnapshot
+): CollectionJobDiagnosticItem[] {
+  const summary = job.result_summary;
+  const items: CollectionJobDiagnosticItem[] = [];
+  const statusTone: CollectionJobDiagnosticItem["tone"] =
+    job.status === "completed"
+      ? "good"
+      : job.status === "failed"
+        ? "danger"
+        : job.status === "needs_operator_review"
+          ? "warning"
+          : "neutral";
+
+  pushDiagnosticItem(items, "当前状态", collectionJobStatusLabel(job.status), statusTone);
+  pushDiagnosticItem(items, "已采集", summary?.collected_items, "good");
+  pushDiagnosticItem(items, "候选", summary?.raw_candidates);
+  pushDiagnosticItem(items, "已过滤", summary?.blocked_candidates, "warning");
+  pushDiagnosticItem(items, "等待", summary?.operator_wait_seconds ? `${summary.operator_wait_seconds} 秒` : null);
+  pushDiagnosticItem(items, "页面", summary?.page_title);
+
+  if (job.status === "queued" && !summary?.auto_start) {
+    pushDiagnosticItem(items, "下一步", "点击继续上次采集", "warning");
+  } else if (job.status === "running") {
+    pushDiagnosticItem(items, "下一步", "留意可见浏览器", "neutral");
+  } else if (job.status === "completed") {
+    pushDiagnosticItem(items, "下一步", "人工确认来源后保存摘要", "good");
+  } else if (job.status === "needs_operator_review") {
+    pushDiagnosticItem(items, "下一步", "处理登录/验证码后重试", "warning");
+  } else if (job.status === "failed") {
+    pushDiagnosticItem(items, "下一步", "重试、换关键词或链接导入", "danger");
+  }
+
+  return items;
 }
 
 export function formatCollectionJobStatus(
