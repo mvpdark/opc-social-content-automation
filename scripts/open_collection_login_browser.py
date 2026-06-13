@@ -1,13 +1,30 @@
 from __future__ import annotations
 
 import argparse
+import os
+import re
 import sys
 from pathlib import Path
 from urllib.parse import quote
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BACKEND_ROOT = ROOT / "backend"
+VENV_PYTHON = ROOT / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+BROWSER_SESSION_ROOT = ROOT / ".browser-sessions"
+
+
+def _rerun_with_project_venv() -> None:
+    if not VENV_PYTHON.exists():
+        return
+    if Path(sys.executable).resolve() == VENV_PYTHON.resolve():
+        return
+    os.execv(str(VENV_PYTHON), [str(VENV_PYTHON), *sys.argv])
+
+
+def _collection_session_dir(platform: str, keyword: str = "", session_label: str | None = None) -> Path:
+    label = str(session_label or platform or f"{platform}-{keyword}")
+    safe_label = re.sub(r"[^a-zA-Z0-9_.-]+", "-", label).strip("-")[:80]
+    return BROWSER_SESSION_ROOT / (safe_label or f"{platform}-session")
 
 
 def _search_url(platform: str, keyword: str) -> str:
@@ -41,10 +58,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    sys.path.insert(0, str(BACKEND_ROOT))
-    from app.services.trend_browser_collector import collection_session_dir
-
-    session_dir = collection_session_dir(
+    session_dir = _collection_session_dir(
         platform=args.platform,
         keyword=args.keyword,
         session_label=args.session_label or args.platform,
@@ -54,6 +68,8 @@ def main() -> None:
     if args.print_session_dir:
         print(session_dir)
         return
+
+    _rerun_with_project_venv()
 
     try:
         from playwright.sync_api import Error as PlaywrightError

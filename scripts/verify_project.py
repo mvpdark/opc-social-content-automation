@@ -164,6 +164,8 @@ def validate_safety_gates() -> int:
         ],
         "scripts/open_collection_login_browser.py": [
             "collection_session_dir",
+            "VENV_PYTHON",
+            "os.execv",
             'default="xiaohongshu"',
             "--print-session-dir",
             "launch_persistent_context",
