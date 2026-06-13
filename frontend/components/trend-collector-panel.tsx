@@ -1,7 +1,7 @@
 "use client";
 
 import { ExternalLink, Loader2, Play, Save, Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { PlatformLabel } from "@/components/platform-icon";
 import { getApiBase } from "@/lib/api-base";
@@ -281,6 +281,7 @@ export function TrendCollectorPanel({
   const [activeJobId, setActiveJobId] = useState<number | null>(null);
   const [restartableJobId, setRestartableJobId] = useState<number | null>(null);
   const [restartableJobStatus, setRestartableJobStatus] = useState<string | null>(null);
+  const linkImportRef = useRef<HTMLTextAreaElement | null>(null);
 
   const canSubmit = useMemo(() => keyword.trim().length > 0, [keyword]);
   const isPollingJob = activeJobId !== null;
@@ -517,6 +518,15 @@ export function TrendCollectorPanel({
     } finally {
       setBusyAction(null);
     }
+  }
+
+  function focusLinkImportFallback() {
+    setPlatform("xiaohongshu");
+    setStatusText("已切到小红书链接导入，粘贴分享文本或链接后点“解析链接”。");
+    window.setTimeout(() => {
+      linkImportRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      linkImportRef.current?.focus();
+    }, 0);
   }
 
   async function parseXhsLinks() {
@@ -787,6 +797,7 @@ export function TrendCollectorPanel({
               className="glass-control mt-3 min-h-24 w-full resize-y rounded-md border px-3 py-2 text-sm leading-6 text-ink outline-none"
               onChange={(event) => setLinkImportText(event.target.value)}
               placeholder="粘贴小红书分享文本、https://www.xiaohongshu.com/explore/... 或 https://xhslink.com/..."
+              ref={linkImportRef}
               value={linkImportText}
             />
             <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -853,19 +864,30 @@ export function TrendCollectorPanel({
               <div className="text-sm font-semibold">采集状态</div>
               <p className="mt-1 text-sm leading-5 text-muted">{statusText}</p>
               {restartableJobId !== null ? (
-                <button
-                  className={`${secondaryButtonClass} mt-3 px-3`}
-                  disabled={!canRestartJob}
-                  onClick={startExistingJob}
-                  type="button"
-                >
-                  {busyAction === "restart" ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Play className="h-4 w-4" />
-                  )}
-                  {busyAction === "restart" ? "正在启动" : restartCollectionJobLabel(restartableJobStatus)}
-                </button>
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <button
+                    className={`${secondaryButtonClass} px-3`}
+                    disabled={!canRestartJob}
+                    onClick={startExistingJob}
+                    type="button"
+                  >
+                    {busyAction === "restart" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Play className="h-4 w-4" />
+                    )}
+                    {busyAction === "restart" ? "正在启动" : restartCollectionJobLabel(restartableJobStatus)}
+                  </button>
+                  <button
+                    className={`${secondaryButtonClass} px-3`}
+                    disabled={busyAction !== null || isPollingJob}
+                    onClick={focusLinkImportFallback}
+                    type="button"
+                  >
+                    <Search className="h-4 w-4" />
+                    改用链接导入
+                  </button>
+                </div>
               ) : null}
             </div>
           </div>
