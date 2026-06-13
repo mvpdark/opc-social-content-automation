@@ -2331,52 +2331,13 @@ function MobileCreationProjectGateway({
     <div className="space-y-4" data-testid="mobile-creation-project-gateway">
       <button
         aria-label={`进入${liveProject.title}创作流程`}
-        className="relative w-full touch-manipulation overflow-hidden rounded-[20px] border border-white/70 bg-white/70 p-3 text-left text-ink shadow-[0_12px_24px_rgba(31,58,49,0.09),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur-xl active:scale-[0.99]"
+        className="flex h-10 w-full touch-manipulation items-center justify-center gap-2 rounded-[13px] bg-[#111312] px-4 text-xs font-black text-white shadow-[0_10px_20px_rgba(22,24,23,0.12)] active:scale-[0.99]"
         data-testid={`mobile-creation-project-${liveProject.id}`}
         onClick={() => onSelect(liveProject.id)}
         type="button"
       >
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-cover bg-center opacity-70"
-          style={{ backgroundImage: `url(${MOBILE_CREATE_CARD_BG})` }}
-        />
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,252,244,0.92)_0%,rgba(255,252,244,0.82)_50%,rgba(255,252,244,0.96)_100%)]"
-        />
-        <div className="relative flex flex-col">
-          <div className="flex flex-wrap gap-1.5">
-            <span className="rounded-full border border-steel/30 bg-steel/10 px-2 py-0.5 text-[10px] font-black text-steel">
-              创作项目
-            </span>
-            <span className="rounded-full border border-moss/30 bg-moss/10 px-2 py-0.5 text-[10px] font-black text-moss">
-              {liveProject.status}
-            </span>
-          </div>
-
-          <div className="mt-3">
-            <div className="text-[11px] font-black text-muted">{liveProject.category}</div>
-            <h2 className="mt-0.5 text-[19px] font-black leading-6">{liveProject.title}</h2>
-            <p className="mt-1 text-[11px] font-medium leading-4 text-muted">{liveProject.description}</p>
-          </div>
-
-          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] font-black text-ink/70">
-            <span className="rounded-full border border-white/75 bg-white/66 px-2 py-1">
-              交付：{liveProject.outputs.join(" / ")}
-            </span>
-            <span className="rounded-full border border-steel/25 bg-steel/10 px-2 py-1 text-steel">
-              人工确认后发布
-            </span>
-          </div>
-
-          <div className="mt-3">
-            <div className="flex h-9 items-center justify-center gap-2 rounded-[14px] bg-[#161817] text-xs font-black text-white shadow-[0_10px_20px_rgba(22,24,23,0.12)]">
-              <PenLine className="h-4 w-4" />
-              进入{liveProject.title}
-            </div>
-          </div>
-        </div>
+        <PenLine className="h-3.5 w-3.5" />
+        进入{liveProject.title}
       </button>
 
       <MobilePanel
