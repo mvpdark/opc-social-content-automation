@@ -28,7 +28,6 @@ import {
   Share2,
   ShieldCheck,
   Sparkles,
-  Trash2,
   UserRound
 } from "lucide-react";
 
@@ -51,7 +50,6 @@ import {
 } from "@/lib/generated-assets";
 import {
   providerBindingDefaultsFromStatuses,
-  providerKeyUpdatePayload,
   sanitizeProviderStatusItems,
   type ProviderStatusItem
 } from "@/lib/provider-settings";
@@ -70,13 +68,6 @@ type CredentialSettings = {
   imageApiKey: string;
   rewriteApiKey: string;
   workspaceToken: string;
-};
-
-type ProviderCheckResult = {
-  configured: boolean;
-  message: string;
-  status: string;
-  target: string;
 };
 
 type MobileLoginResponse = {
@@ -699,7 +690,7 @@ export default function AndroidPreviewPage() {
     setMobileAccount(account);
     setProviderStatuses(nextProviderStatuses);
     setActiveTab("home");
-    setStatus(defaultKeysBound ? `已登录：${account}，默认服务配置已就绪。` : `已登录：${account}，请检查服务配置。`);
+    setStatus(defaultKeysBound ? `已登录：${account}，默认服务授权已就绪。` : `已登录：${account}，请在电脑端检查服务授权。`);
   }
 
   function logout() {
@@ -747,12 +738,9 @@ export default function AndroidPreviewPage() {
         </div>
         <div className="relative z-10" hidden={activeTab !== "settings"}>
           <SettingsScreen
-            credentials={credentials}
             mobileAccount={mobileAccount}
             onAction={setStatus}
-            onCredentialsChange={setCredentials}
             onLogout={logout}
-            onProviderStatusesChange={setProviderStatuses}
             providerStatuses={providerStatuses}
           />
         </div>
@@ -2525,154 +2513,23 @@ function MobileCreationProjectGateway({
 }
 
 function SettingsScreen({
-  credentials,
   mobileAccount,
   onAction,
-  onCredentialsChange,
   onLogout,
-  onProviderStatusesChange,
   providerStatuses
 }: {
-  credentials: CredentialSettings;
   mobileAccount: string;
   onAction: (message: string) => void;
-  onCredentialsChange: (nextCredentials: CredentialSettings) => void;
   onLogout: () => void;
-  onProviderStatusesChange: (nextStatuses: ProviderStatusItem[]) => void;
   providerStatuses: ProviderStatusItem[];
 }) {
-  const [busyAction, setBusyAction] = useState<"apply" | "check" | null>(null);
-  const [checkStatus, setCheckStatus] = useState<ProviderCheckResult | null>(null);
   const providerBindings = providerBindingDefaultsFromStatuses(providerStatuses);
   const providerStatusLoaded = providerStatuses.length > 0;
   const providerSummary = !providerStatusLoaded
-    ? "正在读取服务配置状态。"
+    ? "正在读取服务状态。"
     : providerBindings.draft && providerBindings.image && providerBindings.rewrite
       ? "默认服务已就绪，生成链路可直接使用。"
-      : "服务配置未完整，生成前请补齐授权。";
-
-  function updateCredential(key: keyof CredentialSettings, value: string) {
-    onCredentialsChange({ ...credentials, [key]: value });
-  }
-
-  function clearCredentials() {
-    onCredentialsChange(emptyCredentials);
-    setCheckStatus(null);
-    onAction("已清空这台设备保存的服务配置。");
-  }
-
-  async function applyProviderKeys() {
-    const payload = providerKeyUpdatePayload(credentials);
-
-    setBusyAction("apply");
-    onAction(
-      Object.keys(payload).length
-        ? "正在应用服务配置。"
-        : "正在刷新保存状态。"
-    );
-    try {
-      if (!Object.keys(payload).length) {
-        const statuses = await fetchProviderStatuses();
-        onProviderStatusesChange(statuses);
-        onAction("已刷新保存状态；没有填写新的服务授权，不会覆盖。");
-        setCheckStatus(null);
-        return;
-      }
-
-      const response = await fetch(`${API_BASE}/workspace/provider-keys`, {
-        method: "POST",
-        headers: authHeaders(credentials),
-        body: JSON.stringify(payload)
-      });
-      if (!response.ok) {
-        throw new Error(await readApiError(response, "服务配置应用失败。"));
-      }
-      const statuses = sanitizeProviderStatusItems(
-        (await response.json()) as ProviderStatusItem[]
-      );
-      onProviderStatusesChange(statuses);
-      onAction("服务配置已应用到工作台。");
-      setCheckStatus(null);
-    } catch (error) {
-      onAction(
-        sanitizeServiceErrorMessage(error instanceof Error ? error.message : "服务配置应用失败。")
-      );
-    } finally {
-      setBusyAction(null);
-    }
-  }
-
-  async function checkDraftProvider() {
-    setBusyAction("check");
-    onAction("正在检测撰稿服务连接。");
-    try {
-      const response = await fetch(`${API_BASE}/workspace/provider-check`, {
-        method: "POST",
-        headers: authHeaders(credentials),
-        body: JSON.stringify({ target: "draft" })
-      });
-      if (!response.ok) {
-        throw new Error(await readApiError(response, "撰稿服务检测失败。"));
-      }
-      const data = (await response.json()) as ProviderCheckResult;
-      const displayData = { ...data, message: sanitizeServiceErrorMessage(data.message) };
-      setCheckStatus(displayData);
-      onAction(
-        displayData.status === "ok"
-          ? displayData.message
-          : `检测未通过：${displayData.message}`
-      );
-    } catch (error) {
-      const message = sanitizeServiceErrorMessage(
-        error instanceof Error ? error.message : "撰稿服务检测失败。"
-      );
-      setCheckStatus({
-        configured: false,
-        message,
-        status: "failed",
-        target: "draft"
-      });
-      onAction(message);
-    } finally {
-      setBusyAction(null);
-    }
-  }
-
-  const credentialFields: Array<{
-    keyName: keyof CredentialSettings;
-    label: string;
-    placeholder: string;
-    testId: string;
-    backendBound?: boolean;
-  }> = [
-    {
-      keyName: "workspaceToken",
-      label: "访问保护（可选）",
-      placeholder: "未开启时留空",
-      testId: "mobile-token"
-    },
-    {
-      keyName: "draftApiKey",
-      label: "撰稿服务授权",
-      placeholder: "留空则保留已有配置",
-      testId: "mobile-draft-key",
-      backendBound: providerBindings.draft
-    },
-    {
-      keyName: "imageApiKey",
-      label: "图片服务授权",
-      placeholder: "留空则保留已有配置",
-      testId: "mobile-image-key",
-      backendBound: providerBindings.image
-    },
-    {
-      keyName: "rewriteApiKey",
-      label: "改写服务授权",
-      placeholder: "留空则保留已有配置",
-      testId: "mobile-rewrite-key",
-      backendBound: providerBindings.rewrite
-    }
-  ];
+      : "默认服务未完整，请在电脑端工作台完成授权后再生成。";
 
   return (
     <div className="space-y-4">
@@ -2708,7 +2565,7 @@ function SettingsScreen({
                 key={String(label)}
               >
                 <div>{label}</div>
-                <div className="mt-1 text-[10px]">{bound ? "已绑定" : "待配置"}</div>
+                <div className="mt-1 text-[10px]">{bound ? "已绑定" : "待授权"}</div>
               </div>
             ))}
           </div>
@@ -2723,82 +2580,6 @@ function SettingsScreen({
           </button>
         </div>
       </section>
-      <MobilePanel title="服务配置" action="仅本设备">
-        <p className="mb-3 text-xs leading-5 text-muted">
-          服务授权只保存在这台设备；应用后由工作台调用服务，不会展示完整内容。
-        </p>
-        <div className="space-y-3">
-          {credentialFields.map((field) => {
-            const localFilled = credentials[field.keyName].trim().length > 0;
-            const statusText = field.keyName === "workspaceToken"
-              ? (localFilled ? "已填写" : "未开启")
-              : localFilled
-                ? "本设备已填写"
-                : field.backendBound
-                  ? "已保存"
-                  : "未配置";
-            const statusClass = field.keyName === "workspaceToken" || localFilled || field.backendBound
-              ? "bg-[#e5f2ec] text-moss"
-              : "bg-[#fff3d8] text-[#8a5a00]";
-
-            return (
-            <label className="block" key={field.keyName}>
-              <span className="flex items-center justify-between gap-2 text-xs font-medium text-muted">
-                <span>{field.label}</span>
-                <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${statusClass}`}>
-                  {statusText}
-                </span>
-              </span>
-              <input
-                className="mt-2 h-11 w-full rounded-full border border-white/75 bg-white/76 px-4 text-sm font-medium text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.82)] outline-none focus:border-moss focus:ring-2 focus:ring-moss/15"
-                data-testid={field.testId}
-                onChange={(event) => updateCredential(field.keyName, event.target.value)}
-                placeholder={field.placeholder}
-                type="password"
-                value={credentials[field.keyName]}
-              />
-            </label>
-            );
-          })}
-        </div>
-        <div className="mt-4 grid grid-cols-1 gap-2">
-          <button
-            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full bg-[#23854f] text-sm font-semibold text-white shadow-[0_12px_26px_rgba(35,133,79,0.18)] active:scale-[0.99] disabled:opacity-60"
-            data-testid="mobile-apply-keys"
-            disabled={busyAction === "apply"}
-            onClick={applyProviderKeys}
-            type="button"
-          >
-            {busyAction === "apply" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            {busyAction === "apply" ? "应用中" : "应用服务配置"}
-          </button>
-          <button
-            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full border border-white/75 bg-white/74 text-sm font-semibold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] active:scale-[0.99] disabled:opacity-60"
-            data-testid="mobile-check-draft"
-            disabled={busyAction === "check"}
-            onClick={checkDraftProvider}
-            type="button"
-          >
-            {busyAction === "check" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-            {busyAction === "check" ? "检测中" : "检测撰稿连接"}
-          </button>
-          <button
-            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full border border-white/75 bg-white/74 text-sm font-semibold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] active:scale-[0.99]"
-            data-testid="mobile-clear-credentials"
-            onClick={clearCredentials}
-            type="button"
-          >
-            <Trash2 className="h-4 w-4" />
-            清空本设备保存
-          </button>
-        </div>
-        {checkStatus ? (
-          <div className="mt-3 rounded-[22px] border border-white/75 bg-white/72 px-4 py-2 text-xs leading-5 text-muted shadow-[inset_0_1px_0_rgba(255,255,255,0.78)]">
-            {checkStatus.status === "ok" ? "检测通过：" : "检测未通过："}
-            {checkStatus.message}
-          </div>
-        ) : null}
-      </MobilePanel>
       <MobilePanel title="安全规则">
         <div className="space-y-2">
           <SettingRow label="采集先于生成" onClick={() => onAction("安全规则已确认：采集先于生成。")} state="启用" testId="gate-collect-first" positive />
