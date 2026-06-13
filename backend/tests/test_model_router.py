@@ -186,8 +186,12 @@ def test_openai_compatible_draft_provider_calls_chat_completion(
     assert request_json["store"] is False
     assert request_json["max_tokens"] == 1234
     assert request_json["temperature"] == 0.55
-    assert "\\u" in str(request_json["messages"])
-    assert "硕升博" not in str(request_json["messages"])
+    messages = request_json["messages"]
+    assert isinstance(messages, list)
+    user_message = messages[1]
+    assert isinstance(user_message, dict)
+    assert "\\u" in str(user_message["content"])
+    assert "硕升博" not in str(user_message["content"])
     assert secret not in str(request_json)
 
 

@@ -27,7 +27,7 @@ def test_draft_prompt_package_includes_xiaohongshu_style_reference() -> None:
 def test_draft_prompt_package_preserves_detailed_style_guidance() -> None:
     tone = (
         "偏女性可爱风，像学姐认真提醒：语气温柔、轻松、有陪伴感；"
-        "每 2-3 段可以放 1 个 emoji 或颜文字；"
+        "每 2-3 段可以放 1 个 emoji 或颜文字，"
         "允许使用 ～、！！、？ 来制造口语节奏；"
         "可以用短括号吐槽制造表情包感；结尾用温和提醒引导咨询。"
     )
@@ -49,15 +49,18 @@ def test_draft_prompt_template_requires_xhs_expression_layer() -> None:
     style_reference = load_prompt("xiaohongshu_style_reference")
 
     assert "[笑哭R]" in prompt
-    assert "表情包" in prompt
-    assert "👉💡" in prompt
+    assert "表情包感" in prompt
+    assert "👉💧" in prompt
     assert "📍" in prompt
-    assert "🎯" in prompt
-    assert "～" in prompt
+    assert "🎓" in prompt
+    assert "哦" in prompt
+    assert "呀" in prompt
     assert "[哭惹R]" in style_reference
     assert "结构标识" in style_reference
     assert "✅" in style_reference
     assert "姐妹" in style_reference
+    assert "路线/榜单型封面" in style_reference
+    assert "水博榜" in style_reference
 
 
 def test_rewrite_prompt_package_includes_xiaohongshu_style_reference() -> None:
@@ -97,5 +100,6 @@ def test_image_prompt_package_includes_xiaohongshu_style_reference_and_visual_di
     assert "style_reference" in package.payload
     assert "visual_direction" in package.payload
     assert "Xiaohongshu Style Reference" in str(package.payload["style_reference"])
+    assert "路线/榜单型封面" in str(package.payload["style_reference"])
     assert isinstance(package.payload["visual_direction"], dict)
     assert package.payload["visual_direction"]["instructions"]

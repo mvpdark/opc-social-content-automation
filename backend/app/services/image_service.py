@@ -39,8 +39,20 @@ COVER_TEMPLATES = [
 
 COVER_VISUAL_DIRECTIONS = [
     {
+        "id": "route-matrix-board",
+        "name": "路线榜单矩阵",
+        "instructions": (
+            "Use a route matrix board inspired by operator-reviewed Xiaohongshu "
+            "list posts: one large title, 4-5 route buckets, compact verified "
+            "school/project labels when provided, and one short decision cue per "
+            "item such as schedule, language, mode, or cost. Keep it readable, "
+            "avoid official seals/logos, and do not invent school facts."
+        ),
+        "avoid": "single desk scene, fake school logos, tiny unreadable table text",
+    },
+    {
         "id": "phone-proof-collage",
-        "name": "手机截图拼贴",
+        "name": "手机信息拼贴",
         "instructions": (
             "Use a phone-native collage composition: one large tilted phone mockup, "
             "cropped chat/search/email fragments, bright white background, blue and "

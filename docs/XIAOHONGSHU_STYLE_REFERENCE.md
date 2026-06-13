@@ -2,106 +2,187 @@
 
 ## Evidence Status
 
-This is a provisional public-source reference. Anonymous public Xiaohongshu search did not return stable image-text samples for `硕升博`, `考博`, or `博士申请`, so this document must not be treated as a reviewed high-like Xiaohongshu sample set.
+This reference now includes one operator-viewed Xiaohongshu sample, plus
+general public-source methodology. It is useful for structure and visual
+direction, but it is not a statistically proven high-like sample set.
 
-Use it as a drafting guide until operator-reviewed Xiaohongshu notes are collected and saved as trend assets.
+Use it as drafting guidance. Do not treat any sample as factual admissions
+evidence unless the underlying school/project details have been separately
+verified.
 
-## Sources Reviewed
+## Operator-Viewed Sample
 
-- Xiaohongshu operations case study: personal-experience notes are more acceptable than hard-sell copy; repeatable hit formats exist in the platform.
-- Xiaohongshu practical case study: science/explainer covers often benefit from strong visible symbols such as check/cross marks, red circles, and clearly listed elements.
-- PhD application guides: matching research direction with supervisors matters more than blind outreach; early outreach should confirm fit, admissions plan, and research overlap.
-- 2026-06-12 anonymous Xiaohongshu public search attempt for `水博`, `硕升博`, `土博`, and `升博`: the platform returned a login-required search wall, so no high-like note titles, likes, or covers were verified from Xiaohongshu itself in no-cookie mode.
-- Public title/cover methodology sources reviewed: titles should combine curiosity, pain, searchable keywords, numbers, and shareable lists; covers are the first scanning surface, with 3:4 vertical covers usually getting the largest feed area.
+### 2026-06-13: `水博榜` route-list note
+
+- Source: https://www.xiaohongshu.com/explore/6891bbe00000000004004393
+- Visible title: `请大数据把这个水博榜推给想读在职博士的你`
+- Author shown on page: 瑶瑶硕博留学（宽灌）
+- Visible engagement when viewed: 188 likes, 176 favorites, 118 comments
+- Use status: operator-viewed reference for structure only; school names and
+  project claims must be rechecked before being used as facts.
+
+#### Why This Sample Matters
+
+This note solves a key cover problem: it does not rely on another giant
+headline over a desk scene. The cover works because it turns the topic into a
+scan-friendly route matrix:
+
+- One big searchable label: `水博榜`
+- Five route buckets: 国内、国际、港澳、合办、海外
+- Each bucket shows school/project names plus a tiny decision cue, such as
+  study mode, price, language, schedule, or graduation friction.
+- The body then explains the route taxonomy, who each path fits, benefits,
+  basic conditions, major pool, and a soft consultation CTA.
+
+#### Cover School / Program Pool
+
+The following names were visually extracted from the cover image. Treat this
+as a raw reference list, not as verified admissions data.
+
+Domestic / 学信网可查:
+
+- 西安交通大学: 专业多
+- 中国社会科学院大学: 周末读
+- 华北水利水电大学: 线上+线下
+- 中国矿业大学: 1.8万/年
+- 中国地质大学: 网课+面授
+
+International / 线上学习:
+
+- 马来西亚和立大学: 9.98万
+- 胡安卡洛斯国王大学: 12万
+- 西班牙穆尔西亚大学: 12.8万
+- 法国波城高等商学院: 13.98万
+- 美国金门大学: 16万
+
+Hong Kong / Macau / 全日制籍:
+
+- 香港教育大学: 寒暑假
+- 澳门大学: 周末读
+- 香港理工大学: 3年制
+- 香港中文大学: 中文读
+- 澳门科技大学: 周末读
+
+Joint / 在职读:
+
+- 中国人民大学: 周末授课
+- 北京大学: 多个授课点
+- 复旦大学: 中文读
+- 南方医科大学: 每月3天课
+- 电子科技大学: 周末授课
+
+Overseas / 短期出境:
+
+- 马来西亚国立大学: 寒暑假
+- 澳洲科廷大学: 免答辩
+- 韩国延世大学: 中文授课
+- 布宜诺斯艾利斯大学: 免语言
+- 韩国世翰大学: 寒暑假
+
+#### Body Structure Observed
+
+The body is list-heavy and sales-adjacent, so reuse the structure, not the
+claims:
+
+1. Open with the benefit promise for people considering in-service doctoral
+   routes.
+2. Split the topic into three understandable routes: 港澳在职博士、海外远程博士、
+   同等学力申博.
+3. For each route, list schedule, learning mode, applicant fit, and review
+   friction.
+4. Add a benefit block with check marks.
+5. Add a basic-condition block.
+6. Add a broad major pool.
+7. End with a direct FAQ-style confidence paragraph and soft CTA.
+
+#### Reusable Pattern
+
+Use this pattern when the topic contains `水博`, `硕升博`, `土博`, `升博`,
+`在职博士`, `同等学力申博`, `海外博士`, or `DBA`:
+
+- Cover route: route matrix / school pool board.
+- Headline shape: `请大数据把这个{榜单/路线图}推给{目标人群}`.
+- Body stance: "先分清路线，再判断适合不适合你呀".
+- Visual data requirement: use verified school/project data from the knowledge
+  base. If data is incomplete, show category names and decision criteria instead
+  of inventing school names.
+- 学校/项目名称、价格、认证、授课方式和毕业要求必须复核后才能进入正式生成。
 
 ## Copy Principles
 
 - Start from a real applicant anxiety, not from a formal lesson.
-- Use a conflict or correction hook: `不是先套磁`, `很多人第一步做反了`, `别急着群发邮件`.
-- Keep the voice like a senior advisor or recent applicant: calm, specific, slightly conversational.
-- Make one practical judgment per note, then support it with steps.
-- Break long paragraphs into short mobile lines.
-- Avoid absolute success promises, guaranteed admission claims, or fear-based urgency.
-- Use the collected knowledge base and trend assets for facts; never invent admissions rules.
+- Use conflict, correction, or route-filter hooks: `先别急着套磁`, `第一步做反了`,
+  `不是所有海外博士都适合你`, `先把这几条路分清`.
+- Sound like a senior schoolmate or advisor: friendly, specific, and practical.
+- Use short mobile paragraphs.
+- For route/list posts, use structure markers and emoji deliberately, not as
+  random decoration.
+- Conversational particles are welcome: 哦、哟、呀、啊、嘛、呢、哈. Use them in
+  hooks, transitions, and soft reminders without stuffing every sentence.
+- Avoid guaranteed admission, guaranteed graduation, fake scarcity, fake
+  official endorsements, and fear-based urgency.
+- Use collected knowledge and trend assets for facts; never invent admissions
+  rules, prices, school names, or certification outcomes.
 
 ## Useful Title Shapes
 
-- `硕升博申请第一步，不是先套磁`
-- `申博前先做这件事，后面会稳很多`
-- `方向还没想清楚，先别急着联系导师`
-- `套磁前一定要想明白的 3 件事`
-- `导师更在意的不是你多优秀，而是你有多匹配`
-
-## Keyword-Specific Title Angles
-
-These are drafting patterns, not copied Xiaohongshu samples. Use them to generate original titles after checking the knowledge base.
-
-### `水博`
-
-- Risk clarification: `别一看到水博就冲，先看这 3 个坑`
-- Identity defense: `不是所有海外博士都叫水博`
-- Decision filter: `想读水博前，先问自己这 4 件事`
-- Compliance warning: `博士不是拿身份的捷径，这些话要听进去`
-
-### `硕升博`
-
-- Sequence correction: `硕升博第一步，不是先套磁`
-- Route comparison: `硕升博怎么选？先把这 3 条路分清楚`
-- Senior-schoolmate reminder: `宝子，硕升博别急着群发邮件呀`
-- Checklist hook: `硕升博前，把导师匹配表先做出来`
-
-### `土博`
-
-- Anxiety hook: `土博毕业后还值得吗？先看就业这件事`
-- Contrast hook: `土博和海博，不是只看名字`
-- Reality check: `普通土博想进高校，难点在这里`
-- Self-positioning: `土博不是原罪，但履历要这样讲清楚`
-
-### `升博`
-
-- Broad route hook: `升博前先别急，路线要先分清`
-- Common mistake: `很多人升博第一步就做反了`
-- Practical checklist: `升博申请前，这 5 个材料先准备`
-- Gentle prompt: `想升博但没方向？先从这张表开始哦`
+- `请大数据把这张在职博士路线图推给你`
+- `想读水博前，先把这几条路看明白呀`
+- `硕升博别只看学校名，先看这张路线表`
+- `同等学力申博适合谁？这张表先收好`
+- `土博/海博怎么选？别只看“水不水”`
+- `在职博士不是越便宜越好，先看这 4 件事`
+- `想升博但不脱产？先把路线分清楚哦`
 
 ## Body Structure
 
-1. Open with the reader's current question.
-2. Give a counter-intuitive but safe answer.
-3. Explain why the common behavior fails.
-4. Provide 3-5 concrete steps.
-5. End with reassurance and a human-review-safe caveat.
+1. Reader question or anxiety.
+2. Counter-intuitive but safe answer.
+3. Route taxonomy or decision table.
+4. Three to five concrete checks.
+5. Soft reminder and human-review-safe caveat.
 
 ## Cover Reference
 
-- Use the exact approved content title as the primary cover headline.
-- Prefer large Chinese headline text, 2-3 lines max, with one emphasized word.
-- Use visual structure: check/cross mark, circled keyword, numbered checklist, or `先/后` contrast.
-- Education visuals can include desk, notebook, research papers, books, laptop, library, or graduation cap.
-- Keep mobile readability above decoration; cover text should be legible at thumbnail size.
-- Do not use fake university seals, admission letters, guaranteed-offer badges, or misleading official-looking marks.
+- Use the approved content title as the primary cover headline unless an
+  approved shorter cover title is provided.
+- Rotate cover structures. Do not collapse into the same desk, sticky-note,
+  coral/mint checklist, and red-underline formula.
+- For list-heavy route posts, prefer a route matrix, school pool board,
+  decision map, or category comparison cover.
+- Use school names only when they come from verified knowledge context or an
+  operator-reviewed sample. Otherwise use route/category labels and criteria.
+- Avoid fake university seals, admission letters, official-looking badges,
+  guaranteed-offer marks, or copied platform UI.
+- Keep mobile readability above decoration. If the matrix has many entries,
+  make the headline simple and the table labels short.
 
 ## Cover Variation Bank
 
-Rotate these routes so generated covers do not collapse into one repeated desk-and-sticky-note style.
+- Route matrix: 4-5 route buckets, each with 3-5 verified items and one cue.
+- Decision map: arrows from applicant profile to route choice.
+- Minimal bold text: huge headline, one risk tag, one tiny checklist.
+- Phone-feed collage: search/result fragments as texture, no fake UI claims.
+- Academic blueprint: dark board, route lines, supervisor-fit matrix.
+- Magazine editorial: strong typographic page with one cropped education prop.
+- Blackboard/classroom: circled keywords and handwritten route notes.
+- Soft notebook: warm and friendly, but not a repeated sticky-note wall.
 
-- Minimal bold text: cream or white background, huge 2-4 line headline, one red underline, one tiny warning chip.
-- Real study scene: laptop/email/research-paper photo base, headline on paper cutout, 2-3 checklist chips only.
-- Phone-feed collage: blurred mock screenshots or notes as background texture, one large foreground title card, no fake official UI.
-- Academic blueprint: dark navy/graphite board, line annotations, arrows, supervisor-fit matrix, restrained accent color.
-- Magazine editorial: clean serif/sans mix, large margin, one strong pull quote, education prop photo cropped boldly.
-- Blackboard/classroom: chalk marks, circled keyword, short `先/后` comparison, warmer and less polished.
-- Cute social note: pastel card, soft stickers, one human phrase like `先别急呀`, but keep facts sober.
-
-For doctoral application covers, prefer `vertical 3:4` when the target platform allows it, because public cover-method references describe it as the largest feed display shape.
+For doctoral application covers, vertical `3:4` remains the preferred default
+when the platform allows it.
 
 ## Image Prompt Notes
 
-- Primary headline must be copied verbatim from the content title.
-- Add one short subtitle only if it clarifies the note, not as a second headline.
-- If using lists on the cover, keep them to 3-4 short items.
-- Match the copy's stance: calm, credible, practical, not salesy.
+- Primary headline must match the approved title.
+- If using a matrix, keep labels short and legible; no tiny unreadable school
+  names.
+- Match the copy's stance: calm, credible, practical, and lightly social.
+- Use the `水博榜` sample as a structural reference, not as a source of verified
+  school claims.
 
 ## Follow-Up Requirement
 
-When real Xiaohongshu samples are collected, store each as a trend asset with source URL, visible title, engagement metrics if visible, screenshot URL if allowed, and operator review status. Only then can this reference be upgraded from provisional to platform-sample-backed.
+When more real Xiaohongshu samples are collected, store each as a trend asset
+with source URL, visible title, engagement metrics if visible, screenshot URL
+if allowed, and operator review status. Upgrade this reference only after
+multiple operator-reviewed samples support the same pattern.

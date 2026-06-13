@@ -566,6 +566,15 @@ def validate_content_production_contract() -> int:
     humanization_prompt_text = (ROOT / "prompts" / "humanization.md").read_text(
         encoding="utf-8"
     )
+    image_prompt_text = (ROOT / "prompts" / "image_generation.md").read_text(
+        encoding="utf-8"
+    )
+    xhs_style_reference_text = (
+        ROOT / "prompts" / "xiaohongshu_style_reference.md"
+    ).read_text(encoding="utf-8")
+    xhs_style_doc_text = (ROOT / "docs" / "XIAOHONGSHU_STYLE_REFERENCE.md").read_text(
+        encoding="utf-8"
+    )
 
     frontend_contract_snippets = [
         "latestContent={previewContent}",
@@ -865,6 +874,44 @@ def validate_content_production_contract() -> int:
         ),
     ]
     for text, snippets, contract_name in particle_style_contracts:
+        for snippet in snippets:
+            total += 1
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
+
+    route_cover_contracts = [
+        (
+            workspace_text,
+            ["路线/榜单矩阵", "水博榜", "不能编造"],
+            "PC route-matrix cover guidance",
+        ),
+        (
+            android_text,
+            ["路线矩阵", "榜单矩阵", "已核实知识库"],
+            "mobile route-matrix cover guidance",
+        ),
+        (
+            image_service_text,
+            ['"id": "route-matrix-board"', '"name": "路线榜单矩阵"'],
+            "image visual direction pool",
+        ),
+        (
+            image_prompt_text,
+            ["路线/榜单型封面", "route matrix", "水博榜"],
+            "image prompt route-matrix guidance",
+        ),
+        (
+            xhs_style_reference_text,
+            ["Operator-viewed case: `水博榜`", "路线/榜单型封面", "结构标识"],
+            "Xiaohongshu prompt style reference",
+        ),
+        (
+            xhs_style_doc_text,
+            ["2026-06-13: `水博榜` route-list note", "route matrix", "学校/项目名称"],
+            "Xiaohongshu docs style reference",
+        ),
+    ]
+    for text, snippets, contract_name in route_cover_contracts:
         for snippet in snippets:
             total += 1
             if snippet not in text:

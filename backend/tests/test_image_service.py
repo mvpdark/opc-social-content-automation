@@ -68,10 +68,16 @@ def test_cover_visual_direction_changes_with_variant_index() -> None:
 
     selected = {
         select_cover_visual_direction(content, "xiaohongshu-cover", index)["id"]
-        for index in range(8)
+        for index in range(9)
     }
 
     assert len(selected) >= 3
+
+
+def test_cover_visual_directions_include_route_matrix() -> None:
+    ids = {item["id"] for item in image_service.COVER_VISUAL_DIRECTIONS}
+
+    assert "route-matrix-board" in ids
 
 
 def test_image_prompt_payload_includes_visual_direction(
