@@ -1450,8 +1450,15 @@ def validate_android_shell_contract() -> int:
         "copyTextToClipboard(title, text)",
         "ShareLaunchResult shareResult = launchXiaohongshuShare(",
         'return shareResult.ok ? "ok" : "error:" + shareResult.message;',
+        "new Intent(Intent.ACTION_SEND_MULTIPLE)",
+        "putParcelableArrayListExtra(Intent.EXTRA_STREAM",
+        "attachShareText(intent, title, text)",
+        "clipData.addItem(new ClipData.Item(text))",
+        'intent.putExtra("contentText", text)',
         "CountDownLatch latch = new CountDownLatch(1)",
         "shareImageToXiaohongshu(Uri imageUri, String title, String text)",
+        "createLegacyXiaohongshuShareIntent(imageUri, title, text)",
+        "若小红书未自动填入，请长按粘贴",
         "没找到可以接收封面图的发布入口",
     ]
     forbidden_snippets = [

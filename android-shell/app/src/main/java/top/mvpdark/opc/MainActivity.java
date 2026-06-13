@@ -44,6 +44,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -581,14 +582,47 @@ public class MainActivity extends Activity {
         }
     }
 
-    private Intent createXiaohongshuShareIntent(Uri imageUri, String title, String text) {
-        Intent intent = new Intent(Intent.ACTION_SEND);
-        intent.setType("image/png");
-        intent.putExtra(Intent.EXTRA_STREAM, imageUri);
+    private ArrayList<Uri> createImageUriList(Uri imageUri) {
+        ArrayList<Uri> imageUris = new ArrayList<>();
+        imageUris.add(imageUri);
+        return imageUris;
+    }
+
+    private ClipData createXiaohongshuShareClipData(Uri imageUri, String text) {
+        ClipData clipData = new ClipData(
+            "xhs-share",
+            new String[] { "image/png", "text/plain" },
+            new ClipData.Item(imageUri)
+        );
+        clipData.addItem(new ClipData.Item(text));
+        return clipData;
+    }
+
+    private void attachShareText(Intent intent, String title, String text) {
         intent.putExtra(Intent.EXTRA_TITLE, title);
         intent.putExtra(Intent.EXTRA_SUBJECT, title);
         intent.putExtra(Intent.EXTRA_TEXT, text);
-        intent.setClipData(ClipData.newUri(getContentResolver(), "xhs-cover", imageUri));
+        intent.putExtra("title", title);
+        intent.putExtra("content", text);
+        intent.putExtra("contentText", text);
+    }
+
+    private Intent createXiaohongshuShareIntent(Uri imageUri, String title, String text) {
+        Intent intent = new Intent(Intent.ACTION_SEND_MULTIPLE);
+        intent.setType("image/*");
+        intent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, createImageUriList(imageUri));
+        attachShareText(intent, title, text);
+        intent.setClipData(createXiaohongshuShareClipData(imageUri, text));
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        return intent;
+    }
+
+    private Intent createLegacyXiaohongshuShareIntent(Uri imageUri, String title, String text) {
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("image/png");
+        intent.putExtra(Intent.EXTRA_STREAM, imageUri);
+        attachShareText(intent, title, text);
+        intent.setClipData(createXiaohongshuShareClipData(imageUri, text));
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         return intent;
     }
@@ -626,22 +660,40 @@ public class MainActivity extends Activity {
     private ShareLaunchResult shareImageToXiaohongshu(Uri imageUri, String title, String text) {
         Intent xiaohongshuIntent = createXiaohongshuShareIntent(imageUri, title, text);
         xiaohongshuIntent.setPackage(XIAOHONGSHU_PACKAGE);
+        grantUriPermission(XIAOHONGSHU_PACKAGE, imageUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
         try {
             startActivity(xiaohongshuIntent);
+            showToast("封面已发送，标题和正文已复制；若小红书未自动填入，请长按粘贴。");
             return ShareLaunchResult.ok();
         } catch (ActivityNotFoundException ignored) {
+            Intent legacyIntent = createLegacyXiaohongshuShareIntent(imageUri, title, text);
+            legacyIntent.setPackage(XIAOHONGSHU_PACKAGE);
+            try {
+                startActivity(legacyIntent);
+                showToast("封面已发送，标题和正文已复制；若小红书未自动填入，请长按粘贴。");
+                return ShareLaunchResult.ok();
+            } catch (ActivityNotFoundException ignoredAgain) {
+                return shareWithChooser(imageUri, title, text);
+            }
+        }
+    }
+
+    private ShareLaunchResult shareWithChooser(Uri imageUri, String title, String text) {
+        try {
             Intent chooser = Intent.createChooser(
                 createXiaohongshuShareIntent(imageUri, title, text),
                 "分享到小红书"
             );
+            chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[] {
+                createLegacyXiaohongshuShareIntent(imageUri, title, text)
+            });
             chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            try {
-                startActivity(chooser);
-                return ShareLaunchResult.ok();
-            } catch (ActivityNotFoundException ignoredAgain) {
-                showToast("没找到可以接收封面图的发布入口，文案已复制，请手动打开小红书。");
-                return ShareLaunchResult.error("没找到可以接收封面图的发布入口；文案已复制，请手动打开小红书。");
-            }
+            startActivity(chooser);
+            showToast("封面已发送，标题和正文已复制；若小红书未自动填入，请长按粘贴。");
+            return ShareLaunchResult.ok();
+        } catch (ActivityNotFoundException ignored) {
+            showToast("没找到可以接收封面图的发布入口，文案已复制，请手动打开小红书。");
+            return ShareLaunchResult.error("没找到可以接收封面图的发布入口；文案已复制，请手动打开小红书。");
         }
     }
 
