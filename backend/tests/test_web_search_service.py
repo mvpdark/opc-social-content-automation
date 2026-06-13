@@ -15,6 +15,10 @@ def test_topic_needs_live_web_search_for_ranking_topic() -> None:
     assert topic_needs_live_web_search("硕升博申请节奏", ["规划"]) is False
     assert topic_needs_live_web_search("硕升博申请第一步，不是先套磁", ["硕升博", "水博"]) is False
     assert topic_needs_live_web_search("低预算海外博士怎么筛", ["预算榜单"]) is True
+    assert topic_needs_live_web_search(
+        "低预算海外博士怎么筛",
+        ["海外博士", "低预算博士", "在职博士", "博士项目"],
+    ) is True
 
 
 def test_build_tavily_query_expands_water_phd_topic() -> None:
@@ -24,6 +28,20 @@ def test_build_tavily_query_expands_water_phd_topic() -> None:
     assert "认证" in query
     assert "official sources" in query
     assert query.startswith("global water resources PhD programs")
+
+
+def test_build_tavily_query_keeps_budget_overseas_doctorate_general() -> None:
+    query = build_tavily_query(
+        "低预算海外博士怎么筛",
+        "xiaohongshu",
+        ["海外博士", "低预算博士", "在职博士", "博士项目"],
+    )
+
+    assert "低预算海外博士怎么筛" in query
+    assert "tuition" in query
+    assert "accreditation" in query
+    assert "water resources" not in query
+    assert query.startswith("overseas doctoral programs")
 
 
 def test_tavily_search_returns_none_when_disabled(monkeypatch: pytest.MonkeyPatch) -> None:

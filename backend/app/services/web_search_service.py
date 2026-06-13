@@ -20,6 +20,7 @@ LIVE_SEARCH_FACT_TERMS = (
     "政策",
     "费用",
     "学费",
+    "预算",
     "认证",
 )
 
@@ -90,11 +91,17 @@ def topic_needs_live_web_search(topic: str, tags: list[str] | None = None) -> bo
 def build_tavily_query(topic: str, platform: str, tags: list[str] | None = None) -> str:
     tag_text = " ".join(tags or [])
     topic_text = f"{topic} {tag_text}".strip()
-    if any(term in topic_text for term in ("水博", "海外博士", "境外博士")):
+    if any(term in topic_text for term in ("水博", "水资源")):
         return (
             "global water resources PhD programs university rankings official sources "
             "tuition accreditation in-service doctoral program "
             f"{topic_text} 全球 博士 项目 学校 排名 认证 学费 官网"
+        ).strip()
+    if any(term in topic_text for term in ("海外博士", "境外博士", "在职博士", "低预算")):
+        return (
+            "overseas doctoral programs official sources tuition accreditation "
+            "in-service doctoral program budget application requirements "
+            f"{topic_text} 博士 项目 学校 认证 学费 费用 官网"
         ).strip()
     if platform == "xiaohongshu":
         return f"official sources current facts Xiaohongshu content research {topic_text}".strip()
