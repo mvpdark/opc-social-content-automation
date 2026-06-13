@@ -41,9 +41,9 @@ STOP_WORDS = {
 }
 SUPPORTED_PLATFORMS = {"xiaohongshu", "douyin"}
 VIDEO_COLLECTION_DISABLED_DETAIL = (
-    "Video collection is disabled until a separate transcript and rights review workflow is implemented."
+    "视频采集暂未启用；需要先补齐转写、版权和人工复核流程。"
 )
-AUTO_START_COLLECTION_MESSAGE = "Queued; the safe visible-browser collector will start automatically."
+AUTO_START_COLLECTION_MESSAGE = "已排队；安全可见浏览器采集器会自动启动。"
 URL_RE = re.compile(r"https?://[^\s<>'\"，。；、)）】]+", re.IGNORECASE)
 SUPPORTED_XHS_HOSTS = {
     "xiaohongshu.com",
@@ -71,7 +71,7 @@ def _classify_xhs_url(url: str) -> TrendLinkCandidate:
             link_type="unsupported",
             accepted=False,
             requires_resolution=False,
-            reason="Only xiaohongshu.com and xhslink.com URLs are accepted.",
+            reason="只接受 xiaohongshu.com 和 xhslink.com 链接。",
         )
 
     if host in {"xhslink.com", "www.xhslink.com"}:
@@ -82,7 +82,7 @@ def _classify_xhs_url(url: str) -> TrendLinkCandidate:
                 link_type="short_link",
                 accepted=False,
                 requires_resolution=False,
-                reason="Short links must include a share code.",
+                reason="短链需要包含分享码。",
             )
         return TrendLinkCandidate(
             original_url=url,
@@ -90,7 +90,7 @@ def _classify_xhs_url(url: str) -> TrendLinkCandidate:
             link_type="short_link",
             accepted=True,
             requires_resolution=True,
-            reason="Short links must be resolved by the authorized collector before details are available.",
+            reason="短链需要后续由授权采集器解析详情。",
         )
 
     if len(parts) >= 2 and parts[0] == "explore":
@@ -122,7 +122,7 @@ def _classify_xhs_url(url: str) -> TrendLinkCandidate:
                 link_type="profile",
                 accepted=False,
                 requires_resolution=False,
-                reason="Profile links must include a user id.",
+                reason="主页链接需要包含用户 ID。",
             )
         note_id = parts[3] if len(parts) >= 4 else None
         normalized_path = f"user/profile/{user_id}/{note_id}" if note_id else f"user/profile/{user_id}"
@@ -133,7 +133,7 @@ def _classify_xhs_url(url: str) -> TrendLinkCandidate:
             accepted=True,
             requires_resolution=False,
             note_id=note_id,
-            reason=None if note_id else "Profile links need a follow-up note-list import step.",
+            reason=None if note_id else "主页链接需要后续进入笔记列表采集。",
         )
 
     if parts and parts[0] == "search_result":
@@ -143,7 +143,7 @@ def _classify_xhs_url(url: str) -> TrendLinkCandidate:
             link_type="search_result",
             accepted=True,
             requires_resolution=False,
-            reason="Search result links are accepted as context but do not identify a single note.",
+            reason="搜索结果页可作为上下文，但不是单篇笔记。",
         )
 
     return TrendLinkCandidate(
@@ -152,7 +152,7 @@ def _classify_xhs_url(url: str) -> TrendLinkCandidate:
         link_type="xiaohongshu_other",
         accepted=False,
         requires_resolution=False,
-        reason="This Xiaohongshu URL shape is not supported yet.",
+        reason="暂不支持这种小红书链接形态。",
     )
 
 
@@ -178,11 +178,11 @@ def build_xhs_link_import_target(payload: TrendLinkImportRequest) -> TrendLinkIm
         cookie_persistence=False,
         links=links,
         safety_notes=[
-            "This endpoint only extracts and classifies links; it does not fetch note details or media.",
-            "Resolve xhslink.com short links only through an operator-authorized visible browser or compliant collector.",
-            "Do not download media by default; store note metadata first and require human review before knowledge-base ingestion.",
-            "Cookie persistence is disabled in the app integration unless the operator explicitly enables a future authorized collector.",
-            "GPL-licensed XHS-Downloader was used only as product/architecture reference; this implementation is clean-room code.",
+            "这里只提取并分类链接，不抓取笔记详情或媒体文件。",
+            "xhslink.com 短链只通过操作者授权的可见浏览器或合规采集器解析。",
+            "默认不下载媒体；先保存笔记元数据，入知识库前必须人工复核。",
+            "当前集成默认关闭 Cookie 持久化，除非后续显式启用授权采集器。",
+            "XHS-Downloader 仅作为产品和架构参考；当前实现是独立 clean-room 代码。",
         ],
     )
 
@@ -193,12 +193,12 @@ def build_platform_search_target(platform: str, keyword: str) -> PlatformSearchT
     if normalized_platform not in SUPPORTED_PLATFORMS:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="platform must be xiaohongshu or douyin.",
+            detail="平台只能是 xiaohongshu 或 douyin。",
         )
     if not normalized_keyword:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="keyword is required.",
+            detail="请先填写关键词。",
         )
 
     encoded_keyword = quote(normalized_keyword)
@@ -216,11 +216,11 @@ def build_platform_search_target(platform: str, keyword: str) -> PlatformSearchT
         requires_manual_login=False,
         automation_mode="public_first_visible_browser",
         safety_notes=[
-            "Try public search first in a visible browser session.",
-            "Ask the operator to complete login or captcha only if public results are blocked.",
-            "Do not bypass platform access controls or collect private content.",
-            "Keep randomized delays and human-like scrolling enabled.",
-            "Store collected notes as trend assets before summarizing them into the knowledge base.",
+            "先在可见浏览器里尝试公开搜索。",
+            "只有公开结果被拦截时，才让操作者处理登录或验证码。",
+            "不要绕过平台访问控制，也不要采集非公开内容。",
+            "保持随机延迟和接近人工的滚动节奏。",
+            "采集到的笔记先作为趋势素材保存，再人工确认后进入知识摘要。",
         ],
     )
 

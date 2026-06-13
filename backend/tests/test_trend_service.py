@@ -25,7 +25,7 @@ def test_build_platform_search_target_encodes_keyword() -> None:
     assert target.video_collection_enabled is False
     assert target.requires_manual_login is False
     assert target.automation_mode == "public_first_visible_browser"
-    assert any("Do not bypass" in note for note in target.safety_notes)
+    assert any("不要绕过平台访问控制" in note for note in target.safety_notes)
 
 
 def test_build_xhs_link_import_target_extracts_supported_links() -> None:
@@ -48,7 +48,7 @@ def test_build_xhs_link_import_target_extracts_supported_links() -> None:
     assert target.links[1].link_type == "short_link"
     assert target.links[1].requires_resolution is True
     assert target.links[2].accepted is False
-    assert "clean-room" in " ".join(target.safety_notes)
+    assert "独立 clean-room 代码" in " ".join(target.safety_notes)
 
 
 def test_build_xhs_link_import_target_handles_profile_and_h_suffix_punctuation() -> None:
@@ -76,9 +76,9 @@ def test_build_xhs_link_import_target_rejects_incomplete_xhs_urls() -> None:
     assert target.extracted_count == 2
     assert target.accepted_count == 0
     assert target.links[0].accepted is False
-    assert "share code" in (target.links[0].reason or "")
+    assert "分享码" in (target.links[0].reason or "")
     assert target.links[1].accepted is False
-    assert "user id" in (target.links[1].reason or "")
+    assert "用户 ID" in (target.links[1].reason or "")
 
 
 def test_build_safety_profile_defaults_to_account_safety() -> None:
@@ -132,7 +132,7 @@ def test_build_safety_profile_rejects_video_until_review_workflow_exists() -> No
         build_safety_profile(payload)
 
     assert exc.value.status_code == 422
-    assert "Video collection is disabled" in exc.value.detail
+    assert "视频采集暂未启用" in exc.value.detail
 
 
 def test_mark_collection_job_for_auto_start_resets_restartable_job() -> None:
@@ -157,7 +157,7 @@ def test_mark_collection_job_for_auto_start_resets_restartable_job() -> None:
     assert job.result_summary["auto_start"] is True
     assert job.result_summary["collected_items"] == 2
     assert job.result_summary["trend_ids"] == [4, 5]
-    assert "automatically" in str(job.result_summary["message"])
+    assert "自动启动" in str(job.result_summary["message"])
 
 
 def test_collection_job_has_pending_auto_start_only_matches_auto_queued_job() -> None:
