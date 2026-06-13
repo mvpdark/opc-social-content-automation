@@ -31,6 +31,7 @@ Thumbs.db
 coverage/
 htmlcov/
 backend/static/generated/
+frontend/public/downloads/
 artifacts/
 .browser-sessions/
 .playwright-cli/
