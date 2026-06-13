@@ -4223,7 +4223,6 @@ function DraftPanel({
   const [portalReady, setPortalReady] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const [manualCopyText, setManualCopyText] = useState<string | null>(null);
-  const mainManualCopyRef = useRef<HTMLTextAreaElement | null>(null);
   const modalManualCopyRef = useRef<HTMLTextAreaElement | null>(null);
   const previewPlatformId = platformIdForPreview(content?.platform ?? "xiaohongshu");
   const previewPlatformLabel = previewPlatformId === "douyin" ? "抖音" : "小红书";
@@ -4258,10 +4257,10 @@ function DraftPanel({
     if (!manualCopyText) {
       return;
     }
-    const targetRef = previewOpen ? modalManualCopyRef : mainManualCopyRef;
+    const targetRef = modalManualCopyRef;
     targetRef.current?.focus();
     targetRef.current?.select();
-  }, [manualCopyText, previewOpen]);
+  }, [manualCopyText]);
 
   async function handleCopy() {
     if (!content || !canCopy) {
@@ -4280,6 +4279,11 @@ function DraftPanel({
     }
   }
 
+  function handleHistorySelect(selectedContent: GeneratedContent) {
+    onSelectContent(selectedContent);
+    setPreviewOpen(true);
+  }
+
   return (
     <Panel
       action={<Pill tone={content ? "green" : loading ? "blue" : "amber"}>{preview.status}</Pill>}
@@ -4291,7 +4295,7 @@ function DraftPanel({
           <div>
             <h3 className="text-base font-semibold text-ink">历史图文草稿</h3>
             <p className="mt-1 text-xs leading-5 text-muted">
-              横向滑动查看之前生成的图文；点击切换预览，长按卡片可置顶或删除。
+              横向滑动查看之前生成的图文；点击打开预览，长按卡片可置顶或删除。
             </p>
           </div>
           <Pill tone={hasHistory ? "green" : loading ? "blue" : "amber"}>
@@ -4318,7 +4322,7 @@ function DraftPanel({
                 isSelected={content?.id === item.id}
                 key={item.id}
                 onDelete={onDeleteContent}
-                onSelect={onSelectContent}
+                onSelect={handleHistorySelect}
                 onTogglePin={onTogglePin}
               />
             ))}
@@ -4329,160 +4333,6 @@ function DraftPanel({
           </div>
         )}
       </section>
-
-      <div className="grid grid-cols-1 gap-5 2xl:grid-cols-[minmax(280px,360px)_1fr]">
-        <article
-          className="glass-subtle overflow-hidden rounded-[22px] border bg-paper shadow-panel"
-          data-testid="xhs-preview-card"
-        >
-          <button
-            aria-label={`打开${previewPlatformLabel}发布效果预览`}
-            className="group block w-full text-left"
-            data-testid="xhs-preview-cover-button"
-            onClick={() => setPreviewOpen(true)}
-            type="button"
-          >
-            <div
-              className={`relative aspect-[3/4] overflow-hidden ${
-                coverImageUrl
-                  ? "bg-paper"
-                  : "bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.9),transparent_32%),linear-gradient(145deg,#fff7e8_0%,#d9f3e6_46%,#f8cfc0_100%)] p-5"
-              }`}
-            >
-              {coverImageUrl ? (
-                <img
-                  alt="已生成的小红书封面预览"
-                  className="h-full w-full object-cover"
-                  data-testid="xhs-preview-real-cover"
-                  src={coverImageUrl}
-                />
-              ) : (
-                <>
-                  <div className="absolute left-4 top-4 rounded-md bg-white/75 px-2 py-1 text-[11px] font-semibold text-ink/70 shadow-sm">
-                    封面预览
-                  </div>
-                  <div className="absolute inset-x-5 bottom-6">
-                    <div className="mb-3 h-1.5 w-12 rounded-full bg-coral" />
-                    <div className="space-y-1 text-[2rem] font-black leading-[1.08] text-ink sm:text-[2.35rem]">
-                      {coverLines.map((line) => (
-                        <div key={line}>{line}</div>
-                      ))}
-                    </div>
-                    <div className="mt-4 grid grid-cols-1 gap-2 text-xs font-semibold text-ink/70">
-                      {coverReferences.slice(0, 3).map((item, index) => (
-                        <div key={item.title} className="rounded-md bg-white/82 px-3 py-2">
-                          {index + 1}. {item.title}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </button>
-          <div className="p-4">
-            <div className="flex items-center justify-between gap-3 text-xs text-muted">
-              <PlatformLabel
-                className="font-semibold text-ink"
-                iconSize="sm"
-                platform={previewPlatformId}
-                suffix="图文"
-              />
-              <span>{content ? "最近草稿" : loading ? "正在读取最近草稿" : "等待草稿"}</span>
-            </div>
-            <button
-              className="mt-2 block w-full text-left text-base font-semibold leading-6 text-ink transition hover:text-coral"
-              data-testid="xhs-preview-title-button"
-              onClick={() => setPreviewOpen(true)}
-              type="button"
-            >
-              {preview.title}
-            </button>
-            <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted">
-              <span className="flex items-center gap-2">
-                <PlatformIcon platform={previewPlatformId} size="md" />
-                OPC 任务平台
-              </span>
-              <span className="flex items-center gap-3">
-                <span className="flex items-center gap-1">
-                  <Heart className="h-4 w-4" />
-                  未发布
-                </span>
-                <Bookmark className="h-4 w-4" />
-              </span>
-            </div>
-          </div>
-        </article>
-
-        <div className="grid content-start gap-4">
-          <div className={`${subtleCardClass} p-4`}>
-            <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-              <PenLine className="h-4 w-4 text-steel" />
-              发布页摘要
-            </div>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-ink/80">
-              {paragraphs[0] ?? preview.body}
-            </p>
-            {tagLine ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {tagLine.split(" ").map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-md border border-line bg-mist px-2 py-1 text-xs font-medium text-muted"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            ) : null}
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <button
-              className={`${secondaryButtonClass} h-11`}
-              data-testid="xhs-preview-open-button"
-              onClick={() => setPreviewOpen(true)}
-              type="button"
-            >
-              <Eye className="h-4 w-4" />
-              查看发布效果
-            </button>
-            <button
-              className={`${secondaryButtonClass} h-11 disabled:cursor-not-allowed disabled:opacity-55`}
-              disabled={!canCopy}
-              onClick={handleCopy}
-              type="button"
-            >
-              {copyState === "copied" ? (
-                <CheckCircle2 className="h-4 w-4" />
-              ) : (
-                <Clipboard className="h-4 w-4" />
-              )}
-              {copyState === "copied" ? "已复制文案" : "复制文案"}
-            </button>
-            <div className={`${subtleCardClass} flex min-h-11 items-center px-3 text-xs leading-5 text-muted`}>
-              {content && coverImageUrl
-                ? "已生成真实封面，点击封面可查看发布效果。"
-                : content
-                ? "封面仍是版式预览，真实图片生成后会在这里替换。"
-                : loading
-                  ? "正在读取最近生成的全文草稿。"
-                  : "生成草稿后，这里会自动切换为最新内容。"}
-            </div>
-          </div>
-          {manualCopyText && !previewOpen ? (
-            <textarea
-              aria-label={`${previewPlatformLabel}手动复制文案`}
-              className="min-h-32 w-full resize-y rounded-md border border-coral/30 bg-paper px-3 py-2 text-xs leading-5 text-ink outline-none focus:border-coral focus:ring-2 focus:ring-coral/15"
-              data-testid="pc-preview-manual-copy-text"
-              onFocus={(event) => event.currentTarget.select()}
-              readOnly
-              ref={mainManualCopyRef}
-              value={manualCopyText}
-            />
-          ) : null}
-        </div>
-      </div>
 
       {previewOpen && portalReady ? createPortal(
         <div
@@ -4512,6 +4362,7 @@ function DraftPanel({
                 <img
                   alt={`已生成的${previewPlatformLabel}封面预览`}
                   className="h-full min-h-[320px] w-full object-cover sm:min-h-[420px]"
+                  data-testid="xhs-preview-real-cover"
                   src={coverImageUrl}
                 />
               ) : (

@@ -403,27 +403,26 @@ def validate_frontend_design_contract() -> int:
             raise SystemExit(f"Missing app shell login contract snippet: {snippet}")
 
     one_click_entry_contracts = [
-        (app_shell_text, ["一键生成"], "topbar one-click entry"),
+        (app_shell_text, ["创作项目"], "topbar creation project entry"),
         (
             data_text,
             [
-                '{ id: "content", label: "一键生成"',
-                'title: "一键生成"',
-                "一键生成文案和封面",
+                '{ id: "content", label: "创作项目"',
+                'title: "创作项目"',
+                "先选择项目，再进入对应的一键生成流程",
             ],
-            "navigation one-click entry",
+            "navigation creation project entry",
         ),
         (
             workspace_text,
             [
-                "登录后即可一键生成小红书图文和封面",
-                "从一键生成页完成正文、改写和封面",
+                "登录后即可启动小红书获客任务。",
+                "点击这张卡片，进入原来的图文创作、一键生成、预览和复制页面。",
+                "可在创作项目中细调",
                 "一键生成图文+封面",
-                "可在一键生成页细调",
-                "去一键生成",
                 "数据库暂时不可用：安装包或本地运行请重新启动",
             ],
-            "workspace one-click entry",
+            "workspace creation project entry",
         ),
     ]
     for text, snippets, contract_name in one_click_entry_contracts:
@@ -445,7 +444,7 @@ def validate_frontend_design_contract() -> int:
             android_text,
             [
                 "opc-mobile-shell",
-                "focus-visible:ring-2 focus-visible:ring-moss/35",
+                "focus-visible:ring-2 focus-visible:ring-moss/[0.35]",
                 'data-testid="mobile-status"',
                 'aria-live="polite"',
             ],
@@ -607,7 +606,6 @@ def validate_content_production_contract() -> int:
         "generatedContentStatusLabel",
         "generatedImageStatusLabel",
         'data-testid="pc-export-manual-copy-text"',
-        'data-testid="pc-preview-manual-copy-text"',
         'data-testid="pc-preview-modal-manual-copy-text"',
         "复制被浏览器拦截了；下方已展开正文，可直接全选复制。",
         "setManualCopyText(copyPayload)",
@@ -639,8 +637,8 @@ def validate_content_production_contract() -> int:
         ),
         (
             android_text,
-            ["placeholder: \"未开启时留空\"", "? (localFilled ? \"已填写\" : \"未开启\")"],
-            "mobile access protection settings copy",
+            ["默认服务授权已就绪", "请在电脑端检查服务授权"],
+            "mobile hidden service settings copy",
         ),
     ]
     for text, snippets, contract_name in settings_access_contracts:
@@ -694,7 +692,6 @@ def validate_content_production_contract() -> int:
                 "待打开搜索",
                 "先打开搜索生成",
                 "固定会话保存",
-                "COLLECTION_JOB_TERMINAL_STATUSES.has",
             ],
             "PC collection job status helper usage",
         ),
@@ -710,7 +707,6 @@ def validate_content_production_contract() -> int:
                 'formatCollectionJobStatus(data, "mobile")',
                 'data-testid="mobile-collection-diagnostic-grid"',
                 "mobileDiagnosticToneClass(item.tone)",
-                "COLLECTION_JOB_TERMINAL_STATUSES.has",
             ],
             "mobile collection job status helper usage",
         ),
@@ -754,7 +750,7 @@ def validate_content_production_contract() -> int:
             raise SystemExit(f"Missing mobile Xiaohongshu copy contract: {snippet}")
 
     mobile_static_reference_contract_snippets = [
-        "把公开参考变成素材池",
+        "先补高赞参考，再启动草稿和封面",
         'MobilePanel title="结构模板"',
         "结构模板 · 参考版式",
         "封面模板 · 参考版式",
@@ -1234,13 +1230,8 @@ def validate_content_production_contract() -> int:
         "演示撰稿服务已就绪",
         '{busyAction === "job" ? "正在创建"',
         "趋势任务队列",
-        "今日任务",
         "今日 3 个任务",
-        "采集任务状态刷新失败",
-        "保存定时采集任务",
-        "采集任务完成后",
         "进入一键生成页创建文案",
-        "采集任务",
         "草稿请求",
         "待创建",
         "不会创建封面图",
