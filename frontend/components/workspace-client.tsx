@@ -196,42 +196,50 @@ const emptyCredentials: CredentialSettings = {
 const creationProjects = [
   {
     id: "postgraduate-phd",
-    title: "硕升博获客项目",
+    title: "硕升博项目",
+    category: "小红书图文获客",
     status: "可进入",
     statusTone: "green",
     description: "围绕硕升博、在职申博和水博路线，生成图文草稿、封面方向、标签和发布检查。",
     inputs: ["趋势参考", "申请人痛点", "项目卖点"],
     outputs: ["图文草稿", "封面方案", "发布清单"],
+    workflow: ["采集参考", "一键撰稿+封面", "预览复制", "人工确认发布"],
     enabled: true
   },
   {
     id: "ecommerce-listing",
     title: "商品上架项目",
+    category: "电商转化",
     status: "规划中",
     statusTone: "amber",
     description: "面向电商商品标题、卖点、详情页结构、FAQ 和客服话术。",
     inputs: ["商品信息", "卖点素材", "竞品参考"],
     outputs: ["上架文案", "详情页结构", "客服话术"],
+    workflow: ["商品资料", "卖点提炼", "详情页草稿", "人工确认"],
     enabled: false
   },
   {
     id: "private-domain-sales",
     title: "私域成交项目",
+    category: "销售跟进",
     status: "规划中",
     statusTone: "amber",
     description: "面向朋友圈、社群跟进、异议处理和成交 SOP。",
     inputs: ["产品资料", "客户问题", "成交限制"],
     outputs: ["跟进 SOP", "群发文案", "异议处理"],
+    workflow: ["客户分层", "跟进话术", "异议处理", "人工确认"],
     enabled: false
   }
 ] as const satisfies ReadonlyArray<{
   id: string;
   title: string;
+  category: string;
   status: string;
   statusTone: keyof typeof pillTone;
   description: string;
   inputs: readonly string[];
   outputs: readonly string[];
+  workflow: readonly string[];
   enabled: boolean;
 }>;
 
@@ -2041,107 +2049,157 @@ function CreationProjectGateway({
   loading: boolean;
   onSelect: (projectId: CreationProjectId) => void;
 }) {
+  const liveProject = creationProjects.find((project) => project.enabled) ?? creationProjects[0];
+  const roadmapProjects = creationProjects.filter((project) => !project.enabled);
+
   return (
-    <div className="space-y-4" data-testid="creation-project-gateway">
-      <section className="glass-panel overflow-hidden rounded-[24px] border shadow-panel">
-        <div className="grid grid-cols-1 gap-0 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="p-5 lg:p-6">
-            <div className="flex flex-wrap gap-2">
+    <div className="space-y-5" data-testid="creation-project-gateway">
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <button
+          aria-label={`进入${liveProject.title}创作流程`}
+          className="group glass-panel relative min-h-[420px] overflow-hidden rounded-[28px] border p-5 text-left shadow-panel transition hover:translate-y-[-2px] hover:border-steel/60 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-steel/45 active:translate-y-0 lg:p-6"
+          data-testid={`creation-project-${liveProject.id}`}
+          onClick={() => onSelect(liveProject.id)}
+          type="button"
+        >
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-[linear-gradient(90deg,rgba(83,124,151,0.18),rgba(116,148,121,0.16),rgba(255,255,255,0))]" />
+          <div className="relative flex h-full flex-col">
+            <div className="flex flex-wrap items-center gap-2">
               <Pill tone="blue">创作项目</Pill>
-              <Pill tone="green">任务入口</Pill>
+              <Pill tone="green">{liveProject.status}</Pill>
               <Pill tone="amber">先选项目再生成</Pill>
             </div>
-            <h2 className="mt-4 max-w-2xl text-2xl font-semibold leading-tight text-ink">
-              选择一个项目，进入对应的创作流程
-            </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-              选择业务目标后，OPC 会载入对应的资料、风格和交付清单；未接入的项目会先保留为后续路线图。
-            </p>
 
-            <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-3">
-              {creationProjects.map((project) => (
-                <button
-                  aria-label={`${project.title}${project.enabled ? "，进入创作流程" : "，规划中"}`}
-                  className={[
-                    "group flex min-h-[280px] flex-col rounded-[18px] border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-steel/45",
-                    project.enabled
-                      ? "border-steel/35 bg-paper/78 shadow-panel hover:-translate-y-0.5 hover:border-steel/60 hover:bg-white/82"
-                      : "cursor-not-allowed border-line bg-mist/45 opacity-72"
-                  ].join(" ")}
-                  data-testid={`creation-project-${project.id}`}
-                  disabled={!project.enabled}
-                  key={project.id}
-                  onClick={() => {
-                    if (project.enabled) {
-                      onSelect(project.id);
-                    }
-                  }}
-                  type="button"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <IconBox tone={project.enabled ? "green" : "amber"}>
-                      <PenLine className="h-4 w-4" />
-                    </IconBox>
-                    <Pill tone={project.statusTone}>{project.status}</Pill>
-                  </div>
-                  <div className="mt-4 text-lg font-semibold leading-6 text-ink">
-                    {project.title}
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-muted">{project.description}</p>
-                  <div className="mt-4 grid grid-cols-1 gap-3 text-xs leading-5">
-                    <div>
-                      <div className="font-semibold text-ink">输入</div>
-                      <div className="mt-1 text-muted">{project.inputs.join(" / ")}</div>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-ink">交付</div>
-                      <div className="mt-1 text-muted">{project.outputs.join(" / ")}</div>
-                    </div>
-                  </div>
-                  <div className="mt-auto pt-5">
-                    <span
-                      className={[
-                        "inline-flex h-10 items-center justify-center rounded-md px-3 text-sm font-semibold",
-                        project.enabled
-                          ? "bg-ink text-paper group-hover:translate-y-[-1px]"
-                          : "border border-line bg-paper/60 text-muted"
-                      ].join(" ")}
-                    >
-                      {project.enabled ? "进入项目" : "等待接入"}
-                    </span>
-                  </div>
-                </button>
-              ))}
+            <div className="mt-8 max-w-3xl">
+              <div className="text-xs font-semibold text-muted">{liveProject.category}</div>
+              <h2 className="mt-2 text-3xl font-semibold leading-tight text-ink lg:text-4xl">
+                {liveProject.title}
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
+                {liveProject.description}
+              </p>
             </div>
-          </div>
 
-          <aside className="border-t border-line bg-mist/35 p-5 xl:border-l xl:border-t-0 lg:p-6">
-            <div className="text-sm font-semibold text-ink">当前创作状态</div>
-            <div className={`${subtleCardClass} mt-3 p-4`}>
-              <div className="flex items-start gap-3">
-                <IconBox tone={latestContent ? "green" : "blue"}>
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <BookOpenText className="h-4 w-4" />
-                  )}
-                </IconBox>
-                <div>
-                  <div className="text-sm font-semibold">
-                    {latestContent ? "已有最近草稿" : loading ? "正在读取草稿" : "还没有草稿"}
-                  </div>
-                  <p className="mt-1 text-xs leading-5 text-muted">
-                    {latestContent
-                      ? "进入硕升博项目后，可以继续预览、复制或重新生成。"
-                      : "进入项目后先填写选题，再生成文案和封面。"}
-                  </p>
+            <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div className="rounded-[18px] border border-line bg-paper/70 p-4">
+                <div className="text-xs font-semibold text-ink">输入资料</div>
+                <div className="mt-2 text-sm leading-6 text-muted">
+                  {liveProject.inputs.join(" / ")}
+                </div>
+              </div>
+              <div className="rounded-[18px] border border-line bg-paper/70 p-4">
+                <div className="text-xs font-semibold text-ink">交付结果</div>
+                <div className="mt-2 text-sm leading-6 text-muted">
+                  {liveProject.outputs.join(" / ")}
                 </div>
               </div>
             </div>
-            <div className="mt-4 border-l-4 border-amber pl-3 text-xs leading-5 text-muted">
+
+            <div className="mt-5 grid grid-cols-2 gap-2 lg:grid-cols-4">
+              {liveProject.workflow.map((step, index) => (
+                <div
+                  className="rounded-md border border-steel/30 bg-steel/10 px-3 py-2 text-xs font-semibold text-ink"
+                  key={step}
+                >
+                  <span className="mr-1 text-muted">{index + 1}</span>
+                  {step}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-auto flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-xs leading-5 text-muted">
+                点击这张卡片，进入原来的图文创作、一键生成、预览和复制页面。
+              </span>
+              <span className="inline-flex h-11 items-center justify-center rounded-md bg-ink px-4 text-sm font-semibold text-paper transition group-hover:translate-y-[-1px]">
+                进入{liveProject.title}
+              </span>
+            </div>
+          </div>
+        </button>
+
+        <aside className="glass-panel rounded-[24px] border p-5 shadow-panel lg:p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-ink">项目状态</div>
+              <p className="mt-1 text-xs leading-5 text-muted">进入项目后才显示具体创作表单。</p>
+            </div>
+            <IconBox tone={latestContent ? "green" : "blue"}>
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <BookOpenText className="h-4 w-4" />
+              )}
+            </IconBox>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            <div className={`${subtleCardClass} p-4`}>
+              <div className="text-sm font-semibold">
+                {latestContent ? "已有最近草稿" : loading ? "正在读取草稿" : "还没有草稿"}
+              </div>
+              <p className="mt-1 text-xs leading-5 text-muted">
+                {latestContent
+                  ? "进入硕升博项目后，可以继续预览、复制或重新生成。"
+                  : "先点硕升博项目卡片，再填写选题生成文案和封面。"}
+              </p>
+            </div>
+
+            <div className="rounded-[18px] border border-amber/45 bg-amber/10 p-4 text-xs leading-5 text-muted">
               所有项目都会保留人工确认节点；不会自动发布，也不会伪造采集、图片或效果数据。
             </div>
-          </aside>
+          </div>
+        </aside>
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h3 className="text-base font-semibold text-ink">后续项目卡片</h3>
+            <p className="mt-1 text-xs leading-5 text-muted">
+              这些模块先展示方向，接入后也会像硕升博项目一样点击进入独立创作流程。
+            </p>
+          </div>
+          <Pill tone="neutral">路线图</Pill>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {roadmapProjects.map((project) => (
+            <article
+              className="glass-subtle rounded-[20px] border p-4 opacity-80"
+              data-testid={`creation-project-${project.id}`}
+              key={project.id}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-xs font-semibold text-muted">{project.category}</div>
+                  <h4 className="mt-1 text-lg font-semibold leading-6 text-ink">{project.title}</h4>
+                </div>
+                <Pill tone={project.statusTone}>{project.status}</Pill>
+              </div>
+              <p className="mt-3 text-sm leading-6 text-muted">{project.description}</p>
+              <div className="mt-4 grid grid-cols-1 gap-3 text-xs leading-5 sm:grid-cols-2">
+                <div>
+                  <div className="font-semibold text-ink">输入</div>
+                  <div className="mt-1 text-muted">{project.inputs.join(" / ")}</div>
+                </div>
+                <div>
+                  <div className="font-semibold text-ink">交付</div>
+                  <div className="mt-1 text-muted">{project.outputs.join(" / ")}</div>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {project.workflow.map((step) => (
+                  <span
+                    className="rounded-md border border-line bg-paper/60 px-2 py-1 text-[11px] font-medium text-muted"
+                    key={step}
+                  >
+                    {step}
+                  </span>
+                ))}
+              </div>
+            </article>
+          ))}
         </div>
       </section>
     </div>
