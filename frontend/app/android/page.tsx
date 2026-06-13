@@ -37,11 +37,10 @@ import { getApiBase, isLocalOrPrivateHostname } from "@/lib/api-base";
 import { resolveAssetUrl } from "@/lib/asset-url";
 import { copyText, tryCopyText } from "@/lib/clipboard";
 import {
-  COLLECTION_JOB_TERMINAL_STATUSES,
   collectionJobDiagnosticItems,
   type CollectionJobDiagnosticItem,
   formatCollectionJobStatus,
-  isStaleAutoStartedQueuedJob,
+  isActiveCollectionJob,
   type CollectionJobStatusSnapshot
 } from "@/lib/collection-job-status";
 import {
@@ -156,10 +155,6 @@ type CollectionScheduleStorage = {
   platform: MobilePlatform;
   scheduleMessage: string;
 };
-
-function isLiveCollectionJob(job: CollectionJobStatusSnapshot) {
-  return !COLLECTION_JOB_TERMINAL_STATUSES.has(job.status) && !isStaleAutoStartedQueuedJob(job);
-}
 
 function mobileDiagnosticToneClass(tone: CollectionJobDiagnosticItem["tone"]) {
   if (tone === "good") {
@@ -1092,7 +1087,7 @@ function CollectScreen({
         setLastRunAt(job.updated_at ?? job.created_at ?? null);
         setScheduleMessage(formatCollectionJobStatus(job, "mobile"));
         setDiagnosticItems(collectionJobDiagnosticItems(job));
-        if (isLiveCollectionJob(job)) {
+        if (isActiveCollectionJob(job)) {
           setActiveCollectionJobId(job.id);
         }
       } catch {
@@ -1122,7 +1117,7 @@ function CollectScreen({
         }
         setScheduleMessage(formatCollectionJobStatus(job, "mobile"));
         setDiagnosticItems(collectionJobDiagnosticItems(job));
-        if (isLiveCollectionJob(job)) {
+        if (isActiveCollectionJob(job)) {
           setActiveCollectionJobId(job.id);
         }
       } catch {
@@ -1154,7 +1149,7 @@ function CollectScreen({
         const message = formatCollectionJobStatus(job, "mobile");
         setScheduleMessage(message);
         setDiagnosticItems(collectionJobDiagnosticItems(job));
-        if (!isLiveCollectionJob(job)) {
+        if (!isActiveCollectionJob(job)) {
           setActiveCollectionJobId(null);
           onAction(message);
           return;

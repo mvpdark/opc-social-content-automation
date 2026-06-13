@@ -84,6 +84,16 @@ export function isStaleAutoStartedQueuedJob(job: CollectionJobStatusSnapshot) {
   return Number.isFinite(updatedAtTime) && Date.now() - updatedAtTime > AUTO_STARTED_QUEUE_STALE_MS;
 }
 
+export function isActiveCollectionJob(job: CollectionJobStatusSnapshot) {
+  if (COLLECTION_JOB_TERMINAL_STATUSES.has(job.status) || isStaleAutoStartedQueuedJob(job)) {
+    return false;
+  }
+  if (job.status === "queued") {
+    return Boolean(job.result_summary?.auto_start);
+  }
+  return true;
+}
+
 export function isRestartableCollectionJob(job: CollectionJobStatusSnapshot) {
   return (
     (job.status === "queued" && !job.result_summary?.auto_start) ||
@@ -143,6 +153,9 @@ export function formatCollectionJobStatus(
     if (job.status === "queued") {
       if (isStaleAutoStartedQueuedJob(job)) {
         return `采集任务仍在排队${collected}，后台启动可能已经中断。请回到采集页手动继续，或重新开始一次。`;
+      }
+      if (!job.result_summary?.auto_start) {
+        return `上次采集仍在排队${collected}，但不会自动启动。请重新开始一次采集。`;
       }
       return `正在排队${collected}，采集浏览器即将启动。`;
     }

@@ -6,12 +6,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { PlatformLabel } from "@/components/platform-icon";
 import { getApiBase } from "@/lib/api-base";
 import {
-  COLLECTION_JOB_TERMINAL_STATUSES,
   collectionJobDiagnosticItems,
   type CollectionJobDiagnosticItem,
   formatCollectionJobStatus,
+  isActiveCollectionJob,
   isRestartableCollectionJob,
-  isStaleAutoStartedQueuedJob,
   type CollectionJobStatusSnapshot
 } from "@/lib/collection-job-status";
 
@@ -386,11 +385,7 @@ export function TrendCollectorPanel({
           return;
         }
         showCollectionJob(latestJob);
-        if (
-          !COLLECTION_JOB_TERMINAL_STATUSES.has(latestJob.status) &&
-          latestJob.result_summary?.auto_start &&
-          !isStaleAutoStartedQueuedJob(latestJob)
-        ) {
+        if (isActiveCollectionJob(latestJob)) {
           setActiveJobId(latestJob.id);
         }
       } catch {
@@ -426,7 +421,7 @@ export function TrendCollectorPanel({
           return;
         }
         showCollectionJob(job);
-        if (COLLECTION_JOB_TERMINAL_STATUSES.has(job.status)) {
+        if (!isActiveCollectionJob(job)) {
           setActiveJobId(null);
           return;
         }
