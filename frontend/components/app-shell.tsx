@@ -72,7 +72,7 @@ export function AppShell({
             />
             <div className="ml-3">
               <div className="text-base font-semibold leading-5">OPC</div>
-              <div className="text-xs text-muted">内容运营中枢</div>
+              <div className="text-xs text-muted">AI 任务执行平台</div>
             </div>
           </div>
           <nav

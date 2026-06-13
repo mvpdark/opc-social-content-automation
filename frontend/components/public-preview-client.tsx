@@ -139,7 +139,7 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
                 O
               </div>
               <div className="min-w-0">
-                <div className="truncate text-sm font-semibold">OPC 内容运营</div>
+                <div className="truncate text-sm font-semibold">OPC 任务平台</div>
                 <div className="text-[11px] text-muted">图文草稿预览</div>
               </div>
             </div>

@@ -1197,7 +1197,7 @@ function PcLoginPage({
                   />
                   <div>
                     <div className="text-lg font-semibold leading-6">OPC</div>
-                    <div className="text-sm text-muted">内容运营中枢</div>
+                    <div className="text-sm text-muted">AI 任务执行平台</div>
                   </div>
                 </div>
                 <div className="mt-10 flex flex-wrap gap-2">
@@ -1206,10 +1206,10 @@ function PcLoginPage({
                   <Pill tone="amber">人工确认后发布</Pill>
                 </div>
                 <h1 className="mt-5 max-w-xl text-3xl font-semibold leading-tight text-ink md:text-4xl">
-                  登录后即可一键生成小红书图文和封面。
+                  登录后即可启动小红书获客任务。
                 </h1>
                 <p className="mt-4 max-w-xl text-sm leading-6 text-muted">
-                  进入工作台后，从一键生成页完成正文、改写和封面，预览成小红书样式，再复制文案用于人工提交。
+                  进入工作台后，先准备资料和趋势参考，再生成文案、封面和发布清单，最终仍由人工确认提交。
                 </p>
               </div>
 
@@ -1366,7 +1366,7 @@ function DashboardView({
                   今天要生产什么？
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-                  选择平台、主题和风格，一键生成可复制的小红书图文草稿。发布前仍需要人工确认。
+                  选择一个获客目标，系统会把资料、趋势参考、文案、封面和发布检查串成可确认的任务流程。
                 </p>
               </div>
               <div className="hidden rounded-[18px] border border-line bg-mist/60 px-3 py-2 text-xs leading-5 text-muted md:block">
@@ -3718,7 +3718,7 @@ function DraftPanel({
             <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted">
               <span className="flex items-center gap-2">
                 <PlatformIcon platform={previewPlatformId} size="md" />
-                内容运营中枢
+                OPC 任务平台
               </span>
               <span className="flex items-center gap-3">
                 <span className="flex items-center gap-1">
@@ -3853,7 +3853,7 @@ function DraftPanel({
                 <div className="flex items-center gap-3">
                   <PlatformIcon platform={previewPlatformId} size="lg" />
                   <div>
-                    <div className="text-sm font-semibold">内容运营中枢</div>
+                    <div className="text-sm font-semibold">OPC 任务平台</div>
                     <div className="text-xs text-muted">发布前预览 - {preview.platform}</div>
                   </div>
                 </div>
