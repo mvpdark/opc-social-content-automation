@@ -85,6 +85,21 @@ import { renderXhsExpressionText } from "@/lib/xhs-stickers";
 type MobileTab = "home" | "collect" | "create" | "settings";
 type MobilePlatform = "douyin" | "xiaohongshu";
 
+type OmpcAndroidBridge = {
+  shareToXiaohongshu: (
+    title: string,
+    text: string,
+    imageBase64: string,
+    fileName: string
+  ) => string | null | undefined;
+};
+
+declare global {
+  interface Window {
+    OMPCAndroid?: OmpcAndroidBridge;
+  }
+}
+
 type CredentialSettings = {
   draftApiKey: string;
   imageApiKey: string;
@@ -109,6 +124,9 @@ type LinkImportTarget = {
     reason: string | null;
   }>;
 };
+
+const XHS_APP_EXPLORE_URL = "xhsdiscover://home/explore";
+const XHS_WEB_EXPLORE_URL = "https://www.xiaohongshu.com/explore";
 
 type MobileCollectionJob = CollectionJobStatusSnapshot & {
   created_at?: string;
@@ -564,6 +582,85 @@ function downloadFile(file: File) {
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function readFileAsBase64Payload(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      const [, payload] = result.split(",", 2);
+      if (!payload) {
+        reject(new Error("封面图转交给 App 失败。"));
+        return;
+      }
+      resolve(payload);
+    };
+    reader.onerror = () => reject(new Error("封面图读取失败。"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function getOmpcAndroidBridge() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  const bridge = window.OMPCAndroid;
+  return bridge && typeof bridge.shareToXiaohongshu === "function" ? bridge : null;
+}
+
+async function shareToNativeXiaohongshu(title: string, text: string, coverFile: File) {
+  const bridge = getOmpcAndroidBridge();
+  if (!bridge) {
+    return { ok: false, message: "当前不是 OMPC App，继续使用浏览器分享。" };
+  }
+  const imageBase64 = await readFileAsBase64Payload(coverFile);
+  const result = bridge.shareToXiaohongshu(title, text, imageBase64, coverFile.name);
+  const resultText = typeof result === "string" ? result : "";
+  if (resultText === "ok") {
+    return { ok: true, message: "已交给小红书：封面图、标题和正文已一起发送，正文也已复制兜底。" };
+  }
+  return {
+    ok: false,
+    message: resultText.startsWith("error:") ? resultText.slice(6) : "小红书原生分享失败，继续使用系统分享。"
+  };
+}
+
+function openXiaohongshuFromBrowser() {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return;
+  }
+
+  let appOpened = false;
+  const markAppOpened = () => {
+    appOpened = true;
+  };
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === "hidden") {
+      markAppOpened();
+      cleanup();
+    }
+  };
+  const fallbackTimer = window.setTimeout(() => {
+    if (!appOpened && document.visibilityState === "visible") {
+      window.location.href = XHS_WEB_EXPLORE_URL;
+    }
+  }, 1400);
+  const cleanup = () => {
+    window.clearTimeout(fallbackTimer);
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+    window.removeEventListener("pagehide", markAppOpened);
+  };
+
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+  window.addEventListener("pagehide", markAppOpened, { once: true });
+
+  const link = document.createElement("a");
+  link.href = XHS_APP_EXPLORE_URL;
+  link.rel = "noreferrer";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
 function draftStateFromContent(content: GeneratedContent): DraftPreviewState {
@@ -3328,6 +3425,67 @@ function countMobileDraftsToday(items: MobileDraftHistoryItem[]) {
   }).length;
 }
 
+const localDraftCoverPalettes = [
+  { accent: "#ff2442", backgroundEnd: "#ffd9df", backgroundMid: "#d9f1e5", backgroundStart: "#fff7df" },
+  { accent: "#209b5a", backgroundEnd: "#dff7ee", backgroundMid: "#f4ead4", backgroundStart: "#ffffff" },
+  { accent: "#111111", backgroundEnd: "#e9efe8", backgroundMid: "#f7e6cd", backgroundStart: "#fffdf7" },
+  { accent: "#1f6feb", backgroundEnd: "#d9e8ff", backgroundMid: "#f5ead9", backgroundStart: "#fffaf0" }
+];
+
+function escapeSvgText(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function chunkCoverText(value: string, size: number, maxLines: number) {
+  const compact = value.replace(/\s+/g, "");
+  const chars = Array.from(compact || "草稿");
+  const lines: string[] = [];
+  for (let index = 0; index < chars.length && lines.length < maxLines; index += size) {
+    lines.push(chars.slice(index, index + size).join(""));
+  }
+  return lines.length ? lines : ["草稿"];
+}
+
+function buildLocalDraftHistoryCoverUrl(content: GeneratedContent) {
+  const palette = localDraftCoverPalettes[Math.abs(content.id) % localDraftCoverPalettes.length];
+  const titleLines = chunkCoverText(content.title, 7, 3);
+  const excerpt = Array.from(content.body.replace(/\s+/g, " ").trim()).slice(0, 24).join("");
+  const tag = content.tags?.find((value) => value.trim())?.trim() ?? "草稿";
+  const titleSvg = titleLines
+    .map(
+      (line, index) =>
+        `<text x="86" y="${392 + index * 92}" class="title">${escapeSvgText(line)}</text>`
+    )
+    .join("");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200">
+<defs>
+<linearGradient id="cover-bg" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0%" stop-color="${palette.backgroundStart}"/>
+<stop offset="54%" stop-color="${palette.backgroundMid}"/>
+<stop offset="100%" stop-color="${palette.backgroundEnd}"/>
+</linearGradient>
+<style>
+.label{font:800 34px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;fill:${palette.accent}}
+.title{font:900 74px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;fill:#111}
+.meta{font:700 30px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;fill:#5f6a61}
+</style>
+</defs>
+<rect width="900" height="1200" fill="url(#cover-bg)"/>
+<rect x="64" y="74" width="190" height="78" rx="39" fill="rgba(255,255,255,0.78)"/>
+<text x="100" y="126" class="label">${escapeSvgText(tag.slice(0, 8))}</text>
+<path d="M92 278H808" stroke="${palette.accent}" stroke-width="8" stroke-linecap="round" opacity="0.16"/>
+${titleSvg}
+<rect x="70" y="812" width="760" height="158" rx="38" fill="rgba(255,255,255,0.54)"/>
+<text x="104" y="882" class="meta">${escapeSvgText(excerpt || "本地草稿封面预览")}</text>
+<text x="104" y="930" class="meta">本地预览 · 等待真实封面记录</text>
+</svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
 function DraftHistoryCarousel({
   activeContentId,
   items,
@@ -3409,7 +3567,10 @@ function DraftHistoryCard({
   const longPressTriggeredRef = useRef(false);
   const draft = draftStateFromContent(item.content);
   const excerpt = draft.body.replace(/\s+/g, " ").slice(0, 54);
-  const coverUrl = item.cover ? resolveAssetUrl(item.cover.image_url) : null;
+  const hasGeneratedCover = Boolean(item.cover);
+  const coverUrl = item.cover
+    ? resolveAssetUrl(item.cover.image_url)
+    : buildLocalDraftHistoryCoverUrl(item.content);
 
   function clearLongPressTimer() {
     if (longPressTimerRef.current) {
@@ -3472,30 +3633,24 @@ function DraftHistoryCard({
           <CheckCircle2 className="h-4 w-4" />
         </span>
       ) : null}
-      {coverUrl ? (
+      <div className="relative">
         <CoverImagePreview
-          alt="草稿封面"
+          alt={hasGeneratedCover ? "草稿封面" : "本地封面预览"}
           className="aspect-[3/4] w-full bg-[#f7f7f7] object-cover"
           src={coverUrl}
           testId={`mobile-draft-history-cover-${item.content.id}`}
         />
-      ) : (
-        <div className="aspect-[3/4] w-full bg-[linear-gradient(160deg,#fff7df,#d9f1e5_52%,#ffd9df)] px-4 py-4">
-          <div className="flex items-center justify-between">
-            <span className="rounded-full bg-white/[0.76] px-2 py-1 text-[10px] font-black text-[#ff2442]">
-              草稿
-            </span>
-            {item.pinned ? <Pin className="h-3.5 w-3.5 text-[#ff2442]" /> : null}
-          </div>
-          <div className="mt-9 text-[22px] font-black leading-7 text-ink">
-            {draft.title.split(/[，,]/).slice(0, 3).map((line) => (
-              <span className="block" key={line}>
-                {line}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+        {!hasGeneratedCover ? (
+          <span className="absolute bottom-2 right-2 rounded-full bg-white/[0.78] px-2 py-1 text-[10px] font-black text-moss shadow-[0_8px_18px_rgba(31,58,49,0.10)]">
+            本地预览
+          </span>
+        ) : null}
+        {item.pinned ? (
+          <span className="absolute right-2 top-2 rounded-full bg-white/[0.80] p-1.5 text-[#ff2442] shadow-[0_8px_18px_rgba(31,58,49,0.10)]">
+            <Pin className="h-3.5 w-3.5" />
+          </span>
+        ) : null}
+      </div>
       <div className="space-y-2 px-3 pb-3 pt-2">
         <div className="line-clamp-2 min-h-[40px] text-[13px] font-black leading-5 text-ink">
           {draft.title}
@@ -3648,14 +3803,26 @@ function DraftPreviewEditor({
     setEditing(false);
     setManualCopyText(draftText);
     setXhsExporting(true);
-    publishExportStatus("正在复制文案并准备封面图；下方会保留正文兜底。");
+    publishExportStatus("正在准备封面图、标题和正文；下方会保留文案兜底。");
     try {
-      const textCopied = await tryCopyText(draftText);
-      if (!textCopied) {
-        setManualCopyText(draftText);
-        throw new Error("浏览器拦截了剪贴板，文案已展开，可长按全选复制。");
-      }
       const coverFile = await buildXhsCoverFile(coverImageUrl, draft);
+      const textCopied = await tryCopyText(draftText);
+      setManualCopyText(draftText);
+
+      const nativeBridge = getOmpcAndroidBridge();
+      if (nativeBridge) {
+        publishExportStatus("正在打开小红书发布入口；封面图、标题和正文会一起发送。");
+        const nativeResult = await shareToNativeXiaohongshu(draft.title, draftText, coverFile);
+        if (nativeResult.ok) {
+          publishExportStatus(
+            textCopied
+              ? nativeResult.message
+              : "已交给小红书；如果正文没有自动带入，下方文案可长按全选复制。"
+          );
+          return;
+        }
+        publishExportStatus(`${nativeResult.message} 已切换到系统分享兜底。`);
+      }
 
       const shareData: ShareData = {
         files: [coverFile],
@@ -3667,7 +3834,12 @@ function DraftPreviewEditor({
         (typeof navigator.canShare !== "function" || navigator.canShare({ files: [coverFile] }));
 
       if (canShareFiles) {
-        publishExportStatus("已尝试复制文案，正在打开系统分享；选择小红书即可带入封面图。");
+        let systemShareFailed = false;
+        publishExportStatus(
+          textCopied
+            ? "已尝试复制文案，正在打开系统分享；选择小红书即可带入封面图。"
+            : "文案已展开兜底，正在打开系统分享；选择小红书即可带入封面图。"
+        );
         try {
           await navigator.share(shareData);
         } catch (error) {
@@ -3681,25 +3853,28 @@ function DraftPreviewEditor({
             publishExportStatus(abortMessage);
             return;
           }
-          throw error;
+          systemShareFailed = true;
+          publishExportStatus("系统分享没有打开，已切换到下载封面并唤起小红书。");
         }
-        const sharedCopyRestored = await tryCopyText(draftText);
-        setManualCopyText(draftText);
-        const sharedMessage = sharedCopyRestored
-          ? "已交给系统分享；已重新尝试复制文案，下方也保留了正文。如果小红书没有自动带入正文，请直接粘贴。"
-          : `已交给系统分享；如果小红书没有自动带入正文，文案已展开，可长按全选复制，也可以点“${XHS_COPY_TEXT_ONLY_LABEL}”重试。`;
-        publishExportStatus(sharedMessage);
-        return;
+        if (!systemShareFailed) {
+          const sharedCopyRestored = await tryCopyText(draftText);
+          setManualCopyText(draftText);
+          const sharedMessage = sharedCopyRestored
+            ? "已交给系统分享；已重新尝试复制文案，下方也保留了正文。如果小红书没有自动带入正文，请直接粘贴。"
+            : `已交给系统分享；如果小红书没有自动带入正文，文案已展开，可长按全选复制，也可以点“${XHS_COPY_TEXT_ONLY_LABEL}”重试。`;
+          publishExportStatus(sharedMessage);
+          return;
+        }
       }
 
       downloadFile(coverFile);
       const fallbackTextRestored = await tryCopyText(draftText);
       setManualCopyText(draftText);
       const fallbackMessage = fallbackTextRestored
-        ? "已尝试复制文案，封面图已下载；下方也保留了正文。正在打开小红书，请新建图文后粘贴正文。"
-        : "封面图已下载；浏览器拦截了剪贴板，文案已展开，可长按全选复制。";
+        ? "已尝试复制文案，封面图已下载；正在尝试打开小红书 App。"
+        : "封面图已下载；文案已展开兜底，正在尝试打开小红书 App。";
       publishExportStatus(fallbackMessage);
-      window.location.href = "https://www.xiaohongshu.com/explore";
+      openXiaohongshuFromBrowser();
     } catch (error) {
       const message = error instanceof Error ? error.message : "打开小红书失败。";
       publishExportStatus(message);

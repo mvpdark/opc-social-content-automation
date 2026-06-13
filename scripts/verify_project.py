@@ -784,9 +784,9 @@ def validate_content_production_contract() -> int:
         "已尝试复制文案；下方也保留了正文",
         "已尝试复制当前草稿。",
         "已尝试复制当前预览文案。",
-        "下方会保留正文兜底",
+        "下方会保留文案兜底",
         "已重新尝试复制文案，下方也保留了正文",
-        "已尝试复制文案，封面图已下载；下方也保留了正文",
+        "已尝试复制文案，封面图已下载；正在尝试打开小红书 App。",
         "已尝试复制预览链接",
         "isLocalOrPrivateHostname(window.location.hostname)",
         "setManualCopyText(copied ? null : previewUrl)",
@@ -845,6 +845,10 @@ def validate_content_production_contract() -> int:
         "const missingCoverIds = items",
         "cover: item.cover ?? coverByContentId.get(item.content.id) ?? null",
         "void hydrateMissingHistoryCovers(normalized)",
+        "function buildLocalDraftHistoryCoverUrl(content: GeneratedContent)",
+        "buildLocalDraftHistoryCoverUrl(item.content)",
+        'alt={hasGeneratedCover ? "草稿封面" : "本地封面预览"}',
+        "本地预览 · 等待真实封面记录",
         "function beginDraftSelection(item: MobileDraftHistoryItem)",
         "function toggleDraftSelection(item: MobileDraftHistoryItem)",
         "async function deleteSelectedDraftHistoryItems(items: MobileDraftHistoryItem[])",
@@ -871,12 +875,25 @@ def validate_content_production_contract() -> int:
     mobile_xhs_export_text = android_text[
         mobile_xhs_export_start:mobile_xhs_export_end
     ]
+    mobile_xhs_export_contract_snippets = [
+        "const coverFile = await buildXhsCoverFile(coverImageUrl, draft)",
+        "const textCopied = await tryCopyText(draftText)",
+        "const nativeBridge = getOmpcAndroidBridge()",
+        "shareToNativeXiaohongshu(draft.title, draftText, coverFile)",
+        "navigator.share(shareData)",
+        "downloadFile(coverFile)",
+    ]
+    for snippet in mobile_xhs_export_contract_snippets:
+        total += 1
+        if snippet not in mobile_xhs_export_text:
+            raise SystemExit(f"Missing mobile Xiaohongshu export contract: {snippet}")
+
     total += 1
-    if mobile_xhs_export_text.index("tryCopyText(draftText)") > mobile_xhs_export_text.index(
+    if mobile_xhs_export_text.index(
         "buildXhsCoverFile(coverImageUrl, draft)"
-    ):
+    ) > mobile_xhs_export_text.index("tryCopyText(draftText)"):
         raise SystemExit(
-            "Mobile Xiaohongshu export must copy text before building the cover file."
+            "Mobile Xiaohongshu export must prepare the cover file before copy/share fallbacks."
         )
 
     clipboard_contract_snippets = [
