@@ -331,6 +331,10 @@ def _contains_any(text: str, terms: tuple[str, ...]) -> bool:
     return any(term.lower() in normalized for term in terms)
 
 
+def _split_topic_tags(tags: str) -> list[str]:
+    return [tag.strip() for tag in re.split(r"[,，、;；]+", tags) if tag.strip()]
+
+
 def validate_topic_presets_contract() -> int:
     topic_presets_text = (ROOT / "frontend" / "lib" / "topic-presets.ts").read_text(
         encoding="utf-8"
@@ -357,6 +361,15 @@ def validate_topic_presets_contract() -> int:
     }
 
     total = 0
+    if _split_topic_tags("水博，海外博士、在职博士;博士项目") != [
+        "水博",
+        "海外博士",
+        "在职博士",
+        "博士项目",
+    ]:
+        raise SystemExit("Topic preset tag splitter must support Chinese separators.")
+    total += 1
+
     if len(presets) < 16:
         raise SystemExit("Generation topic preset pool is too small")
     total += 1
@@ -397,7 +410,7 @@ def validate_topic_presets_contract() -> int:
         )
         if not _contains_any(semantic_text, semantic_terms):
             raise SystemExit(f"Topic preset {preset['key']} lacks semantic terms for {label}")
-        tag_count = len([tag.strip() for tag in re.split(r"[,，]", preset["tags"]) if tag.strip()])
+        tag_count = len(_split_topic_tags(preset["tags"]))
         if tag_count < 3:
             raise SystemExit(f"Topic preset {preset['key']} should have at least 3 tags")
         total += len(required_fields) + 3
