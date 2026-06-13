@@ -2055,7 +2055,7 @@ function CreationProjectGateway({
               选择一个项目，进入对应的创作流程
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-              当前先把硕升博内容做成独立项目卡片。后续商品上架、私域成交等任务也会按同样方式接入，避免把所有功能堆在一个页面里。
+              选择业务目标后，OPC 会载入对应的资料、风格和交付清单；未接入的项目会先保留为后续路线图。
             </p>
 
             <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-3">
