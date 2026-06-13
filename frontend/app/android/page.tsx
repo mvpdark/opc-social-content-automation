@@ -212,9 +212,51 @@ const quickMetrics = [
 const taskActionCopy: Record<MobileTab, string> = {
   home: "已回到首页。",
   collect: "已打开采集页，可以切平台、编辑关键词和查看参考卡片。",
-  create: "已打开创作页，可以切换版式并进入生成入口。",
+  create: "已打开创作项目页，先选择项目再进入生成入口。",
   settings: "已打开设置页，可以查看配置和发布确认状态。"
 };
+
+const mobileCreationProjects = [
+  {
+    id: "postgraduate-phd",
+    title: "硕升博项目",
+    category: "小红书图文获客",
+    status: "可进入",
+    description: "围绕硕升博、在职申博和水博路线，生成图文草稿、封面方向、标签和发布检查。",
+    inputs: ["趋势参考", "申请人痛点", "项目卖点"],
+    outputs: ["图文草稿", "封面方案", "发布清单"],
+    workflow: ["采集参考", "一键撰稿+封面", "预览复制", "人工确认发布"],
+    enabled: true
+  },
+  {
+    id: "ecommerce-listing",
+    title: "商品上架项目",
+    category: "电商转化",
+    status: "规划中",
+    description: "面向商品标题、卖点、详情页结构、FAQ 和客服话术。",
+    inputs: ["商品信息", "卖点素材", "竞品参考"],
+    outputs: ["上架文案", "详情页结构", "客服话术"],
+    workflow: ["商品资料", "卖点提炼", "详情页草稿", "人工确认"],
+    enabled: false
+  },
+  {
+    id: "private-domain-sales",
+    title: "私域成交项目",
+    category: "销售跟进",
+    status: "规划中",
+    description: "面向朋友圈、社群跟进、异议处理和成交 SOP。",
+    inputs: ["产品资料", "客户问题", "成交限制"],
+    outputs: ["跟进 SOP", "群发文案", "异议处理"],
+    workflow: ["客户分层", "跟进话术", "异议处理", "人工确认"],
+    enabled: false
+  }
+] as const;
+
+type MobileCreationProjectId = (typeof mobileCreationProjects)[number]["id"];
+
+function findEnabledMobileCreationProject(projectId: string | null) {
+  return mobileCreationProjects.find((project) => project.enabled && project.id === projectId) ?? null;
+}
 
 const sampleReferences = [
   {
@@ -832,7 +874,7 @@ function MobileHeader({ activeTab, onNotify }: { activeTab: MobileTab; onNotify:
   const titles: Record<MobileTab, string> = {
     home: "今日工作台",
     collect: "趋势采集",
-    create: "内容创作",
+    create: "创作项目",
     settings: "设置"
   };
 
@@ -1645,6 +1687,7 @@ function CreateScreen({
   credentials: CredentialSettings;
   onAction: (message: string) => void;
 }) {
+  const [selectedProjectId, setSelectedProjectId] = useState<MobileCreationProjectId | null>(null);
   const [platform, setPlatform] = useState<MobilePlatform>("xiaohongshu");
   const [contentMode, setContentMode] = useState<"short" | "xiaohongshu">("xiaohongshu");
   const [topic, setTopic] = useState("硕升博申请第一步，不是先套磁");
@@ -1670,6 +1713,7 @@ function CreateScreen({
   const audioContextRef = useRef<AudioContext | null>(null);
   const completionSoundReadyRef = useRef(false);
   const coverImageUrl = generatedCover ? resolveAssetUrl(generatedCover.image_url) : null;
+  const selectedProject = findEnabledMobileCreationProject(selectedProjectId);
 
   useEffect(() => {
     let active = true;
@@ -2052,8 +2096,44 @@ function CreateScreen({
       : "点击下方按钮开始生成";
   const heroProgressValue = busy ? `${progressPercent}%` : generatedContent ? "已就绪" : "未开始";
 
+  function enterProject(projectId: MobileCreationProjectId) {
+    const project = findEnabledMobileCreationProject(projectId);
+    if (!project) {
+      onAction("这个项目还在规划中，暂时不能进入。");
+      return;
+    }
+    setSelectedProjectId(project.id);
+    onAction(`已进入${project.title}，可以开始生成图文和封面。`);
+  }
+
+  function returnToProjects() {
+    setSelectedProjectId(null);
+    onAction("已返回创作项目卡片。");
+  }
+
+  if (!selectedProject) {
+    return (
+      <MobileCreationProjectGateway
+        generatedContent={generatedContent}
+        onSelect={enterProject}
+      />
+    );
+  }
+
   return (
     <div className="space-y-4">
+      <button
+        className="flex h-11 w-full touch-manipulation items-center justify-between rounded-[18px] border border-white/70 bg-white/78 px-3 text-sm font-black text-ink shadow-[0_10px_28px_rgba(31,58,49,0.08)] active:scale-[0.99]"
+        data-testid="mobile-return-projects"
+        onClick={returnToProjects}
+        type="button"
+      >
+        <span className="inline-flex items-center gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          返回项目
+        </span>
+        <span className="text-xs text-muted">{selectedProject.title}</span>
+      </button>
       <section className="relative overflow-hidden rounded-[26px] border border-white/70 bg-white/55 p-4 text-ink shadow-[0_22px_48px_rgba(31,58,49,0.12),inset_0_1px_0_rgba(255,255,255,0.70)] backdrop-blur-xl">
         <div
           aria-hidden="true"
@@ -2232,6 +2312,134 @@ function CreateScreen({
           onExportStatus={onAction}
         />
       ) : null}
+    </div>
+  );
+}
+
+function MobileCreationProjectGateway({
+  generatedContent,
+  onSelect
+}: {
+  generatedContent: GeneratedContent | null;
+  onSelect: (projectId: MobileCreationProjectId) => void;
+}) {
+  const liveProject = mobileCreationProjects.find((project) => project.enabled) ?? mobileCreationProjects[0];
+  const roadmapProjects = mobileCreationProjects.filter((project) => !project.enabled);
+
+  return (
+    <div className="space-y-4" data-testid="mobile-creation-project-gateway">
+      <button
+        aria-label={`进入${liveProject.title}创作流程`}
+        className="relative min-h-[390px] w-full touch-manipulation overflow-hidden rounded-[28px] border border-white/70 bg-white/68 p-4 text-left text-ink shadow-[0_22px_48px_rgba(31,58,49,0.12),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur-xl active:scale-[0.99]"
+        data-testid={`mobile-creation-project-${liveProject.id}`}
+        onClick={() => onSelect(liveProject.id)}
+        type="button"
+      >
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-cover bg-center opacity-70"
+          style={{ backgroundImage: `url(${MOBILE_CREATE_CARD_BG})` }}
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,252,244,0.92)_0%,rgba(255,252,244,0.82)_50%,rgba(255,252,244,0.96)_100%)]"
+        />
+        <div className="relative flex min-h-[350px] flex-col">
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full border border-steel/30 bg-steel/10 px-2.5 py-1 text-[11px] font-black text-steel">
+              创作项目
+            </span>
+            <span className="rounded-full border border-moss/30 bg-moss/10 px-2.5 py-1 text-[11px] font-black text-moss">
+              {liveProject.status}
+            </span>
+            <span className="rounded-full border border-[#f3c96b]/40 bg-[#fff5d8] px-2.5 py-1 text-[11px] font-black text-[#8a5d16]">
+              先选项目
+            </span>
+          </div>
+
+          <div className="mt-7">
+            <div className="text-xs font-black text-muted">{liveProject.category}</div>
+            <h2 className="mt-2 text-[30px] font-black leading-9">{liveProject.title}</h2>
+            <p className="mt-3 text-sm font-medium leading-6 text-muted">{liveProject.description}</p>
+          </div>
+
+          <div className="mt-5 grid grid-cols-1 gap-2">
+            <div className="rounded-[18px] border border-white/75 bg-white/66 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.74)]">
+              <div className="text-[11px] font-black text-ink/55">输入资料</div>
+              <div className="mt-1 text-xs font-bold leading-5 text-ink/70">
+                {liveProject.inputs.join(" / ")}
+              </div>
+            </div>
+            <div className="rounded-[18px] border border-white/75 bg-white/66 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.74)]">
+              <div className="text-[11px] font-black text-ink/55">交付结果</div>
+              <div className="mt-1 text-xs font-bold leading-5 text-ink/70">
+                {liveProject.outputs.join(" / ")}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {liveProject.workflow.map((step, index) => (
+              <div
+                className="rounded-[14px] border border-steel/30 bg-steel/10 px-2.5 py-2 text-[11px] font-black text-ink"
+                key={step}
+              >
+                <span className="mr-1 text-muted">{index + 1}</span>
+                {step}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-auto pt-5">
+            <div className="flex h-12 items-center justify-center gap-2 rounded-[18px] bg-[#161817] text-sm font-black text-white shadow-[0_14px_30px_rgba(22,24,23,0.16)]">
+              <PenLine className="h-4 w-4" />
+              进入{liveProject.title}
+            </div>
+          </div>
+        </div>
+      </button>
+
+      <MobilePanel
+        title="项目状态"
+        action={generatedContent ? "已有草稿" : "待生成"}
+      >
+        <div className="rounded-[18px] border border-[#f3c96b]/40 bg-[#fff5d8] px-3 py-3 text-xs font-medium leading-5 text-[#8a5d16]">
+          进入项目后才显示具体生成表单；发布仍需人工确认，不会自动发布，也不会伪造采集、图片或效果数据。
+        </div>
+      </MobilePanel>
+
+      <MobilePanel title="后续项目卡片" action="路线图">
+        <div className="space-y-3">
+          {roadmapProjects.map((project) => (
+            <article
+              className="rounded-[22px] border border-white/70 bg-white/68 p-3 opacity-80 shadow-[0_10px_28px_rgba(31,58,49,0.07)]"
+              data-testid={`mobile-creation-project-${project.id}`}
+              key={project.id}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-[11px] font-black text-muted">{project.category}</div>
+                  <h3 className="mt-1 text-base font-black leading-6">{project.title}</h3>
+                </div>
+                <span className="rounded-full border border-[#f3c96b]/40 bg-[#fff5d8] px-2.5 py-1 text-[11px] font-black text-[#8a5d16]">
+                  {project.status}
+                </span>
+              </div>
+              <p className="mt-2 text-xs font-medium leading-5 text-muted">{project.description}</p>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {project.workflow.map((step) => (
+                  <span
+                    className="rounded-full border border-[#d6e8df] bg-white/72 px-2 py-1 text-[10px] font-bold text-muted"
+                    key={step}
+                  >
+                    {step}
+                  </span>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+      </MobilePanel>
     </div>
   );
 }
