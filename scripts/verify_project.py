@@ -311,6 +311,16 @@ def validate_frontend_design_contract() -> int:
     if unknown_referenced_styles:
         raise SystemExit("Unknown referenced interface styles: " + ", ".join(unknown_referenced_styles))
 
+    template_block = data_text.split("export const themeTemplates", 1)[1].split(
+        "export const tabThemeRecommendations", 1
+    )[0]
+    template_styles = set(re.findall(r'style: "([^"]+)"', template_block))
+    missing_template_styles = sorted(set(style_ids) - template_styles)
+    if missing_template_styles:
+        raise SystemExit(
+            "Missing recommended theme templates: " + ", ".join(missing_template_styles)
+        )
+
     for tab_id in tab_ids:
         if f'{{ id: "{tab_id}"' not in data_text:
             raise SystemExit(f"Missing navigation entry for tab {tab_id}")
@@ -469,6 +479,7 @@ def validate_frontend_design_contract() -> int:
         len(tab_ids)
         + len(style_ids)
         + len(referenced_styles)
+        + len(template_styles)
         + len(generation_flow_snippets)
         + len(terminal_routing_snippets)
         + len(pc_login_snippets)

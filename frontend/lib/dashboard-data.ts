@@ -117,6 +117,16 @@ export const themeTemplates: Array<{
     style: "apple"
   },
   {
+    label: "公开采集",
+    description: "搜索参考、链接预解析、素材整理",
+    style: "ocean"
+  },
+  {
+    label: "轻量知识库",
+    description: "低压力归档、日常素材整理",
+    style: "mint"
+  },
+  {
     label: "知识沉淀",
     description: "资料归档、智能检索、长期阅读",
     style: "editorial"
@@ -125,6 +135,11 @@ export const themeTemplates: Array<{
     label: "小红书推广",
     description: "偏女性、可爱、社媒运营",
     style: "candy"
+  },
+  {
+    label: "推广协作",
+    description: "发布交接、推广动作、轻量协作",
+    style: "warm"
   },
   {
     label: "趋势监控",
