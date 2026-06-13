@@ -2278,7 +2278,7 @@ function SettingsScreen({
     {
       keyName: "workspaceToken",
       label: "访问保护（可选）",
-      placeholder: "当前不用填",
+      placeholder: "无需填写",
       testId: "mobile-token"
     },
     {
@@ -2348,7 +2348,7 @@ function SettingsScreen({
         <div className="flex items-center justify-between gap-3 rounded-[18px] border border-white/70 bg-[#f9fbf6] px-3.5 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
           <div className="min-w-0">
             <div className="text-sm font-semibold text-ink">{mobileAccount}</div>
-            <div className="mt-1 text-xs text-muted">当前工作台未开启访问保护；需要时可在设置中开启。</div>
+            <div className="mt-1 text-xs text-muted">工作台未开启访问保护；需要时可在设置中开启。</div>
           </div>
           <button
             className="flex h-10 shrink-0 touch-manipulation items-center gap-2 rounded-md border border-[#d6e8df] bg-[#f6fbf6] px-3 text-xs font-semibold text-ink active:scale-[0.98]"
@@ -2369,7 +2369,7 @@ function SettingsScreen({
           {credentialFields.map((field) => {
             const localFilled = credentials[field.keyName].trim().length > 0;
             const statusText = field.keyName === "workspaceToken"
-              ? (localFilled ? "已填写" : "当前不用填")
+              ? (localFilled ? "已填写" : "无需填写")
               : localFilled
                 ? "本设备已填写"
                 : field.backendBound

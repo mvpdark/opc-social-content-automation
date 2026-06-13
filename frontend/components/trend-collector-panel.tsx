@@ -693,7 +693,7 @@ export function TrendCollectorPanel({
             <div className={fieldLabelClass}>访问保护</div>
             <div className="mt-2 flex items-center justify-between gap-3">
               <span className="text-sm font-medium text-ink">
-                {workspaceToken ? "访问保护已开启" : "当前未开启"}
+                {workspaceToken ? "访问保护已开启" : "未开启"}
               </span>
               <button
                 aria-label="打开设置查看访问保护"

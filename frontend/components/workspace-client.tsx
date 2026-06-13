@@ -2337,7 +2337,7 @@ function GenerationLauncher({
               <div className="text-xs font-medium text-muted">访问保护</div>
               <div className="mt-1 flex items-center justify-between gap-3">
                 <span className="text-sm font-medium">
-                  {workspaceToken ? "访问保护已开启" : "当前未开启"}
+                  {workspaceToken ? "访问保护已开启" : "未开启"}
                 </span>
                 <button
                   aria-label="打开设置查看访问保护"
@@ -3087,8 +3087,8 @@ function SettingsView({
     {
       keyName: "workspaceToken",
       label: "访问保护（可选）",
-      placeholder: "当前不用填",
-      helper: "当前工作台未开启访问保护；以后需要控制入口时再填写。"
+      placeholder: "无需填写",
+      helper: "工作台未开启访问保护；需要控制入口时再填写。"
     },
     {
       keyName: "draftApiKey",
@@ -3121,7 +3121,7 @@ function SettingsView({
     <div className="space-y-4">
       <Panel
         action={<Pill tone="blue">集中管理</Pill>}
-        helper="服务授权集中管理；当前工作台未开启访问保护。"
+        helper="服务授权集中管理；工作台未开启访问保护。"
         title="服务配置"
       >
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
@@ -3129,7 +3129,7 @@ function SettingsView({
             {credentialFields.map((field) => {
               const localFilled = credentials[field.keyName].trim().length > 0;
               const statusText = field.keyName === "workspaceToken"
-                ? (localFilled ? "已填写" : "当前不用填")
+                ? (localFilled ? "已填写" : "无需填写")
                 : localFilled
                   ? "本设备已填写"
                   : field.backendBound
@@ -3208,7 +3208,7 @@ function SettingsView({
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
               <Pill tone={credentials.workspaceToken ? "green" : "amber"}>
-                保护 {credentials.workspaceToken ? "已填写" : "当前未开启"}
+                保护 {credentials.workspaceToken ? "已填写" : "未开启"}
               </Pill>
               <Pill tone={credentials.draftApiKey || providerBindings.draft ? "green" : "amber"}>
                 撰稿 {credentials.draftApiKey ? "本设备已填写" : providerBindings.draft ? "已保存" : "未配置"}
