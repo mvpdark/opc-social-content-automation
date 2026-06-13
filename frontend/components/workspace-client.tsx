@@ -224,7 +224,7 @@ const creationProjects = [
     outputs: ["跟进 SOP", "群发文案", "异议处理"],
     enabled: false
   }
-] satisfies ReadonlyArray<{
+] as const satisfies ReadonlyArray<{
   id: string;
   title: string;
   status: string;
