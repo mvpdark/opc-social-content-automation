@@ -21,7 +21,7 @@ def create_user(db: Session, payload: UserCreate) -> User:
     if get_user_by_phone(db, payload.phone):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Phone number is already registered.",
+            detail="手机号已注册。",
         )
 
     user = User(
@@ -41,7 +41,7 @@ def authenticate_user(db: Session, phone: str, password: str) -> User:
     if not user or not verify_password(password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid phone number or password.",
+            detail="手机号或密码不正确。",
         )
     return user
 
@@ -54,7 +54,7 @@ def authenticate_mobile_account(account: str, password: str) -> str:
 
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid account or password.",
+        detail="账号或密码不正确。",
     )
 
 

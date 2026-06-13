@@ -34,7 +34,7 @@ def decode_access_token(token: str) -> dict[str, str]:
     except JWTError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired access token.",
+            detail="登录已失效，请重新登录。",
         ) from exc
 
     subject = payload.get("sub")
@@ -42,6 +42,6 @@ def decode_access_token(token: str) -> dict[str, str]:
     if not isinstance(subject, str) or not isinstance(role, str):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid access token claims.",
+            detail="登录状态异常，请重新登录。",
         )
     return {"sub": subject, "role": role}

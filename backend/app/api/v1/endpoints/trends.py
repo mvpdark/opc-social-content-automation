@@ -161,7 +161,7 @@ def get_trend_collection_job(
     if job is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Trend collection job was not found.",
+            detail="未找到采集任务。",
         )
     return TrendCollectionJobRead.model_validate(job)
 
@@ -177,22 +177,22 @@ def start_trend_collection_job(
     if job is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Trend collection job was not found.",
+            detail="未找到采集任务。",
         )
     if job.status == "running":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Trend collection job is already running.",
+            detail="采集任务正在运行。",
         )
     if collection_job_has_pending_auto_start(job):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Trend collection job is already queued for automatic start.",
+            detail="采集任务已排队等待自动启动。",
         )
     if job.status == "completed":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Completed trend collection jobs cannot be restarted.",
+            detail="已完成的采集任务不能重新启动。",
         )
 
     mark_collection_job_for_auto_start(job)

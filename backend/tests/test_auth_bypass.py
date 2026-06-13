@@ -22,4 +22,4 @@ def test_auth_required_mode_still_requires_bearer_token(monkeypatch) -> None:
         get_current_user(credentials=None, db=None)  # type: ignore[arg-type]
 
     assert exc_info.value.status_code == 401
-    assert exc_info.value.detail == "Missing bearer token."
+    assert exc_info.value.detail == "请先登录。"

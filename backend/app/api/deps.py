@@ -28,7 +28,7 @@ def get_current_user(
     if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing bearer token.",
+            detail="请先登录。",
         )
 
     token_data = decode_access_token(credentials.credentials)
@@ -37,13 +37,13 @@ def get_current_user(
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid access token subject.",
+            detail="登录状态异常，请重新登录。",
         ) from exc
 
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User no longer exists.",
+            detail="账号不存在或已失效，请重新登录。",
         )
     return user
