@@ -48,6 +48,7 @@ def test_build_xhs_link_import_target_extracts_supported_links() -> None:
     assert target.links[1].link_type == "short_link"
     assert target.links[1].requires_resolution is True
     assert target.links[2].accepted is False
+    assert any("默认不保存 Cookie" in note for note in target.safety_notes)
     assert "独立 clean-room 代码" in " ".join(target.safety_notes)
 
 

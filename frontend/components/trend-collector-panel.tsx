@@ -244,6 +244,7 @@ function buildLocalXhsLinkImportTarget(rawText: string): LinkImportTarget {
     links,
     safety_notes: [
       "本地预解析只识别链接形态，不抓取小红书页面内容。",
+      "默认不保存 Cookie，也不会绕过平台访问限制。",
       "后续入库前仍需人工确认来源和内容。"
     ]
   };

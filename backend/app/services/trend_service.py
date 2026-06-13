@@ -181,7 +181,7 @@ def build_xhs_link_import_target(payload: TrendLinkImportRequest) -> TrendLinkIm
             "这里只提取并分类链接，不抓取笔记详情或媒体文件。",
             "xhslink.com 短链只通过操作者授权的可见浏览器或合规采集器解析。",
             "默认不下载媒体；先保存笔记元数据，入知识库前必须人工复核。",
-            "当前集成默认关闭 Cookie 持久化，除非后续显式启用授权采集器。",
+            "默认不保存 Cookie；只有后续显式启用授权采集器时才会持久化。",
             "XHS-Downloader 仅作为产品和架构参考；当前实现是独立 clean-room 代码。",
         ],
     )

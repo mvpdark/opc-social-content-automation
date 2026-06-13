@@ -912,6 +912,7 @@ def validate_content_production_contract() -> int:
         "从 brief 到复核",
         "clean-room",
         "Cookie 保存",
+        "默认关闭 Cookie",
         "登录门槛",
         "自动化模式",
         "Skill/MCP",
