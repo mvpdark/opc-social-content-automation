@@ -175,6 +175,58 @@ const xhsMobileDraftTone = [
 const shortPostDraftTone =
   "短段正文风格，表达克制、清楚、有行动建议，不制造录取承诺。";
 
+type MobileTopicPreset = {
+  audience: string;
+  helper: string;
+  key: "ranking" | "route" | "mentor" | "timeline" | "sales";
+  label: string;
+  tags: string;
+  topic: string;
+};
+
+const mobileTopicPresets: MobileTopicPreset[] = [
+  {
+    audience: "想快速筛选海外博士路线的在职申请人",
+    helper: "榜单/排名",
+    key: "ranking",
+    label: "榜单",
+    tags: "水博,海外博士,在职博士,博士项目,小红书获客",
+    topic: "全球水博排名必看"
+  },
+  {
+    audience: "准备硕升博但不知道选国内还是海外的学生",
+    helper: "路线判断",
+    key: "route",
+    label: "路线",
+    tags: "硕升博,博士申请,路线规划,在职博士",
+    topic: "硕升博申请路线怎么选"
+  },
+  {
+    audience: "已经有研究兴趣但不知道怎么找导师的申请人",
+    helper: "导师匹配",
+    key: "mentor",
+    label: "导师",
+    tags: "导师匹配,研究方向,博士申请,套磁",
+    topic: "导师匹配前要做的方向自查"
+  },
+  {
+    audience: "准备一年内启动博士申请的在职人群",
+    helper: "时间节点",
+    key: "timeline",
+    label: "时间",
+    tags: "在职博士,申请时间线,材料准备,硕升博",
+    topic: "在职博士申请时间线怎么排"
+  },
+  {
+    audience: "想先了解项目适配度再咨询的潜在客户",
+    helper: "咨询转化",
+    key: "sales",
+    label: "转化",
+    tags: "博士项目,咨询转化,私域运营,小红书营销",
+    topic: "适合上班族的博士项目怎么咨询"
+  }
+];
+
 type CollectionScheduleStorage = {
   autoEnabled: boolean;
   intervalMinutes: number;
@@ -738,6 +790,18 @@ function getPcReturnHref() {
   return "/";
 }
 
+function detectNativeShell() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  const params = new URLSearchParams(window.location.search);
+  return (
+    params.get("shell") === "android" ||
+    params.get("app") === "ompc" ||
+    window.navigator.userAgent.includes("OMPCWorkstation")
+  );
+}
+
 function readStoredMobileAccount() {
   const stored = readMobileStorage(MOBILE_AUTH_STORAGE_KEY);
   const account = stored?.trim() ?? "";
@@ -754,6 +818,7 @@ function clearStoredMobileAccount() {
 
 export default function AndroidPreviewPage() {
   const [activeTab, setActiveTab] = useState<MobileTab>("home");
+  const [isNativeShell, setIsNativeShell] = useState(false);
   const [status, setStatus] = useState("手机端操作已就绪");
   const [credentials, setCredentials] = useState<CredentialSettings>(emptyCredentials);
   const [credentialsLoaded, setCredentialsLoaded] = useState(false);
@@ -762,6 +827,7 @@ export default function AndroidPreviewPage() {
   const [providerStatuses, setProviderStatuses] = useState<ProviderStatusItem[]>([]);
 
   useEffect(() => {
+    setIsNativeShell(detectNativeShell());
     setMobileAccount(readStoredMobileAccount());
     setAuthLoaded(true);
   }, []);
@@ -841,6 +907,7 @@ export default function AndroidPreviewPage() {
     return (
       <MobileShell>
         <LoginScreen
+          isNativeShell={isNativeShell}
           loading={!authLoaded}
           onLogin={login}
         />
@@ -852,6 +919,7 @@ export default function AndroidPreviewPage() {
     <MobileShell>
       <MobileHeader
         activeTab={activeTab}
+        isNativeShell={isNativeShell}
         onNotify={() => setStatus("暂无新通知，发布前确认和安全规则仍保持开启。")}
       />
       <section className="relative min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(104px+env(safe-area-inset-bottom))] pt-3">
@@ -919,9 +987,11 @@ function MobileScreenBackdrop({ activeTab }: { activeTab: MobileTab }) {
 }
 
 function LoginScreen({
+  isNativeShell,
   loading,
   onLogin
 }: {
+  isNativeShell: boolean;
   loading: boolean;
   onLogin: (
     account: string,
@@ -974,7 +1044,7 @@ function LoginScreen({
           className="h-14 w-14 rounded-[18px] object-cover shadow-[0_18px_36px_rgba(24,64,52,0.18)]"
           src="/app-icon.png"
         />
-        <div className="mt-6 text-xs font-black text-moss">OPC Mobile</div>
+        <div className="mt-6 text-xs font-black text-moss">{isNativeShell ? "OMPC工作站" : "OPC Mobile"}</div>
         <h1 className="mt-1 text-[34px] font-black leading-10 tracking-normal text-ink">
           登录手机工作台
         </h1>
@@ -1039,7 +1109,15 @@ function LoginScreen({
   );
 }
 
-function MobileHeader({ activeTab, onNotify }: { activeTab: MobileTab; onNotify: () => void }) {
+function MobileHeader({
+  activeTab,
+  isNativeShell,
+  onNotify
+}: {
+  activeTab: MobileTab;
+  isNativeShell: boolean;
+  onNotify: () => void;
+}) {
   const titles: Record<MobileTab, string> = {
     home: "今日工作台",
     collect: "趋势采集",
@@ -1054,19 +1132,26 @@ function MobileHeader({ activeTab, onNotify }: { activeTab: MobileTab; onNotify:
         className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.70),rgba(255,255,255,0.22)_48%,rgba(210,230,216,0.20))]"
       />
       <div className="relative flex items-center justify-between gap-3">
-        <button
-          aria-label="返回 PC 工作台"
-          className={MOBILE_HEADER_ICON_BUTTON_CLASS}
-          onClick={() => {
-            window.location.href = getPcReturnHref();
-          }}
-          type="button"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
+        {isNativeShell ? (
+          <div
+            aria-hidden="true"
+            className={`${MOBILE_HEADER_ICON_BUTTON_CLASS} pointer-events-none opacity-0`}
+          />
+        ) : (
+          <button
+            aria-label="返回 PC 工作台"
+            className={MOBILE_HEADER_ICON_BUTTON_CLASS}
+            onClick={() => {
+              window.location.href = getPcReturnHref();
+            }}
+            type="button"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+        )}
         <div className="min-w-0 flex-1">
           <div className="text-[11px] font-black text-moss">
-            OPC Mobile
+            {isNativeShell ? "OMPC工作站" : "OPC Mobile"}
           </div>
           <h1 className="truncate text-[25px] font-black leading-8">{titles[activeTab]}</h1>
         </div>
@@ -2037,6 +2122,13 @@ function CreateScreen({
     onAction("已退出草稿多选模式。");
   }
 
+  function applyMobileTopicPreset(preset: MobileTopicPreset) {
+    setTopic(preset.topic);
+    setTargetAudience(preset.audience);
+    setTagsText(preset.tags);
+    onAction(`已套用推荐选题：${preset.topic}`);
+  }
+
   function toggleDraftPin(item: MobileDraftHistoryItem) {
     persistDraftHistory(
       draftHistory.map((draftItem) =>
@@ -2667,6 +2759,31 @@ function CreateScreen({
             value={topic}
           />
         </label>
+        <div className="mt-3" data-testid="mobile-topic-preset-list">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs font-medium text-muted">推荐选题</span>
+            <span className="text-[11px] text-muted">可自定义</span>
+          </div>
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+            {mobileTopicPresets.map((preset) => (
+              <button
+                className="min-w-[128px] rounded-[18px] border border-white/[0.88] bg-[rgba(255,253,247,0.86)] px-3 py-2 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.74)] active:scale-[0.99]"
+                data-testid={`mobile-topic-preset-${preset.key}`}
+                key={preset.key}
+                onClick={() => applyMobileTopicPreset(preset)}
+                type="button"
+              >
+                <span className="block text-[11px] font-black text-moss">{preset.label}</span>
+                <span className="mt-1 block text-xs font-black leading-4 text-ink">
+                  {preset.topic}
+                </span>
+                <span className="mt-1 block text-[10px] font-medium text-muted">
+                  {preset.helper}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
         <label className="mt-3 block">
           <span className="text-xs font-medium text-muted">目标人群</span>
           <input

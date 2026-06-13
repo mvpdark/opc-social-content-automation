@@ -612,6 +612,12 @@ def validate_content_production_contract() -> int:
         "setManualCopyText(null)",
         "manualCopyRef.current?.select()",
         "targetRef.current?.select()",
+        "const contentTopicPresets",
+        "function applyTopicPreset(preset: ContentTopicPreset)",
+        'data-testid="topic-preset-list"',
+        'data-testid={`topic-preset-${preset.key}`}',
+        "全球水博排名必看",
+        "也可以直接修改为自定义选题",
     ]
     backend_contract_snippets = [
         'IMAGE_GENERATABLE_STATUSES = {"draft", "rewritten", "review_pending", "approved"}',
@@ -759,6 +765,19 @@ def validate_content_production_contract() -> int:
         total += 1
         if snippet not in android_text:
             raise SystemExit(f"Missing mobile static reference contract: {snippet}")
+
+    mobile_topic_recommendation_contract_snippets = [
+        "const mobileTopicPresets",
+        "function applyMobileTopicPreset(preset: MobileTopicPreset)",
+        'data-testid="mobile-topic-preset-list"',
+        'data-testid={`mobile-topic-preset-${preset.key}`}',
+        "全球水博排名必看",
+        "可自定义",
+    ]
+    for snippet in mobile_topic_recommendation_contract_snippets:
+        total += 1
+        if snippet not in android_text:
+            raise SystemExit(f"Missing mobile topic recommendation contract: {snippet}")
 
     mobile_draft_delete_contract_snippets = [
         "MOBILE_DELETED_DRAFT_IDS_STORAGE_KEY",
