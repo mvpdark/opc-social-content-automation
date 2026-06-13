@@ -284,6 +284,127 @@ def _extract_ts_array(name: str, text: str) -> list[str]:
     return re.findall(r'"([^"]+)"', match.group(1))
 
 
+def _extract_topic_preset_objects(text: str) -> list[dict[str, str]]:
+    match = re.search(
+        r"export const generationTopicPresets[^=]*=\s*\[(.*?)\];",
+        text,
+        re.S,
+    )
+    if not match:
+        raise SystemExit("Could not find generationTopicPresets")
+
+    block = match.group(1)
+    objects: list[dict[str, str]] = []
+    for object_match in re.finditer(r"\{\s*(.*?)\n  \}", block, re.S):
+        object_text = object_match.group(1)
+        preset: dict[str, str] = {}
+        for field in [
+            "audience",
+            "coverDirection",
+            "desktopHelper",
+            "desktopLabel",
+            "key",
+            "knowledgeQuery",
+            "mobileHelper",
+            "mobileLabel",
+            "tags",
+            "topic",
+        ]:
+            field_match = re.search(rf'{field}:\s*"([^"]*)"', object_text, re.S)
+            if field_match:
+                preset[field] = field_match.group(1)
+        objects.append(preset)
+    if not objects:
+        raise SystemExit("Could not parse generation topic presets")
+    return objects
+
+
+def _require_unique(values: list[str], label: str) -> int:
+    duplicates = sorted({value for value in values if values.count(value) > 1})
+    if duplicates:
+        raise SystemExit(f"Duplicate {label}: " + ", ".join(duplicates))
+    return len(values)
+
+
+def _contains_any(text: str, terms: tuple[str, ...]) -> bool:
+    normalized = text.lower()
+    return any(term.lower() in normalized for term in terms)
+
+
+def validate_topic_presets_contract() -> int:
+    topic_presets_text = (ROOT / "frontend" / "lib" / "topic-presets.ts").read_text(
+        encoding="utf-8"
+    )
+    presets = _extract_topic_preset_objects(topic_presets_text)
+    required_fields = {
+        "audience",
+        "coverDirection",
+        "desktopHelper",
+        "desktopLabel",
+        "key",
+        "knowledgeQuery",
+        "mobileHelper",
+        "mobileLabel",
+        "tags",
+        "topic",
+    }
+    label_contract = {
+        "榜单型": ("ranking-", ("榜", "排名", "筛", "清单", "预算", "风险", "认证", "项目")),
+        "路线型": ("route-", ("路线", "选择", "取舍", "路径", "国内", "海外")),
+        "导师型": ("mentor-", ("导师", "套磁", "研究方向", "论文")),
+        "时间型": ("timeline-", ("时间", "节点", "材料", "DDL", "月份", "优先级")),
+        "转化型": ("sales-", ("咨询", "转化", "私域", "线索", "话术", "价值")),
+    }
+
+    total = 0
+    if len(presets) < 16:
+        raise SystemExit("Generation topic preset pool is too small")
+    total += 1
+
+    total += _require_unique([preset.get("key", "") for preset in presets], "topic preset keys")
+    total += _require_unique([preset.get("topic", "") for preset in presets], "topic preset topics")
+
+    labels = {preset.get("desktopLabel", "") for preset in presets}
+    missing_labels = sorted(set(label_contract) - labels)
+    if missing_labels:
+        raise SystemExit("Missing topic preset categories: " + ", ".join(missing_labels))
+    total += len(label_contract)
+
+    for preset in presets:
+        missing = sorted(field for field in required_fields if not preset.get(field, "").strip())
+        if missing:
+            raise SystemExit(
+                f"Topic preset {preset.get('key', '<unknown>')} missing fields: "
+                + ", ".join(missing)
+            )
+        label = preset["desktopLabel"]
+        if label not in label_contract:
+            raise SystemExit(f"Unknown topic preset label: {label}")
+        expected_prefix, semantic_terms = label_contract[label]
+        if not preset["key"].startswith(expected_prefix):
+            raise SystemExit(
+                f"Topic preset {preset['key']} must use prefix {expected_prefix} for {label}"
+            )
+        semantic_text = " ".join(
+            [
+                preset["topic"],
+                preset["mobileHelper"],
+                preset["desktopHelper"],
+                preset["coverDirection"],
+                preset["knowledgeQuery"],
+                preset["tags"],
+            ]
+        )
+        if not _contains_any(semantic_text, semantic_terms):
+            raise SystemExit(f"Topic preset {preset['key']} lacks semantic terms for {label}")
+        tag_count = len([tag.strip() for tag in re.split(r"[,，]", preset["tags"]) if tag.strip()])
+        if tag_count < 3:
+            raise SystemExit(f"Topic preset {preset['key']} should have at least 3 tags")
+        total += len(required_fields) + 3
+
+    return total
+
+
 def validate_frontend_design_contract() -> int:
     dashboard_data_file = ROOT / "frontend" / "lib" / "dashboard-data.ts"
     data_text = dashboard_data_file.read_text(encoding="utf-8")
@@ -1629,6 +1750,7 @@ def main() -> None:
         "migration_chain_checked": validate_migration_chain(),
         "safety_gates_checked": validate_safety_gates(),
         "frontend_design_contract_checked": validate_frontend_design_contract(),
+        "topic_presets_contract_checked": validate_topic_presets_contract(),
         "content_production_contract_checked": validate_content_production_contract(),
         "android_shell_contract_checked": validate_android_shell_contract(),
         "text_hygiene_files_checked": validate_text_hygiene(),
