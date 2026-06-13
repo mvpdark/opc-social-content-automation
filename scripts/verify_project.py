@@ -901,7 +901,7 @@ def validate_content_production_contract() -> int:
         "MOBILE_COVER_HYDRATION_RETRY_LIMIT",
         "MOBILE_COVER_HYDRATION_RETRY_MS",
         "const XHS_COVER_WIDTH = 1024;",
-        "const XHS_COVER_HEIGHT = 1365;",
+        "const XHS_COVER_HEIGHT = 1360;",
         "canvas.width = image.naturalWidth || XHS_COVER_WIDTH;",
         "canvas.width = XHS_COVER_WIDTH;",
         'width="${XHS_COVER_WIDTH}" height="${XHS_COVER_HEIGHT}"',

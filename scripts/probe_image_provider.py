@@ -36,7 +36,7 @@ def main() -> None:
     payload = {
         "model": env.get("IMAGE_MODEL", "gpt-image-2"),
         "prompt": "A clean 3:4 Xiaohongshu cover with Chinese title text: 硕升博申请节奏",
-        "size": env.get("IMAGE_SIZE", "1024x1365"),
+        "size": env.get("IMAGE_SIZE", "1024x1360"),
         "n": 1,
     }
     response_format = env.get("IMAGE_RESPONSE_FORMAT")
