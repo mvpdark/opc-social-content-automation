@@ -193,6 +193,50 @@ const emptyCredentials: CredentialSettings = {
   rewriteApiKey: ""
 };
 
+const creationProjects = [
+  {
+    id: "postgraduate-phd",
+    title: "硕升博获客项目",
+    status: "可进入",
+    statusTone: "green",
+    description: "围绕硕升博、在职申博和水博路线，生成图文草稿、封面方向、标签和发布检查。",
+    inputs: ["趋势参考", "申请人痛点", "项目卖点"],
+    outputs: ["图文草稿", "封面方案", "发布清单"],
+    enabled: true
+  },
+  {
+    id: "ecommerce-listing",
+    title: "商品上架项目",
+    status: "规划中",
+    statusTone: "amber",
+    description: "面向电商商品标题、卖点、详情页结构、FAQ 和客服话术。",
+    inputs: ["商品信息", "卖点素材", "竞品参考"],
+    outputs: ["上架文案", "详情页结构", "客服话术"],
+    enabled: false
+  },
+  {
+    id: "private-domain-sales",
+    title: "私域成交项目",
+    status: "规划中",
+    statusTone: "amber",
+    description: "面向朋友圈、社群跟进、异议处理和成交 SOP。",
+    inputs: ["产品资料", "客户问题", "成交限制"],
+    outputs: ["跟进 SOP", "群发文案", "异议处理"],
+    enabled: false
+  }
+] satisfies ReadonlyArray<{
+  id: string;
+  title: string;
+  status: string;
+  statusTone: keyof typeof pillTone;
+  description: string;
+  inputs: readonly string[];
+  outputs: readonly string[];
+  enabled: boolean;
+}>;
+
+type CreationProjectId = (typeof creationProjects)[number]["id"];
+
 const writingStylePresets = [
   {
     id: "warm_cute",
@@ -1828,9 +1872,14 @@ function ContentView({
   onOpenSettings: () => void;
   workspaceToken: string;
 }) {
+  const [selectedCreationProjectId, setSelectedCreationProjectId] =
+    useState<CreationProjectId | null>(null);
   const [previewContent, setPreviewContent] = useState<GeneratedContent | null>(null);
   const [previewImageAsset, setPreviewImageAsset] = useState<GeneratedImageAsset | null>(null);
   const [previewLoading, setPreviewLoading] = useState(true);
+  const selectedCreationProject = creationProjects.find(
+    (project) => project.id === selectedCreationProjectId
+  );
 
   function handleGeneratedContent(content: GeneratedContent) {
     setPreviewContent(content);
@@ -1901,8 +1950,43 @@ function ContentView({
     };
   }, []);
 
+  if (!selectedCreationProject) {
+    return (
+      <CreationProjectGateway
+        latestContent={previewContent}
+        loading={previewLoading}
+        onSelect={setSelectedCreationProjectId}
+      />
+    );
+  }
+
   return (
     <div className="space-y-4">
+      <section className="glass-panel rounded-md border px-4 py-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="flex flex-wrap gap-2">
+              <Pill tone="green">当前项目</Pill>
+              <Pill tone="blue">小红书获客</Pill>
+              <Pill tone="amber">人工确认后发布</Pill>
+            </div>
+            <h2 className="mt-3 text-xl font-semibold leading-7 text-ink">
+              {selectedCreationProject.title}
+            </h2>
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-muted">
+              {selectedCreationProject.description}
+            </p>
+          </div>
+          <button
+            className={`${secondaryButtonClass} h-10 px-4`}
+            onClick={() => setSelectedCreationProjectId(null)}
+            type="button"
+          >
+            返回项目
+          </button>
+        </div>
+      </section>
+
       <GenerationLauncher
         defaultWritingStyle={defaultWritingStyle}
         latestImageAsset={previewImageAsset}
@@ -1944,6 +2028,122 @@ function ContentView({
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+function CreationProjectGateway({
+  latestContent,
+  loading,
+  onSelect
+}: {
+  latestContent: GeneratedContent | null;
+  loading: boolean;
+  onSelect: (projectId: CreationProjectId) => void;
+}) {
+  return (
+    <div className="space-y-4" data-testid="creation-project-gateway">
+      <section className="glass-panel overflow-hidden rounded-[24px] border shadow-panel">
+        <div className="grid grid-cols-1 gap-0 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="p-5 lg:p-6">
+            <div className="flex flex-wrap gap-2">
+              <Pill tone="blue">创作项目</Pill>
+              <Pill tone="green">任务入口</Pill>
+              <Pill tone="amber">先选项目再生成</Pill>
+            </div>
+            <h2 className="mt-4 max-w-2xl text-2xl font-semibold leading-tight text-ink">
+              选择一个项目，进入对应的创作流程
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+              当前先把硕升博内容做成独立项目卡片。后续商品上架、私域成交等任务也会按同样方式接入，避免把所有功能堆在一个页面里。
+            </p>
+
+            <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-3">
+              {creationProjects.map((project) => (
+                <button
+                  aria-label={`${project.title}${project.enabled ? "，进入创作流程" : "，规划中"}`}
+                  className={[
+                    "group flex min-h-[280px] flex-col rounded-[18px] border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-steel/45",
+                    project.enabled
+                      ? "border-steel/35 bg-paper/78 shadow-panel hover:-translate-y-0.5 hover:border-steel/60 hover:bg-white/82"
+                      : "cursor-not-allowed border-line bg-mist/45 opacity-72"
+                  ].join(" ")}
+                  data-testid={`creation-project-${project.id}`}
+                  disabled={!project.enabled}
+                  key={project.id}
+                  onClick={() => {
+                    if (project.enabled) {
+                      onSelect(project.id);
+                    }
+                  }}
+                  type="button"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <IconBox tone={project.enabled ? "green" : "amber"}>
+                      <PenLine className="h-4 w-4" />
+                    </IconBox>
+                    <Pill tone={project.statusTone}>{project.status}</Pill>
+                  </div>
+                  <div className="mt-4 text-lg font-semibold leading-6 text-ink">
+                    {project.title}
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-muted">{project.description}</p>
+                  <div className="mt-4 grid grid-cols-1 gap-3 text-xs leading-5">
+                    <div>
+                      <div className="font-semibold text-ink">输入</div>
+                      <div className="mt-1 text-muted">{project.inputs.join(" / ")}</div>
+                    </div>
+                    <div>
+                      <div className="font-semibold text-ink">交付</div>
+                      <div className="mt-1 text-muted">{project.outputs.join(" / ")}</div>
+                    </div>
+                  </div>
+                  <div className="mt-auto pt-5">
+                    <span
+                      className={[
+                        "inline-flex h-10 items-center justify-center rounded-md px-3 text-sm font-semibold",
+                        project.enabled
+                          ? "bg-ink text-paper group-hover:translate-y-[-1px]"
+                          : "border border-line bg-paper/60 text-muted"
+                      ].join(" ")}
+                    >
+                      {project.enabled ? "进入项目" : "等待接入"}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <aside className="border-t border-line bg-mist/35 p-5 xl:border-l xl:border-t-0 lg:p-6">
+            <div className="text-sm font-semibold text-ink">当前创作状态</div>
+            <div className={`${subtleCardClass} mt-3 p-4`}>
+              <div className="flex items-start gap-3">
+                <IconBox tone={latestContent ? "green" : "blue"}>
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <BookOpenText className="h-4 w-4" />
+                  )}
+                </IconBox>
+                <div>
+                  <div className="text-sm font-semibold">
+                    {latestContent ? "已有最近草稿" : loading ? "正在读取草稿" : "还没有草稿"}
+                  </div>
+                  <p className="mt-1 text-xs leading-5 text-muted">
+                    {latestContent
+                      ? "进入硕升博项目后，可以继续预览、复制或重新生成。"
+                      : "进入项目后先填写选题，再生成文案和封面。"}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 border-l-4 border-amber pl-3 text-xs leading-5 text-muted">
+              所有项目都会保留人工确认节点；不会自动发布，也不会伪造采集、图片或效果数据。
+            </div>
+          </aside>
+        </div>
+      </section>
     </div>
   );
 }
