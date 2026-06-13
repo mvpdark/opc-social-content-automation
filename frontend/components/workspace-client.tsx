@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
   AlertTriangle,
@@ -2556,9 +2556,11 @@ function GeneratedPostExportCard({
   workspaceToken: string;
 }) {
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const [manualCopyText, setManualCopyText] = useState<string | null>(null);
   const [imageAsset, setImageAsset] = useState<GeneratedImageAsset | null>(null);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const manualCopyRef = useRef<HTMLTextAreaElement | null>(null);
   const warnings = complianceWarnings(content);
   const testDraft = isTestDraft(content);
   const canCopy = !testDraft && !generationBusy;
@@ -2590,6 +2592,19 @@ function GeneratedPostExportCard({
     }
   }, [content.id, generatedImageAsset]);
 
+  useEffect(() => {
+    setCopyState("idle");
+    setManualCopyText(null);
+  }, [content.id]);
+
+  useEffect(() => {
+    if (!manualCopyText) {
+      return;
+    }
+    manualCopyRef.current?.focus();
+    manualCopyRef.current?.select();
+  }, [manualCopyText]);
+
   function authHeaders() {
     return {
       "Content-Type": "application/json",
@@ -2600,13 +2615,16 @@ function GeneratedPostExportCard({
   async function handleCopy() {
     if (!canCopy) {
       setCopyState("failed");
+      setManualCopyText(null);
       return;
     }
     try {
       await copyText(copyPayload);
       setCopyState("copied");
+      setManualCopyText(null);
     } catch (_error) {
       setCopyState("failed");
+      setManualCopyText(copyPayload);
     }
   }
 
@@ -2741,8 +2759,19 @@ function GeneratedPostExportCard({
           </div>
           {copyState === "failed" && !testDraft ? (
             <div className="rounded-md border border-coral/40 bg-coral/10 p-3 text-ink">
-              复制被浏览器拦截了；正文和话题就在上方，可以直接选中后复制。
+              复制被浏览器拦截了；下方已展开正文，可直接全选复制。
             </div>
+          ) : null}
+          {manualCopyText ? (
+            <textarea
+              aria-label={`${platformLabel}手动复制文案`}
+              className="min-h-32 w-full resize-y rounded-md border border-coral/30 bg-paper px-3 py-2 text-xs leading-5 text-ink outline-none focus:border-coral focus:ring-2 focus:ring-coral/15"
+              data-testid="pc-export-manual-copy-text"
+              onFocus={(event) => event.currentTarget.select()}
+              readOnly
+              ref={manualCopyRef}
+              value={manualCopyText}
+            />
           ) : null}
         </div>
       </div>
@@ -3547,6 +3576,9 @@ function DraftPanel({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [portalReady, setPortalReady] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const [manualCopyText, setManualCopyText] = useState<string | null>(null);
+  const mainManualCopyRef = useRef<HTMLTextAreaElement | null>(null);
+  const modalManualCopyRef = useRef<HTMLTextAreaElement | null>(null);
   const previewPlatformId = platformIdForPreview(content?.platform ?? "xiaohongshu");
   const previewPlatformLabel = previewPlatformId === "douyin" ? "抖音" : "小红书";
   const preview = {
@@ -3570,16 +3602,34 @@ function DraftPanel({
     setPortalReady(true);
   }, []);
 
+  useEffect(() => {
+    setCopyState("idle");
+    setManualCopyText(null);
+  }, [content?.id]);
+
+  useEffect(() => {
+    if (!manualCopyText) {
+      return;
+    }
+    const targetRef = previewOpen ? modalManualCopyRef : mainManualCopyRef;
+    targetRef.current?.focus();
+    targetRef.current?.select();
+  }, [manualCopyText, previewOpen]);
+
   async function handleCopy() {
     if (!content || !canCopy) {
       setCopyState("failed");
+      setManualCopyText(null);
       return;
     }
+    const copyPayload = buildPlatformCopy(content);
     try {
-      await copyText(buildPlatformCopy(content));
+      await copyText(copyPayload);
       setCopyState("copied");
+      setManualCopyText(null);
     } catch (_error) {
       setCopyState("failed");
+      setManualCopyText(copyPayload);
     }
   }
 
@@ -3729,6 +3779,17 @@ function DraftPanel({
                   : "生成草稿后，这里会自动切换为最新内容。"}
             </div>
           </div>
+          {manualCopyText && !previewOpen ? (
+            <textarea
+              aria-label={`${previewPlatformLabel}手动复制文案`}
+              className="min-h-32 w-full resize-y rounded-md border border-coral/30 bg-paper px-3 py-2 text-xs leading-5 text-ink outline-none focus:border-coral focus:ring-2 focus:ring-coral/15"
+              data-testid="pc-preview-manual-copy-text"
+              onFocus={(event) => event.currentTarget.select()}
+              readOnly
+              ref={mainManualCopyRef}
+              value={manualCopyText}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -3830,8 +3891,19 @@ function DraftPanel({
                 </div>
                 {copyState === "failed" ? (
                   <div className="mt-3 rounded-md border border-coral/40 bg-coral/10 p-3 text-xs leading-5 text-ink">
-                    当前没有可复制的正式草稿，或复制被浏览器拦截；正文和话题仍在预览里，可以直接选中复制。
+                    当前没有可复制的正式草稿，或复制被浏览器拦截；下方已展开正文，可直接全选复制。
                   </div>
+                ) : null}
+                {manualCopyText ? (
+                  <textarea
+                    aria-label={`${previewPlatformLabel}手动复制文案`}
+                    className="mt-3 min-h-32 w-full resize-y rounded-md border border-coral/30 bg-paper px-3 py-2 text-xs leading-5 text-ink outline-none focus:border-coral focus:ring-2 focus:ring-coral/15"
+                    data-testid="pc-preview-modal-manual-copy-text"
+                    onFocus={(event) => event.currentTarget.select()}
+                    readOnly
+                    ref={modalManualCopyRef}
+                    value={manualCopyText}
+                  />
                 ) : null}
               </div>
 

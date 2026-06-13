@@ -574,6 +574,14 @@ def validate_content_production_contract() -> int:
         "本次未走改写服务",
         "generatedContentStatusLabel",
         "generatedImageStatusLabel",
+        'data-testid="pc-export-manual-copy-text"',
+        'data-testid="pc-preview-manual-copy-text"',
+        'data-testid="pc-preview-modal-manual-copy-text"',
+        "复制被浏览器拦截了；下方已展开正文，可直接全选复制。",
+        "setManualCopyText(copyPayload)",
+        "setManualCopyText(null)",
+        "manualCopyRef.current?.select()",
+        "targetRef.current?.select()",
     ]
     backend_contract_snippets = [
         'IMAGE_GENERATABLE_STATUSES = {"draft", "rewritten", "review_pending", "approved"}',
