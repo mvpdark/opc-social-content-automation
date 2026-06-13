@@ -52,6 +52,28 @@ def test_mobile_login_endpoint_accepts_configured_account(monkeypatch) -> None:
         assert "existing-tavily-key" not in text
 
 
+def test_mobile_login_default_accounts_include_tavily_binding(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "tavily_search_enabled", True)
+    monkeypatch.setattr(settings, "tavily_api_key", "default-tavily-key")
+    client = TestClient(create_app())
+
+    for account in ("admin", "admin1", "admin2"):
+        response = client.post(
+            "/api/auth/mobile-login",
+            json={"account": account, "password": account},
+        )
+        payload = response.json()
+        web_search_status = next(
+            item for item in payload["provider_statuses"] if item["name"] == "Web search"
+        )
+
+        assert response.status_code == 200
+        assert payload["key_profile"] == "default"
+        assert web_search_status["provider"] == "tavily"
+        assert web_search_status["configured"] is True
+        assert "default-tavily-key" not in str(payload)
+
+
 def test_mobile_login_endpoint_rejects_invalid_password() -> None:
     client = TestClient(create_app())
     response = client.post(

@@ -20,6 +20,7 @@ export type ProviderBindingDefaults = {
   draft: boolean;
   image: boolean;
   rewrite: boolean;
+  webSearch: boolean;
 };
 
 export type ProviderKeyCredentials = {
@@ -34,11 +35,13 @@ export function providerBindingDefaultsFromStatuses(
   const draftStatus = statuses.find((item) => item.name === "Draft generation");
   const imageStatus = statuses.find((item) => item.name === "Image generation");
   const rewriteStatus = statuses.find((item) => item.name === "Humanization rewrite");
+  const webSearchStatus = statuses.find((item) => item.name === "Web search");
 
   return {
     draft: Boolean(draftStatus?.configured && draftStatus.provider !== "codex_test"),
     image: Boolean(imageStatus?.configured && imageStatus.provider !== "codex_test"),
-    rewrite: Boolean(rewriteStatus?.configured)
+    rewrite: Boolean(rewriteStatus?.configured),
+    webSearch: Boolean(webSearchStatus?.configured && webSearchStatus.provider === "tavily")
   };
 }
 

@@ -3738,6 +3738,9 @@ function SettingsView({
               <Pill tone={credentials.rewriteApiKey || providerBindings.rewrite ? "green" : "amber"}>
                 改写 {credentials.rewriteApiKey ? "本设备已填写" : providerBindings.rewrite ? "已保存" : "未配置"}
               </Pill>
+              <Pill tone={providerBindings.webSearch ? "green" : "amber"}>
+                联网 {providerBindings.webSearch ? "已保存" : "未配置"}
+              </Pill>
             </div>
           </div>
         </div>
