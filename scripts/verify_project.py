@@ -662,6 +662,30 @@ def validate_content_production_contract() -> int:
         if snippet not in topic_presets_text:
             raise SystemExit(f"Missing shared topic preset contract: {snippet}")
 
+    expected_topic_preset_keys = {"ranking", "route", "mentor", "timeline", "sales"}
+    actual_topic_preset_keys = set(re.findall(r'key: "([^"]+)"', topic_presets_text))
+    total += len(expected_topic_preset_keys)
+    if actual_topic_preset_keys != expected_topic_preset_keys:
+        raise SystemExit(
+            "Shared topic presets must cover ranking, route, mentor, timeline, and sales topics."
+        )
+
+    topic_preset_required_fields = [
+        "audience:",
+        "coverDirection:",
+        "desktopHelper:",
+        "desktopLabel:",
+        "knowledgeQuery:",
+        "mobileHelper:",
+        "mobileLabel:",
+        "tags:",
+        "topic:",
+    ]
+    for field in topic_preset_required_fields:
+        total += 1
+        if topic_presets_text.count(field) < len(expected_topic_preset_keys):
+            raise SystemExit(f"Every shared topic preset must define {field}")
+
     settings_access_contracts = [
         (
             workspace_text,
