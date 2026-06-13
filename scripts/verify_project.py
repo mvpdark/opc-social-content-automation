@@ -266,7 +266,19 @@ def _extract_ts_array(name: str, text: str) -> list[str]:
 
 
 def validate_frontend_design_contract() -> int:
-    data_text = (ROOT / "frontend" / "lib" / "dashboard-data.ts").read_text(encoding="utf-8")
+    dashboard_data_file = ROOT / "frontend" / "lib" / "dashboard-data.ts"
+    data_text = dashboard_data_file.read_text(encoding="utf-8")
+    dashboard_consumers = []
+    for folder in [
+        ROOT / "frontend" / "app",
+        ROOT / "frontend" / "components",
+        ROOT / "frontend" / "lib",
+    ]:
+        for file in sorted(folder.rglob("*")):
+            if file == dashboard_data_file or file.suffix not in {".ts", ".tsx"}:
+                continue
+            dashboard_consumers.append(file.read_text(encoding="utf-8"))
+    dashboard_consumer_text = "\n".join(dashboard_consumers)
     css_text = (ROOT / "frontend" / "app" / "globals.css").read_text(encoding="utf-8")
     workspace_text = (
         ROOT / "frontend" / "components" / "workspace-client.tsx"
@@ -302,6 +314,11 @@ def validate_frontend_design_contract() -> int:
         object_key_count = len(re.findall(rf"\n  {re.escape(tab_id)}: \{{", data_text))
         if object_key_count < 2:
             raise SystemExit(f"Missing tab metadata or theme recommendation for tab {tab_id}")
+
+    dashboard_exports = re.findall(r"^export const (\w+)", data_text, flags=re.MULTILINE)
+    for export_name in dashboard_exports:
+        if re.search(rf"\b{re.escape(export_name)}\b", dashboard_consumer_text) is None:
+            raise SystemExit(f"Unused dashboard data export: {export_name}")
 
     generation_flow_snippets = [
         "/content/generate",
