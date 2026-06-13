@@ -97,7 +97,7 @@ def test_content_kind_rejects_legacy_video_jobs() -> None:
         _content_kind(job)
 
     assert exc.value.status_code == 409
-    assert "Video collection is disabled" in exc.value.detail
+    assert "视频采集暂未启用" in exc.value.detail
 
 
 def test_operator_wait_seconds_defaults_and_clamps() -> None:

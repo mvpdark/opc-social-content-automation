@@ -19,7 +19,7 @@ HASHTAG_RE = re.compile(r"[#＃]([\w\u4e00-\u9fff-]{2,40})", re.UNICODE)
 SPACE_RE = re.compile(r"\s+")
 VIDEO_MARKERS = ("视频", "播放", "直播", "video-card", "video_note", "shorts")
 VIDEO_COLLECTION_DISABLED_DETAIL = (
-    "Video collection is disabled until a separate transcript and rights review workflow is implemented."
+    "视频采集暂未启用；需要先补齐转写、版权和人工复核流程。"
 )
 BLOCKED_MARKERS = (
     "登录后查看搜索结果",
@@ -67,11 +67,11 @@ def normalize_visible_text(value: object) -> str:
 def _title_from_text(text: str, keyword: str) -> str:
     lines = [line.strip() for line in str(text).splitlines() if line.strip()]
     if not lines:
-        return keyword or "Collected trend asset"
+        return keyword or "采集趋势素材"
     first = normalize_visible_text(lines[0])
     if len(first) < 8 and len(lines) > 1:
         first = normalize_visible_text(lines[1])
-    return first[:255] or keyword or "Collected trend asset"
+    return first[:255] or keyword or "采集趋势素材"
 
 
 def _tags_from_text(text: str, keyword: str) -> list[str]:
@@ -200,7 +200,7 @@ def _target_url(job: TrendCollectionJob) -> str:
         return str(target["search_url"])
     raise HTTPException(
         status_code=status.HTTP_409_CONFLICT,
-        detail="Trend collection job does not include a search target.",
+        detail="采集任务缺少搜索目标。",
     )
 
 
@@ -276,23 +276,20 @@ def _store_assets(
 
     job.status = "completed" if stored else "needs_operator_review"
     if stored:
-        message = "Collected public visible items from the operator-assisted browser session."
+        message = "已从操作者辅助的可见浏览器会话采集公开图文素材。"
     elif blocked_candidate_count:
         message = (
-            "No collected public image-text items were found. The visible page looks blocked by "
-            "login, verification, legal footer, or platform shell text; complete the visible "
-            "browser step only if allowed, then retry."
+            "未找到可采集的公开图文素材。当前页面可能被登录、验证、页脚备案或平台外壳文本拦截；"
+            "请只在合规允许时完成可见浏览器处理，然后重试。"
         )
     elif raw_candidate_count:
         message = (
-            "No collected public image-text items were found. Visible page text loaded, but no "
-            "safe public note candidates matched the image-text filters; try a broader keyword "
-            "or paste note links."
+            "未找到可采集的公开图文素材。页面已有可见文本，但没有匹配图文过滤条件的安全候选；"
+            "请换更宽的关键词，或粘贴笔记链接导入。"
         )
     else:
         message = (
-            "No collected public image-text items were found. Confirm the search page loaded in "
-            "the visible browser, then retry."
+            "未找到可采集的公开图文素材。请确认搜索页面已在可见浏览器中加载，然后重试。"
         )
     job.result_summary = {
         "message": message,
@@ -329,7 +326,7 @@ def run_browser_collection_job(
     if job is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Trend collection job was not found.",
+            detail="未找到采集任务。",
         )
 
     try:
@@ -338,7 +335,7 @@ def run_browser_collection_job(
     except ModuleNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Playwright collector dependency is not installed.",
+            detail="采集器依赖未安装。",
         ) from exc
 
     target_url = _target_url(job)
@@ -355,7 +352,7 @@ def run_browser_collection_job(
 
     job.status = "running"
     job.result_summary = {
-        "message": "Visible browser collection started.",
+        "message": "可见浏览器采集已启动。",
         "target_url": target_url,
         "content_kind": content_kind,
         "collected_items": 0,
@@ -408,9 +405,9 @@ def run_browser_collection_job(
             context.close()
     except PlaywrightTimeoutError as exc:
         job.status = "needs_operator_review"
-        job.error = "Visible browser timed out while loading the platform page."
+        job.error = "可见浏览器加载平台页面超时。"
         job.result_summary = {
-            "message": "Retry public search first; complete login/captcha only if public results are blocked.",
+            "message": "请先重试公开搜索；只有公开结果被拦截时，再处理登录或验证码。",
             "target_url": target_url,
             "collected_items": 0,
         }
@@ -418,7 +415,7 @@ def run_browser_collection_job(
         raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail=job.error) from exc
     except Exception as exc:
         job.status = "failed"
-        job.error = "Visible browser collection failed. Check local browser setup and session state."
+        job.error = "可见浏览器采集失败，请检查本机浏览器环境和会话状态。"
         job.result_summary = {
             "message": job.error,
             "target_url": target_url,
