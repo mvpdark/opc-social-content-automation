@@ -9,6 +9,36 @@ from app.schemas.knowledge import KnowledgeSearchResult, KnowledgeUploadRequest
 from app.services.model_router import model_router
 
 
+KNOWLEDGE_SEARCH_HINT_TERMS = (
+    "水博",
+    "硕升博",
+    "在职博士",
+    "海外博士",
+    "境外博士",
+    "排名",
+    "排行",
+    "榜单",
+    "榜",
+    "学校",
+    "院校",
+    "项目",
+    "认证",
+    "预算",
+    "学费",
+    "费用",
+    "导师",
+    "匹配",
+    "套磁",
+    "时间线",
+    "时间",
+    "路线",
+    "申请",
+    "咨询",
+    "转化",
+    "私域",
+)
+
+
 def repair_utf8_mojibake(value: str) -> str:
     try:
         repaired = value.encode("latin1").decode("utf-8")
@@ -86,6 +116,50 @@ def _apply_category_filter(
     return statement
 
 
+def _keyword_search_terms(query: str) -> list[str]:
+    normalized = query.strip()
+    if not normalized:
+        return []
+
+    terms: list[str] = []
+    for token in re.split(r"[\s,，、/|｜:：;；。！？!?（）()【】\[\]\"']+", normalized):
+        token = token.strip()
+        if len(token) >= 2:
+            terms.append(token)
+
+    for hint in KNOWLEDGE_SEARCH_HINT_TERMS:
+        if hint in normalized:
+            terms.append(hint)
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for term in terms:
+        normalized_term = term.lower()
+        if normalized_term in seen:
+            continue
+        seen.add(normalized_term)
+        deduped.append(term)
+    return deduped[:12]
+
+
+def _keyword_relevance_score(item: KnowledgeBase, query: str, terms: list[str]) -> int:
+    title = item.title.lower()
+    content = item.content.lower()
+    normalized_query = query.strip().lower()
+    score = 0
+    if normalized_query and normalized_query in title:
+        score += 140
+    elif normalized_query and normalized_query in content:
+        score += 100
+    for term in terms:
+        normalized_term = term.lower()
+        if normalized_term in title:
+            score += 24
+        if normalized_term in content:
+            score += 10
+    return score
+
+
 def vector_search(
     db: Session,
     query: str,
@@ -117,19 +191,36 @@ def keyword_search(
     category: str | None,
     limit: int,
 ) -> list[KnowledgeSearchResult]:
-    pattern = f"%{query}%"
+    normalized_query = query.strip()
+    if not normalized_query:
+        return []
+
+    terms = _keyword_search_terms(normalized_query)
+    search_terms = [normalized_query, *[term for term in terms if term != normalized_query]]
+    patterns = [f"%{term}%" for term in search_terms]
     statement = select(KnowledgeBase).where(
-        or_(KnowledgeBase.title.ilike(pattern), KnowledgeBase.content.ilike(pattern))
+        or_(
+            *[
+                or_(KnowledgeBase.title.ilike(pattern), KnowledgeBase.content.ilike(pattern))
+                for pattern in patterns
+            ]
+        )
     )
     statement = _apply_category_filter(statement, category)
-    items = db.scalars(statement.order_by(desc(KnowledgeBase.id)).limit(limit)).all()
+    candidate_limit = max(limit * 8, 24)
+    items = db.scalars(statement.order_by(desc(KnowledgeBase.id)).limit(candidate_limit)).all()
+    ranked_items = sorted(
+        items,
+        key=lambda item: (_keyword_relevance_score(item, normalized_query, terms), item.id),
+        reverse=True,
+    )[:limit]
     return [
         _knowledge_result(
             item,
             score=None,
             match_type="keyword",
         )
-        for item in items
+        for item in ranked_items
     ]
 
 
