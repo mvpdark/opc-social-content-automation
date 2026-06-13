@@ -91,6 +91,7 @@ import {
 } from "@/lib/status-labels";
 import { formatTagLine } from "@/lib/tags";
 import {
+  buildTopicCoverStyleNotes,
   generationTopicPresets,
   type GenerationTopicPreset
 } from "@/lib/topic-presets";
@@ -2760,15 +2761,18 @@ function GenerationLauncher({
       throw new Error("图片服务还没有完成可用性检查，请先到设置页应用图片服务授权。");
     }
 
+    const coverStyleNotes = buildTopicCoverStyleNotes(
+      isDouyinPost ? douyinHighAttractionCoverStyle : xhsHighAttractionCoverStyle,
+      content.title
+    );
+
     const response = await fetch(`${API_BASE}/image/generate`, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({
         aspect_ratio: isDouyinPost ? "9:16" : "3:4",
         content_id: content.id,
-        style_notes: isDouyinPost
-          ? douyinHighAttractionCoverStyle
-          : xhsHighAttractionCoverStyle,
+        style_notes: coverStyleNotes,
         template: isDouyinPost ? "douyin-cover" : "xiaohongshu-cover"
       })
     });
@@ -3108,9 +3112,10 @@ function GeneratedPostExportCard({
   const isDouyinPost = content.platform === "douyin";
   const platformLabel = isDouyinPost ? "抖音" : "小红书";
   const coverAspectRatio = isDouyinPost ? "9:16" : "3:4";
-  const coverStyleNotes = isDouyinPost
-    ? douyinHighAttractionCoverStyle
-    : xhsHighAttractionCoverStyle;
+  const coverStyleNotes = buildTopicCoverStyleNotes(
+    isDouyinPost ? douyinHighAttractionCoverStyle : xhsHighAttractionCoverStyle,
+    content.title
+  );
   const coverTemplate = isDouyinPost ? "douyin-cover" : "xiaohongshu-cover";
   const imageButtonLabel = imageBusy
     ? "正在生成封面"

@@ -60,6 +60,7 @@ import {
 } from "@/lib/service-error-copy";
 import { formatTagLine } from "@/lib/tags";
 import {
+  buildTopicCoverStyleNotes,
   generationTopicPresets,
   type GenerationTopicPreset
 } from "@/lib/topic-presets";
@@ -2562,15 +2563,17 @@ function CreateScreen({
       setProgressStage("封面图生成中", 68, 94);
 
       const isDouyinPost = platform === "douyin";
+      const baseCoverStyleNotes = isDouyinPost
+        ? "抖音图文封面，强标题、高对比、真实学习/申请材料场景，避免录取承诺。"
+        : "小红书高吸引封面，按选题轮换路线矩阵、决策地图、学术蓝图、杂志页、黑板批注或手机信息拼贴；水博/在职博士类可用榜单矩阵，但学校和项目细节必须来自已核实知识库，避免录取承诺。";
+      const coverStyleNotes = buildTopicCoverStyleNotes(baseCoverStyleNotes, data.title);
       const imageResponse = await fetch(`${API_BASE}/image/generate`, {
         method: "POST",
         headers: authHeaders(credentials),
         body: JSON.stringify({
           aspect_ratio: isDouyinPost ? "9:16" : "3:4",
           content_id: data.id,
-          style_notes: isDouyinPost
-            ? "抖音图文封面，强标题、高对比、真实学习/申请材料场景，避免录取承诺。"
-            : "小红书高吸引封面，按选题轮换路线矩阵、决策地图、学术蓝图、杂志页、黑板批注或手机信息拼贴；水博/在职博士类可用榜单矩阵，但学校和项目细节必须来自已核实知识库，避免录取承诺。",
+          style_notes: coverStyleNotes,
           template: isDouyinPost ? "douyin-cover" : "xiaohongshu-cover"
         })
       });

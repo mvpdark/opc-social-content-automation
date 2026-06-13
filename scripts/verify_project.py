@@ -621,6 +621,7 @@ def validate_content_production_contract() -> int:
         'data-testid={`topic-preset-${preset.key}`}',
         "preset.desktopLabel",
         "preset.desktopHelper",
+        "buildTopicCoverStyleNotes(",
         "也可以直接修改为自定义选题",
     ]
     backend_contract_snippets = [
@@ -648,6 +649,9 @@ def validate_content_production_contract() -> int:
         "desktopHelper",
         "mobileLabel",
         "mobileHelper",
+        "coverDirection",
+        "buildTopicCoverStyleNotes",
+        "findGenerationTopicPresetByTopic",
     ]
     for snippet in topic_preset_contract_snippets:
         total += 1
@@ -792,6 +796,7 @@ def validate_content_production_contract() -> int:
         'data-testid={`mobile-topic-preset-${preset.key}`}',
         "preset.mobileLabel",
         "preset.mobileHelper",
+        "buildTopicCoverStyleNotes(",
         "可自定义",
     ]
     for snippet in mobile_topic_recommendation_contract_snippets:
