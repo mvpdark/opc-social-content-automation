@@ -36,6 +36,37 @@ def test_water_ranking_topic_accepts_dimension_based_ranking_draft() -> None:
     assert issue is None
 
 
+def test_water_ranking_topic_detects_ranking_terms_from_tags() -> None:
+    payload = ContentGenerateRequest(
+        platform="xiaohongshu",
+        topic="全球水博项目怎么选",
+        tags=["水博", "排名"],
+    )
+
+    issue = _draft_topic_relevance_issue(
+        payload,
+        "先确认研究方向，再看导师近三年论文，最后准备套磁邮件。",
+    )
+
+    assert issue is not None
+    assert "水博榜单/排名" in issue
+
+
+def test_water_list_topic_accepts_verified_checklist_structure() -> None:
+    payload = ContentGenerateRequest(
+        platform="xiaohongshu",
+        topic="水资源博士项目清单怎么看",
+        tags=["水博", "项目清单"],
+    )
+
+    issue = _draft_topic_relevance_issue(
+        payload,
+        "水博项目清单要先按认证、预算、毕业难度和在职适配做梯队，再补充已核实学校池。",
+    )
+
+    assert issue is None
+
+
 @pytest.mark.parametrize(
     ("topic", "bad_draft", "good_draft", "expected_label"),
     [

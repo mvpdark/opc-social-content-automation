@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 
 WATER_ROUTE_TOPIC_TERMS = ("水博", "海外博士", "境外博士")
-RANKING_TOPIC_TERMS = ("排名", "排行", "榜", "榜单", "必看")
+RANKING_TOPIC_TERMS = ("排名", "排行", "榜", "榜单", "清单", "必看")
 RANKING_DRAFT_TERMS = (
     "排名",
     "排行",
@@ -72,7 +72,7 @@ def joined_topic_text(topic: str, tags: list[str] | None = None) -> str:
 def is_water_ranking_topic(topic: str, tags: list[str] | None = None) -> bool:
     topic_text = joined_topic_text(topic, tags)
     return contains_any(topic_text, WATER_ROUTE_TOPIC_TERMS) and contains_any(
-        topic,
+        topic_text,
         RANKING_TOPIC_TERMS,
     )
 
