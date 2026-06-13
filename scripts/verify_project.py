@@ -894,6 +894,27 @@ def validate_content_production_contract() -> int:
         if snippet not in android_text:
             raise SystemExit(f"Missing mobile topic recommendation contract: {snippet}")
 
+    mobile_project_swipe_contract_snippets = [
+        "projectSwipeStartRef",
+        "function shouldIgnoreProjectSwipe(target: EventTarget | null)",
+        "function handleProjectTouchStart(event: TouchEvent<HTMLDivElement>)",
+        "function handleProjectTouchEnd(event: TouchEvent<HTMLDivElement>)",
+        'data-testid="mobile-create-project-detail"',
+        'data-project-swipe-ignore="true"',
+        "deltaX < -72",
+        "absX > absY * 1.35",
+        "returnToProjects();",
+    ]
+    for snippet in mobile_project_swipe_contract_snippets:
+        total += 1
+        if snippet not in android_text:
+            raise SystemExit(f"Missing mobile project swipe-back contract: {snippet}")
+    total += 1
+    if android_text.count('data-project-swipe-ignore="true"') < 2:
+        raise SystemExit(
+            "Mobile project swipe-back must ignore both topic presets and draft carousel."
+        )
+
     mobile_draft_delete_contract_snippets = [
         "MOBILE_DELETED_DRAFT_IDS_STORAGE_KEY",
         "function rememberDeletedDraftId(contentId: number)",
