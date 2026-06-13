@@ -18,7 +18,7 @@ def get_content_or_404(db: Session, content_id: int) -> Content:
     if content is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Content was not found.",
+            detail="未找到这条内容。",
         )
     return content
 
@@ -27,7 +27,7 @@ def request_human_review(db: Session, content: Content) -> Content:
     if content.status not in EDITABLE_STATUSES:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Content cannot enter review from status: {content.status}.",
+            detail=f"当前状态不能进入审核：{content.status}。",
         )
     content.status = "review_pending"
     db.commit()
@@ -44,7 +44,7 @@ def record_human_review(
     if content.status == "published":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Published content cannot be reviewed again.",
+            detail="已发布内容不能再次审核。",
         )
 
     review = ContentReview(

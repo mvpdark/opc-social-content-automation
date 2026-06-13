@@ -65,7 +65,7 @@ def _load_export_contents(db: Session, content_ids: list[int]) -> list[Content]:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={
-                "message": "Only human-approved content can be exported.",
+                "message": "只有人工批准后的内容可以导出。",
                 "blocked_content_ids": blocked_ids,
             },
         )
@@ -204,7 +204,7 @@ def check_provider_connection(
     if payload.target != "draft":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only draft provider checks are available.",
+            detail="当前只支持检测撰稿服务。",
         )
 
     configured = settings.draft_provider == "codex_test" or bool(

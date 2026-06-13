@@ -50,6 +50,6 @@ def get_image(image_id: int, db: Session = Depends(get_db)) -> ImageRead:
     if image is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Image was not found.",
+            detail="未找到这张封面图。",
         )
     return ImageRead.model_validate(image)

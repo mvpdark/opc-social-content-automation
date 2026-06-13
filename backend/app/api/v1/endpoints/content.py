@@ -49,7 +49,7 @@ def rewrite_content(
     if content is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Content was not found.",
+            detail="未找到这条内容。",
         )
 
     content = rewrite_content_body(db, content, payload, current_user)
@@ -118,6 +118,6 @@ def get_content(content_id: int, db: Session = Depends(get_db)) -> ContentRead:
     if content is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Content was not found.",
+            detail="未找到这条内容。",
         )
     return ContentRead.model_validate(content)

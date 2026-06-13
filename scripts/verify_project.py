@@ -124,11 +124,11 @@ def validate_migration_chain() -> int:
 def validate_safety_gates() -> int:
     checks = {
         "backend/app/api/v1/endpoints/workspace.py": [
-            "Only human-approved content can be recorded as published.",
+            "只有人工批准后的内容可以记录为已发布。",
             'content.status = "published"',
         ],
         "backend/app/services/image_service.py": [
-            "Only draft, rewritten, review-pending, or approved content can be used for image generation.",
+            "只有草稿、已改写、待审核或人工批准后的内容可以生成封面图。",
             'status="generated" if content.status == "approved" else "needs_review"',
             "provider_not_configured",
             "load_platform_style_reference",
@@ -796,6 +796,14 @@ def validate_content_production_contract() -> int:
 
     stale_gate_snippets = [
         "Only human-approved content can be used for image generation.",
+        "Only draft, rewritten, review-pending, or approved content can be used for image generation.",
+        "Only human-approved content can be recorded as published.",
+        "Content was not found.",
+        "Image was not found.",
+        "Unknown image template.",
+        "Only human-approved content can be exported.",
+        "Only draft provider checks are available.",
+        "Published content cannot be reviewed again.",
         "async function copyText(text: string)",
         "async function tryCopyText(text: string)",
         "function resolveAssetUrl(imageUrl: string)",

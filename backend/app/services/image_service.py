@@ -137,12 +137,12 @@ def get_content_for_image(db: Session, content_id: int) -> Content:
     if content is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Content was not found.",
+            detail="未找到这条内容。",
         )
     if content.status not in IMAGE_GENERATABLE_STATUSES:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Only draft, rewritten, review-pending, or approved content can be used for image generation.",
+            detail="只有草稿、已改写、待审核或人工批准后的内容可以生成封面图。",
         )
     return content
 
@@ -187,7 +187,7 @@ def build_image_prompt_package(
     if template is None:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Unknown image template.",
+            detail="未识别的封面模板。",
         )
 
     return PromptPackage(

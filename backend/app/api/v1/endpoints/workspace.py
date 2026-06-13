@@ -142,12 +142,12 @@ def create_publish_record(
     if content is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Content was not found.",
+            detail="未找到这条内容。",
         )
     if content.status != "approved":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Only human-approved content can be recorded as published.",
+            detail="只有人工批准后的内容可以记录为已发布。",
         )
 
     record = PublishRecord(
