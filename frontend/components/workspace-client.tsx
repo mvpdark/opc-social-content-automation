@@ -245,6 +245,20 @@ const creationProjects = [
 
 type CreationProjectId = (typeof creationProjects)[number]["id"];
 
+function findEnabledCreationProject(projectId: string | null) {
+  return creationProjects.find((project) => project.enabled && project.id === projectId) ?? null;
+}
+
+function updateCreationProjectQuery(projectId: CreationProjectId | null) {
+  const url = new URL(window.location.href);
+  if (projectId) {
+    url.searchParams.set("project", projectId);
+  } else {
+    url.searchParams.delete("project");
+  }
+  window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
 const writingStylePresets = [
   {
     id: "warm_cute",
@@ -1881,19 +1895,45 @@ function ContentView({
   workspaceToken: string;
 }) {
   const [selectedCreationProjectId, setSelectedCreationProjectId] =
-    useState<CreationProjectId | null>(null);
+    useState<CreationProjectId | null>(() => {
+      if (typeof window === "undefined") {
+        return null;
+      }
+      const project = findEnabledCreationProject(
+        new URLSearchParams(window.location.search).get("project")
+      );
+      return project?.id ?? null;
+    });
   const [previewContent, setPreviewContent] = useState<GeneratedContent | null>(null);
   const [previewImageAsset, setPreviewImageAsset] = useState<GeneratedImageAsset | null>(null);
   const [previewLoading, setPreviewLoading] = useState(true);
-  const selectedCreationProject = creationProjects.find(
-    (project) => project.id === selectedCreationProjectId
-  );
+  const selectedCreationProject = findEnabledCreationProject(selectedCreationProjectId);
 
   function handleGeneratedContent(content: GeneratedContent) {
     setPreviewContent(content);
     setPreviewImageAsset(null);
     saveStoredGeneratedContent(content);
   }
+
+  function handleSelectCreationProject(projectId: CreationProjectId) {
+    setSelectedCreationProjectId(projectId);
+    updateCreationProjectQuery(projectId);
+  }
+
+  function handleReturnToProjects() {
+    setSelectedCreationProjectId(null);
+    updateCreationProjectQuery(null);
+  }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const project = findEnabledCreationProject(params.get("project"));
+    if (project) {
+      setSelectedCreationProjectId(project.id);
+    } else if (params.has("project")) {
+      updateCreationProjectQuery(null);
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -1963,7 +2003,7 @@ function ContentView({
       <CreationProjectGateway
         latestContent={previewContent}
         loading={previewLoading}
-        onSelect={setSelectedCreationProjectId}
+        onSelect={handleSelectCreationProject}
       />
     );
   }
@@ -1987,7 +2027,8 @@ function ContentView({
           </div>
           <button
             className={`${secondaryButtonClass} h-10 px-4`}
-            onClick={() => setSelectedCreationProjectId(null)}
+            data-testid="creation-project-return"
+            onClick={handleReturnToProjects}
             type="button"
           >
             返回项目
