@@ -59,6 +59,10 @@ import {
   sanitizeServiceErrorMessage
 } from "@/lib/service-error-copy";
 import { formatTagLine } from "@/lib/tags";
+import {
+  generationTopicPresets,
+  type GenerationTopicPreset
+} from "@/lib/topic-presets";
 import { renderXhsExpressionText } from "@/lib/xhs-stickers";
 
 type MobileTab = "home" | "collect" | "create" | "settings";
@@ -174,58 +178,6 @@ const xhsMobileDraftTone = [
 
 const shortPostDraftTone =
   "短段正文风格，表达克制、清楚、有行动建议，不制造录取承诺。";
-
-type MobileTopicPreset = {
-  audience: string;
-  helper: string;
-  key: "ranking" | "route" | "mentor" | "timeline" | "sales";
-  label: string;
-  tags: string;
-  topic: string;
-};
-
-const mobileTopicPresets: MobileTopicPreset[] = [
-  {
-    audience: "想快速筛选海外博士路线的在职申请人",
-    helper: "榜单/排名",
-    key: "ranking",
-    label: "榜单",
-    tags: "水博,海外博士,在职博士,博士项目,小红书获客",
-    topic: "全球水博排名必看"
-  },
-  {
-    audience: "准备硕升博但不知道选国内还是海外的学生",
-    helper: "路线判断",
-    key: "route",
-    label: "路线",
-    tags: "硕升博,博士申请,路线规划,在职博士",
-    topic: "硕升博申请路线怎么选"
-  },
-  {
-    audience: "已经有研究兴趣但不知道怎么找导师的申请人",
-    helper: "导师匹配",
-    key: "mentor",
-    label: "导师",
-    tags: "导师匹配,研究方向,博士申请,套磁",
-    topic: "导师匹配前要做的方向自查"
-  },
-  {
-    audience: "准备一年内启动博士申请的在职人群",
-    helper: "时间节点",
-    key: "timeline",
-    label: "时间",
-    tags: "在职博士,申请时间线,材料准备,硕升博",
-    topic: "在职博士申请时间线怎么排"
-  },
-  {
-    audience: "想先了解项目适配度再咨询的潜在客户",
-    helper: "咨询转化",
-    key: "sales",
-    label: "转化",
-    tags: "博士项目,咨询转化,私域运营,小红书营销",
-    topic: "适合上班族的博士项目怎么咨询"
-  }
-];
 
 type CollectionScheduleStorage = {
   autoEnabled: boolean;
@@ -2122,7 +2074,7 @@ function CreateScreen({
     onAction("已退出草稿多选模式。");
   }
 
-  function applyMobileTopicPreset(preset: MobileTopicPreset) {
+  function applyMobileTopicPreset(preset: GenerationTopicPreset) {
     setTopic(preset.topic);
     setTargetAudience(preset.audience);
     setTagsText(preset.tags);
@@ -2765,7 +2717,7 @@ function CreateScreen({
             <span className="text-[11px] text-muted">可自定义</span>
           </div>
           <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-            {mobileTopicPresets.map((preset) => (
+            {generationTopicPresets.map((preset) => (
               <button
                 className="min-w-[128px] rounded-[18px] border border-white/[0.88] bg-[rgba(255,253,247,0.86)] px-3 py-2 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.74)] active:scale-[0.99]"
                 data-testid={`mobile-topic-preset-${preset.key}`}
@@ -2773,12 +2725,14 @@ function CreateScreen({
                 onClick={() => applyMobileTopicPreset(preset)}
                 type="button"
               >
-                <span className="block text-[11px] font-black text-moss">{preset.label}</span>
+                <span className="block text-[11px] font-black text-moss">
+                  {preset.mobileLabel}
+                </span>
                 <span className="mt-1 block text-xs font-black leading-4 text-ink">
                   {preset.topic}
                 </span>
                 <span className="mt-1 block text-[10px] font-medium text-muted">
-                  {preset.helper}
+                  {preset.mobileHelper}
                 </span>
               </button>
             ))}

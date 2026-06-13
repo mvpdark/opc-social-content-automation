@@ -90,6 +90,10 @@ import {
   generatedImageStatusLabel
 } from "@/lib/status-labels";
 import { formatTagLine } from "@/lib/tags";
+import {
+  generationTopicPresets,
+  type GenerationTopicPreset
+} from "@/lib/topic-presets";
 
 const pillTone = {
   neutral: "border-line bg-mist text-muted",
@@ -350,64 +354,6 @@ const xhsHighAttractionCoverStyle =
 
 const douyinHighAttractionCoverStyle =
   "抖音图文封面：9:16高对比竖版首屏，强结果标题，真实学习/申请材料场景，短清单信息块，明亮但不杂乱，避免官方标志和录取承诺。";
-
-type ContentTopicPreset = {
-  audience: string;
-  helper: string;
-  key: "ranking" | "route" | "mentor" | "timeline" | "sales";
-  knowledgeQuery: string;
-  label: string;
-  tags: string;
-  topic: string;
-};
-
-const contentTopicPresets: ContentTopicPreset[] = [
-  {
-    audience: "想快速筛选海外博士路线的在职申请人",
-    helper: "按榜单、认证、预算和在职友好度展开",
-    key: "ranking",
-    knowledgeQuery: "全球 水博 博士 项目 排名 认证 预算 在职",
-    label: "榜单型",
-    tags: "水博,海外博士,在职博士,博士项目,小红书获客",
-    topic: "全球水博排名必看"
-  },
-  {
-    audience: "准备硕升博但不知道选国内还是海外的学生",
-    helper: "按选择路径和判断条件展开",
-    key: "route",
-    knowledgeQuery: "硕升博 申请路线 国内 海外 在职博士",
-    label: "路线型",
-    tags: "硕升博,博士申请,路线规划,在职博士",
-    topic: "硕升博申请路线怎么选"
-  },
-  {
-    audience: "已经有研究兴趣但不知道怎么找导师的申请人",
-    helper: "围绕方向自查和导师匹配动作",
-    key: "mentor",
-    knowledgeQuery: "博士申请 导师匹配 研究方向 套磁",
-    label: "导师型",
-    tags: "导师匹配,研究方向,博士申请,套磁",
-    topic: "导师匹配前要做的方向自查"
-  },
-  {
-    audience: "准备一年内启动博士申请的在职人群",
-    helper: "围绕时间表、材料和节点",
-    key: "timeline",
-    knowledgeQuery: "在职博士 申请时间线 材料准备 节点",
-    label: "时间型",
-    tags: "在职博士,申请时间线,材料准备,硕升博",
-    topic: "在职博士申请时间线怎么排"
-  },
-  {
-    audience: "想先了解项目适配度再咨询的潜在客户",
-    helper: "围绕咨询转化和低压行动建议",
-    key: "sales",
-    knowledgeQuery: "博士项目 咨询 转化 私域 小红书",
-    label: "转化型",
-    tags: "博士项目,咨询转化,私域运营,小红书营销",
-    topic: "适合上班族的博士项目怎么咨询"
-  }
-];
 
 type XhsStickerCategory =
   | "基础情绪"
@@ -2682,7 +2628,7 @@ function GenerationLauncher({
     });
   }
 
-  function applyTopicPreset(preset: ContentTopicPreset) {
+  function applyTopicPreset(preset: GenerationTopicPreset) {
     setTopic(preset.topic);
     setKnowledgeQuery(preset.knowledgeQuery);
     setTargetAudience(preset.audience);
@@ -2930,7 +2876,7 @@ function GenerationLauncher({
                 <span className="text-[11px] text-muted">也可以直接修改为自定义选题</span>
               </div>
               <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-5">
-                {contentTopicPresets.map((preset) => (
+                {generationTopicPresets.map((preset) => (
                   <button
                     className="min-h-[74px] rounded-md border border-steel/35 bg-paper/70 px-3 py-2 text-left transition hover:border-moss/60 hover:bg-moss/10"
                     data-testid={`topic-preset-${preset.key}`}
@@ -2938,12 +2884,14 @@ function GenerationLauncher({
                     onClick={() => applyTopicPreset(preset)}
                     type="button"
                   >
-                    <span className="block text-xs font-semibold text-moss">{preset.label}</span>
+                    <span className="block text-xs font-semibold text-moss">
+                      {preset.desktopLabel}
+                    </span>
                     <span className="mt-1 block text-sm font-semibold leading-5 text-ink">
                       {preset.topic}
                     </span>
                     <span className="mt-1 block text-[11px] leading-4 text-muted">
-                      {preset.helper}
+                      {preset.desktopHelper}
                     </span>
                   </button>
                 ))}

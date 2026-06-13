@@ -559,6 +559,9 @@ def validate_content_production_contract() -> int:
     tags_text = (ROOT / "frontend" / "lib" / "tags.ts").read_text(
         encoding="utf-8"
     )
+    topic_presets_text = (ROOT / "frontend" / "lib" / "topic-presets.ts").read_text(
+        encoding="utf-8"
+    )
     draft_prompt_text = (ROOT / "prompts" / "draft_generation.md").read_text(
         encoding="utf-8"
     )
@@ -612,11 +615,12 @@ def validate_content_production_contract() -> int:
         "setManualCopyText(null)",
         "manualCopyRef.current?.select()",
         "targetRef.current?.select()",
-        "const contentTopicPresets",
-        "function applyTopicPreset(preset: ContentTopicPreset)",
+        "generationTopicPresets",
+        "function applyTopicPreset(preset: GenerationTopicPreset)",
         'data-testid="topic-preset-list"',
         'data-testid={`topic-preset-${preset.key}`}',
-        "全球水博排名必看",
+        "preset.desktopLabel",
+        "preset.desktopHelper",
         "也可以直接修改为自定义选题",
     ]
     backend_contract_snippets = [
@@ -634,6 +638,21 @@ def validate_content_production_contract() -> int:
         total += 1
         if snippet not in image_service_text:
             raise SystemExit(f"Missing content production backend contract: {snippet}")
+
+    topic_preset_contract_snippets = [
+        "export const generationTopicPresets",
+        'key: "ranking"',
+        'topic: "全球水博排名必看"',
+        'knowledgeQuery: "全球 水博 博士 项目 排名 认证 预算 在职"',
+        "desktopLabel",
+        "desktopHelper",
+        "mobileLabel",
+        "mobileHelper",
+    ]
+    for snippet in topic_preset_contract_snippets:
+        total += 1
+        if snippet not in topic_presets_text:
+            raise SystemExit(f"Missing shared topic preset contract: {snippet}")
 
     settings_access_contracts = [
         (
@@ -767,11 +786,12 @@ def validate_content_production_contract() -> int:
             raise SystemExit(f"Missing mobile static reference contract: {snippet}")
 
     mobile_topic_recommendation_contract_snippets = [
-        "const mobileTopicPresets",
-        "function applyMobileTopicPreset(preset: MobileTopicPreset)",
+        "generationTopicPresets",
+        "function applyMobileTopicPreset(preset: GenerationTopicPreset)",
         'data-testid="mobile-topic-preset-list"',
         'data-testid={`mobile-topic-preset-${preset.key}`}',
-        "全球水博排名必看",
+        "preset.mobileLabel",
+        "preset.mobileHelper",
         "可自定义",
     ]
     for snippet in mobile_topic_recommendation_contract_snippets:
