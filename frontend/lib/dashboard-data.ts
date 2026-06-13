@@ -501,18 +501,18 @@ export const writingReferences = [
 
 export const coverReferences = [
   {
-    title: "大标题先给结论",
-    detail: "封面只保留一个核心判断，避免信息堆满。",
-    icon: LayoutTemplate
+    title: "路线榜单矩阵",
+    detail: "水博、升博、在职博士类选题优先做路线分组和样本池。",
+    icon: BarChart3
   },
   {
-    title: "三点清单增强停留",
-    detail: "用 1/2/3 列出读者能马上理解的步骤。",
-    icon: ListChecks
+    title: "决策地图",
+    detail: "把读者条件映射到适合路线，避免只堆学校名。",
+    icon: Radar
   },
   {
-    title: "底色要轻，标题要重",
-    detail: "背景偏清爽，主标题黑色高对比，关键词用强调色。",
+    title: "风格轮换",
+    detail: "学术蓝图、杂志页、黑板批注和手机拼贴轮换使用。",
     icon: Palette
   }
 ];
@@ -565,7 +565,7 @@ export const contentControls = [
 export const imageWorkflow = [
   {
     title: "封面需求",
-    detail: "从标题、三点清单和风格参考生成图片需求。",
+    detail: "先选封面路线，再用标题、知识库事实和风格参考生成图片需求。",
     status: "可准备",
     icon: LayoutTemplate
   },

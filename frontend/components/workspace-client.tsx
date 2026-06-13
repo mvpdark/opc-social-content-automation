@@ -4025,10 +4025,17 @@ function SafetyGateList() {
 }
 
 function CoverReferencePreview({ compact = false }: { compact?: boolean }) {
+  const routes = [
+    { label: "国内", detail: "周末 / 寒暑假" },
+    { label: "港澳", detail: "集中授课" },
+    { label: "海外", detail: "认证用途" },
+    { label: "合办", detail: "预算周期" }
+  ];
+
   return (
     <div
       className={[
-        "rounded-md border border-line bg-[linear-gradient(160deg,#fff8e8,#d6f0e2_48%,#f6cdbd)] p-4 shadow-panel",
+        "rounded-md border border-line bg-[linear-gradient(160deg,#f7fbff,#fffaf2_48%,#eef7f0)] p-4 shadow-panel",
         compact ? "min-h-[300px]" : "mx-auto min-h-[520px] max-w-[390px]"
       ].join(" ")}
     >
@@ -4039,16 +4046,22 @@ function CoverReferencePreview({ compact = false }: { compact?: boolean }) {
         </span>
       </div>
       <div className={["font-black leading-tight text-ink", compact ? "mt-5 text-3xl" : "mt-10 text-5xl"].join(" ")}>
-        不是先套磁
+        水博路线
         <br />
-        先想清楚
+        先分清
         <br />
-        这 3 件事
+        再判断
       </div>
-      <div className={["space-y-2 text-xs font-medium text-ink/70", compact ? "mt-5" : "mt-8"].join(" ")}>
-        <div className="rounded-md bg-white/85 px-3 py-2">1. 明确研究方向</div>
-        <div className="rounded-md bg-white/85 px-3 py-2">2. 匹配导师项目</div>
-        <div className="rounded-md bg-white/85 px-3 py-2">3. 再定制套磁</div>
+      <div className={["grid grid-cols-2 gap-2 text-xs font-semibold", compact ? "mt-5" : "mt-8"].join(" ")}>
+        {routes.map((route) => (
+          <div key={route.label} className="rounded-md border border-white/80 bg-white/85 px-3 py-2">
+            <div className="text-ink">{route.label}</div>
+            <div className="mt-1 text-[11px] font-medium text-ink/55">{route.detail}</div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 rounded-md border border-amber/20 bg-amber/10 px-3 py-2 text-[11px] font-medium text-ink/65">
+        学校/价格/认证需复核
       </div>
     </div>
   );

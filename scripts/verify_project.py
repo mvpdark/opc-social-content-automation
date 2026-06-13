@@ -886,9 +886,19 @@ def validate_content_production_contract() -> int:
             "PC route-matrix cover guidance",
         ),
         (
+            workspace_text,
+            ["水博路线", "学校/价格/认证需复核"],
+            "PC cover reference preview",
+        ),
+        (
             android_text,
             ["路线矩阵", "榜单矩阵", "已核实知识库"],
             "mobile route-matrix cover guidance",
+        ),
+        (
+            dashboard_data_text,
+            ["路线榜单矩阵", "决策地图", "风格轮换", "先选封面路线"],
+            "dashboard cover reference cards",
         ),
         (
             image_service_text,
