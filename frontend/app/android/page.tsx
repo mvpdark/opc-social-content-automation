@@ -92,6 +92,9 @@ import { renderXhsExpressionText } from "@/lib/xhs-stickers";
 
 type MobileTab = "home" | "collect" | "knowledge" | "create" | "settings";
 type MobilePlatform = "douyin" | "xiaohongshu";
+type MobileHistoryState = {
+  opcMobileTab?: MobileTab;
+};
 
 type OmpcAndroidBridge = {
   shareToXiaohongshu: (
@@ -285,6 +288,23 @@ const taskActionCopy: Record<MobileTab, string> = {
   create: "已打开创作项目页，先选择项目再进入生成入口。",
   settings: "已打开设置页，可以查看账号状态和发布确认规则。"
 };
+
+function isMobileTab(value: unknown): value is MobileTab {
+  return (
+    value === "home" ||
+    value === "collect" ||
+    value === "knowledge" ||
+    value === "create" ||
+    value === "settings"
+  );
+}
+
+function buildMobileTabUrl(tab: MobileTab) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("tab", tab);
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
 const mobileCreationProjects = [
   {
     id: "postgraduate-phd",
@@ -697,12 +717,77 @@ export default function AndroidPreviewPage() {
   const [mobileAccount, setMobileAccount] = useState<string | null>(null);
   const [authLoaded, setAuthLoaded] = useState(false);
   const [providerStatuses, setProviderStatuses] = useState<ProviderStatusItem[]>([]);
+  const activeTabRef = useRef<MobileTab>("home");
+  const mobileHistoryReadyRef = useRef(false);
+  const skipNextHistoryPushRef = useRef(false);
 
   useEffect(() => {
     setIsNativeShell(detectNativeShell());
     setMobileAccount(readStoredMobileAccount());
     setAuthLoaded(true);
   }, []);
+
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !authLoaded || !mobileAccount) {
+      return undefined;
+    }
+
+    const initialTabParam = new URLSearchParams(window.location.search).get("tab");
+    const initialTab = isMobileTab(initialTabParam) ? initialTabParam : activeTabRef.current;
+
+    if (initialTab !== activeTabRef.current) {
+      skipNextHistoryPushRef.current = true;
+      setActiveTab(initialTab);
+    }
+
+    window.history.replaceState(
+      { ...(window.history.state ?? {}), opcMobileTab: initialTab } satisfies MobileHistoryState,
+      "",
+      buildMobileTabUrl(initialTab)
+    );
+    mobileHistoryReadyRef.current = true;
+
+    function handlePopState(event: PopStateEvent) {
+      const nextTab = (event.state as MobileHistoryState | null)?.opcMobileTab;
+      if (!isMobileTab(nextTab)) {
+        return;
+      }
+      skipNextHistoryPushRef.current = true;
+      setActiveTab(nextTab);
+      setStatus(nextTab === "home" ? "已按返回手势回到首页。" : taskActionCopy[nextTab]);
+    }
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      mobileHistoryReadyRef.current = false;
+    };
+  }, [authLoaded, mobileAccount]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !authLoaded || !mobileAccount || !mobileHistoryReadyRef.current) {
+      return;
+    }
+    if (skipNextHistoryPushRef.current) {
+      skipNextHistoryPushRef.current = false;
+      return;
+    }
+
+    const currentState = window.history.state as MobileHistoryState | null;
+    if (currentState?.opcMobileTab === activeTab) {
+      return;
+    }
+
+    window.history.pushState(
+      { ...(window.history.state ?? {}), opcMobileTab: activeTab } satisfies MobileHistoryState,
+      "",
+      buildMobileTabUrl(activeTab)
+    );
+  }, [activeTab, authLoaded, mobileAccount]);
 
   useEffect(() => {
     try {

@@ -30,6 +30,8 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import android.window.OnBackInvokedCallback;
+import android.window.OnBackInvokedDispatcher;
 
 import androidx.core.content.FileProvider;
 
@@ -60,6 +62,7 @@ public class MainActivity extends Activity {
     private ValueCallback<Uri[]> filePathCallback;
     private File pendingUpdateApk;
     private boolean installPermissionSettingsOpened;
+    private OnBackInvokedCallback backInvokedCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,6 +75,7 @@ public class MainActivity extends Activity {
         ));
         setContentView(webView);
         configureWebView(webView);
+        registerBackHandler();
         if (savedInstanceState == null) {
             webView.loadUrl(START_URL);
         } else {
@@ -118,6 +122,16 @@ public class MainActivity extends Activity {
         target.setWebChromeClient(new ShellChromeClient());
     }
 
+    private void registerBackHandler() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            backInvokedCallback = this::handleBackNavigation;
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                backInvokedCallback
+            );
+        }
+    }
+
     private void requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= 33
             && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -127,6 +141,10 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
+        handleBackNavigation();
+    }
+
+    private void handleBackNavigation() {
         if (webView != null && webView.canGoBack()) {
             String previousUrl = null;
             int currentIndex = webView.copyBackForwardList().getCurrentIndex();
@@ -140,7 +158,7 @@ public class MainActivity extends Activity {
             }
             return;
         }
-        super.onBackPressed();
+        finish();
     }
 
     @Override
@@ -153,6 +171,10 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && backInvokedCallback != null) {
+            getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(backInvokedCallback);
+            backInvokedCallback = null;
+        }
         if (webView != null) {
             webView.destroy();
             webView = null;
