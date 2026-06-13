@@ -3953,7 +3953,7 @@ function CoverReferencePreview({ compact = false }: { compact?: boolean }) {
       <div className="flex items-center justify-between gap-3 text-xs font-medium text-steel">
         <span>小红书封面参考</span>
         <span className="rounded-md bg-white/75 px-2 py-1 text-[11px] text-ink/70">
-          非生成结果
+          版式参考
         </span>
       </div>
       <div className={["font-black leading-tight text-ink", compact ? "mt-5 text-3xl" : "mt-10 text-5xl"].join(" ")}>

@@ -1053,6 +1053,7 @@ def validate_content_production_contract() -> int:
         'MobilePanel title="高赞参考"',
         "把高赞参考变成素材池",
         "来源待 PC 确认",
+        "非生成结果",
         "非采集结果",
         "待人工复核",
     ]
