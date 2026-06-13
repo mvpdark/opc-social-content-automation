@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
@@ -16,7 +16,11 @@ from app.schemas.review import (
     ContentReviewRead,
     ContentReviewRequest,
 )
-from app.services.content_service import generate_content_draft, rewrite_content_body
+from app.services.content_service import (
+    delete_content_with_assets,
+    generate_content_draft,
+    rewrite_content_body,
+)
 from app.services.review_service import (
     get_content_or_404,
     list_reviews,
@@ -121,3 +125,14 @@ def get_content(content_id: int, db: Session = Depends(get_db)) -> ContentRead:
             detail="未找到这条内容。",
         )
     return ContentRead.model_validate(content)
+
+
+@router.delete("/{content_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_content(
+    content_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    _ = current_user
+    delete_content_with_assets(db, content_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -5,7 +5,10 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.content import Content
+from app.models.content_review import ContentReview
+from app.models.generated_image import GeneratedImage
 from app.models.generation_log import GenerationLog
+from app.models.publish_record import PublishRecord
 from app.models.user import User
 from app.schemas.content import ContentGenerateRequest, ContentRewriteRequest
 from app.services.knowledge_service import search_knowledge_items
@@ -281,3 +284,19 @@ def rewrite_content_body(
         status="success",
     )
     return content
+
+
+def delete_content_with_assets(db: Session, content_id: int) -> None:
+    content = db.get(Content, content_id)
+    if content is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="未找到这条内容。",
+        )
+
+    for model in (GeneratedImage, ContentReview, PublishRecord):
+        for item in db.query(model).filter(model.content_id == content_id).all():
+            db.delete(item)
+
+    db.delete(content)
+    db.commit()

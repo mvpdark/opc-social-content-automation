@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type PointerEvent,
+  type ReactNode
+} from "react";
 import { createPortal } from "react-dom";
 import {
   AlertTriangle,
@@ -148,6 +155,7 @@ const PC_AUTH_STORAGE_KEY = "opc_pc_auth_v1";
 const CREDENTIAL_STORAGE_KEY = "opc_workspace_credentials_v1";
 const INTERFACE_STYLE_STORAGE_KEY = "opc_interface_style_v1";
 const LAST_GENERATED_CONTENT_STORAGE_KEY = "opc_latest_generated_content_v1";
+const PINNED_DRAFT_IDS_STORAGE_KEY = "opc_pinned_draft_ids_v1";
 const DEFAULT_WRITING_STYLE_STORAGE_KEY = "opc_default_writing_style_v1";
 
 type CredentialSettings = {
@@ -1014,6 +1022,64 @@ function saveStoredGeneratedContent(content: GeneratedContent) {
   } catch (_error) {
     // Browser storage can be unavailable in restricted modes; the backend list still remains source of truth.
   }
+}
+
+function loadPinnedDraftIds() {
+  const stored = readLocalStorage(PINNED_DRAFT_IDS_STORAGE_KEY);
+  if (!stored) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(stored) as unknown;
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed.filter((value): value is number => Number.isInteger(value) && value > 0);
+  } catch (_error) {
+    return [];
+  }
+}
+
+function savePinnedDraftIds(ids: number[]) {
+  writeLocalStorage(PINNED_DRAFT_IDS_STORAGE_KEY, JSON.stringify(ids));
+}
+
+function sortDraftHistory(contents: GeneratedContent[], pinnedIds: number[]) {
+  const pinRank = new Map(pinnedIds.map((id, index) => [id, index]));
+  return [...contents].sort((left, right) => {
+    const leftRank = pinRank.get(left.id);
+    const rightRank = pinRank.get(right.id);
+    if (leftRank !== undefined || rightRank !== undefined) {
+      if (leftRank === undefined) {
+        return 1;
+      }
+      if (rightRank === undefined) {
+        return -1;
+      }
+      return leftRank - rightRank;
+    }
+    return new Date(right.created_at ?? 0).getTime() - new Date(left.created_at ?? 0).getTime();
+  });
+}
+
+function upsertDraftHistory(contents: GeneratedContent[], content: GeneratedContent) {
+  return [content, ...contents.filter((item) => item.id !== content.id)];
+}
+
+function formatDraftTime(value?: string) {
+  if (!value) {
+    return "刚生成";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "刚生成";
+  }
+  return new Intl.DateTimeFormat("zh-CN", {
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "2-digit"
+  }).format(date);
 }
 
 function renderXhsExpressionText(text: string) {
@@ -1905,13 +1971,109 @@ function ContentView({
     );
   const [previewContent, setPreviewContent] = useState<GeneratedContent | null>(null);
   const [previewImageAsset, setPreviewImageAsset] = useState<GeneratedImageAsset | null>(null);
+  const [draftHistory, setDraftHistory] = useState<GeneratedContent[]>([]);
+  const [draftImagesByContentId, setDraftImagesByContentId] = useState<
+    Record<number, GeneratedImageAsset | null>
+  >({});
+  const [pinnedDraftIds, setPinnedDraftIds] = useState<number[]>([]);
+  const [draftActionError, setDraftActionError] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(true);
   const selectedCreationProject = findEnabledCreationProject(selectedCreationProjectId);
+
+  async function fetchLatestImage(contentId: number) {
+    try {
+      const response = await fetch(`${API_BASE}/image/list?content_id=${contentId}&limit=1`);
+      if (!response.ok) {
+        return null;
+      }
+      const images = (await response.json()) as unknown;
+      if (!Array.isArray(images)) {
+        return null;
+      }
+      return images.find(isGeneratedImageAsset) ?? null;
+    } catch (_error) {
+      return null;
+    }
+  }
 
   function handleGeneratedContent(content: GeneratedContent) {
     setPreviewContent(content);
     setPreviewImageAsset(null);
+    setDraftHistory((current) =>
+      sortDraftHistory(upsertDraftHistory(current, content), pinnedDraftIds)
+    );
+    setDraftActionError(null);
     saveStoredGeneratedContent(content);
+  }
+
+  function handleImageGenerated(asset: GeneratedImageAsset) {
+    setPreviewImageAsset(asset);
+    setDraftImagesByContentId((current) => ({
+      ...current,
+      [asset.content_id]: asset
+    }));
+  }
+
+  async function handleSelectDraft(content: GeneratedContent) {
+    setPreviewContent(content);
+    setDraftActionError(null);
+    saveStoredGeneratedContent(content);
+    if (Object.prototype.hasOwnProperty.call(draftImagesByContentId, content.id)) {
+      setPreviewImageAsset(draftImagesByContentId[content.id]);
+      return;
+    }
+    setPreviewImageAsset(null);
+    const image = await fetchLatestImage(content.id);
+    setDraftImagesByContentId((current) => ({
+      ...current,
+      [content.id]: image
+    }));
+    setPreviewImageAsset(image);
+  }
+
+  function handleTogglePinDraft(contentId: number) {
+    setPinnedDraftIds((current) => {
+      const next = current.includes(contentId)
+        ? current.filter((id) => id !== contentId)
+        : [contentId, ...current];
+      savePinnedDraftIds(next);
+      setDraftHistory((history) => sortDraftHistory(history, next));
+      return next;
+    });
+  }
+
+  async function handleDeleteDraft(contentId: number) {
+    setDraftActionError(null);
+    try {
+      const response = await fetch(`${API_BASE}/content/${contentId}`, {
+        method: "DELETE"
+      });
+      if (!response.ok) {
+        throw new Error(await readApiError(response, "草稿删除失败。"));
+      }
+      const nextHistory = draftHistory.filter((content) => content.id !== contentId);
+      const nextPinnedIds = pinnedDraftIds.filter((id) => id !== contentId);
+      const nextContent = previewContent?.id === contentId ? nextHistory[0] ?? null : previewContent;
+      setDraftHistory(sortDraftHistory(nextHistory, nextPinnedIds));
+      setPinnedDraftIds(nextPinnedIds);
+      savePinnedDraftIds(nextPinnedIds);
+      setDraftImagesByContentId((current) => {
+        const next = { ...current };
+        delete next[contentId];
+        return next;
+      });
+      if (previewContent?.id === contentId) {
+        setPreviewContent(nextContent);
+        setPreviewImageAsset(nextContent ? draftImagesByContentId[nextContent.id] ?? null : null);
+        if (nextContent) {
+          saveStoredGeneratedContent(nextContent);
+        } else {
+          removeLocalStorage(LAST_GENERATED_CONTENT_STORAGE_KEY);
+        }
+      }
+    } catch (error) {
+      setDraftActionError(error instanceof Error ? error.message : "草稿删除失败。");
+    }
   }
 
   function handleSelectCreationProject(projectId: CreationProjectId) {
@@ -1936,32 +2098,24 @@ function ContentView({
 
   useEffect(() => {
     let active = true;
+    const storedPinnedIds = loadPinnedDraftIds();
+    setPinnedDraftIds(storedPinnedIds);
     const storedContent = loadStoredGeneratedContent();
     if (storedContent) {
       setPreviewContent(storedContent);
-    }
-
-    async function loadLatestImage(contentId: number) {
-      try {
-        const response = await fetch(`${API_BASE}/image/list?content_id=${contentId}&limit=1`);
-        if (!response.ok) {
-          return;
-        }
-        const images = (await response.json()) as unknown;
-        if (!Array.isArray(images)) {
-          return;
-        }
-        const latestImage = images.find(isGeneratedImageAsset);
-        if (active && latestImage?.content_id === contentId) {
-          setPreviewImageAsset(latestImage);
-        }
-      } catch (_error) {
-        // Keep the text preview usable when image history is unavailable.
-      }
+      setDraftHistory([storedContent]);
     }
 
     if (storedContent) {
-      void loadLatestImage(storedContent.id);
+      void fetchLatestImage(storedContent.id).then((image) => {
+        if (active) {
+          setPreviewImageAsset(image);
+          setDraftImagesByContentId((current) => ({
+            ...current,
+            [storedContent.id]: image
+          }));
+        }
+      });
     }
 
     async function loadLatestContent() {
@@ -1974,13 +2128,23 @@ function ContentView({
         if (!Array.isArray(contents)) {
           return;
         }
-        const latestContent = contents
-          .filter(isGeneratedContent)
-          .find((content) => !isTestDraft(content));
-        if (active && latestContent) {
+        const history = sortDraftHistory(
+          contents.filter(isGeneratedContent).filter((content) => !isTestDraft(content)),
+          storedPinnedIds
+        );
+        const latestContent = history[0] ?? null;
+        const imageEntries = await Promise.all(
+          history.slice(0, 12).map(async (content) => [content.id, await fetchLatestImage(content.id)] as const)
+        );
+        if (active) {
+          const imageMap = Object.fromEntries(imageEntries);
+          setDraftHistory(history);
+          setDraftImagesByContentId(imageMap);
           setPreviewContent(latestContent);
-          saveStoredGeneratedContent(latestContent);
-          void loadLatestImage(latestContent.id);
+          setPreviewImageAsset(latestContent ? imageMap[latestContent.id] ?? null : null);
+          if (latestContent) {
+            saveStoredGeneratedContent(latestContent);
+          }
         }
       } catch (_error) {
         // Keep the local draft or full example visible when the database/API is not available.
@@ -2035,21 +2199,28 @@ function ContentView({
         </div>
       </section>
 
-      <GenerationLauncher
-        defaultWritingStyle={defaultWritingStyle}
-        latestImageAsset={previewImageAsset}
-        latestContent={previewContent}
-        onGeneratedContent={handleGeneratedContent}
-        onImageGenerated={setPreviewImageAsset}
-        onOpenSettings={onOpenSettings}
-        workspaceToken={workspaceToken}
-      />
+        <GenerationLauncher
+          defaultWritingStyle={defaultWritingStyle}
+          latestImageAsset={previewImageAsset}
+          latestContent={previewContent}
+          onGeneratedContent={handleGeneratedContent}
+          onImageGenerated={handleImageGenerated}
+          onOpenSettings={onOpenSettings}
+          workspaceToken={workspaceToken}
+        />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
         <DraftPanel
           content={previewContent}
           coverImageAsset={previewImageAsset}
+          draftActionError={draftActionError}
+          history={draftHistory}
+          imageAssetsByContentId={draftImagesByContentId}
           loading={previewLoading}
+          onDeleteContent={handleDeleteDraft}
+          onSelectContent={handleSelectDraft}
+          onTogglePin={handleTogglePinDraft}
+          pinnedContentIds={pinnedDraftIds}
         />
         <div className="space-y-4">
           <Panel helper="生成前需要明确输入、改写和确认边界。" title="生产控制">
@@ -3870,14 +4041,171 @@ function PlatformRecordBadge({ platform }: { platform: string }) {
   return <span className="text-muted">{platform}</span>;
 }
 
+function DraftHistoryCard({
+  content,
+  imageAsset,
+  isPinned,
+  isSelected,
+  onDelete,
+  onSelect,
+  onTogglePin
+}: {
+  content: GeneratedContent;
+  imageAsset: GeneratedImageAsset | null | undefined;
+  isPinned: boolean;
+  isSelected: boolean;
+  onDelete: (contentId: number) => void;
+  onSelect: (content: GeneratedContent) => void;
+  onTogglePin: (contentId: number) => void;
+}) {
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const coverImageUrl = imageAsset ? resolveAssetUrl(imageAsset.image_url) : null;
+  const coverLines = buildCoverLines(content.title);
+  const platformId = platformIdForPreview(content.platform);
+
+  function clearLongPressTimer() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }
+
+  function handlePointerDown(event: PointerEvent<HTMLButtonElement>) {
+    if (event.pointerType === "mouse" && event.button !== 0) {
+      return;
+    }
+    clearLongPressTimer();
+    longPressTimer.current = setTimeout(() => {
+      setActionsOpen(true);
+    }, 520);
+  }
+
+  function handlePointerEnd() {
+    clearLongPressTimer();
+  }
+
+  return (
+    <article
+      className={[
+        "relative w-[174px] flex-none overflow-hidden rounded-[18px] border bg-paper shadow-sm transition",
+        isSelected ? "border-moss ring-2 ring-moss/25" : "border-line hover:border-steel/50"
+      ].join(" ")}
+      data-testid="draft-history-card"
+    >
+      <button
+        aria-label={`查看草稿：${content.title}`}
+        className="block w-full text-left"
+        onClick={() => onSelect(content)}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          setActionsOpen(true);
+        }}
+        onPointerCancel={handlePointerEnd}
+        onPointerDown={handlePointerDown}
+        onPointerLeave={handlePointerEnd}
+        onPointerUp={handlePointerEnd}
+        type="button"
+      >
+        <div
+          className={`relative aspect-[3/4] overflow-hidden ${
+            coverImageUrl
+              ? "bg-paper"
+              : "bg-[radial-gradient(circle_at_18%_14%,rgba(255,255,255,0.88),transparent_30%),linear-gradient(145deg,#fff7e8_0%,#d9f3e6_48%,#f8cfc0_100%)] p-3"
+          }`}
+        >
+          {coverImageUrl ? (
+            <img
+              alt="历史草稿封面"
+              className="h-full w-full object-cover"
+              src={coverImageUrl}
+            />
+          ) : (
+            <div className="absolute inset-x-3 bottom-4">
+              <div className="mb-2 h-1 w-8 rounded-full bg-coral" />
+              <div className="space-y-1 text-[1.2rem] font-black leading-[1.08] text-ink">
+                {coverLines.slice(0, 3).map((line) => (
+                  <div key={line}>{line}</div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-white/85 px-2 py-1 text-[10px] font-semibold text-ink shadow-sm">
+            <PlatformIcon platform={platformId} size="sm" />
+            图文
+          </div>
+          {isPinned ? (
+            <div className="absolute right-2 top-2 rounded-full bg-ink px-2 py-1 text-[10px] font-semibold text-paper">
+              置顶
+            </div>
+          ) : null}
+        </div>
+        <div className="p-3">
+          <div className="line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-ink">
+            {content.title}
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted">
+            <span>{formatDraftTime(content.created_at)}</span>
+            <span>{generatedContentStatusLabel(content.status)}</span>
+          </div>
+        </div>
+      </button>
+
+      {actionsOpen ? (
+        <div
+          className="absolute inset-x-2 bottom-2 grid grid-cols-2 gap-2 rounded-[14px] border border-white/70 bg-paper/95 p-2 shadow-panel backdrop-blur"
+          data-testid="draft-history-actions"
+        >
+          <button
+            className="flex h-8 items-center justify-center gap-1 rounded-md border border-line bg-mist text-xs font-semibold text-ink"
+            onClick={() => {
+              onTogglePin(content.id);
+              setActionsOpen(false);
+            }}
+            type="button"
+          >
+            <Bookmark className="h-3.5 w-3.5" />
+            {isPinned ? "取消" : "置顶"}
+          </button>
+          <button
+            className="flex h-8 items-center justify-center gap-1 rounded-md border border-coral/30 bg-coral/10 text-xs font-semibold text-ink"
+            onClick={() => {
+              onDelete(content.id);
+              setActionsOpen(false);
+            }}
+            type="button"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            删除
+          </button>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
 function DraftPanel({
   content,
   coverImageAsset,
-  loading
+  draftActionError,
+  history,
+  imageAssetsByContentId,
+  loading,
+  onDeleteContent,
+  onSelectContent,
+  onTogglePin,
+  pinnedContentIds
 }: {
   content: GeneratedContent | null;
   coverImageAsset: GeneratedImageAsset | null;
+  draftActionError: string | null;
+  history: GeneratedContent[];
+  imageAssetsByContentId: Record<number, GeneratedImageAsset | null>;
   loading: boolean;
+  onDeleteContent: (contentId: number) => void;
+  onSelectContent: (content: GeneratedContent) => void;
+  onTogglePin: (contentId: number) => void;
+  pinnedContentIds: number[];
 }) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [portalReady, setPortalReady] = useState(false);
@@ -3903,6 +4231,7 @@ function DraftPanel({
     content && coverImageAsset?.content_id === content.id
       ? resolveAssetUrl(coverImageAsset.image_url)
       : null;
+  const hasHistory = history.length > 0;
 
   useEffect(() => {
     setPortalReady(true);
@@ -3945,6 +4274,50 @@ function DraftPanel({
       helper={`按${previewPlatformLabel}图文卡片和弹窗预览最终展示效果。`}
       title="创作台"
     >
+      <section className="mb-5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-ink">历史图文草稿</h3>
+            <p className="mt-1 text-xs leading-5 text-muted">
+              横向滑动查看之前生成的图文；点击切换预览，长按卡片可置顶或删除。
+            </p>
+          </div>
+          <Pill tone={hasHistory ? "green" : loading ? "blue" : "amber"}>
+            {hasHistory ? `${history.length} 条` : loading ? "读取中" : "暂无草稿"}
+          </Pill>
+        </div>
+
+        {draftActionError ? (
+          <div className="mt-3 rounded-md border border-coral/35 bg-coral/10 px-3 py-2 text-xs leading-5 text-ink">
+            {draftActionError}
+          </div>
+        ) : null}
+
+        {hasHistory ? (
+          <div
+            className="-mx-1 mt-3 flex gap-3 overflow-x-auto px-1 pb-2"
+            data-testid="draft-history-strip"
+          >
+            {history.map((item) => (
+              <DraftHistoryCard
+                content={item}
+                imageAsset={imageAssetsByContentId[item.id]}
+                isPinned={pinnedContentIds.includes(item.id)}
+                isSelected={content?.id === item.id}
+                key={item.id}
+                onDelete={onDeleteContent}
+                onSelect={onSelectContent}
+                onTogglePin={onTogglePin}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-3 rounded-[18px] border border-dashed border-line bg-mist/60 px-4 py-5 text-sm leading-6 text-muted">
+            还没有历史草稿。生成第一篇后，这里会保留可滑动的图文卡片。
+          </div>
+        )}
+      </section>
+
       <div className="grid grid-cols-1 gap-5 2xl:grid-cols-[minmax(280px,360px)_1fr]">
         <article
           className="glass-subtle overflow-hidden rounded-[22px] border bg-paper shadow-panel"
