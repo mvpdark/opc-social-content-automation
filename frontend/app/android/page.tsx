@@ -704,7 +704,7 @@ export default function AndroidPreviewPage() {
       <section className="min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(104px+env(safe-area-inset-bottom))] pt-4">
         <div
           aria-live="polite"
-          className="mb-4 rounded-[18px] border border-white/70 bg-white/78 px-3.5 py-2.5 text-xs font-semibold leading-5 text-ink shadow-[0_10px_30px_rgba(27,58,48,0.08)] backdrop-blur"
+          className="mb-4 rounded-full border border-white/75 bg-white/68 px-4 py-2.5 text-xs font-semibold leading-5 text-ink shadow-[0_14px_34px_rgba(27,58,48,0.08),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-xl"
           data-testid="mobile-status"
           role="status"
         >
@@ -879,10 +879,10 @@ function MobileHeader({ activeTab, onNotify }: { activeTab: MobileTab; onNotify:
   };
 
   return (
-    <header className="relative overflow-hidden border-b border-white/55 bg-white/40 px-4 pb-3 pt-[calc(12px+env(safe-area-inset-top))] shadow-[0_16px_38px_rgba(31,58,49,0.10),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur-2xl">
+    <header className="relative overflow-hidden bg-white/42 px-4 pb-3 pt-[calc(12px+env(safe-area-inset-top))] shadow-[0_16px_38px_rgba(31,58,49,0.08),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur-2xl">
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.52),rgba(255,255,255,0.16)_46%,rgba(210,230,216,0.22))]"
+        className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.70),rgba(255,255,255,0.22)_48%,rgba(210,230,216,0.20))]"
       />
       <div className="relative flex items-center justify-between gap-3">
         <button
@@ -899,7 +899,7 @@ function MobileHeader({ activeTab, onNotify }: { activeTab: MobileTab; onNotify:
           <div className="text-[11px] font-black text-moss">
             OPC Mobile
           </div>
-          <h1 className="truncate text-[22px] font-black leading-7">{titles[activeTab]}</h1>
+          <h1 className="truncate text-[24px] font-black leading-7">{titles[activeTab]}</h1>
         </div>
         <button
           aria-label="查看通知状态"
@@ -924,63 +924,92 @@ function HomeScreen({
 }) {
   return (
     <div className="space-y-4">
-      <section className="relative overflow-hidden rounded-[26px] border border-white/70 bg-white/55 p-4 text-ink shadow-[0_22px_46px_rgba(31,58,49,0.12),inset_0_1px_0_rgba(255,255,255,0.70)] backdrop-blur-xl">
+      <section className="relative overflow-hidden rounded-[30px] border border-white/75 bg-white/56 p-5 text-ink shadow-[0_24px_54px_rgba(31,58,49,0.12),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-xl">
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-cover bg-center opacity-55"
+          className="absolute inset-0 bg-cover bg-center opacity-52"
           style={{ backgroundImage: `url(${MOBILE_COLLECTION_COLLAGE})` }}
         />
-        <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,252,244,0.94)_0%,rgba(255,252,244,0.78)_48%,rgba(255,252,244,0.44)_100%)]" />
+        <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(105deg,rgba(255,252,244,0.96)_0%,rgba(255,252,244,0.82)_48%,rgba(255,252,244,0.52)_100%)]" />
+        <div aria-hidden="true" className="absolute -right-12 -top-16 h-44 w-44 rounded-full bg-[#38bf6b]/12 blur-2xl" />
         <div className="relative">
           <div className="flex items-center justify-between gap-3">
-            <span className="rounded-full bg-[#e7f2ea]/90 px-2.5 py-1 text-[11px] font-black text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]">
-              今天先做
+            <span className="rounded-full bg-white/74 px-3 py-1 text-[11px] font-black text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] backdrop-blur">
+              今日任务概览
             </span>
-            <span className="rounded-full bg-[#fff6d8] px-2.5 py-1 text-[11px] font-black text-[#6f5412]">
-              3 项待处理
-            </span>
+            <div className="text-right">
+              <div className="text-[34px] font-black leading-8 text-moss">3</div>
+              <div className="mt-1 text-[11px] font-bold text-muted">项待处理</div>
+            </div>
           </div>
-          <h2 className="mt-4 text-[25px] font-black leading-8">先采集，再生成</h2>
-          <p className="mt-2 max-w-[230px] text-[13px] font-medium leading-5 text-ink/68">
-            先补公开素材，再启动硕升博草稿，节奏更稳。
+          <h2 className="mt-5 text-[27px] font-black leading-8">先采集，再创作</h2>
+          <p className="mt-2 max-w-[240px] text-sm font-medium leading-6 text-ink/68">
+            先补高赞参考，再启动草稿和封面，发布仍由人工确认。
           </p>
-          <div className="mt-4 flex items-center gap-2 text-[11px] font-bold text-ink/52">
-            <span>采集参考</span>
-            <span className="h-px flex-1 bg-ink/12" />
-            <span>撰稿</span>
-            <span className="h-px flex-1 bg-ink/12" />
-            <span>封面</span>
-          </div>
         </div>
         <button
-          className="relative mt-4 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-[17px] border border-white/75 bg-white/82 text-sm font-black text-ink shadow-[0_12px_28px_rgba(31,58,49,0.10),inset_0_1px_0_rgba(255,255,255,0.82)] backdrop-blur active:scale-[0.99]"
-          onClick={() => onChangeTab("create", "已进入创作预览，手机端按钮现在可直接操作。")}
+          className="relative mt-5 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-full bg-[#2f9a55] text-sm font-black text-white shadow-[0_16px_34px_rgba(47,154,85,0.24)] active:scale-[0.99]"
+          onClick={() => onChangeTab("create", "已打开创作项目页，可以选择项目开始生成。")}
           type="button"
         >
           <PenLine className="h-4 w-4" />
-          打开创作入口
+          查看创作预览
         </button>
       </section>
 
-      <div className="grid grid-cols-3 gap-2">
-        {quickMetrics.map((metric) => (
-          <Metric
-            key={metric.label}
-            label={metric.label}
-            onClick={() => onChangeTab(metric.tab)}
-            testId={`metric-${metric.tab}`}
-            tone={metric.tone}
-            value={metric.value}
+      <MobilePanel title="快捷入口">
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { icon: <Radar className="h-5 w-5" />, label: "采集管理", tab: "collect" as const },
+            { icon: <PenLine className="h-5 w-5" />, label: "创作项目", tab: "create" as const },
+            { icon: <Database className="h-5 w-5" />, label: "数据中心", tab: "settings" as const },
+            { icon: <Settings className="h-5 w-5" />, label: "系统设置", tab: "settings" as const }
+          ].map((item) => (
+            <button
+              className="flex min-h-[86px] touch-manipulation flex-col items-center justify-center gap-2 rounded-[22px] border border-white/72 bg-white/70 text-xs font-black text-ink shadow-[0_12px_28px_rgba(31,58,49,0.07),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur active:scale-[0.98]"
+              key={item.label}
+              onClick={() => onChangeTab(item.tab)}
+              type="button"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-[16px] bg-[#e7f2ea] text-moss">
+                {item.icon}
+              </span>
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </MobilePanel>
+
+      <MobilePanel title="最近草稿" action="本地草稿">
+        <button
+          className="flex w-full touch-manipulation gap-3 rounded-[24px] border border-white/72 bg-white/70 p-3 text-left shadow-[0_12px_30px_rgba(31,58,49,0.07),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur active:scale-[0.99]"
+          onClick={() => onChangeTab("create", "已打开最近草稿入口。")}
+          type="button"
+        >
+          <div
+            aria-hidden="true"
+            className="h-[88px] w-[88px] shrink-0 rounded-[20px] bg-cover bg-center"
+            style={{ backgroundImage: `url(${MOBILE_CREATE_CARD_BG})` }}
           />
-        ))}
-      </div>
+          <div className="min-w-0 flex-1">
+            <div className="inline-flex rounded-full bg-[#e7f2ea] px-2 py-1 text-[10px] font-black text-moss">草稿</div>
+            <h3 className="mt-2 text-sm font-black leading-5">硕升博申请第一步，不是先套磁</h3>
+            <div className="mt-2 flex items-center gap-3 text-[11px] font-semibold text-muted">
+              <span>星标 128</span>
+              <span>收藏 86</span>
+              <span>分享 32</span>
+            </div>
+          </div>
+          <ChevronRight className="mt-1 h-4 w-4 text-muted" />
+        </button>
+      </MobilePanel>
 
       <MobilePanel
         title="今日待办"
         action={
           <button
-            className="min-h-9 touch-manipulation rounded-md px-2 text-xs font-semibold text-moss active:bg-[#e5f2ec]"
-            onClick={() => onAction("今日 3 个待办都可以在手机端点开处理。")}
+            className="rounded-full bg-[#e7f2ea]/90 px-2.5 py-1 text-xs font-black text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]"
+            onClick={() => onAction("今日待办已展开，所有入口都可以继续处理。")}
             type="button"
           >
             全部
@@ -1001,7 +1030,19 @@ function HomeScreen({
         </div>
       </MobilePanel>
 
-      <MobilePanel title="生产进度">
+      <MobilePanel title="生产节奏">
+        <div className="mb-3 grid grid-cols-3 gap-2">
+          {quickMetrics.map((metric) => (
+            <Metric
+              key={metric.label}
+              label={metric.label}
+              onClick={() => onChangeTab(metric.tab)}
+              testId={`metric-${metric.tab}`}
+              tone={metric.tone}
+              value={metric.value}
+            />
+          ))}
+        </div>
         <div className="grid grid-cols-3 gap-2">
           {progressSteps.map((step) => (
             <StepTile
@@ -1421,29 +1462,47 @@ function CollectScreen({
 
   return (
     <div className="space-y-4">
-      <section className="overflow-hidden rounded-[26px] border border-white/70 bg-white/82 shadow-[0_18px_42px_rgba(31,58,49,0.10)]">
+      <section className="relative overflow-hidden rounded-[30px] border border-white/75 bg-white/56 p-5 shadow-[0_24px_54px_rgba(31,58,49,0.12),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-xl">
         <div
           aria-hidden="true"
-          className="h-32 bg-cover bg-center"
+          className="absolute inset-0 bg-cover bg-center opacity-58"
           style={{ backgroundImage: `url(${MOBILE_COLLECTION_COLLAGE})` }}
         />
-        <div className="px-4 pb-4 pt-3">
+        <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(110deg,rgba(255,252,244,0.96)_0%,rgba(255,252,244,0.80)_50%,rgba(255,252,244,0.42)_100%)]" />
+        <div className="relative">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-xs font-black text-moss">自动采集</div>
-              <h2 className="mt-1 text-xl font-black leading-6">把公开参考变成素材池</h2>
+              <div className="text-xs font-black text-moss">采集中心</div>
+              <h2 className="mt-2 text-[25px] font-black leading-8">自动补全优质内容</h2>
+              <p className="mt-2 max-w-[230px] text-sm font-medium leading-6 text-ink/68">
+                定时采集高赞参考，手动导入链接，沉淀成可用素材。
+              </p>
             </div>
-            <span className="rounded-[12px] bg-[#ff2442] px-3 py-1.5 text-[11px] font-black text-white">
+            <span className="rounded-full bg-white/74 px-3 py-1.5 text-[11px] font-black text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] backdrop-blur">
               {autoEnabled ? "运行中" : "待开启"}
             </span>
+          </div>
+          <div className="mt-5 grid grid-cols-3 gap-2">
+            <div className="rounded-[18px] border border-white/70 bg-white/64 px-3 py-2 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur">
+              <div className="text-lg font-black text-ink">{maxItems}</div>
+              <div className="text-[10px] font-bold text-muted">目标条数</div>
+            </div>
+            <div className="rounded-[18px] border border-white/70 bg-white/64 px-3 py-2 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur">
+              <div className="text-lg font-black text-ink">{intervalMinutes}</div>
+              <div className="text-[10px] font-bold text-muted">分钟间隔</div>
+            </div>
+            <div className="rounded-[18px] border border-white/70 bg-white/64 px-3 py-2 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur">
+              <div className="text-lg font-black text-moss">{lastJobId ? "1" : "0"}</div>
+              <div className="text-[10px] font-bold text-muted">追踪任务</div>
+            </div>
           </div>
         </div>
       </section>
       <MobilePanel
-        title="定时自动采集"
-        action={<span className="text-xs font-semibold text-moss">自动获取</span>}
+        title="定时采集任务"
+        action={<span className="rounded-full bg-[#e7f2ea]/90 px-2.5 py-1 text-xs font-black text-moss">{autoEnabled ? "运行中" : "可启用"}</span>}
       >
-        <label className="mb-3 flex items-start gap-3 rounded-[24px] border border-white/75 bg-[#f9fbf6] px-3.5 py-3 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+        <label className="mb-3 flex items-start gap-3 rounded-[24px] border border-white/75 bg-white/70 px-3.5 py-3 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur">
           <input
             checked={autoEnabled}
             className="mt-1 h-4 w-4"
@@ -1460,7 +1519,7 @@ function CollectScreen({
         </label>
         <label className="block">
           <span className="text-xs font-medium text-muted">关键词</span>
-          <div className="mt-2 flex min-h-12 items-center gap-2 rounded-full border border-[#d6e8df] bg-white px-4 py-2">
+          <div className="mt-2 flex min-h-12 items-center gap-2 rounded-full border border-white/75 bg-white/76 px-4 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.82)]">
             <Search className="h-4 w-4 shrink-0 text-muted" />
             <input
               aria-label="采集关键词"
@@ -1531,7 +1590,7 @@ function CollectScreen({
             value={intervalMinutes}
           />
         </label>
-        <div className="mt-3 rounded-[22px] border border-[#d6e8df] bg-white px-4 py-3 text-xs leading-5 text-muted">
+        <div className="mt-3 rounded-[22px] border border-white/75 bg-white/72 px-4 py-3 text-xs leading-5 text-muted shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur">
           <div>{scheduleMessage}</div>
           {diagnosticItems.length ? (
             <div className="mt-3 grid grid-cols-2 gap-2" data-testid="mobile-collection-diagnostic-grid">
@@ -1555,7 +1614,7 @@ function CollectScreen({
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <button
-            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full border border-[#d6e8df] bg-white text-sm font-semibold text-ink active:scale-[0.99]"
+            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full border border-white/75 bg-white/74 text-sm font-semibold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] active:scale-[0.99]"
             data-testid="mobile-save-schedule"
             onClick={saveSchedule}
             type="button"
@@ -1564,7 +1623,7 @@ function CollectScreen({
             保存定时
           </button>
           <button
-            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full bg-ink text-sm font-semibold text-paper active:scale-[0.99] disabled:opacity-60"
+            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full bg-[#23854f] text-sm font-semibold text-white shadow-[0_12px_26px_rgba(35,133,79,0.18)] active:scale-[0.99] disabled:opacity-60"
             data-testid="mobile-run-collection-now"
             disabled={busyAction === "job"}
             onClick={() => void runCollectionJob("manual")}
@@ -1575,7 +1634,7 @@ function CollectScreen({
           </button>
         </div>
         <button
-          className="mt-3 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-full border border-[#d6e8df] bg-white text-sm font-semibold text-ink active:scale-[0.99]"
+          className="mt-3 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-full border border-white/75 bg-white/74 text-sm font-semibold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] active:scale-[0.99]"
           data-testid="mobile-open-search"
           onClick={openSearchPage}
           type="button"
@@ -1583,7 +1642,7 @@ function CollectScreen({
           <ExternalLink className="h-4 w-4" />
           手动打开搜索页
         </button>
-        <label className="mt-3 flex items-start gap-3 rounded-[22px] border border-[#d6e8df] bg-white px-4 py-3 text-sm">
+        <label className="mt-3 flex items-start gap-3 rounded-[22px] border border-white/75 bg-white/72 px-4 py-3 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur">
           <input
             checked={sourceReviewed}
             className="mt-1 h-4 w-4"
@@ -1599,7 +1658,7 @@ function CollectScreen({
           </span>
         </label>
         <button
-          className="mt-3 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-full border border-[#d6e8df] bg-white text-sm font-semibold text-ink active:scale-[0.99] disabled:opacity-60"
+          className="mt-3 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-full border border-white/75 bg-white/74 text-sm font-semibold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] active:scale-[0.99] disabled:opacity-60"
           data-testid="mobile-save-digest"
           disabled={busyAction === "digest"}
           onClick={saveKnowledgeDigest}
@@ -1610,16 +1669,16 @@ function CollectScreen({
         </button>
       </MobilePanel>
 
-      <MobilePanel title="小红书链接导入">
+      <MobilePanel title="手动采集">
         <textarea
-          className="min-h-24 w-full resize-y rounded-[22px] border border-[#d6e8df] bg-white px-4 py-3 text-sm leading-6 text-ink outline-none"
+          className="min-h-24 w-full resize-y rounded-[22px] border border-white/75 bg-white/76 px-4 py-3 text-sm leading-6 text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.82)] outline-none"
           data-testid="mobile-link-text"
           onChange={(event) => setLinkText(event.target.value)}
           placeholder="粘贴小红书分享文本或链接"
           value={linkText}
         />
         <button
-          className="mt-3 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-full bg-ink text-sm font-semibold text-paper active:scale-[0.99] disabled:opacity-60"
+          className="mt-3 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-full bg-[#23854f] text-sm font-semibold text-white shadow-[0_12px_26px_rgba(35,133,79,0.18)] active:scale-[0.99] disabled:opacity-60"
           data-testid="mobile-parse-links"
           disabled={busyAction === "link"}
           onClick={parseLinks}
@@ -1629,10 +1688,33 @@ function CollectScreen({
           {busyAction === "link" ? "解析中" : "解析链接"}
         </button>
         {linkResult ? (
-          <div className="mt-3 rounded-[22px] border border-[#d6e8df] bg-white px-4 py-3 text-xs leading-5 text-muted">
+          <div className="mt-3 rounded-[22px] border border-white/75 bg-white/72 px-4 py-3 text-xs leading-5 text-muted shadow-[inset_0_1px_0_rgba(255,255,255,0.78)]">
             已解析 {linkResult.extracted_count} 个链接，可导入 {linkResult.accepted_count} 个。
           </div>
         ) : null}
+      </MobilePanel>
+
+      <MobilePanel title="采集来源">
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { icon: <CheckCircle2 className="h-4 w-4" />, label: "高赞榜单" },
+            { icon: <PenLine className="h-4 w-4" />, label: "热门话题" },
+            { icon: <UserRound className="h-4 w-4" />, label: "关注账号" },
+            { icon: <ExternalLink className="h-4 w-4" />, label: "自定义链接" }
+          ].map((item) => (
+            <button
+              className="flex min-h-[76px] touch-manipulation flex-col items-center justify-center gap-2 rounded-[20px] border border-white/72 bg-white/70 text-[11px] font-black text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] active:scale-[0.98]"
+              key={item.label}
+              onClick={() => onAction(`已选择采集来源：${item.label}`)}
+              type="button"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-[15px] bg-[#e7f2ea] text-moss">
+                {item.icon}
+              </span>
+              {item.label}
+            </button>
+          ))}
+        </div>
       </MobilePanel>
 
       <MobilePanel title="结构模板">
@@ -2123,7 +2205,7 @@ function CreateScreen({
   return (
     <div className="space-y-4">
       <button
-        className="flex h-11 w-full touch-manipulation items-center justify-between rounded-[18px] border border-white/70 bg-white/78 px-3 text-sm font-black text-ink shadow-[0_10px_28px_rgba(31,58,49,0.08)] active:scale-[0.99]"
+        className="flex h-12 w-full touch-manipulation items-center justify-between rounded-full border border-white/75 bg-white/72 px-4 text-sm font-black text-ink shadow-[0_12px_30px_rgba(31,58,49,0.08),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur active:scale-[0.99]"
         data-testid="mobile-return-projects"
         onClick={returnToProjects}
         type="button"
@@ -2176,13 +2258,13 @@ function CreateScreen({
         </div>
       </section>
       <MobilePanel
-        title="手机端生成"
-        action={<span className="text-xs font-semibold text-moss">生成入口</span>}
+        title="一键生成"
+        action={<span className="rounded-full bg-[#e7f2ea]/90 px-2.5 py-1 text-xs font-black text-moss">撰稿 + 封面</span>}
       >
         <label className="block">
           <span className="text-xs font-medium text-muted">选题</span>
           <input
-            className="mt-2 h-12 w-full rounded-full border border-[#d6e8df] bg-white px-4 text-sm font-medium text-ink outline-none"
+            className="mt-2 h-12 w-full rounded-full border border-white/75 bg-white/76 px-4 text-sm font-medium text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.82)] outline-none focus:border-moss focus:ring-2 focus:ring-moss/15"
             data-testid="mobile-topic"
             onChange={(event) => setTopic(event.target.value)}
             value={topic}
@@ -2191,7 +2273,7 @@ function CreateScreen({
         <label className="mt-3 block">
           <span className="text-xs font-medium text-muted">目标人群</span>
           <input
-            className="mt-2 h-12 w-full rounded-full border border-[#d6e8df] bg-white px-4 text-sm font-medium text-ink outline-none"
+            className="mt-2 h-12 w-full rounded-full border border-white/75 bg-white/76 px-4 text-sm font-medium text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.82)] outline-none focus:border-moss focus:ring-2 focus:ring-moss/15"
             data-testid="mobile-audience"
             onChange={(event) => setTargetAudience(event.target.value)}
             value={targetAudience}
@@ -2252,7 +2334,7 @@ function CreateScreen({
         <label className="mt-3 block">
           <span className="text-xs font-medium text-muted">标签</span>
           <input
-            className="mt-2 h-11 w-full rounded-md border border-[#d6e8df] bg-white px-3 text-sm font-medium text-ink outline-none"
+            className="mt-2 h-11 w-full rounded-full border border-white/75 bg-white/76 px-4 text-sm font-medium text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.82)] outline-none focus:border-moss focus:ring-2 focus:ring-moss/15"
             data-testid="mobile-tags"
             onChange={(event) => setTagsText(event.target.value)}
             value={tagsText}
@@ -2260,7 +2342,7 @@ function CreateScreen({
         </label>
         <button
           aria-label="一键完成撰稿和封面图"
-          className="mt-4 flex h-[54px] w-full touch-manipulation items-center justify-center gap-2 rounded-[20px] bg-[#ff2442] text-sm font-black text-white shadow-[0_16px_34px_rgba(255,36,66,0.22)] active:scale-[0.99] disabled:opacity-60"
+          className="mt-4 flex h-[54px] w-full touch-manipulation items-center justify-center gap-2 rounded-full bg-[#ff2442] text-sm font-black text-white shadow-[0_16px_34px_rgba(255,36,66,0.22)] active:scale-[0.99] disabled:opacity-60"
           data-testid="mobile-generate-draft"
           disabled={busy}
           onClick={generateDraftAndCover}
@@ -2325,18 +2407,67 @@ function MobileCreationProjectGateway({
 }) {
   return (
     <div className="space-y-4" data-testid="mobile-creation-project-gateway">
-      <div className="space-y-2">
+      <section className="relative overflow-hidden rounded-[30px] border border-white/75 bg-white/56 shadow-[0_24px_54px_rgba(31,58,49,0.12),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-xl">
+        <div
+          aria-hidden="true"
+          className="h-[220px] bg-cover bg-center"
+          style={{ backgroundImage: `url(${MOBILE_CREATE_CARD_BG})` }}
+        />
+        <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,252,244,0.08)_0%,rgba(255,252,244,0.28)_38%,rgba(255,252,244,0.94)_78%,rgba(255,252,244,0.98)_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 px-5 pb-6">
+          <div className="inline-flex rounded-full bg-white/72 px-3 py-1 text-[11px] font-black text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur">
+            One Click
+          </div>
+          <h2 className="mt-3 text-[27px] font-black leading-8">一键创建，高效出稿</h2>
+          <p className="mt-2 text-sm font-medium leading-6 text-ink/68">
+            选择项目类型，开启一键创作。
+          </p>
+        </div>
+      </section>
+
+      <div className="space-y-3">
         {mobileCreationProjects.map((project) => (
           <button
             aria-label={`${project.enabled ? "进入" : "查看"}${project.title}${project.enabled ? "创作流程" : "规划状态"}`}
-            className="flex h-10 w-full touch-manipulation items-center justify-center gap-2 rounded-[13px] bg-[#111312] px-4 text-xs font-black text-white shadow-[0_10px_20px_rgba(22,24,23,0.12)] active:scale-[0.99]"
+            className="flex min-h-[86px] w-full touch-manipulation items-center gap-3 rounded-[25px] border border-white/75 bg-white/74 px-3.5 py-3 text-left shadow-[0_14px_34px_rgba(31,58,49,0.08),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-xl active:scale-[0.99]"
             data-testid={`mobile-creation-project-${project.id}`}
             key={project.id}
             onClick={() => onSelect(project.id)}
             type="button"
           >
-            <PenLine className="h-3.5 w-3.5" />
-            进入{project.title}
+            <span
+              className={[
+                "flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] text-white shadow-[0_12px_24px_rgba(31,58,49,0.12)]",
+                project.id === "postgraduate-phd"
+                  ? "bg-[#ff2442]"
+                  : project.id === "ecommerce-listing"
+                    ? "bg-[#111312]"
+                    : "bg-[#2eb865]"
+              ].join(" ")}
+            >
+              {project.id === "postgraduate-phd" ? (
+                <PlatformIcon platform="xiaohongshu" size="md" />
+              ) : project.id === "ecommerce-listing" ? (
+                <PlatformIcon platform="douyin" size="md" />
+              ) : (
+                <WeChatIcon className="h-7 w-7" />
+              )}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-black leading-5">{project.title}</span>
+              <span className="mt-1 block text-xs font-semibold leading-5 text-muted">{project.description}</span>
+            </span>
+            <span
+              className={[
+                "inline-flex h-10 shrink-0 items-center justify-center gap-1 rounded-full px-3 text-xs font-black",
+                project.enabled
+                  ? "border border-[#23854f]/35 bg-[#e7f2ea] text-moss"
+                  : "border border-white/75 bg-white/72 text-muted"
+              ].join(" ")}
+            >
+              {project.enabled ? "进入创作" : project.status}
+              <ChevronRight className="h-3.5 w-3.5" />
+            </span>
           </button>
         ))}
       </div>
@@ -2345,12 +2476,53 @@ function MobileCreationProjectGateway({
         title="项目状态"
         action={generatedContent ? "已有草稿" : "待生成"}
       >
-        <div className="rounded-[18px] border border-[#f3c96b]/40 bg-[#fff5d8] px-3 py-3 text-xs font-medium leading-5 text-[#8a5d16]">
-          进入项目后才显示具体生成表单；发布仍需人工确认，不会自动发布，也不会伪造采集、图片或效果数据。
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { label: "草稿总数", value: generatedContent ? "1" : "0", tone: "text-moss" },
+            { label: "待处理", value: "3", tone: "text-[#e58a00]" },
+            { label: "今日生成", value: generatedContent ? "1" : "0", tone: "text-[#1d72d2]" },
+            { label: "已发布", value: "0", tone: "text-moss" }
+          ].map((item) => (
+            <div
+              className="rounded-[18px] border border-white/70 bg-white/66 px-2 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.78)]"
+              key={item.label}
+            >
+              <div className={`text-2xl font-black leading-7 ${item.tone}`}>{item.value}</div>
+              <div className="mt-1 text-[10px] font-bold text-muted">{item.label}</div>
+            </div>
+          ))}
         </div>
+        <p className="mt-3 rounded-[18px] bg-[#fff6d8]/78 px-3 py-2 text-xs font-medium leading-5 text-[#8a5d16]">
+          发布仍需人工确认，不会自动发布，也不会伪造采集、图片或效果数据。
+        </p>
       </MobilePanel>
 
     </div>
+  );
+}
+
+function WeChatIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 32 32"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M13.4 6.6C7.7 6.6 3.2 10.2 3.2 14.7c0 2.5 1.4 4.7 3.6 6.2l-.8 3 3.4-1.7c1.2.4 2.5.6 4 .6.5 0 1 0 1.5-.1-.4-1-.6-2-.6-3.1 0-4.1 3.7-7.5 8.5-8-1.8-3-5.3-5-9.4-5Z"
+        fill="currentColor"
+      />
+      <path
+        d="M21.5 13.4c4.2 0 7.6 2.8 7.6 6.3 0 1.9-1 3.6-2.7 4.8l.6 2.5-2.8-1.4c-.9.3-1.8.4-2.8.4-4.2 0-7.6-2.8-7.6-6.3s3.5-6.3 7.7-6.3Z"
+        fill="currentColor"
+      />
+      <circle cx="9.8" cy="14.3" fill="#2eb865" r="1.15" />
+      <circle cx="15.4" cy="14.3" fill="#2eb865" r="1.15" />
+      <circle cx="18.8" cy="19.7" fill="#2eb865" r="0.95" />
+      <circle cx="23.6" cy="19.7" fill="#2eb865" r="0.95" />
+    </svg>
   );
 }
 
@@ -2542,25 +2714,17 @@ function SettingsScreen({
               </div>
             ))}
           </div>
-        </div>
-      </section>
-      <MobilePanel title="登录状态" action={mobileAccount}>
-        <div className="flex items-center justify-between gap-3 rounded-[18px] border border-white/70 bg-[#f9fbf6] px-3.5 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-          <div className="min-w-0">
-            <div className="text-sm font-semibold text-ink">{mobileAccount}</div>
-            <div className="mt-1 text-xs text-muted">工作台未开启访问保护；需要时可在设置中开启。</div>
-          </div>
           <button
-            className="flex h-10 shrink-0 touch-manipulation items-center gap-2 rounded-md border border-[#d6e8df] bg-[#f6fbf6] px-3 text-xs font-semibold text-ink active:scale-[0.98]"
+            className="mt-4 flex h-11 w-full touch-manipulation items-center justify-center gap-2 rounded-full border border-white/75 bg-white/70 text-sm font-black text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur active:scale-[0.99]"
             data-testid="mobile-logout"
             onClick={onLogout}
             type="button"
           >
             <LogOut className="h-4 w-4" />
-            退出
+            退出当前账号
           </button>
         </div>
-      </MobilePanel>
+      </section>
       <MobilePanel title="服务配置" action="仅本设备">
         <p className="mb-3 text-xs leading-5 text-muted">
           服务授权只保存在这台设备；应用后由工作台调用服务，不会展示完整内容。
@@ -2588,7 +2752,7 @@ function SettingsScreen({
                 </span>
               </span>
               <input
-                className="mt-2 h-11 w-full rounded-full border border-[#d6e8df] bg-white px-4 text-sm font-medium text-ink outline-none focus:border-moss focus:ring-2 focus:ring-moss/15"
+                className="mt-2 h-11 w-full rounded-full border border-white/75 bg-white/76 px-4 text-sm font-medium text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.82)] outline-none focus:border-moss focus:ring-2 focus:ring-moss/15"
                 data-testid={field.testId}
                 onChange={(event) => updateCredential(field.keyName, event.target.value)}
                 placeholder={field.placeholder}
@@ -2601,7 +2765,7 @@ function SettingsScreen({
         </div>
         <div className="mt-4 grid grid-cols-1 gap-2">
           <button
-            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full bg-ink text-sm font-semibold text-paper active:scale-[0.99] disabled:opacity-60"
+            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full bg-[#23854f] text-sm font-semibold text-white shadow-[0_12px_26px_rgba(35,133,79,0.18)] active:scale-[0.99] disabled:opacity-60"
             data-testid="mobile-apply-keys"
             disabled={busyAction === "apply"}
             onClick={applyProviderKeys}
@@ -2611,7 +2775,7 @@ function SettingsScreen({
             {busyAction === "apply" ? "应用中" : "应用服务配置"}
           </button>
           <button
-            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full border border-[#d6e8df] bg-white text-sm font-semibold text-ink active:scale-[0.99] disabled:opacity-60"
+            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full border border-white/75 bg-white/74 text-sm font-semibold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] active:scale-[0.99] disabled:opacity-60"
             data-testid="mobile-check-draft"
             disabled={busyAction === "check"}
             onClick={checkDraftProvider}
@@ -2621,7 +2785,7 @@ function SettingsScreen({
             {busyAction === "check" ? "检测中" : "检测撰稿连接"}
           </button>
           <button
-            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full border border-[#d6e8df] bg-white text-sm font-semibold text-ink active:scale-[0.99]"
+            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full border border-white/75 bg-white/74 text-sm font-semibold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] active:scale-[0.99]"
             data-testid="mobile-clear-credentials"
             onClick={clearCredentials}
             type="button"
@@ -2631,7 +2795,7 @@ function SettingsScreen({
           </button>
         </div>
         {checkStatus ? (
-          <div className="mt-3 rounded-[22px] border border-[#d6e8df] bg-white px-4 py-2 text-xs leading-5 text-muted">
+          <div className="mt-3 rounded-[22px] border border-white/75 bg-white/72 px-4 py-2 text-xs leading-5 text-muted shadow-[inset_0_1px_0_rgba(255,255,255,0.78)]">
             {checkStatus.status === "ok" ? "检测通过：" : "检测未通过："}
             {checkStatus.message}
           </div>
@@ -2652,11 +2816,11 @@ function BottomNav({ activeTab, onChange }: { activeTab: MobileTab; onChange: (t
   return (
     <nav
       aria-label="安卓端主导航"
-      className="absolute bottom-0 left-0 right-0 z-20 overflow-hidden border-t border-white/60 bg-white/40 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-18px_42px_rgba(31,58,49,0.12),inset_0_1px_0_rgba(255,255,255,0.70)] backdrop-blur-2xl sm:rounded-b-[30px]"
+      className="absolute bottom-0 left-0 right-0 z-20 overflow-hidden border-t border-white/65 bg-white/48 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-18px_42px_rgba(31,58,49,0.11),inset_0_1px_0_rgba(255,255,255,0.78)] backdrop-blur-2xl sm:rounded-b-[30px]"
     >
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.54),rgba(255,255,255,0.20)_58%,rgba(216,230,220,0.26))]"
+        className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.70),rgba(255,255,255,0.30)_58%,rgba(216,230,220,0.28))]"
       />
       <div className="relative grid grid-cols-4 gap-1">
         {bottomTabs.map((tab) => {
@@ -2667,10 +2831,10 @@ function BottomNav({ activeTab, onChange }: { activeTab: MobileTab; onChange: (t
               aria-pressed={active}
               key={tab.id}
               className={[
-                "flex min-h-[54px] touch-manipulation flex-col items-center justify-center gap-1 rounded-[18px] border text-[11px] font-black shadow-[inset_0_1px_0_rgba(255,255,255,0.52)] backdrop-blur-xl transition active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-moss/35",
-                active
-                  ? "border-white/30 bg-black/70 text-white shadow-[0_12px_28px_rgba(18,24,20,0.20),inset_0_1px_0_rgba(255,255,255,0.14)]"
-                  : "border-white/0 bg-white/10 text-muted active:bg-white/40"
+                 "flex min-h-[54px] touch-manipulation flex-col items-center justify-center gap-1 rounded-[19px] border text-[11px] font-black shadow-[inset_0_1px_0_rgba(255,255,255,0.62)] backdrop-blur-xl transition active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-moss/35",
+                 active
+                  ? "border-white/40 bg-[#23854f] text-white shadow-[0_14px_30px_rgba(35,133,79,0.24),inset_0_1px_0_rgba(255,255,255,0.22)]"
+                  : "border-white/0 bg-white/16 text-muted active:bg-white/46"
               ].join(" ")}
               data-testid={`mobile-tab-${tab.id}`}
               onClick={() => onChange(tab.id)}
@@ -2688,11 +2852,11 @@ function BottomNav({ activeTab, onChange }: { activeTab: MobileTab; onChange: (t
 
 function MobilePanel({ action, children, title }: { action?: ReactNode; children: ReactNode; title: string }) {
   return (
-    <section className="rounded-[24px] border border-white/70 bg-white/82 p-4 shadow-[0_16px_40px_rgba(31,58,49,0.09)] backdrop-blur">
+    <section className="rounded-[26px] border border-white/72 bg-white/68 p-4 shadow-[0_18px_42px_rgba(31,58,49,0.08),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur-xl">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-[15px] font-black">{title}</h2>
         {typeof action === "string" ? (
-          <span className="rounded-full bg-[#e7f2ea] px-2.5 py-1 text-xs font-black text-moss">{action}</span>
+          <span className="rounded-full bg-[#e7f2ea]/90 px-2.5 py-1 text-xs font-black text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]">{action}</span>
         ) : (
           action
         )}
@@ -2722,7 +2886,7 @@ function Metric({
   };
   return (
     <button
-      className={["min-h-[82px] touch-manipulation rounded-[20px] border border-white/70 p-3 text-left shadow-[0_10px_26px_rgba(31,58,49,0.07)] active:scale-[0.98]", toneClass[tone]].join(" ")}
+      className={["min-h-[82px] touch-manipulation rounded-[22px] border border-white/70 p-3 text-left shadow-[0_12px_28px_rgba(31,58,49,0.07),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur active:scale-[0.98]", toneClass[tone]].join(" ")}
       data-testid={testId}
       onClick={onClick}
       type="button"
@@ -2748,7 +2912,7 @@ function TaskRow({
 }) {
   return (
     <button
-      className="flex min-h-[68px] w-full touch-manipulation items-center gap-3 rounded-[20px] border border-white/70 bg-[#fffdf7]/88 px-3 py-3 text-left shadow-[0_10px_28px_rgba(31,58,49,0.07)] active:scale-[0.99] active:border-moss"
+      className="flex min-h-[70px] w-full touch-manipulation items-center gap-3 rounded-[23px] border border-white/72 bg-white/72 px-3.5 py-3 text-left shadow-[0_12px_30px_rgba(31,58,49,0.07),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur active:scale-[0.99] active:border-moss"
       data-testid={testId}
       onClick={onClick}
       type="button"
@@ -2780,7 +2944,7 @@ function StepTile({
 }) {
   return (
     <button
-      className="min-h-[118px] touch-manipulation rounded-[20px] border border-white/70 bg-[#f9fbf6]/90 p-3 text-left shadow-[0_10px_26px_rgba(31,58,49,0.07)] active:scale-[0.98] active:border-moss"
+      className="min-h-[118px] touch-manipulation rounded-[22px] border border-white/72 bg-white/66 p-3 text-left shadow-[0_12px_30px_rgba(31,58,49,0.07),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur active:scale-[0.98] active:border-moss"
       data-testid={testId}
       onClick={onClick}
       type="button"
@@ -2809,8 +2973,8 @@ function ModeChip({
     <button
       aria-pressed={active}
       className={[
-        "min-h-12 touch-manipulation rounded-full border px-3 text-sm font-black active:scale-[0.98]",
-        active ? "border-[#161817] bg-[#161817] text-white shadow-[0_10px_24px_rgba(22,24,23,0.13)]" : "border-white/75 bg-white/86 text-muted active:bg-white"
+        "min-h-12 touch-manipulation rounded-full border px-3 text-sm font-black shadow-[inset_0_1px_0_rgba(255,255,255,0.68)] transition active:scale-[0.98]",
+        active ? "border-[#23854f] bg-[#23854f] text-white shadow-[0_12px_26px_rgba(35,133,79,0.18)]" : "border-white/75 bg-white/74 text-muted active:bg-white"
       ].join(" ")}
       data-testid={testId}
       onClick={onClick}
