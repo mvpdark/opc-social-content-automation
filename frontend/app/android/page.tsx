@@ -1949,7 +1949,7 @@ function CreateScreen({
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const [generatedCover, setGeneratedCover] = useState<GeneratedImageAsset | null>(null);
   const [draftHistory, setDraftHistory] = useState<MobileDraftHistoryItem[]>([]);
-  const [draftActionContentId, setDraftActionContentId] = useState<number | null>(null);
+  const [selectedDraftIds, setSelectedDraftIds] = useState<number[]>([]);
   const [draftPreview, setDraftPreview] = useState<DraftPreviewState>(defaultMobileDraftPreview);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -1964,8 +1964,9 @@ function CreateScreen({
   const coverImageUrl = generatedCover ? resolveAssetUrl(generatedCover.image_url) : null;
   const selectedProject = findEnabledMobileCreationProject(selectedProjectId);
   const todayDraftCount = countMobileDraftsToday(draftHistory);
-  const activeDraftActionItem =
-    draftHistory.find((item) => item.content.id === draftActionContentId) ?? null;
+  const selectedDraftIdSet = new Set(selectedDraftIds);
+  const selectedDraftItems = draftHistory.filter((item) => selectedDraftIdSet.has(item.content.id));
+  const selectionMode = selectedDraftIds.length > 0;
 
   function persistDraftHistory(nextItems: MobileDraftHistoryItem[]) {
     const normalized = normalizeMobileDraftHistory(nextItems);
@@ -2008,6 +2009,34 @@ function CreateScreen({
     onAction(`已打开草稿：${item.content.title}`);
   }
 
+  function toggleDraftSelection(item: MobileDraftHistoryItem) {
+    setSelectedDraftIds((currentIds) =>
+      currentIds.includes(item.content.id)
+        ? currentIds.filter((contentId) => contentId !== item.content.id)
+        : [...currentIds, item.content.id]
+    );
+  }
+
+  function beginDraftSelection(item: MobileDraftHistoryItem) {
+    setSelectedDraftIds((currentIds) =>
+      currentIds.includes(item.content.id) ? currentIds : [...currentIds, item.content.id]
+    );
+    onAction("已进入草稿多选模式。");
+  }
+
+  function openOrToggleDraftHistoryItem(item: MobileDraftHistoryItem) {
+    if (selectionMode) {
+      toggleDraftSelection(item);
+      return;
+    }
+    selectDraftHistoryItem(item);
+  }
+
+  function cancelDraftSelection() {
+    setSelectedDraftIds([]);
+    onAction("已退出草稿多选模式。");
+  }
+
   function toggleDraftPin(item: MobileDraftHistoryItem) {
     persistDraftHistory(
       draftHistory.map((draftItem) =>
@@ -2016,30 +2045,15 @@ function CreateScreen({
           : draftItem
       )
     );
-    setDraftActionContentId(null);
+    setSelectedDraftIds([]);
     onAction(item.pinned ? "已取消置顶草稿。" : "已置顶草稿。");
   }
 
-  async function deleteDraftHistoryItem(item: MobileDraftHistoryItem) {
-    setDraftActionContentId(null);
-    try {
-      const response = await fetch(`${API_BASE}/content/${item.content.id}`, {
-        headers: authHeaders(credentials),
-        method: "DELETE"
-      });
-      if (!response.ok && response.status !== 404) {
-        throw new Error(await readApiError(response, "草稿删除失败，请稍后再试。"));
-      }
-    } catch (error) {
-      onAction(error instanceof Error ? error.message : "草稿删除失败，请稍后再试。");
-      return;
-    }
-
-    rememberDeletedDraftId(item.content.id);
-    const nextItems = persistDraftHistory(
-      draftHistory.filter((draftItem) => draftItem.content.id !== item.content.id)
-    );
-    if (generatedContent?.id === item.content.id) {
+  function applyDeletedDraftsToCurrentPreview(
+    deletedIds: Set<number>,
+    nextItems: MobileDraftHistoryItem[]
+  ) {
+    if (generatedContent && deletedIds.has(generatedContent.id)) {
       const nextItem = nextItems[0] ?? null;
       if (nextItem) {
         setGeneratedContent(nextItem.content);
@@ -2061,8 +2075,57 @@ function CreateScreen({
         setPreviewOpen(false);
       }
     }
-    onAction("已删除草稿，刷新后也不会再出现。");
   }
+
+  async function deleteSelectedDraftHistoryItems(items: MobileDraftHistoryItem[]) {
+    if (!items.length) {
+      return;
+    }
+
+    const deletedIds: number[] = [];
+    const failedIds: number[] = [];
+    let failureMessage = "草稿删除失败，请稍后再试。";
+
+    for (const item of items) {
+      try {
+        const response = await fetch(`${API_BASE}/content/${item.content.id}`, {
+          headers: authHeaders(credentials),
+          method: "DELETE"
+        });
+        if (!response.ok && response.status !== 404) {
+          throw new Error(await readApiError(response, failureMessage));
+        }
+        rememberDeletedDraftId(item.content.id);
+        deletedIds.push(item.content.id);
+      } catch (error) {
+        failedIds.push(item.content.id);
+        failureMessage = error instanceof Error ? error.message : failureMessage;
+      }
+    }
+
+    if (deletedIds.length) {
+      const deletedIdSet = new Set(deletedIds);
+      const nextItems = persistDraftHistory(
+        draftHistory.filter((draftItem) => !deletedIdSet.has(draftItem.content.id))
+      );
+      applyDeletedDraftsToCurrentPreview(deletedIdSet, nextItems);
+    }
+
+    setSelectedDraftIds(failedIds);
+    if (failedIds.length) {
+      onAction(`已删除 ${deletedIds.length} 篇，${failedIds.length} 篇失败：${failureMessage}`);
+      return;
+    }
+    onAction(`已删除 ${deletedIds.length} 篇草稿，刷新后也不会再出现。`);
+  }
+
+  useEffect(() => {
+    const visibleDraftIds = new Set(draftHistory.map((item) => item.content.id));
+    setSelectedDraftIds((currentIds) => {
+      const nextIds = currentIds.filter((contentId) => visibleDraftIds.has(contentId));
+      return nextIds.length === currentIds.length ? currentIds : nextIds;
+    });
+  }, [draftHistory]);
 
   useEffect(() => {
     let active = true;
@@ -2714,9 +2777,27 @@ function CreateScreen({
       <DraftHistoryCarousel
         activeContentId={generatedContent?.id ?? null}
         items={draftHistory}
-        onLongPress={(item) => setDraftActionContentId(item.content.id)}
-        onOpen={selectDraftHistoryItem}
+        onLongPress={beginDraftSelection}
+        onOpen={openOrToggleDraftHistoryItem}
+        onToggleSelection={toggleDraftSelection}
+        selectedDraftIds={selectedDraftIds}
+        selectionMode={selectionMode}
       />
+
+      {selectionMode ? (
+        <DraftHistorySelectionBar
+          onCancel={cancelDraftSelection}
+          onDelete={() => deleteSelectedDraftHistoryItems(selectedDraftItems)}
+          onPinToggle={() => {
+            const item = selectedDraftItems[0] ?? null;
+            if (selectedDraftItems.length === 1 && item) {
+              toggleDraftPin(item);
+            }
+          }}
+          selectedCount={selectedDraftItems.length}
+          selectedItem={selectedDraftItems.length === 1 ? selectedDraftItems[0] : null}
+        />
+      ) : null}
 
       {previewOpen ? (
         <DraftPreviewEditor
@@ -2727,14 +2808,6 @@ function CreateScreen({
           onClose={() => setPreviewOpen(false)}
           onCopy={copyDraft}
           onExportStatus={onAction}
-        />
-      ) : null}
-      {activeDraftActionItem ? (
-        <DraftHistoryActionSheet
-          item={activeDraftActionItem}
-          onClose={() => setDraftActionContentId(null)}
-          onDelete={() => deleteDraftHistoryItem(activeDraftActionItem)}
-          onPinToggle={() => toggleDraftPin(activeDraftActionItem)}
         />
       ) : null}
     </div>
@@ -3246,13 +3319,21 @@ function DraftHistoryCarousel({
   activeContentId,
   items,
   onLongPress,
-  onOpen
+  onOpen,
+  onToggleSelection,
+  selectedDraftIds,
+  selectionMode
 }: {
   activeContentId: number | null;
   items: MobileDraftHistoryItem[];
   onLongPress: (item: MobileDraftHistoryItem) => void;
   onOpen: (item: MobileDraftHistoryItem) => void;
+  onToggleSelection: (item: MobileDraftHistoryItem) => void;
+  selectedDraftIds: number[];
+  selectionMode: boolean;
 }) {
+  const selectedDraftIdSet = new Set(selectedDraftIds);
+
   return (
     <section
       className="rounded-[28px] border border-white/[0.88] bg-[rgba(255,253,247,0.88)] p-4 shadow-[0_12px_32px_rgba(31,58,49,0.07),inset_0_1px_0_rgba(255,255,255,0.90)]"
@@ -3261,10 +3342,12 @@ function DraftHistoryCarousel({
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-[15px] font-black">草稿历史</h2>
-          <div className="mt-1 text-[11px] font-semibold text-muted">横向滑动浏览，长按管理</div>
+          <div className="mt-1 text-[11px] font-semibold text-muted">
+            横向滑动浏览，长按多选
+          </div>
         </div>
         <span className="rounded-full bg-[#e7f2ea]/[0.90] px-2.5 py-1 text-xs font-black text-moss">
-          {items.length ? `${items.length} 篇` : "暂无"}
+          {selectionMode ? `已选 ${selectedDraftIds.length}` : items.length ? `${items.length} 篇` : "暂无"}
         </span>
       </div>
 
@@ -3275,8 +3358,11 @@ function DraftHistoryCarousel({
               active={activeContentId === item.content.id}
               item={item}
               key={item.content.id}
+              selected={selectedDraftIdSet.has(item.content.id)}
+              selectionMode={selectionMode}
               onLongPress={() => onLongPress(item)}
               onOpen={() => onOpen(item)}
+              onToggleSelection={() => onToggleSelection(item)}
             />
           ))}
         </div>
@@ -3293,12 +3379,18 @@ function DraftHistoryCard({
   active,
   item,
   onLongPress,
-  onOpen
+  onOpen,
+  onToggleSelection,
+  selected,
+  selectionMode
 }: {
   active: boolean;
   item: MobileDraftHistoryItem;
   onLongPress: () => void;
   onOpen: () => void;
+  onToggleSelection: () => void;
+  selected: boolean;
+  selectionMode: boolean;
 }) {
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggeredRef = useRef(false);
@@ -3327,14 +3419,23 @@ function DraftHistoryCard({
       longPressTriggeredRef.current = false;
       return;
     }
+    if (selectionMode) {
+      onToggleSelection();
+      return;
+    }
     onOpen();
   }
 
   return (
     <button
+      aria-pressed={selectionMode ? selected : undefined}
       className={[
-        "w-[214px] shrink-0 snap-start touch-manipulation overflow-hidden rounded-[24px] border bg-white text-left shadow-[0_12px_26px_rgba(31,58,49,0.08)] active:scale-[0.99]",
-        active ? "border-[#ff2442] ring-2 ring-[#ff2442]/[0.16]" : "border-white/[0.88]"
+        "relative w-[214px] shrink-0 snap-start touch-manipulation overflow-hidden rounded-[24px] border bg-white text-left shadow-[0_12px_26px_rgba(31,58,49,0.08)] active:scale-[0.99]",
+        selected
+          ? "border-[#111111] ring-2 ring-[#111111]/[0.18]"
+          : active
+            ? "border-[#ff2442] ring-2 ring-[#ff2442]/[0.16]"
+            : "border-white/[0.88]"
       ].join(" ")}
       data-testid={`mobile-draft-history-card-${item.content.id}`}
       onClick={handleClick}
@@ -3348,6 +3449,16 @@ function DraftHistoryCard({
       onPointerUp={clearLongPressTimer}
       type="button"
     >
+      {selectionMode ? (
+        <span
+          className={[
+            "absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-full border shadow-[0_8px_18px_rgba(0,0,0,0.12)]",
+            selected ? "border-[#111111] bg-[#111111] text-white" : "border-white bg-white/[0.84] text-transparent"
+          ].join(" ")}
+        >
+          <CheckCircle2 className="h-4 w-4" />
+        </span>
+      ) : null}
       {coverUrl ? (
         <CoverImagePreview
           alt="草稿封面"
@@ -3390,55 +3501,60 @@ function DraftHistoryCard({
   );
 }
 
-function DraftHistoryActionSheet({
-  item,
-  onClose,
+function DraftHistorySelectionBar({
+  onCancel,
   onDelete,
-  onPinToggle
+  onPinToggle,
+  selectedCount,
+  selectedItem
 }: {
-  item: MobileDraftHistoryItem;
-  onClose: () => void;
+  onCancel: () => void;
   onDelete: () => void;
   onPinToggle: () => void;
+  selectedCount: number;
+  selectedItem: MobileDraftHistoryItem | null;
 }) {
+  const canPin = selectedCount === 1 && selectedItem !== null;
+
   return (
     <div
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/[0.28] px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
-      data-testid="mobile-draft-history-actions"
-      role="dialog"
+      className="rounded-[26px] border border-[#111111]/[0.12] bg-[rgba(255,253,247,0.94)] p-3 shadow-[0_16px_34px_rgba(31,58,49,0.12),inset_0_1px_0_rgba(255,255,255,0.90)] backdrop-blur-sm"
+      data-testid="mobile-draft-selection-toolbar"
+      role="toolbar"
     >
-      <div className="w-full max-w-[430px] rounded-[28px] bg-white p-4 text-ink shadow-[0_24px_70px_rgba(0,0,0,0.24)]">
-        <div className="mb-3">
-          <div className="text-[11px] font-black text-[#ff2442]">草稿管理</div>
-          <h2 className="mt-1 line-clamp-2 text-lg font-black leading-6">{item.content.title}</h2>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            className="flex h-12 items-center justify-center gap-2 rounded-full bg-[#111111] text-sm font-black text-white active:scale-[0.99]"
-            data-testid="mobile-draft-history-pin"
-            onClick={onPinToggle}
-            type="button"
-          >
-            <Pin className="h-4 w-4" />
-            {item.pinned ? "取消置顶" : "置顶"}
-          </button>
-          <button
-            className="flex h-12 items-center justify-center gap-2 rounded-full bg-[#ff2442] text-sm font-black text-white active:scale-[0.99]"
-            data-testid="mobile-draft-history-delete"
-            onClick={onDelete}
-            type="button"
-          >
-            <Trash2 className="h-4 w-4" />
-            删除
-          </button>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <div className="text-[11px] font-black text-[#ff2442]">草稿多选</div>
+          <div className="mt-1 text-sm font-black text-ink">已选 {selectedCount} 篇</div>
         </div>
         <button
-          className="mt-2 h-11 w-full rounded-full border border-[#eeeeee] bg-white text-sm font-black text-muted"
-          onClick={onClose}
+          className="h-9 rounded-full border border-[#eeeeee] bg-white px-4 text-xs font-black text-muted active:scale-[0.99]"
+          data-testid="mobile-draft-selection-cancel"
+          onClick={onCancel}
           type="button"
         >
           取消
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          className="flex h-12 items-center justify-center gap-2 rounded-full bg-[#111111] text-sm font-black text-white active:scale-[0.99] disabled:bg-[#d9d9d9] disabled:text-white"
+          data-testid="mobile-draft-selection-pin"
+          disabled={!canPin}
+          onClick={onPinToggle}
+          type="button"
+        >
+          <Pin className="h-4 w-4" />
+          {canPin ? (selectedItem.pinned ? "取消置顶" : "置顶") : "选 1 篇置顶"}
+        </button>
+        <button
+          className="flex h-12 items-center justify-center gap-2 rounded-full bg-[#ff2442] text-sm font-black text-white active:scale-[0.99]"
+          data-testid="mobile-draft-selection-delete"
+          onClick={onDelete}
+          type="button"
+        >
+          <Trash2 className="h-4 w-4" />
+          删除所选
         </button>
       </div>
     </div>

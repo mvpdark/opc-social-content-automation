@@ -764,11 +764,18 @@ def validate_content_production_contract() -> int:
         "MOBILE_DELETED_DRAFT_IDS_STORAGE_KEY",
         "function rememberDeletedDraftId(contentId: number)",
         "function filterDeletedMobileDraftHistory(items: MobileDraftHistoryItem[])",
-        "async function deleteDraftHistoryItem(item: MobileDraftHistoryItem)",
+        "function beginDraftSelection(item: MobileDraftHistoryItem)",
+        "function toggleDraftSelection(item: MobileDraftHistoryItem)",
+        "async function deleteSelectedDraftHistoryItems(items: MobileDraftHistoryItem[])",
         "await fetch(`${API_BASE}/content/${item.content.id}`",
         'method: "DELETE"',
         "rememberDeletedDraftId(item.content.id)",
-        "已删除草稿，刷新后也不会再出现。",
+        "已进入草稿多选模式。",
+        "已删除 ${deletedIds.length} 篇草稿，刷新后也不会再出现。",
+        'data-testid="mobile-draft-selection-toolbar"',
+        'data-testid="mobile-draft-selection-pin"',
+        'data-testid="mobile-draft-selection-delete"',
+        "selectedCount === 1 && selectedItem !== null",
     ]
     for snippet in mobile_draft_delete_contract_snippets:
         total += 1

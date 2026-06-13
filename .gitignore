@@ -34,6 +34,7 @@ backend/static/generated/
 artifacts/
 .browser-sessions/
 .playwright-cli/
+.android-build/
 .codex-remote-attachments/
 backend/uvicorn-*.log*
 frontend/next-*.log*
