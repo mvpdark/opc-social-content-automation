@@ -1431,7 +1431,7 @@ function DashboardView({
                 <div className="text-sm font-semibold text-ink">发布前预览</div>
                 <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">
                   <PlatformIcon platform="xiaohongshu" size="sm" />
-                  模拟小红书图文卡片，不自动发布。
+                  预览小红书图文卡片，不自动发布。
                 </p>
               </div>
               <Pill tone="green">草稿</Pill>
