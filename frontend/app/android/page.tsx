@@ -41,6 +41,7 @@ import {
   collectionJobDiagnosticItems,
   type CollectionJobDiagnosticItem,
   formatCollectionJobStatus,
+  isStaleAutoStartedQueuedJob,
   type CollectionJobStatusSnapshot
 } from "@/lib/collection-job-status";
 import {
@@ -155,6 +156,10 @@ type CollectionScheduleStorage = {
   platform: MobilePlatform;
   scheduleMessage: string;
 };
+
+function isLiveCollectionJob(job: CollectionJobStatusSnapshot) {
+  return !COLLECTION_JOB_TERMINAL_STATUSES.has(job.status) && !isStaleAutoStartedQueuedJob(job);
+}
 
 function mobileDiagnosticToneClass(tone: CollectionJobDiagnosticItem["tone"]) {
   if (tone === "good") {
@@ -1087,7 +1092,7 @@ function CollectScreen({
         setLastRunAt(job.updated_at ?? job.created_at ?? null);
         setScheduleMessage(formatCollectionJobStatus(job, "mobile"));
         setDiagnosticItems(collectionJobDiagnosticItems(job));
-        if (!COLLECTION_JOB_TERMINAL_STATUSES.has(job.status)) {
+        if (isLiveCollectionJob(job)) {
           setActiveCollectionJobId(job.id);
         }
       } catch {
@@ -1117,7 +1122,7 @@ function CollectScreen({
         }
         setScheduleMessage(formatCollectionJobStatus(job, "mobile"));
         setDiagnosticItems(collectionJobDiagnosticItems(job));
-        if (!COLLECTION_JOB_TERMINAL_STATUSES.has(job.status)) {
+        if (isLiveCollectionJob(job)) {
           setActiveCollectionJobId(job.id);
         }
       } catch {
@@ -1149,7 +1154,7 @@ function CollectScreen({
         const message = formatCollectionJobStatus(job, "mobile");
         setScheduleMessage(message);
         setDiagnosticItems(collectionJobDiagnosticItems(job));
-        if (COLLECTION_JOB_TERMINAL_STATUSES.has(job.status)) {
+        if (!isLiveCollectionJob(job)) {
           setActiveCollectionJobId(null);
           onAction(message);
           return;
