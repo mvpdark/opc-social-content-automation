@@ -786,7 +786,8 @@ def validate_content_production_contract() -> int:
         "已尝试复制当前预览文案。",
         "下方会保留文案兜底",
         "已重新尝试复制文案，下方也保留了正文",
-        "已尝试复制文案，封面图已下载；正在尝试打开小红书 App。",
+        "当前浏览器不能把图文直接带入小红书发布器",
+        "请手动打开小红书发布入口",
         "已尝试复制预览链接",
         "isLocalOrPrivateHostname(window.location.hostname)",
         "setManualCopyText(copied ? null : previewUrl)",
@@ -882,18 +883,32 @@ def validate_content_production_contract() -> int:
         "shareToNativeXiaohongshu(draft.title, draftText, coverFile)",
         "navigator.share(shareData)",
         "downloadFile(coverFile)",
+        "系统分享没有打开，已切换到下载封面和手动发布兜底。",
     ]
     for snippet in mobile_xhs_export_contract_snippets:
         total += 1
         if snippet not in mobile_xhs_export_text:
             raise SystemExit(f"Missing mobile Xiaohongshu export contract: {snippet}")
 
+    forbidden_mobile_xhs_export_snippets = [
+        "openXiaohongshuFromBrowser()",
+        "xhsdiscover://home/explore",
+        "正在尝试打开小红书 App",
+        "下载封面并唤起小红书",
+    ]
+    for snippet in forbidden_mobile_xhs_export_snippets:
+        total += 1
+        if snippet in mobile_xhs_export_text:
+            raise SystemExit(
+                f"Mobile Xiaohongshu export must not use misleading app-home fallback: {snippet}"
+            )
+
     total += 1
-    if mobile_xhs_export_text.index(
+    if mobile_xhs_export_text.index("tryCopyText(draftText)") > mobile_xhs_export_text.index(
         "buildXhsCoverFile(coverImageUrl, draft)"
-    ) > mobile_xhs_export_text.index("tryCopyText(draftText)"):
+    ):
         raise SystemExit(
-            "Mobile Xiaohongshu export must prepare the cover file before copy/share fallbacks."
+            "Mobile Xiaohongshu export must try copying text before async cover preparation."
         )
 
     clipboard_contract_snippets = [

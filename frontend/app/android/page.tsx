@@ -125,9 +125,6 @@ type LinkImportTarget = {
   }>;
 };
 
-const XHS_APP_EXPLORE_URL = "xhsdiscover://home/explore";
-const XHS_WEB_EXPLORE_URL = "https://www.xiaohongshu.com/explore";
-
 type MobileCollectionJob = CollectionJobStatusSnapshot & {
   created_at?: string;
   updated_at?: string;
@@ -624,43 +621,6 @@ async function shareToNativeXiaohongshu(title: string, text: string, coverFile: 
     ok: false,
     message: resultText.startsWith("error:") ? resultText.slice(6) : "小红书原生分享失败，继续使用系统分享。"
   };
-}
-
-function openXiaohongshuFromBrowser() {
-  if (typeof window === "undefined" || typeof document === "undefined") {
-    return;
-  }
-
-  let appOpened = false;
-  const markAppOpened = () => {
-    appOpened = true;
-  };
-  const handleVisibilityChange = () => {
-    if (document.visibilityState === "hidden") {
-      markAppOpened();
-      cleanup();
-    }
-  };
-  const fallbackTimer = window.setTimeout(() => {
-    if (!appOpened && document.visibilityState === "visible") {
-      window.location.href = XHS_WEB_EXPLORE_URL;
-    }
-  }, 1400);
-  const cleanup = () => {
-    window.clearTimeout(fallbackTimer);
-    document.removeEventListener("visibilitychange", handleVisibilityChange);
-    window.removeEventListener("pagehide", markAppOpened);
-  };
-
-  document.addEventListener("visibilitychange", handleVisibilityChange);
-  window.addEventListener("pagehide", markAppOpened, { once: true });
-
-  const link = document.createElement("a");
-  link.href = XHS_APP_EXPLORE_URL;
-  link.rel = "noreferrer";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
 }
 
 function draftStateFromContent(content: GeneratedContent): DraftPreviewState {
@@ -3805,9 +3765,9 @@ function DraftPreviewEditor({
     setXhsExporting(true);
     publishExportStatus("正在准备封面图、标题和正文；下方会保留文案兜底。");
     try {
-      const coverFile = await buildXhsCoverFile(coverImageUrl, draft);
       const textCopied = await tryCopyText(draftText);
       setManualCopyText(draftText);
+      const coverFile = await buildXhsCoverFile(coverImageUrl, draft);
 
       const nativeBridge = getOmpcAndroidBridge();
       if (nativeBridge) {
@@ -3854,14 +3814,14 @@ function DraftPreviewEditor({
             return;
           }
           systemShareFailed = true;
-          publishExportStatus("系统分享没有打开，已切换到下载封面并唤起小红书。");
+          publishExportStatus("系统分享没有打开，已切换到下载封面和手动发布兜底。");
         }
         if (!systemShareFailed) {
           const sharedCopyRestored = await tryCopyText(draftText);
           setManualCopyText(draftText);
           const sharedMessage = sharedCopyRestored
-            ? "已交给系统分享；已重新尝试复制文案，下方也保留了正文。如果小红书没有自动带入正文，请直接粘贴。"
-            : `已交给系统分享；如果小红书没有自动带入正文，文案已展开，可长按全选复制，也可以点“${XHS_COPY_TEXT_ONLY_LABEL}”重试。`;
+            ? "已交给系统分享；请选择小红书发布入口。已重新尝试复制文案，下方也保留了正文，如果没有自动带入请直接粘贴。"
+            : `已交给系统分享；请选择小红书发布入口。如果正文没有自动带入，文案已展开，可长按全选复制，也可以点“${XHS_COPY_TEXT_ONLY_LABEL}”重试。`;
           publishExportStatus(sharedMessage);
           return;
         }
@@ -3871,10 +3831,9 @@ function DraftPreviewEditor({
       const fallbackTextRestored = await tryCopyText(draftText);
       setManualCopyText(draftText);
       const fallbackMessage = fallbackTextRestored
-        ? "已尝试复制文案，封面图已下载；正在尝试打开小红书 App。"
-        : "封面图已下载；文案已展开兜底，正在尝试打开小红书 App。";
+        ? "封面图已下载，文案已尝试复制。当前浏览器不能把图文直接带入小红书发布器，请手动打开小红书发布入口，选择刚下载的封面图后粘贴正文。"
+        : `封面图已下载；当前浏览器拦截了剪贴板，文案已展开，可长按全选复制，也可以点“${XHS_COPY_TEXT_ONLY_LABEL}”重试。请手动打开小红书发布入口并选择刚下载的封面图。`;
       publishExportStatus(fallbackMessage);
-      openXiaohongshuFromBrowser();
     } catch (error) {
       const message = error instanceof Error ? error.message : "打开小红书失败。";
       publishExportStatus(message);
