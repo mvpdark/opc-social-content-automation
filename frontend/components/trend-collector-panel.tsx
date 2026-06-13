@@ -11,6 +11,7 @@ import {
   type CollectionJobDiagnosticItem,
   formatCollectionJobStatus,
   isRestartableCollectionJob,
+  isStaleAutoStartedQueuedJob,
   type CollectionJobStatusSnapshot
 } from "@/lib/collection-job-status";
 
@@ -387,7 +388,8 @@ export function TrendCollectorPanel({
         showCollectionJob(latestJob);
         if (
           !COLLECTION_JOB_TERMINAL_STATUSES.has(latestJob.status) &&
-          latestJob.result_summary?.auto_start
+          latestJob.result_summary?.auto_start &&
+          !isStaleAutoStartedQueuedJob(latestJob)
         ) {
           setActiveJobId(latestJob.id);
         }

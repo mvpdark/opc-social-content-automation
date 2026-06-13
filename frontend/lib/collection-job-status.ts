@@ -9,6 +9,8 @@ export const COLLECTION_JOB_TERMINAL_STATUSES = new Set([
 export type CollectionJobStatusSnapshot = {
   id: number;
   status: string;
+  created_at?: string;
+  updated_at?: string;
   result_summary: {
     auto_start?: boolean;
     blocked_candidates?: number;
@@ -29,6 +31,7 @@ export type CollectionJobDiagnosticItem = {
   tone: "neutral" | "good" | "warning" | "danger";
 };
 
+const AUTO_STARTED_QUEUE_STALE_MS = 2 * 60 * 1000;
 const COLLECTION_RETRY_HINT = "也可以换一个更具体的关键词，或粘贴小红书链接导入。";
 
 function pushDiagnosticItem(
@@ -67,9 +70,24 @@ function collectionJobStatusParts(job: CollectionJobStatusSnapshot) {
   };
 }
 
+export function isStaleAutoStartedQueuedJob(job: CollectionJobStatusSnapshot) {
+  if (job.status !== "queued" || !job.result_summary?.auto_start) {
+    return false;
+  }
+
+  const updatedAt = job.updated_at ?? job.created_at;
+  if (!updatedAt) {
+    return false;
+  }
+
+  const updatedAtTime = new Date(updatedAt).getTime();
+  return Number.isFinite(updatedAtTime) && Date.now() - updatedAtTime > AUTO_STARTED_QUEUE_STALE_MS;
+}
+
 export function isRestartableCollectionJob(job: CollectionJobStatusSnapshot) {
   return (
     (job.status === "queued" && !job.result_summary?.auto_start) ||
+    isStaleAutoStartedQueuedJob(job) ||
     job.status === "needs_operator_review" ||
     job.status === "failed"
   );
@@ -87,6 +105,8 @@ export function collectionJobDiagnosticItems(
         ? "danger"
         : job.status === "needs_operator_review"
           ? "warning"
+          : isStaleAutoStartedQueuedJob(job)
+            ? "warning"
           : "neutral";
 
   pushDiagnosticItem(items, "当前状态", collectionJobStatusLabel(job.status), statusTone);
@@ -96,7 +116,9 @@ export function collectionJobDiagnosticItems(
   pushDiagnosticItem(items, "等待", summary?.operator_wait_seconds ? `${summary.operator_wait_seconds} 秒` : null);
   pushDiagnosticItem(items, "页面", summary?.page_title);
 
-  if (job.status === "queued" && !summary?.auto_start) {
+  if (isStaleAutoStartedQueuedJob(job)) {
+    pushDiagnosticItem(items, "下一步", "后台启动可能中断，点击继续上次采集", "warning");
+  } else if (job.status === "queued" && !summary?.auto_start) {
     pushDiagnosticItem(items, "下一步", "点击继续上次采集", "warning");
   } else if (job.status === "running") {
     pushDiagnosticItem(items, "下一步", "必要时打开登录浏览器", "neutral");
@@ -119,6 +141,9 @@ export function formatCollectionJobStatus(
 
   if (surface === "mobile") {
     if (job.status === "queued") {
+      if (isStaleAutoStartedQueuedJob(job)) {
+        return `采集任务仍在排队${collected}，后台启动可能已经中断。请回到采集页手动继续，或重新开始一次。`;
+      }
       return `正在排队${collected}，采集浏览器即将启动。`;
     }
     if (job.status === "running") {
@@ -137,6 +162,9 @@ export function formatCollectionJobStatus(
   }
 
   if (job.status === "queued") {
+    if (isStaleAutoStartedQueuedJob(job)) {
+      return `上次采集仍在排队${collected}，但后台启动可能已经中断；请点击“继续上次采集”。`;
+    }
     if (!job.result_summary?.auto_start) {
       return `上次采集仍在排队${collected}。它不会自动开始；请点击“继续上次采集”。`;
     }
