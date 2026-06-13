@@ -52,6 +52,7 @@ import {
 import {
   fetchKnowledgeItems,
   knowledgeCategoryLabel,
+  knowledgeItemContent,
   knowledgeItemExcerpt,
   knowledgeItemTitle,
   type KnowledgeItem
@@ -1985,6 +1986,7 @@ function KnowledgeScreen({ onAction }: { onAction: (message: string) => void }) 
   const [items, setItems] = useState<KnowledgeItem[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [selectedItem, setSelectedItem] = useState<KnowledgeItem | null>(null);
   const [status, setStatus] = useState("正在读取最近入库内容...");
 
   async function loadKnowledge(nextQuery = query, announce = false) {
@@ -2026,11 +2028,16 @@ function KnowledgeScreen({ onAction }: { onAction: (message: string) => void }) 
 
   async function copyKnowledgeItem(item: KnowledgeItem) {
     try {
-      await copyText(`${item.title}\n\n${item.content}`);
+      await copyText(`${knowledgeItemTitle(item)}\n\n${knowledgeItemContent(item)}`);
       onAction("知识条目已复制到剪贴板。");
     } catch (error) {
       onAction(error instanceof Error ? error.message : "复制失败，请手动选择内容。");
     }
+  }
+
+  function openKnowledgeItem(item: KnowledgeItem) {
+    setSelectedItem(item);
+    onAction("已打开知识条目详情。");
   }
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
@@ -2115,9 +2122,19 @@ function KnowledgeScreen({ onAction }: { onAction: (message: string) => void }) 
         <div className="space-y-3" data-testid="mobile-knowledge-list">
           {items.map((item) => (
             <article
-              className="overflow-hidden rounded-[24px] border border-white/[0.84] bg-[rgba(255,253,247,0.88)] p-3 shadow-[0_10px_24px_rgba(31,58,49,0.06),inset_0_1px_0_rgba(255,255,255,0.86)]"
+              aria-label={`查看知识条目：${knowledgeItemTitle(item)}`}
+              className="touch-manipulation cursor-pointer overflow-hidden rounded-[24px] border border-white/[0.84] bg-[rgba(255,253,247,0.88)] p-3 shadow-[0_10px_24px_rgba(31,58,49,0.06),inset_0_1px_0_rgba(255,255,255,0.86)] outline-none transition active:scale-[0.995] focus-visible:ring-2 focus-visible:ring-moss/30"
               data-testid="mobile-knowledge-item"
               key={item.id}
+              onClick={() => openKnowledgeItem(item)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  openKnowledgeItem(item);
+                }
+              }}
+              role="button"
+              tabIndex={0}
             >
               <div className="min-w-0">
                 <div className="flex min-w-0 items-center gap-2">
@@ -2133,7 +2150,10 @@ function KnowledgeScreen({ onAction }: { onAction: (message: string) => void }) 
               </p>
               <button
                 className="mt-3 flex h-9 w-full touch-manipulation items-center justify-center gap-2 rounded-full border border-white/[0.84] bg-white/[0.72] text-xs font-black text-ink active:scale-[0.99]"
-                onClick={() => void copyKnowledgeItem(item)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void copyKnowledgeItem(item);
+                }}
                 type="button"
               >
                 <Clipboard className="h-4 w-4" />
@@ -2148,6 +2168,63 @@ function KnowledgeScreen({ onAction }: { onAction: (message: string) => void }) 
           ) : null}
         </div>
       </MobilePanel>
+
+      {selectedItem ? (
+        <div
+          className="fixed inset-0 z-[90] flex items-end bg-black/25 px-4 pb-[calc(92px+env(safe-area-inset-bottom))] pt-20 backdrop-blur-sm"
+          data-testid="mobile-knowledge-detail"
+          onClick={() => setSelectedItem(null)}
+          role="presentation"
+        >
+          <section
+            aria-label="知识条目详情"
+            className="max-h-[78vh] w-full overflow-hidden rounded-[30px] border border-white/[0.88] bg-[rgba(255,253,247,0.97)] shadow-[0_22px_52px_rgba(31,58,49,0.20),inset_0_1px_0_rgba(255,255,255,0.92)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-moss/10 px-4 py-4">
+              <div className="min-w-0">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="shrink-0 text-[11px] font-black text-moss">#{selectedItem.id}</span>
+                  <span className="max-w-[150px] truncate rounded-full bg-[#e7f2ea]/[0.92] px-2 py-1 text-[10px] font-black text-moss">
+                    {knowledgeCategoryLabel(selectedItem.category)}
+                  </span>
+                </div>
+                <h3 className="mt-2 break-words text-lg font-black leading-6 text-ink">{knowledgeItemTitle(selectedItem)}</h3>
+              </div>
+              <button
+                aria-label="关闭知识详情"
+                className="flex h-10 w-10 shrink-0 touch-manipulation items-center justify-center rounded-full border border-white/[0.84] bg-white/[0.76] text-ink active:scale-[0.98]"
+                onClick={() => setSelectedItem(null)}
+                type="button"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="max-h-[44vh] overflow-y-auto px-4 py-4">
+              <p className="whitespace-pre-wrap break-words text-[13px] font-semibold leading-6 text-muted">
+                {knowledgeItemContent(selectedItem)}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 border-t border-moss/10 px-4 py-4">
+              <button
+                className="flex h-11 touch-manipulation items-center justify-center gap-2 rounded-full bg-[#2f9a55] text-sm font-black text-white shadow-[0_14px_28px_rgba(47,154,85,0.22)] active:scale-[0.99]"
+                onClick={() => void copyKnowledgeItem(selectedItem)}
+                type="button"
+              >
+                <Clipboard className="h-4 w-4" />
+                复制
+              </button>
+              <button
+                className="flex h-11 touch-manipulation items-center justify-center rounded-full border border-white/[0.84] bg-white/[0.76] text-sm font-black text-ink active:scale-[0.99]"
+                onClick={() => setSelectedItem(null)}
+                type="button"
+              >
+                关闭
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

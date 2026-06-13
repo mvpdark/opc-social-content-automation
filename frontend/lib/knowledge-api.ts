@@ -63,10 +63,14 @@ export function knowledgeItemTitle(item: KnowledgeItem) {
   return normalized || "未命名知识";
 }
 
+export function knowledgeItemContent(item: KnowledgeItem) {
+  return cleanKnowledgeDisplayText(item.content) || "暂无正文摘要";
+}
+
 export function knowledgeItemExcerpt(item: KnowledgeItem, maxLength = 96) {
-  const normalized = cleanKnowledgeDisplayText(item.content);
+  const normalized = knowledgeItemContent(item);
   if (normalized.length <= maxLength) {
-    return normalized || "暂无正文摘要";
+    return normalized;
   }
   return `${normalized.slice(0, maxLength).trim()}...`;
 }
