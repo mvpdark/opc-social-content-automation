@@ -27,7 +27,7 @@ export async function copyText(text: string) {
   textarea.remove();
   previouslyFocusedElement?.focus({ preventScroll: true });
   if (!copied) {
-    throw new Error("Clipboard copy failed.");
+    throw new Error("剪贴板复制失败，请手动选择文案复制。");
   }
 }
 
