@@ -1438,7 +1438,7 @@ function DashboardView({
               <div className="rounded-[18px] border border-line bg-paper/65 p-4 md:col-span-2">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div className="text-xs font-medium text-muted">默认风格</div>
-                  <span className="text-[11px] text-muted">可在一键生成页细调</span>
+                  <span className="text-[11px] text-muted">可在创作项目中细调</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
                   {writingStylePresets.map((style) => {
@@ -3076,15 +3076,15 @@ function CoverView({ contentHref }: { contentHref: string }) {
       <Panel
         action={
           <a
-            aria-label="前往一键生成页生成封面"
+            aria-label="前往创作项目生成封面"
             className="flex h-9 items-center gap-2 rounded-md bg-ink px-3 text-sm font-medium text-paper"
             href={contentHref}
           >
             <Image className="h-4 w-4" />
-            去一键生成
+            去创作项目
           </a>
         }
-        helper="先在一键生成页生成文案和封面；下方展示参考版式。"
+        helper="先在创作项目中选择项目并生成文案和封面；下方展示参考版式。"
         title="封面参考版式"
       >
         <CoverReferencePreview />
