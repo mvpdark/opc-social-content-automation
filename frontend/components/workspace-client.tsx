@@ -196,7 +196,7 @@ const emptyCredentials: CredentialSettings = {
 const creationProjects = [
   {
     id: "postgraduate-phd",
-    title: "硕升博项目",
+    title: "1.硕升博推广",
     category: "小红书图文获客",
     status: "可进入",
     statusTone: "green",
@@ -2097,7 +2097,7 @@ function CreationProjectGateway({
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         <button
           aria-label={`进入${liveProject.title}创作流程`}
-          className="group glass-panel relative min-h-[420px] overflow-hidden rounded-[28px] border p-5 text-left shadow-panel transition hover:translate-y-[-2px] hover:border-steel/60 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-steel/45 active:translate-y-0 lg:p-6"
+          className="group glass-panel relative min-h-[286px] overflow-hidden rounded-[22px] border p-4 text-left shadow-panel transition hover:translate-y-[-2px] hover:border-steel/60 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-steel/45 active:translate-y-0 lg:p-5"
           data-testid={`creation-project-${liveProject.id}`}
           onClick={() => onSelect(liveProject.id)}
           type="button"
@@ -2110,35 +2110,35 @@ function CreationProjectGateway({
               <Pill tone="amber">先选项目再生成</Pill>
             </div>
 
-            <div className="mt-8 max-w-3xl">
+            <div className="mt-5 max-w-3xl">
               <div className="text-xs font-semibold text-muted">{liveProject.category}</div>
-              <h2 className="mt-2 text-3xl font-semibold leading-tight text-ink lg:text-4xl">
+              <h2 className="mt-1 text-2xl font-semibold leading-tight text-ink lg:text-3xl">
                 {liveProject.title}
               </h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
                 {liveProject.description}
               </p>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-              <div className="rounded-[18px] border border-line bg-paper/70 p-4">
+            <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2">
+              <div className="rounded-[14px] border border-line bg-paper/70 p-3">
                 <div className="text-xs font-semibold text-ink">输入资料</div>
-                <div className="mt-2 text-sm leading-6 text-muted">
+                <div className="mt-1 text-xs leading-5 text-muted">
                   {liveProject.inputs.join(" / ")}
                 </div>
               </div>
-              <div className="rounded-[18px] border border-line bg-paper/70 p-4">
+              <div className="rounded-[14px] border border-line bg-paper/70 p-3">
                 <div className="text-xs font-semibold text-ink">交付结果</div>
-                <div className="mt-2 text-sm leading-6 text-muted">
+                <div className="mt-1 text-xs leading-5 text-muted">
                   {liveProject.outputs.join(" / ")}
                 </div>
               </div>
             </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-2 lg:grid-cols-4">
+            <div className="mt-3 flex flex-wrap gap-2">
               {liveProject.workflow.map((step, index) => (
                 <div
-                  className="rounded-md border border-steel/30 bg-steel/10 px-3 py-2 text-xs font-semibold text-ink"
+                  className="rounded-md border border-steel/30 bg-steel/10 px-2.5 py-1.5 text-xs font-semibold text-ink"
                   key={step}
                 >
                   <span className="mr-1 text-muted">{index + 1}</span>
@@ -2147,11 +2147,11 @@ function CreationProjectGateway({
               ))}
             </div>
 
-            <div className="mt-auto flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-auto flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-xs leading-5 text-muted">
                 点击这张卡片，进入原来的图文创作、一键生成、预览和复制页面。
               </span>
-              <span className="inline-flex h-11 items-center justify-center rounded-md bg-ink px-4 text-sm font-semibold text-paper transition group-hover:translate-y-[-1px]">
+              <span className="inline-flex h-10 items-center justify-center rounded-md bg-ink px-4 text-sm font-semibold text-paper transition group-hover:translate-y-[-1px]">
                 进入{liveProject.title}
               </span>
             </div>
@@ -2180,8 +2180,8 @@ function CreationProjectGateway({
               </div>
               <p className="mt-1 text-xs leading-5 text-muted">
                 {latestContent
-                  ? "进入硕升博项目后，可以继续预览、复制或重新生成。"
-                  : "先点硕升博项目卡片，再填写选题生成文案和封面。"}
+                  ? "进入「1.硕升博推广」后，可以继续预览、复制或重新生成。"
+                  : "先点「1.硕升博推广」卡片，再填写选题生成文案和封面。"}
               </p>
             </div>
 
@@ -2197,7 +2197,7 @@ function CreationProjectGateway({
           <div>
             <h3 className="text-base font-semibold text-ink">后续项目卡片</h3>
             <p className="mt-1 text-xs leading-5 text-muted">
-              这些模块先展示方向，接入后也会像硕升博项目一样点击进入独立创作流程。
+              这些模块先展示方向，接入后也会像「1.硕升博推广」一样点击进入独立创作流程。
             </p>
           </div>
           <Pill tone="neutral">路线图</Pill>

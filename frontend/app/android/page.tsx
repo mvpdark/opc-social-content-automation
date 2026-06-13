@@ -219,10 +219,10 @@ const taskActionCopy: Record<MobileTab, string> = {
 const mobileCreationProjects = [
   {
     id: "postgraduate-phd",
-    title: "硕升博项目",
+    title: "1.硕升博推广",
     category: "小红书图文获客",
     status: "可进入",
-    description: "围绕硕升博、在职申博和水博路线，生成图文草稿、封面方向、标签和发布检查。",
+    description: "硕升博内容获客：生成图文草稿、封面方向和发布清单。",
     inputs: ["趋势参考", "申请人痛点", "项目卖点"],
     outputs: ["图文草稿", "封面方案", "发布清单"],
     workflow: ["采集参考", "一键撰稿+封面", "预览复制", "人工确认发布"],
@@ -2323,14 +2323,15 @@ function MobileCreationProjectGateway({
   generatedContent: GeneratedContent | null;
   onSelect: (projectId: MobileCreationProjectId) => void;
 }) {
-  const liveProject = mobileCreationProjects.find((project) => project.enabled) ?? mobileCreationProjects[0];
+  const liveProject =
+    mobileCreationProjects.find((project) => project.enabled) ?? mobileCreationProjects[0];
   const roadmapProjects = mobileCreationProjects.filter((project) => !project.enabled);
 
   return (
     <div className="space-y-4" data-testid="mobile-creation-project-gateway">
       <button
         aria-label={`进入${liveProject.title}创作流程`}
-        className="relative min-h-[390px] w-full touch-manipulation overflow-hidden rounded-[28px] border border-white/70 bg-white/68 p-4 text-left text-ink shadow-[0_22px_48px_rgba(31,58,49,0.12),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur-xl active:scale-[0.99]"
+        className="relative w-full touch-manipulation overflow-hidden rounded-[20px] border border-white/70 bg-white/70 p-3 text-left text-ink shadow-[0_12px_24px_rgba(31,58,49,0.09),inset_0_1px_0_rgba(255,255,255,0.72)] backdrop-blur-xl active:scale-[0.99]"
         data-testid={`mobile-creation-project-${liveProject.id}`}
         onClick={() => onSelect(liveProject.id)}
         type="button"
@@ -2344,54 +2345,33 @@ function MobileCreationProjectGateway({
           aria-hidden="true"
           className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,252,244,0.92)_0%,rgba(255,252,244,0.82)_50%,rgba(255,252,244,0.96)_100%)]"
         />
-        <div className="relative flex min-h-[350px] flex-col">
-          <div className="flex flex-wrap gap-2">
-            <span className="rounded-full border border-steel/30 bg-steel/10 px-2.5 py-1 text-[11px] font-black text-steel">
+        <div className="relative flex flex-col">
+          <div className="flex flex-wrap gap-1.5">
+            <span className="rounded-full border border-steel/30 bg-steel/10 px-2 py-0.5 text-[10px] font-black text-steel">
               创作项目
             </span>
-            <span className="rounded-full border border-moss/30 bg-moss/10 px-2.5 py-1 text-[11px] font-black text-moss">
+            <span className="rounded-full border border-moss/30 bg-moss/10 px-2 py-0.5 text-[10px] font-black text-moss">
               {liveProject.status}
             </span>
-            <span className="rounded-full border border-[#f3c96b]/40 bg-[#fff5d8] px-2.5 py-1 text-[11px] font-black text-[#8a5d16]">
-              先选项目
+          </div>
+
+          <div className="mt-3">
+            <div className="text-[11px] font-black text-muted">{liveProject.category}</div>
+            <h2 className="mt-0.5 text-[19px] font-black leading-6">{liveProject.title}</h2>
+            <p className="mt-1 text-[11px] font-medium leading-4 text-muted">{liveProject.description}</p>
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] font-black text-ink/70">
+            <span className="rounded-full border border-white/75 bg-white/66 px-2 py-1">
+              交付：{liveProject.outputs.join(" / ")}
+            </span>
+            <span className="rounded-full border border-steel/25 bg-steel/10 px-2 py-1 text-steel">
+              人工确认后发布
             </span>
           </div>
 
-          <div className="mt-7">
-            <div className="text-xs font-black text-muted">{liveProject.category}</div>
-            <h2 className="mt-2 text-[30px] font-black leading-9">{liveProject.title}</h2>
-            <p className="mt-3 text-sm font-medium leading-6 text-muted">{liveProject.description}</p>
-          </div>
-
-          <div className="mt-5 grid grid-cols-1 gap-2">
-            <div className="rounded-[18px] border border-white/75 bg-white/66 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.74)]">
-              <div className="text-[11px] font-black text-ink/55">输入资料</div>
-              <div className="mt-1 text-xs font-bold leading-5 text-ink/70">
-                {liveProject.inputs.join(" / ")}
-              </div>
-            </div>
-            <div className="rounded-[18px] border border-white/75 bg-white/66 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.74)]">
-              <div className="text-[11px] font-black text-ink/55">交付结果</div>
-              <div className="mt-1 text-xs font-bold leading-5 text-ink/70">
-                {liveProject.outputs.join(" / ")}
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            {liveProject.workflow.map((step, index) => (
-              <div
-                className="rounded-[14px] border border-steel/30 bg-steel/10 px-2.5 py-2 text-[11px] font-black text-ink"
-                key={step}
-              >
-                <span className="mr-1 text-muted">{index + 1}</span>
-                {step}
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-auto pt-5">
-            <div className="flex h-12 items-center justify-center gap-2 rounded-[18px] bg-[#161817] text-sm font-black text-white shadow-[0_14px_30px_rgba(22,24,23,0.16)]">
+          <div className="mt-3">
+            <div className="flex h-9 items-center justify-center gap-2 rounded-[14px] bg-[#161817] text-xs font-black text-white shadow-[0_10px_20px_rgba(22,24,23,0.12)]">
               <PenLine className="h-4 w-4" />
               进入{liveProject.title}
             </div>
