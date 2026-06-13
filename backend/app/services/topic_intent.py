@@ -30,6 +30,30 @@ class TopicIntentRule:
 
 TOPIC_INTENT_RULES = (
     TopicIntentRule(
+        key="list_filter",
+        topic_terms=("排名", "排行", "榜", "榜单", "怎么筛", "筛选", "避坑榜", "清单怎么看"),
+        draft_terms=(
+            "排名",
+            "排行",
+            "榜",
+            "榜单",
+            "筛选",
+            "维度",
+            "梯队",
+            "清单",
+            "预算",
+            "费用",
+            "学费",
+            "认证",
+            "风险",
+            "避坑",
+            "项目",
+            "学校",
+        ),
+        label="榜单/筛选",
+        guidance="请围绕筛选维度、榜单结构、预算/认证/风险分层和项目核验动作展开。",
+    ),
+    TopicIntentRule(
         key="route",
         topic_terms=("路线", "怎么选", "选择", "路径"),
         draft_terms=("路线", "路径", "选择", "适配", "判断", "对比", "方案"),
