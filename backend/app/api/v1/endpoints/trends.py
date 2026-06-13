@@ -60,7 +60,7 @@ def _run_collection_job_in_background(job_id: int) -> None:
         job = db.get(TrendCollectionJob, job_id)
         if job is not None and job.status in {"queued", "running"}:
             job.status = "failed"
-            job.error = "Background collection failed. Check local browser setup and session state."
+            job.error = "后台采集失败，请检查本机浏览器环境和会话状态。"
             job.result_summary = {
                 "message": job.error,
                 "collected_items": 0,

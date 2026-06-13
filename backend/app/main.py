@@ -47,8 +47,8 @@ def create_app() -> FastAPI:
             content={
                 "detail": "database_unavailable",
                 "message": (
-                    "Database is not reachable. For desktop or test mode, rerun the local startup helper; "
-                    "for self-hosting, check DATABASE_URL and the database service."
+                    "数据库暂时连接不上。桌面或本地检查模式请重新运行本地启动助手；"
+                    "自部署环境请检查 DATABASE_URL 和数据库服务。"
                 ),
             },
         )

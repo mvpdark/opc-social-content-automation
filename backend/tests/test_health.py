@@ -25,5 +25,5 @@ def test_database_connection_errors_are_reported_as_service_unavailable() -> Non
     assert response.status_code == 503
     body = response.json()
     assert body["detail"] == "database_unavailable"
-    assert "local startup helper" in body["message"]
-    assert "self-hosting" in body["message"]
+    assert "本地启动助手" in body["message"]
+    assert "DATABASE_URL" in body["message"]
