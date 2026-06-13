@@ -695,29 +695,35 @@ export function TrendCollectorPanel({
               />
             </label>
 
-            <label className="block">
+            <div className="block">
               <span className={fieldLabelClass}>采集间隔</span>
               <div className="mt-2 grid grid-cols-2 gap-2">
-                <input
-                  aria-label="Minimum delay seconds"
-                  className={inlineInputClass}
-                  max={60}
-                  min={2}
-                  type="number"
-                  value={minDelay}
-                  onChange={(event) => setMinDelay(Number(event.target.value))}
-                />
-                <input
-                  aria-label="Maximum delay seconds"
-                  className={inlineInputClass}
-                  max={120}
-                  min={3}
-                  type="number"
-                  value={maxDelay}
-                  onChange={(event) => setMaxDelay(Number(event.target.value))}
-                />
+                <label className="block">
+                  <span className="mb-1 block text-[11px] font-medium text-muted">最短（秒）</span>
+                  <input
+                    aria-label="最短采集间隔（秒）"
+                    className={inlineInputClass}
+                    max={60}
+                    min={2}
+                    type="number"
+                    value={minDelay}
+                    onChange={(event) => setMinDelay(Number(event.target.value))}
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-[11px] font-medium text-muted">最长（秒）</span>
+                  <input
+                    aria-label="最长采集间隔（秒）"
+                    className={inlineInputClass}
+                    max={120}
+                    min={3}
+                    type="number"
+                    value={maxDelay}
+                    onChange={(event) => setMaxDelay(Number(event.target.value))}
+                  />
+                </label>
               </div>
-            </label>
+            </div>
           </div>
 
           <div className="glass-subtle mt-3 rounded-md border px-3 py-3">
