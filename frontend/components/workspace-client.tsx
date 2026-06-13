@@ -2133,18 +2133,27 @@ function ContentView({
           storedPinnedIds
         );
         const latestContent = history[0] ?? null;
-        const imageEntries = await Promise.all(
-          history.slice(0, 12).map(async (content) => [content.id, await fetchLatestImage(content.id)] as const)
-        );
         if (active) {
-          const imageMap = Object.fromEntries(imageEntries);
           setDraftHistory(history);
-          setDraftImagesByContentId(imageMap);
           setPreviewContent(latestContent);
-          setPreviewImageAsset(latestContent ? imageMap[latestContent.id] ?? null : null);
+          setPreviewImageAsset(null);
           if (latestContent) {
             saveStoredGeneratedContent(latestContent);
           }
+        }
+        for (const content of history) {
+          void fetchLatestImage(content.id).then((image) => {
+            if (!active) {
+              return;
+            }
+            setDraftImagesByContentId((current) => ({
+              ...current,
+              [content.id]: image
+            }));
+            if (latestContent?.id === content.id) {
+              setPreviewImageAsset(image);
+            }
+          });
         }
       } catch (_error) {
         // Keep the local draft or full example visible when the database/API is not available.
