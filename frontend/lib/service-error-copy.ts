@@ -5,6 +5,10 @@ export function sanitizeServiceErrorMessage(message: string) {
     .replace(/Failed to fetch/gi, "服务暂时连接不上，请确认应用服务已启动。")
     .replace(/NetworkError/gi, "网络连接异常，请稍后重试。")
     .replace(/Load failed/gi, "服务加载失败，请稍后重试。")
+    .replace(
+      /Visible browser collection failed\.?\s*Check local browser setup and session state\.?/gi,
+      "采集浏览器运行失败，请确认本机浏览器会话可用后重试。"
+    )
     .replace(/API\s*Key/gi, "服务授权")
     .replace(/Bearer\s*token/gi, "访问凭证")
     .replace(/provider/gi, "服务")

@@ -17,6 +17,18 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 BROWSER_SESSION_ROOT = PROJECT_ROOT / ".browser-sessions"
 HASHTAG_RE = re.compile(r"[#＃]([\w\u4e00-\u9fff-]{2,40})", re.UNICODE)
 SPACE_RE = re.compile(r"\s+")
+XHS_NOTE_URL_RE = re.compile(
+    r"https?://(?:www\.)?xiaohongshu\.com/(?:explore|discovery/item|search_result)/([a-zA-Z0-9]+)",
+    re.IGNORECASE,
+)
+XHS_PROFILE_URL_RE = re.compile(
+    r"https?://(?:www\.)?xiaohongshu\.com/user/profile/",
+    re.IGNORECASE,
+)
+COMPACT_CARD_DATE_RE = re.compile(
+    r"\s+(?:\d{4}-\d{2}-\d{2}|\d{2}-\d{2}|\d+\s*天前|昨天|前天|刚刚)\b.*$"
+)
+DATE_MARKER_RE = re.compile(r"(?:\d{4}-\d{2}-\d{2}|\d{2}-\d{2}|\d+\s*天前|昨天|前天|刚刚)")
 VIDEO_MARKERS = ("视频", "播放", "直播", "video-card", "video_note", "shorts")
 VIDEO_COLLECTION_DISABLED_DETAIL = (
     "视频采集暂未启用；需要先补齐转写、版权和人工复核流程。"
@@ -49,6 +61,7 @@ BLOCKED_MARKERS = (
     "fe-platform",
     ".pdf",
 )
+RELATED_SEARCH_MARKERS = ("相关搜索",)
 
 
 def collection_session_dir(
@@ -79,8 +92,9 @@ def _title_from_text(text: str, keyword: str) -> str:
     if not lines:
         return keyword or "采集趋势素材"
     first = normalize_visible_text(lines[0])
-    if len(first) < 8 and len(lines) > 1:
+    if len(first) < 4 and len(lines) > 1:
         first = normalize_visible_text(lines[1])
+    first = COMPACT_CARD_DATE_RE.sub("", first).strip() or first
     return first[:255] or keyword or "采集趋势素材"
 
 
@@ -95,6 +109,46 @@ def _tags_from_text(text: str, keyword: str) -> list[str]:
     return tags[:12]
 
 
+def _xhs_note_id_from_url(url: str | None) -> str | None:
+    if not url:
+        return None
+    match = XHS_NOTE_URL_RE.search(url)
+    return match.group(1) if match else None
+
+
+def _is_xhs_profile_url(url: str | None) -> bool:
+    return bool(url and XHS_PROFILE_URL_RE.search(url))
+
+
+def _looks_like_search_aggregate(text: str) -> bool:
+    if any(marker in text for marker in RELATED_SEARCH_MARKERS):
+        return True
+    return len(text) > 220 and len(DATE_MARKER_RE.findall(text)) >= 3
+
+
+def _keyword_relevance_terms(keyword: str) -> list[str]:
+    terms: list[str] = []
+    normalized = normalize_visible_text(keyword)
+    if normalized:
+        terms.append(normalized.lower())
+    for token in re.split(r"[\s,，、/]+", normalized):
+        token = token.strip().lower()
+        if len(token) >= 2 and token not in terms:
+            terms.append(token)
+    if any(marker in normalized for marker in ("硕升博", "申博", "硕博", "读博", "博士")):
+        for token in ("硕升博", "申博", "硕博", "读博", "博士", "博连读", "转博"):
+            if token not in terms:
+                terms.append(token)
+    return terms
+
+
+def _matches_keyword_terms(text: str, terms: list[str]) -> bool:
+    if not terms:
+        return True
+    normalized_text = text.lower()
+    return any(term and term in normalized_text for term in terms)
+
+
 def extract_candidate_assets(
     raw_items: list[dict[str, Any]],
     platform: str,
@@ -105,23 +159,37 @@ def extract_candidate_assets(
     assets: list[CollectedTrendAsset] = []
     seen: set[str] = set()
     normalized_keyword = keyword.strip().lower()
+    keyword_terms = _keyword_relevance_terms(keyword)
 
     for raw_item in raw_items:
         text = normalize_visible_text(raw_item.get("text"))
-        if len(text) < 30:
-            continue
-        if normalized_keyword and normalized_keyword not in text.lower() and len(text) < 80:
-            continue
-
         url = normalize_visible_text(raw_item.get("url")) or None
+        note_id = _xhs_note_id_from_url(url)
+        is_xhs_note_card = note_id is not None
+
+        if _is_xhs_profile_url(url):
+            continue
         marker_source = f"{text} {url or ''} {raw_item.get('className') or ''}".lower()
         if any(marker in marker_source for marker in BLOCKED_MARKERS):
+            continue
+        if _looks_like_search_aggregate(text):
+            continue
+        if len(text) < (10 if is_xhs_note_card else 30):
+            continue
+        if is_xhs_note_card and not _matches_keyword_terms(text, keyword_terms):
+            continue
+        if (
+            not is_xhs_note_card
+            and normalized_keyword
+            and normalized_keyword not in text.lower()
+            and len(text) < 80
+        ):
             continue
         if content_kind == "image_text" and any(
             marker in marker_source for marker in VIDEO_MARKERS
         ):
             continue
-        key = url or text[:140]
+        key = f"xhs:{note_id}" if note_id else url or text[:140]
         if key in seen:
             continue
         seen.add(key)

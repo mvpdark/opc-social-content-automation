@@ -20,6 +20,7 @@ import {
   Loader2,
   MessageCircle,
   PenLine,
+  Pin,
   Play,
   Radar,
   Save,
@@ -28,6 +29,7 @@ import {
   Share2,
   ShieldCheck,
   Sparkles,
+  Trash2,
   UserRound
 } from "lucide-react";
 
@@ -100,12 +102,28 @@ type DraftPreviewState = {
   title: string;
 };
 
+type MobileDraftHistoryItem = {
+  content: GeneratedContent;
+  cover: GeneratedImageAsset | null;
+  pinned: boolean;
+  saved_at: string;
+};
+
+const defaultMobileDraftPreview: DraftPreviewState = {
+  body:
+    "很多人一上来就急着群发邮件，但研究方向、读博动机和导师匹配没想清楚，反而容易浪费第一印象。",
+  points: ["明确研究方向", "匹配导师项目", "再定制套磁"],
+  tags: "#硕升博 #博士申请 #研究方向",
+  title: "不是先套磁，先想清楚这 3 件事"
+};
+
 const API_BASE = getApiBase();
 const MOBILE_AUTH_STORAGE_KEY = "opc_mobile_auth_v1";
 const CREDENTIAL_STORAGE_KEY = "opc_workspace_credentials_v1";
 const COLLECTION_SCHEDULE_STORAGE_KEY = "opc_mobile_collection_schedule_v1";
 const MOBILE_LAST_CONTENT_STORAGE_KEY = "opc_mobile_last_generated_content_v1";
 const MOBILE_LAST_COVER_STORAGE_KEY = "opc_mobile_last_generated_cover_v1";
+const MOBILE_DRAFT_HISTORY_STORAGE_KEY = "opc_mobile_draft_history_v1";
 const MOBILE_PAPER_TEXTURE = "/mobile-assets/paper-texture.png";
 const MOBILE_COLLECTION_COLLAGE = "/mobile-assets/collection-collage.png";
 const MOBILE_CREATE_CARD_BG = "/mobile-assets/create-card-bg.png";
@@ -429,6 +447,71 @@ function readStoredMobileContent() {
 
 function saveStoredMobileContent(content: GeneratedContent) {
   writeMobileStorage(MOBILE_LAST_CONTENT_STORAGE_KEY, JSON.stringify(content));
+}
+
+function isMobileDraftHistoryItem(value: unknown): value is MobileDraftHistoryItem {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const item = value as Partial<MobileDraftHistoryItem>;
+  return (
+    isGeneratedContent(item.content) &&
+    (item.cover === null || item.cover === undefined || isGeneratedImageAsset(item.cover)) &&
+    typeof item.pinned === "boolean" &&
+    typeof item.saved_at === "string"
+  );
+}
+
+function normalizeMobileDraftHistory(items: MobileDraftHistoryItem[]) {
+  const byId = new Map<number, MobileDraftHistoryItem>();
+  items.forEach((item) => {
+    const existing = byId.get(item.content.id);
+    if (!existing) {
+      byId.set(item.content.id, item);
+      return;
+    }
+
+    byId.set(item.content.id, {
+      content: item.content,
+      cover: item.cover ?? existing.cover,
+      pinned: existing.pinned || item.pinned,
+      saved_at: item.saved_at > existing.saved_at ? item.saved_at : existing.saved_at
+    });
+  });
+
+  return Array.from(byId.values())
+    .sort((left, right) => {
+      if (left.pinned !== right.pinned) {
+        return left.pinned ? -1 : 1;
+      }
+      return right.saved_at.localeCompare(left.saved_at);
+    })
+    .slice(0, 20);
+}
+
+function readStoredMobileDraftHistory() {
+  const raw = readMobileStorage(MOBILE_DRAFT_HISTORY_STORAGE_KEY);
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return normalizeMobileDraftHistory(parsed.filter(isMobileDraftHistoryItem));
+  } catch (_error) {
+    return [];
+  }
+}
+
+function saveStoredMobileDraftHistory(items: MobileDraftHistoryItem[]) {
+  writeMobileStorage(
+    MOBILE_DRAFT_HISTORY_STORAGE_KEY,
+    JSON.stringify(normalizeMobileDraftHistory(items))
+  );
 }
 
 function readStoredMobileCover() {
@@ -1125,6 +1208,8 @@ function CollectScreen({
   const [referencePreview, setReferencePreview] = useState<(typeof sampleReferences)[number] | null>(null);
   const [busyAction, setBusyAction] = useState<"digest" | "job" | "link" | "search" | null>(null);
   const scheduleRunningRef = useRef(false);
+  const collectedMetricValue =
+    diagnosticItems.find((item) => item.label === "已采集")?.value ?? "0";
 
   useEffect(() => {
     try {
@@ -1533,8 +1618,8 @@ function CollectScreen({
               <div className="mt-1 text-[10px] font-bold text-muted">今日目标</div>
             </div>
             <div className="px-2 text-center">
-              <div className="text-lg font-black text-ink">{lastJobId ? "96" : "0"}</div>
-              <div className="mt-1 text-[10px] font-bold text-muted">去重有效</div>
+              <div className="text-lg font-black text-ink">{collectedMetricValue}</div>
+              <div className="mt-1 text-[10px] font-bold text-muted">已采集</div>
             </div>
             <div className="min-w-0 px-2 text-center">
               <div className="truncate text-sm font-black leading-6 text-ink">{formatScheduleTime(nextRunAt)}</div>
@@ -1822,13 +1907,9 @@ function CreateScreen({
   const [tagsText, setTagsText] = useState("硕升博,水博,博士申请,小红书获客");
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const [generatedCover, setGeneratedCover] = useState<GeneratedImageAsset | null>(null);
-  const [draftPreview, setDraftPreview] = useState<DraftPreviewState>({
-    body:
-      "很多人一上来就急着群发邮件，但研究方向、读博动机和导师匹配没想清楚，反而容易浪费第一印象。",
-    points: ["明确研究方向", "匹配导师项目", "再定制套磁"],
-    tags: "#硕升博 #博士申请 #研究方向",
-    title: "不是先套磁，先想清楚这 3 件事"
-  });
+  const [draftHistory, setDraftHistory] = useState<MobileDraftHistoryItem[]>([]);
+  const [draftActionContentId, setDraftActionContentId] = useState<number | null>(null);
+  const [draftPreview, setDraftPreview] = useState<DraftPreviewState>(defaultMobileDraftPreview);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [progressPercent, setProgressPercent] = useState(0);
@@ -1841,6 +1922,92 @@ function CreateScreen({
   const completionSoundReadyRef = useRef(false);
   const coverImageUrl = generatedCover ? resolveAssetUrl(generatedCover.image_url) : null;
   const selectedProject = findEnabledMobileCreationProject(selectedProjectId);
+  const todayDraftCount = countMobileDraftsToday(draftHistory);
+  const activeDraftActionItem =
+    draftHistory.find((item) => item.content.id === draftActionContentId) ?? null;
+
+  function persistDraftHistory(nextItems: MobileDraftHistoryItem[]) {
+    const normalized = normalizeMobileDraftHistory(nextItems);
+    setDraftHistory(normalized);
+    saveStoredMobileDraftHistory(normalized);
+    return normalized;
+  }
+
+  function syncDraftIntoHistory(content: GeneratedContent, cover: GeneratedImageAsset | null) {
+    const savedAt = content.created_at ?? new Date().toISOString();
+    let normalized: MobileDraftHistoryItem[] = [];
+    setDraftHistory((currentItems) => {
+      normalized = normalizeMobileDraftHistory([
+        {
+          content,
+          cover,
+          pinned: false,
+          saved_at: savedAt
+        },
+        ...currentItems
+      ]);
+      saveStoredMobileDraftHistory(normalized);
+      return normalized;
+    });
+    return normalized;
+  }
+
+  function selectDraftHistoryItem(item: MobileDraftHistoryItem) {
+    setGeneratedContent(item.content);
+    setDraftPreview(draftStateFromContent(item.content));
+    saveStoredMobileContent(item.content);
+    if (item.cover) {
+      setGeneratedCover(item.cover);
+      saveStoredMobileCover(item.cover);
+    } else {
+      setGeneratedCover(null);
+      clearStoredMobileCover();
+    }
+    setPreviewOpen(true);
+    onAction(`已打开草稿：${item.content.title}`);
+  }
+
+  function toggleDraftPin(item: MobileDraftHistoryItem) {
+    persistDraftHistory(
+      draftHistory.map((draftItem) =>
+        draftItem.content.id === item.content.id
+          ? { ...draftItem, pinned: !draftItem.pinned, saved_at: new Date().toISOString() }
+          : draftItem
+      )
+    );
+    setDraftActionContentId(null);
+    onAction(item.pinned ? "已取消置顶草稿。" : "已置顶草稿。");
+  }
+
+  function deleteDraftHistoryItem(item: MobileDraftHistoryItem) {
+    const nextItems = persistDraftHistory(
+      draftHistory.filter((draftItem) => draftItem.content.id !== item.content.id)
+    );
+    if (generatedContent?.id === item.content.id) {
+      const nextItem = nextItems[0] ?? null;
+      if (nextItem) {
+        setGeneratedContent(nextItem.content);
+        setDraftPreview(draftStateFromContent(nextItem.content));
+        saveStoredMobileContent(nextItem.content);
+        if (nextItem.cover) {
+          setGeneratedCover(nextItem.cover);
+          saveStoredMobileCover(nextItem.cover);
+        } else {
+          setGeneratedCover(null);
+          clearStoredMobileCover();
+        }
+      } else {
+        setGeneratedContent(null);
+        setGeneratedCover(null);
+        setDraftPreview(defaultMobileDraftPreview);
+        removeMobileStorage(MOBILE_LAST_CONTENT_STORAGE_KEY);
+        clearStoredMobileCover();
+        setPreviewOpen(false);
+      }
+    }
+    setDraftActionContentId(null);
+    onAction("已从本机草稿历史删除。");
+  }
 
   useEffect(() => {
     let active = true;
@@ -1864,6 +2031,15 @@ function CreateScreen({
         if (active && latestCover) {
           setGeneratedCover(latestCover);
           saveStoredMobileCover(latestCover);
+          setDraftHistory((currentItems) => {
+            const normalized = normalizeMobileDraftHistory(
+              currentItems.map((item) =>
+                item.content.id === contentId ? { ...item, cover: latestCover } : item
+              )
+            );
+            saveStoredMobileDraftHistory(normalized);
+            return normalized;
+          });
           onAction("已找回最近封面图。");
         }
       } catch (_error) {
@@ -1882,16 +2058,45 @@ function CreateScreen({
           return;
         }
 
-        const latestContent = data.find(isGeneratedContent);
-        if (active && latestContent) {
+        const latestItems = data
+          .filter(isGeneratedContent)
+          .filter((content) => content.platform === platform)
+          .map((content) => ({
+            content,
+            cover: null,
+            pinned: false,
+            saved_at: content.created_at ?? new Date().toISOString()
+          }));
+        if (active && latestItems.length) {
           const storedCover = readStoredMobileCover();
+          const currentHistory = readStoredMobileDraftHistory().filter(
+            (item) => item.content.platform === platform
+          );
+          const normalized = normalizeMobileDraftHistory([...currentHistory, ...latestItems]);
+          const latestContent = normalized[0].content;
+          const latestCover =
+            normalized.find((item) => item.content.id === latestContent.id)?.cover ?? null;
           setGeneratedContent(latestContent);
           setDraftPreview(draftStateFromContent(latestContent));
           saveStoredMobileContent(latestContent);
           if (storedCover?.content_id === latestContent.id) {
             setGeneratedCover(storedCover);
+            const nextHistory = normalizeMobileDraftHistory(
+              normalized.map((item) =>
+                item.content.id === latestContent.id ? { ...item, cover: storedCover } : item
+              )
+            );
+            setDraftHistory(nextHistory);
+            saveStoredMobileDraftHistory(nextHistory);
+          } else if (latestCover) {
+            setGeneratedCover(latestCover);
+            saveStoredMobileCover(latestCover);
+            setDraftHistory(normalized);
+            saveStoredMobileDraftHistory(normalized);
           } else {
             setGeneratedCover(null);
+            setDraftHistory(normalized);
+            saveStoredMobileDraftHistory(normalized);
           }
           void loadLatestCover(latestContent.id);
         }
@@ -1902,6 +2107,23 @@ function CreateScreen({
 
     const storedContent = readStoredMobileContent();
     const storedCover = readStoredMobileCover();
+    const storedHistory = readStoredMobileDraftHistory().filter(
+      (item) => item.content.platform === platform
+    );
+    if (storedContent?.platform === platform) {
+      const normalized = normalizeMobileDraftHistory([
+        {
+          content: storedContent,
+          cover: storedCover?.content_id === storedContent.id ? storedCover : null,
+          pinned: false,
+          saved_at: storedContent.created_at ?? new Date().toISOString()
+        },
+        ...storedHistory
+      ]);
+      setDraftHistory(normalized);
+    } else {
+      setDraftHistory(storedHistory);
+    }
     if (storedContent?.platform === platform) {
       setGeneratedContent(storedContent);
       setDraftPreview(draftStateFromContent(storedContent));
@@ -2164,6 +2386,7 @@ function CreateScreen({
       setGeneratedContent(data);
       setDraftPreview(draftStateFromContent(data));
       saveStoredMobileContent(data);
+      syncDraftIntoHistory(data, null);
       clearStoredMobileCover();
       setProgressStage("封面图生成中", 68, 94);
 
@@ -2188,6 +2411,7 @@ function CreateScreen({
       const cover = (await imageResponse.json()) as GeneratedImageAsset;
       setGeneratedCover(cover);
       saveStoredMobileCover(cover);
+      syncDraftIntoHistory(data, cover);
       finishProgress("已完成");
       void notifyGenerationComplete(data);
       onAction("文案和封面图已生成。");
@@ -2241,8 +2465,9 @@ function CreateScreen({
   if (!selectedProject) {
     return (
       <MobileCreationProjectGateway
-        generatedContent={generatedContent}
+        draftCount={draftHistory.length}
         onSelect={enterProject}
+        todayDraftCount={todayDraftCount}
       />
     );
   }
@@ -2422,6 +2647,13 @@ function CreateScreen({
         </p>
       </MobilePanel>
 
+      <DraftHistoryCarousel
+        activeContentId={generatedContent?.id ?? null}
+        items={draftHistory}
+        onLongPress={(item) => setDraftActionContentId(item.content.id)}
+        onOpen={selectDraftHistoryItem}
+      />
+
       <DraftPreviewCard
         coverImageUrl={coverImageUrl}
         draft={draftPreview}
@@ -2439,16 +2671,26 @@ function CreateScreen({
           onExportStatus={onAction}
         />
       ) : null}
+      {activeDraftActionItem ? (
+        <DraftHistoryActionSheet
+          item={activeDraftActionItem}
+          onClose={() => setDraftActionContentId(null)}
+          onDelete={() => deleteDraftHistoryItem(activeDraftActionItem)}
+          onPinToggle={() => toggleDraftPin(activeDraftActionItem)}
+        />
+      ) : null}
     </div>
   );
 }
 
 function MobileCreationProjectGateway({
-  generatedContent,
-  onSelect
+  draftCount,
+  onSelect,
+  todayDraftCount
 }: {
-  generatedContent: GeneratedContent | null;
+  draftCount: number;
   onSelect: (projectId: MobileCreationProjectId) => void;
+  todayDraftCount: number;
 }) {
   return (
     <div className="space-y-4" data-testid="mobile-creation-project-gateway">
@@ -2496,13 +2738,13 @@ function MobileCreationProjectGateway({
 
       <MobilePanel
         title="项目状态"
-        action={generatedContent ? "已有草稿" : "待生成"}
+        action={draftCount ? "已有草稿" : "待生成"}
       >
         <div className="grid grid-cols-4 gap-2">
           {[
-            { label: "草稿总数", value: generatedContent ? "1" : "0", tone: "text-moss" },
-            { label: "待处理", value: "3", tone: "text-[#e58a00]" },
-            { label: "今日生成", value: generatedContent ? "1" : "0", tone: "text-[#1d72d2]" },
+            { label: "草稿总数", value: String(draftCount), tone: "text-moss" },
+            { label: "项目数", value: String(mobileCreationProjects.length), tone: "text-[#e58a00]" },
+            { label: "今日生成", value: String(todayDraftCount), tone: "text-[#1d72d2]" },
             { label: "已发布", value: "0", tone: "text-moss" }
           ].map((item) => (
             <div
@@ -2911,6 +3153,237 @@ function CoverImagePreview({
       onError={() => setFailed(true)}
       src={src}
     />
+  );
+}
+
+function formatMobileDraftDate(value?: string) {
+  if (!value) {
+    return "刚刚";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "刚刚";
+  }
+
+  return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, "0")}:${String(
+    date.getMinutes()
+  ).padStart(2, "0")}`;
+}
+
+function countMobileDraftsToday(items: MobileDraftHistoryItem[]) {
+  const now = new Date();
+  return items.filter((item) => {
+    const date = new Date(item.content.created_at ?? item.saved_at);
+    return (
+      !Number.isNaN(date.getTime()) &&
+      date.getFullYear() === now.getFullYear() &&
+      date.getMonth() === now.getMonth() &&
+      date.getDate() === now.getDate()
+    );
+  }).length;
+}
+
+function DraftHistoryCarousel({
+  activeContentId,
+  items,
+  onLongPress,
+  onOpen
+}: {
+  activeContentId: number | null;
+  items: MobileDraftHistoryItem[];
+  onLongPress: (item: MobileDraftHistoryItem) => void;
+  onOpen: (item: MobileDraftHistoryItem) => void;
+}) {
+  return (
+    <section
+      className="rounded-[28px] border border-white/[0.88] bg-[rgba(255,253,247,0.88)] p-4 shadow-[0_12px_32px_rgba(31,58,49,0.07),inset_0_1px_0_rgba(255,255,255,0.90)]"
+      data-testid="mobile-draft-history"
+    >
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-[15px] font-black">草稿历史</h2>
+          <div className="mt-1 text-[11px] font-semibold text-muted">横向滑动浏览，长按管理</div>
+        </div>
+        <span className="rounded-full bg-[#e7f2ea]/[0.90] px-2.5 py-1 text-xs font-black text-moss">
+          {items.length ? `${items.length} 篇` : "暂无"}
+        </span>
+      </div>
+
+      {items.length ? (
+        <div className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
+          {items.map((item) => (
+            <DraftHistoryCard
+              active={activeContentId === item.content.id}
+              item={item}
+              key={item.content.id}
+              onLongPress={() => onLongPress(item)}
+              onOpen={() => onOpen(item)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-[22px] border border-white/[0.84] bg-[rgba(255,253,247,0.86)] px-4 py-5 text-sm font-semibold leading-6 text-muted">
+          生成第一篇图文后，会自动出现在这里。
+        </div>
+      )}
+    </section>
+  );
+}
+
+function DraftHistoryCard({
+  active,
+  item,
+  onLongPress,
+  onOpen
+}: {
+  active: boolean;
+  item: MobileDraftHistoryItem;
+  onLongPress: () => void;
+  onOpen: () => void;
+}) {
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggeredRef = useRef(false);
+  const draft = draftStateFromContent(item.content);
+  const excerpt = draft.body.replace(/\s+/g, " ").slice(0, 54);
+  const coverUrl = item.cover ? resolveAssetUrl(item.cover.image_url) : null;
+
+  function clearLongPressTimer() {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }
+
+  function startLongPressTimer() {
+    clearLongPressTimer();
+    longPressTriggeredRef.current = false;
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      onLongPress();
+    }, 560);
+  }
+
+  function handleClick() {
+    if (longPressTriggeredRef.current) {
+      longPressTriggeredRef.current = false;
+      return;
+    }
+    onOpen();
+  }
+
+  return (
+    <button
+      className={[
+        "w-[214px] shrink-0 snap-start touch-manipulation overflow-hidden rounded-[24px] border bg-white text-left shadow-[0_12px_26px_rgba(31,58,49,0.08)] active:scale-[0.99]",
+        active ? "border-[#ff2442] ring-2 ring-[#ff2442]/[0.16]" : "border-white/[0.88]"
+      ].join(" ")}
+      data-testid={`mobile-draft-history-card-${item.content.id}`}
+      onClick={handleClick}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        onLongPress();
+      }}
+      onPointerCancel={clearLongPressTimer}
+      onPointerDown={startLongPressTimer}
+      onPointerLeave={clearLongPressTimer}
+      onPointerUp={clearLongPressTimer}
+      type="button"
+    >
+      {coverUrl ? (
+        <CoverImagePreview
+          alt="草稿封面"
+          className="aspect-[3/4] w-full bg-[#f7f7f7] object-cover"
+          src={coverUrl}
+          testId={`mobile-draft-history-cover-${item.content.id}`}
+        />
+      ) : (
+        <div className="aspect-[3/4] w-full bg-[linear-gradient(160deg,#fff7df,#d9f1e5_52%,#ffd9df)] px-4 py-4">
+          <div className="flex items-center justify-between">
+            <span className="rounded-full bg-white/[0.76] px-2 py-1 text-[10px] font-black text-[#ff2442]">
+              草稿
+            </span>
+            {item.pinned ? <Pin className="h-3.5 w-3.5 text-[#ff2442]" /> : null}
+          </div>
+          <div className="mt-9 text-[22px] font-black leading-7 text-ink">
+            {draft.title.split(/[，,]/).slice(0, 3).map((line) => (
+              <span className="block" key={line}>
+                {line}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      <div className="space-y-2 px-3 pb-3 pt-2">
+        <div className="line-clamp-2 min-h-[40px] text-[13px] font-black leading-5 text-ink">
+          {draft.title}
+        </div>
+        <div className="line-clamp-2 min-h-[34px] text-[11px] font-semibold leading-[17px] text-muted">
+          {excerpt}
+        </div>
+        <div className="flex items-center justify-between gap-2 text-[10px] font-black text-muted">
+          <span>{formatMobileDraftDate(item.content.created_at ?? item.saved_at)}</span>
+          <span className={item.pinned ? "text-[#ff2442]" : "text-moss"}>
+            {item.pinned ? "置顶" : `#${item.content.id}`}
+          </span>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function DraftHistoryActionSheet({
+  item,
+  onClose,
+  onDelete,
+  onPinToggle
+}: {
+  item: MobileDraftHistoryItem;
+  onClose: () => void;
+  onDelete: () => void;
+  onPinToggle: () => void;
+}) {
+  return (
+    <div
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/[0.28] px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+      data-testid="mobile-draft-history-actions"
+      role="dialog"
+    >
+      <div className="w-full max-w-[430px] rounded-[28px] bg-white p-4 text-ink shadow-[0_24px_70px_rgba(0,0,0,0.24)]">
+        <div className="mb-3">
+          <div className="text-[11px] font-black text-[#ff2442]">草稿管理</div>
+          <h2 className="mt-1 line-clamp-2 text-lg font-black leading-6">{item.content.title}</h2>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            className="flex h-12 items-center justify-center gap-2 rounded-full bg-[#111111] text-sm font-black text-white active:scale-[0.99]"
+            data-testid="mobile-draft-history-pin"
+            onClick={onPinToggle}
+            type="button"
+          >
+            <Pin className="h-4 w-4" />
+            {item.pinned ? "取消置顶" : "置顶"}
+          </button>
+          <button
+            className="flex h-12 items-center justify-center gap-2 rounded-full bg-[#ff2442] text-sm font-black text-white active:scale-[0.99]"
+            data-testid="mobile-draft-history-delete"
+            onClick={onDelete}
+            type="button"
+          >
+            <Trash2 className="h-4 w-4" />
+            删除
+          </button>
+        </div>
+        <button
+          className="mt-2 h-11 w-full rounded-full border border-[#eeeeee] bg-white text-sm font-black text-muted"
+          onClick={onClose}
+          type="button"
+        >
+          取消
+        </button>
+      </div>
+    </div>
   );
 }
 

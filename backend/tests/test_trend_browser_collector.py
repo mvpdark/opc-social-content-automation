@@ -168,6 +168,94 @@ def test_extract_candidate_assets_does_not_skip_douyin_domain_by_default() -> No
     assert len(assets) == 1
 
 
+def test_extract_candidate_assets_accepts_compact_xhs_note_card() -> None:
+    assets = extract_candidate_assets(
+        raw_items=[
+            {
+                "text": "山大硕博连读申请要求 水水学姐 03-31 165",
+                "url": "https://www.xiaohongshu.com/search_result/69cbec84000000001e00d70a?xsec_token=test",
+            }
+        ],
+        platform="xiaohongshu",
+        keyword="硕升博",
+        max_items=5,
+    )
+
+    assert len(assets) == 1
+    assert assets[0].url is not None
+    assert assets[0].title == "山大硕博连读申请要求 水水学姐"
+    assert assets[0].tags == ["硕升博"]
+
+
+def test_extract_candidate_assets_keeps_short_meaningful_xhs_title() -> None:
+    assets = extract_candidate_assets(
+        raw_items=[
+            {
+                "text": "申博成功！\nZizui\n01-08\n685",
+                "url": "https://www.xiaohongshu.com/explore/695fcb8f000000000d0090e2",
+            }
+        ],
+        platform="xiaohongshu",
+        keyword="硕升博",
+        max_items=5,
+    )
+
+    assert len(assets) == 1
+    assert assets[0].title == "申博成功！"
+
+
+def test_extract_candidate_assets_skips_xhs_search_aggregate_text() -> None:
+    assets = extract_candidate_assets(
+        raw_items=[
+            {
+                "text": (
+                    "没背景的看过来！ 小红薯 2025-10-28 4 "
+                    "求个靠谱的申博中介 04-30 30 相关搜索 硕升博是哪个学校 "
+                    "上硕上博教育 专硕可以读博吗 博加硕"
+                ),
+                "url": "https://www.xiaohongshu.com/explore/690075a60000000007016666",
+            }
+        ],
+        platform="xiaohongshu",
+        keyword="硕升博",
+        max_items=5,
+    )
+
+    assert assets == []
+
+
+def test_extract_candidate_assets_skips_xhs_profile_links() -> None:
+    assets = extract_candidate_assets(
+        raw_items=[
+            {
+                "text": "博士申请助手 2025-12-22 125",
+                "url": "https://www.xiaohongshu.com/user/profile/6508119b00000000120061c6",
+            }
+        ],
+        platform="xiaohongshu",
+        keyword="硕升博",
+        max_items=5,
+    )
+
+    assert assets == []
+
+
+def test_extract_candidate_assets_skips_unrelated_compact_xhs_note_card() -> None:
+    assets = extract_candidate_assets(
+        raw_items=[
+            {
+                "text": "温州女生备婚清单 余鲜活 04-24 168",
+                "url": "https://www.xiaohongshu.com/explore/68a70753000000001d00d6f0",
+            }
+        ],
+        platform="xiaohongshu",
+        keyword="硕升博",
+        max_items=5,
+    )
+
+    assert assets == []
+
+
 def test_extract_candidate_assets_skips_login_wall_text() -> None:
     assets = extract_candidate_assets(
         raw_items=[
