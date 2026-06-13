@@ -671,8 +671,8 @@ def validate_content_production_contract() -> int:
     mobile_static_reference_contract_snippets = [
         "把公开参考变成素材池",
         'MobilePanel title="结构模板"',
-        "结构模板 · 非采集素材",
-        "封面模板 · 非采集素材",
+        "结构模板 · 参考版式",
+        "封面模板 · 参考版式",
     ]
     for snippet in mobile_static_reference_contract_snippets:
         total += 1
@@ -1054,6 +1054,7 @@ def validate_content_production_contract() -> int:
         "把高赞参考变成素材池",
         "来源待 PC 确认",
         "非生成结果",
+        "非采集素材",
         "非采集结果",
         "待人工复核",
     ]
