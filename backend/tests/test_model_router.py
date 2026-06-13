@@ -89,6 +89,28 @@ def test_codex_test_draft_provider_uses_xhs_expression_layer(
     assert "（真的会累）" in result
 
 
+def test_codex_test_draft_provider_keeps_water_ranking_topic(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "draft_provider", "codex_test")
+
+    result = model_router.draft_model(
+        "draft_generation",
+        {
+            "platform": "xiaohongshu",
+            "topic": "全球水博排名必看",
+            "tags": ["水博", "排名"],
+        },
+    )
+
+    assert "全球水博排名必看" in result
+    assert "水博" in result
+    assert "认证" in result
+    assert "预算" in result
+    assert "榜" in result
+    assert "研究方向、目标导师和时间节点" not in result
+
+
 def test_codex_test_image_provider_creates_svg(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "image_provider", "codex_test")
     monkeypatch.setattr(settings, "test_static_url_prefix", "/static/generated")

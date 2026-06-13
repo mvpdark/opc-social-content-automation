@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass
 
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.content import Content
@@ -10,6 +10,24 @@ from app.models.user import User
 from app.schemas.content import ContentGenerateRequest, ContentRewriteRequest
 from app.services.knowledge_service import search_knowledge_items
 from app.services.model_router import load_platform_style_reference, load_prompt, model_router
+
+
+WATER_ROUTE_TOPIC_TERMS = ("水博", "海外博士", "境外博士")
+RANKING_TOPIC_TERMS = ("排名", "排行", "榜", "榜单", "必看")
+RANKING_DRAFT_TERMS = (
+    "排名",
+    "排行",
+    "榜",
+    "榜单",
+    "梯队",
+    "学校池",
+    "项目池",
+    "路线池",
+    "清单",
+    "认证",
+    "预算",
+    "毕业难度",
+)
 
 
 @dataclass(frozen=True)
@@ -56,6 +74,34 @@ def _knowledge_context(
         }
         for item in results
     ]
+
+
+def _contains_any(text: str, terms: tuple[str, ...]) -> bool:
+    normalized = text.lower()
+    return any(term.lower() in normalized for term in terms)
+
+
+def _is_water_ranking_topic(payload: ContentGenerateRequest) -> bool:
+    topic_text = " ".join([payload.topic, *(payload.tags or [])])
+    return _contains_any(topic_text, WATER_ROUTE_TOPIC_TERMS) and _contains_any(
+        payload.topic,
+        RANKING_TOPIC_TERMS,
+    )
+
+
+def _draft_topic_relevance_issue(payload: ContentGenerateRequest, draft: str) -> str | None:
+    if not _is_water_ranking_topic(payload):
+        return None
+
+    has_route_term = _contains_any(draft, WATER_ROUTE_TOPIC_TERMS)
+    has_ranking_structure = _contains_any(draft, RANKING_DRAFT_TERMS)
+    if has_route_term and has_ranking_structure:
+        return None
+
+    return (
+        f"撰稿结果偏离选题：当前选题是“{payload.topic}”，但草稿没有围绕水博榜单/排名展开。"
+        "请补充已核实的学校或项目资料后重试，或改成认证、预算、毕业难度、在职适配等榜单维度。"
+    )
 
 
 def build_draft_prompt_package(
@@ -152,6 +198,23 @@ def generate_content_draft(
             error=str(exc.detail),
         )
         raise
+
+    relevance_issue = _draft_topic_relevance_issue(payload, draft)
+    if relevance_issue:
+        record_generation_log(
+            db=db,
+            current_user=current_user,
+            purpose="draft_generation",
+            model="draft_model",
+            package=package,
+            result=draft,
+            status="topic_mismatch",
+            error=relevance_issue,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=relevance_issue,
+        )
 
     content = Content(
         user_id=current_user.id,

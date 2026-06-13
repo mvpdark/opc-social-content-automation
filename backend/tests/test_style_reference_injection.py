@@ -53,6 +53,10 @@ def test_draft_prompt_template_requires_xhs_expression_layer() -> None:
     assert "👉💧" in prompt
     assert "📍" in prompt
     assert "🎓" in prompt
+    assert "ranking/list" in prompt
+    assert "structure" in prompt
+    assert "全球水博排名必看" in prompt
+    assert "supervisor matching" in prompt
     assert "哦" in prompt
     assert "呀" in prompt
     assert "[哭惹R]" in style_reference

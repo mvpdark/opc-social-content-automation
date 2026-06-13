@@ -2273,7 +2273,7 @@ function GenerationLauncher({
   const [tone, setTone] = useState(() =>
     buildWritingTone(defaultWritingStyle, defaultExpressionOptions)
   );
-  const [tagsText, setTagsText] = useState("硕升博,博士申请,研究方向,申请规划");
+  const [tagsText, setTagsText] = useState("硕升博,水博,博士申请,小红书获客");
   const [busyAction, setBusyAction] = useState<"draft" | null>(null);
   const [statusText, setStatusText] = useState("填写选题后，点击“一键生成图文+封面”。");
   const [lastContent, setLastContent] = useState<GeneratedContent | null>(null);

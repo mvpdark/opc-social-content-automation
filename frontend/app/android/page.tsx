@@ -1819,7 +1819,7 @@ function CreateScreen({
   const [contentMode, setContentMode] = useState<"short" | "xiaohongshu">("xiaohongshu");
   const [topic, setTopic] = useState("硕升博申请第一步，不是先套磁");
   const [targetAudience, setTargetAudience] = useState("准备硕升博申请的学生");
-  const [tagsText, setTagsText] = useState("硕升博,博士申请,研究方向,申请规划");
+  const [tagsText, setTagsText] = useState("硕升博,水博,博士申请,小红书获客");
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const [generatedCover, setGeneratedCover] = useState<GeneratedImageAsset | null>(null);
   const [draftPreview, setDraftPreview] = useState<DraftPreviewState>({
