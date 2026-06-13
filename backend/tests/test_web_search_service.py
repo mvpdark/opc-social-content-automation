@@ -13,6 +13,8 @@ from app.services.web_search_service import (
 def test_topic_needs_live_web_search_for_ranking_topic() -> None:
     assert topic_needs_live_web_search("全球水博排名必看", ["水博", "排名"]) is True
     assert topic_needs_live_web_search("硕升博申请节奏", ["规划"]) is False
+    assert topic_needs_live_web_search("硕升博申请第一步，不是先套磁", ["硕升博", "水博"]) is False
+    assert topic_needs_live_web_search("低预算海外博士怎么筛", ["预算榜单"]) is True
 
 
 def test_build_tavily_query_expands_water_phd_topic() -> None:

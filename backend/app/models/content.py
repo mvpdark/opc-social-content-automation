@@ -15,6 +15,7 @@ class Content(Base):
     title: Mapped[str] = mapped_column(String(255))
     body: Mapped[str] = mapped_column(Text)
     tags: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    source_context: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True)
     status: Mapped[str] = mapped_column(String(40), default="draft", index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

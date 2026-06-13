@@ -34,7 +34,12 @@ class ContentRead(BaseModel):
     title: str
     body: str
     tags: list[str] | None
+    source_context: dict[str, object] | None = None
     status: str
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class ContentSourcePreviewRead(BaseModel):
+    source_context: dict[str, object]

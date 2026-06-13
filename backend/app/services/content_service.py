@@ -20,7 +20,14 @@ from app.services.topic_intent import (
     first_matching_topic_intent,
     is_water_ranking_topic,
 )
-from app.services.web_search_service import build_live_web_search_context
+from app.services.web_search_service import (
+    build_live_web_search_context,
+    build_tavily_query,
+    topic_needs_live_web_search,
+)
+
+
+SOURCE_CONTEXT_EXCERPT_LENGTH = 420
 
 
 @dataclass(frozen=True)
@@ -39,6 +46,13 @@ class PromptPackage:
             ensure_ascii=False,
             indent=2,
         )
+
+
+def _source_excerpt(value: object, max_length: int = SOURCE_CONTEXT_EXCERPT_LENGTH) -> str:
+    text = " ".join(str(value or "").split())
+    if len(text) <= max_length:
+        return text
+    return f"{text[:max_length].rstrip()}..."
 
 
 def _knowledge_context(
@@ -67,6 +81,82 @@ def _knowledge_context(
         }
         for item in results
     ]
+
+
+def _public_source_context(
+    payload: ContentGenerateRequest,
+    knowledge_context: list[dict[str, object]],
+    web_search_context: dict[str, object] | None,
+) -> dict[str, object]:
+    web_search_required = topic_needs_live_web_search(payload.topic, payload.tags)
+    web_results: list[dict[str, object]] = []
+    if isinstance(web_search_context, dict):
+        raw_results = web_search_context.get("results")
+        if isinstance(raw_results, list):
+            for raw_result in raw_results:
+                if not isinstance(raw_result, dict):
+                    continue
+                web_results.append(
+                    {
+                        "title": _source_excerpt(raw_result.get("title"), 160),
+                        "url": _source_excerpt(raw_result.get("url"), 600),
+                        "content": _source_excerpt(raw_result.get("content")),
+                        "score": raw_result.get("score"),
+                    }
+                )
+
+    return {
+        "knowledge_query": payload.knowledge_query or payload.topic,
+        "knowledge_items": [
+            {
+                "id": item["id"],
+                "title": _source_excerpt(item.get("title"), 160),
+                "category": item.get("category"),
+                "content": _source_excerpt(item.get("content")),
+                "score": item.get("score"),
+                "match_type": item.get("match_type"),
+            }
+            for item in knowledge_context
+        ],
+        "web_search": {
+            "required": web_search_required,
+            "provider": (
+                web_search_context.get("provider")
+                if isinstance(web_search_context, dict)
+                else None
+            ),
+            "query": (
+                web_search_context.get("query")
+                if isinstance(web_search_context, dict)
+                else build_tavily_query(payload.topic, payload.platform, payload.tags)
+                if web_search_required
+                else None
+            ),
+            "answer": (
+                _source_excerpt(web_search_context.get("answer"), 700)
+                if isinstance(web_search_context, dict) and web_search_context.get("answer")
+                else None
+            ),
+            "results": web_results,
+        },
+        "review_note": (
+            "这些是本次生成可见的检索依据。需要排名、学校、logo、学费或认证时，"
+            "请先人工核对来源，再复制到平台发布。"
+        ),
+    }
+
+
+def build_content_source_context(
+    db: Session,
+    payload: ContentGenerateRequest,
+) -> dict[str, object]:
+    knowledge_context = _knowledge_context(db, payload)
+    web_search_context = build_live_web_search_context(
+        platform=payload.platform,
+        topic=payload.topic,
+        tags=payload.tags,
+    )
+    return _public_source_context(payload, knowledge_context, web_search_context)
 
 
 def _is_water_ranking_topic(payload: ContentGenerateRequest) -> bool:
@@ -99,6 +189,12 @@ def build_draft_prompt_package(
     payload: ContentGenerateRequest,
     current_user: User,
 ) -> PromptPackage:
+    knowledge_context = _knowledge_context(db, payload)
+    web_search_context = build_live_web_search_context(
+        platform=payload.platform,
+        topic=payload.topic,
+        tags=payload.tags,
+    )
     return PromptPackage(
         prompt_name="draft_generation",
         prompt_template=load_prompt("draft_generation"),
@@ -109,12 +205,9 @@ def build_draft_prompt_package(
             "tone": payload.tone,
             "target_audience": payload.target_audience,
             "knowledge_query": payload.knowledge_query,
-            "knowledge_context": _knowledge_context(db, payload),
-            "web_search_context": build_live_web_search_context(
-                platform=payload.platform,
-                topic=payload.topic,
-                tags=payload.tags,
-            ),
+            "knowledge_context": knowledge_context,
+            "web_search_context": web_search_context,
+            "source_context": _public_source_context(payload, knowledge_context, web_search_context),
             "style_reference": load_platform_style_reference(payload.platform),
             "user": {
                 "id": current_user.id,
@@ -217,6 +310,9 @@ def generate_content_draft(
         title=payload.topic,
         body=draft,
         tags=payload.tags,
+        source_context=package.payload.get("source_context")
+        if isinstance(package.payload.get("source_context"), dict)
+        else None,
         status="draft",
     )
     db.add(content)

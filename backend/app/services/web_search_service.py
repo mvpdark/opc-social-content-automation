@@ -9,27 +9,34 @@ from fastapi import HTTPException, status
 from app.core.config import settings
 
 
-LIVE_SEARCH_TOPIC_TERMS = (
+LIVE_SEARCH_FACT_TERMS = (
     "最新",
     "今天",
     "今年",
     "2025",
     "2026",
-    "排名",
-    "排行",
-    "榜",
-    "榜单",
-    "必看",
-    "全球",
     "官网",
-    "学校",
-    "院校",
-    "项目",
     "logo",
     "政策",
     "费用",
     "学费",
     "认证",
+)
+
+LIVE_SEARCH_LIST_TERMS = (
+    "排名",
+    "排行",
+    "排行榜",
+    "榜单",
+    "清单",
+    "名单",
+)
+
+LIVE_SEARCH_SCOPE_TERMS = (
+    "全球",
+    "学校",
+    "院校",
+    "项目",
     "水博",
     "海外博士",
     "境外博士",
@@ -74,7 +81,10 @@ class WebSearchContext:
 
 def topic_needs_live_web_search(topic: str, tags: list[str] | None = None) -> bool:
     haystack = " ".join([topic, *(tags or [])]).lower()
-    return any(term.lower() in haystack for term in LIVE_SEARCH_TOPIC_TERMS)
+    has_fact_term = any(term.lower() in haystack for term in LIVE_SEARCH_FACT_TERMS)
+    has_list_term = any(term.lower() in haystack for term in LIVE_SEARCH_LIST_TERMS)
+    has_scope_term = any(term.lower() in haystack for term in LIVE_SEARCH_SCOPE_TERMS)
+    return has_fact_term or (has_list_term and has_scope_term)
 
 
 def build_tavily_query(topic: str, platform: str, tags: list[str] | None = None) -> str:

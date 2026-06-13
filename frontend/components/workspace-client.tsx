@@ -53,7 +53,9 @@ import {
   isGeneratedContent,
   isGeneratedImageAsset,
   type GeneratedContent,
-  type GeneratedImageAsset
+  type GeneratedImageAsset,
+  type GenerationKnowledgeSource,
+  type GenerationSourceContext
 } from "@/lib/generated-assets";
 import {
   fetchKnowledgeItems,
@@ -2545,6 +2547,144 @@ function CreationProjectGateway({
   );
 }
 
+function sourceKnowledgeItemToKnowledgeItem(item: GenerationKnowledgeSource): KnowledgeItem {
+  return {
+    category: item.category ?? null,
+    content: item.content,
+    id: item.id,
+    match_type: item.match_type ?? undefined,
+    score: item.score ?? null,
+    title: item.title
+  };
+}
+
+function sourceContextStats(sourceContext: GenerationSourceContext | null) {
+  const knowledgeCount = sourceContext?.knowledge_items?.length ?? 0;
+  const webCount = sourceContext?.web_search?.results?.length ?? 0;
+  return {
+    hasEvidence: knowledgeCount + webCount > 0,
+    knowledgeCount,
+    webCount
+  };
+}
+
+function GenerationSourceEvidenceCard({
+  disabled = false,
+  error,
+  onPreview,
+  previewBusy,
+  sourceContext
+}: {
+  disabled?: boolean;
+  error?: string | null;
+  onPreview?: () => void;
+  previewBusy?: boolean;
+  sourceContext: GenerationSourceContext | null;
+}) {
+  const { hasEvidence, knowledgeCount, webCount } = sourceContextStats(sourceContext);
+  const webSearch = sourceContext?.web_search;
+  const webRequired = Boolean(webSearch?.required);
+  const webResults = webSearch?.results ?? [];
+  const knowledgeItems = sourceContext?.knowledge_items ?? [];
+
+  return (
+    <div className="mt-4 rounded-md border border-line bg-paper/70 p-3" data-testid="generation-source-evidence">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold text-ink">检索依据</div>
+          <p className="mt-1 text-xs leading-5 text-muted">
+            人工确认前先看这里：知识库和联网来源会直接展示，不再只给一个空确认。
+          </p>
+        </div>
+        <Pill tone={hasEvidence ? "green" : webRequired ? "amber" : "neutral"}>
+          {hasEvidence ? `${knowledgeCount + webCount} 条` : webRequired ? "需联网" : "待查看"}
+        </Pill>
+      </div>
+      {sourceContext?.knowledge_query ? (
+        <div className="mt-3 rounded-md bg-mist/70 px-3 py-2 text-[11px] leading-5 text-muted">
+          检索词：{sourceContext.knowledge_query}
+        </div>
+      ) : null}
+      {onPreview ? (
+        <button
+          className={`${secondaryButtonClass} mt-3 h-9 w-full disabled:cursor-not-allowed disabled:opacity-60`}
+          data-testid="source-preview-button"
+          disabled={disabled || previewBusy}
+          onClick={onPreview}
+          type="button"
+        >
+          {previewBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+          {previewBusy ? "正在检索" : hasEvidence ? "重新查看检索依据" : "查看检索依据"}
+        </button>
+      ) : null}
+      {error ? <p className="mt-2 text-xs leading-5 text-coral">{error}</p> : null}
+      {knowledgeItems.length ? (
+        <div className="mt-3 space-y-2">
+          <div className="text-[11px] font-semibold text-muted">知识库引用</div>
+          {knowledgeItems.slice(0, 4).map((item) => {
+            const knowledgeItem = sourceKnowledgeItemToKnowledgeItem(item);
+            return (
+              <article className="rounded-md border border-line bg-mist/55 p-3" key={item.id}>
+                <div className="flex items-start justify-between gap-2">
+                  <h4 className="line-clamp-2 text-xs font-semibold leading-5 text-ink">
+                    {knowledgeItemTitle(knowledgeItem)}
+                  </h4>
+                  <Pill>{knowledgeCategoryLabel(knowledgeItem.category)}</Pill>
+                </div>
+                <p className="mt-2 line-clamp-3 text-[11px] leading-5 text-muted">
+                  {knowledgeItemExcerpt(knowledgeItem, 150)}
+                </p>
+              </article>
+            );
+          })}
+        </div>
+      ) : null}
+      {webRequired ? (
+        <div className="mt-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-[11px] font-semibold text-muted">联网来源</div>
+            <Pill tone={webResults.length ? "green" : "amber"}>
+              {webResults.length ? `${webResults.length} 条` : "未返回"}
+            </Pill>
+          </div>
+          {webSearch?.query ? (
+            <p className="rounded-md bg-mist/70 px-3 py-2 text-[11px] leading-5 text-muted">
+              Tavily 查询：{webSearch.query}
+            </p>
+          ) : null}
+          {webResults.length ? (
+            webResults.slice(0, 4).map((item) => (
+              <a
+                className="block rounded-md border border-line bg-mist/55 p-3 transition hover:border-steel/60"
+                href={item.url}
+                key={`${item.url}-${item.title}`}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <h4 className="line-clamp-2 text-xs font-semibold leading-5 text-ink">{item.title}</h4>
+                  <ExternalLink className="mt-1 h-3.5 w-3.5 shrink-0 text-muted" />
+                </div>
+                <p className="mt-1 truncate text-[11px] text-steel">{item.url}</p>
+                <p className="mt-2 line-clamp-3 text-[11px] leading-5 text-muted">{item.content}</p>
+              </a>
+            ))
+          ) : (
+            <p className="rounded-md border border-amber/40 bg-amber/10 px-3 py-2 text-[11px] leading-5 text-muted">
+              这个选题需要实时资料，但本次还没有可见联网来源；请先换关键词或检查 Tavily 配置。
+            </p>
+          )}
+        </div>
+      ) : null}
+      {sourceContext?.review_note ? (
+        <div className="mt-3 border-l-4 border-amber pl-3 text-[11px] leading-5 text-muted">
+          {sourceContext.review_note}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function GenerationLauncher({
   defaultWritingStyle,
   latestImageAsset,
@@ -2584,6 +2724,11 @@ function GenerationLauncher({
   const [providerStatusError, setProviderStatusError] = useState<string | null>(null);
   const [draftCheckStatus, setDraftCheckStatus] = useState<ProviderCheckResult | null>(null);
   const [draftCheckBusy, setDraftCheckBusy] = useState(false);
+  const [sourceContext, setSourceContext] = useState<GenerationSourceContext | null>(
+    () => latestContent?.source_context ?? null
+  );
+  const [sourcePreviewBusy, setSourcePreviewBusy] = useState(false);
+  const [sourcePreviewError, setSourcePreviewError] = useState<string | null>(null);
 
   const selectedPlatform: PlatformId = platform === "douyin" ? "douyin" : "xiaohongshu";
   const hasTopic = topic.trim().length > 0;
@@ -2595,6 +2740,7 @@ function GenerationLauncher({
   const draftProviderBlocked = draftProviderMissing || draftProviderCheckFailed;
   const canGenerate = hasTopic && busyAction === null && !draftProviderBlocked;
   const exportContent = lastContent ?? latestContent;
+  const visibleSourceContext = sourceContext ?? exportContent?.source_context ?? null;
   const generateButtonLabel = !hasTopic
       ? "先填写选题"
       : draftProviderMissing
@@ -2648,6 +2794,12 @@ function GenerationLauncher({
     setStyleOptions(defaultExpressionOptions);
     setTone(buildWritingTone(defaultWritingStyle, defaultExpressionOptions));
   }, [defaultWritingStyle]);
+
+  useEffect(() => {
+    if (latestContent?.source_context) {
+      setSourceContext(latestContent.source_context);
+    }
+  }, [latestContent?.id, latestContent?.source_context]);
 
   async function refreshProviderStatuses() {
     try {
@@ -2751,6 +2903,8 @@ function GenerationLauncher({
     setKnowledgeQuery(preset.knowledgeQuery);
     setTargetAudience(preset.audience);
     setTagsText(preset.tags);
+    setSourceContext(null);
+    setSourcePreviewError(null);
     setStatusText(`已套用推荐选题：${preset.topic}`);
   }
 
@@ -2773,6 +2927,53 @@ function GenerationLauncher({
     return () => window.clearInterval(refreshTimer);
   }, [topic]);
 
+  function buildGenerationRequestPayload() {
+    return {
+      platform,
+      topic: topic.trim(),
+      knowledge_query: knowledgeQuery.trim() || undefined,
+      tone: buildGenerationTone(tone, platform, styleOptions),
+      target_audience: targetAudience.trim() || undefined,
+      knowledge_limit: 5,
+      tags: tagsText
+        .split(/[,，]/)
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+    };
+  }
+
+  async function previewSourceContext() {
+    if (!topic.trim()) {
+      setSourcePreviewError("先填写选题，再查看检索依据。");
+      return;
+    }
+
+    setSourcePreviewBusy(true);
+    setSourcePreviewError(null);
+    setStatusText("正在检索知识库和联网来源，稍等一下。");
+    try {
+      const response = await fetch(`${API_BASE}/content/source-preview`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify(buildGenerationRequestPayload())
+      });
+      if (!response.ok) {
+        throw new Error(await readApiError(response, "检索依据读取失败。"));
+      }
+      const data = (await response.json()) as { source_context?: GenerationSourceContext };
+      setSourceContext(data.source_context ?? null);
+      setStatusText("检索依据已加载，请先人工核对来源，再决定是否一键生成。");
+    } catch (error) {
+      const message = sanitizeServiceErrorMessage(
+        error instanceof Error ? error.message : "检索依据读取失败。"
+      );
+      setSourcePreviewError(message);
+      setStatusText(message);
+    } finally {
+      setSourcePreviewBusy(false);
+    }
+  }
+
   async function generateDraft() {
     if (!topic.trim()) {
       setStatusText("先填写选题，再一键生成图文和封面。");
@@ -2786,23 +2987,14 @@ function GenerationLauncher({
       const response = await fetch(`${API_BASE}/content/generate`, {
         method: "POST",
         headers: authHeaders(),
-        body: JSON.stringify({
-          platform,
-          topic: topic.trim(),
-          knowledge_query: knowledgeQuery.trim() || undefined,
-          tone: buildGenerationTone(tone, platform, styleOptions),
-          target_audience: targetAudience.trim() || undefined,
-          knowledge_limit: 5,
-          tags: tagsText
-            .split(/[,，]/)
-            .map((tag) => tag.trim())
-            .filter(Boolean)
-        })
+        body: JSON.stringify(buildGenerationRequestPayload())
       });
       if (!response.ok) {
         throw new Error(await readApiError(response, "图文草稿生成失败。"));
       }
       const data = (await response.json()) as GeneratedContent;
+      setSourceContext(data.source_context ?? null);
+      setSourcePreviewError(null);
       setLastContent(data);
       onGeneratedContent(data);
       setNeedsProviderSettings(false);
@@ -2830,6 +3022,7 @@ function GenerationLauncher({
           }
           const rewrittenContent = (await rewriteResponse.json()) as GeneratedContent;
           finalContent = rewrittenContent;
+          setSourceContext(rewrittenContent.source_context ?? data.source_context ?? null);
           setLastContent(rewrittenContent);
           onGeneratedContent(rewrittenContent);
           setStatusText("文案已完成口吻润色，正在生成封面图。");
@@ -2978,7 +3171,11 @@ function GenerationLauncher({
               <select
                 className={`${formControlClass} h-10`}
                 value={platform}
-                onChange={(event) => setPlatform(event.target.value)}
+                onChange={(event) => {
+                  setPlatform(event.target.value);
+                  setSourceContext(null);
+                  setSourcePreviewError(null);
+                }}
               >
                 <option value="xiaohongshu">小红书图文</option>
                 <option value="douyin">抖音图文</option>
@@ -3005,7 +3202,11 @@ function GenerationLauncher({
               <input
                 className={`${formControlClass} h-10`}
                 data-testid="content-topic"
-                onChange={(event) => setTopic(event.target.value)}
+                onChange={(event) => {
+                  setTopic(event.target.value);
+                  setSourceContext(null);
+                  setSourcePreviewError(null);
+                }}
                 placeholder="输入要生成的图文主题"
                 value={topic}
               />
@@ -3050,7 +3251,11 @@ function GenerationLauncher({
               <span className="text-xs font-medium text-muted">知识检索词</span>
               <input
                 className={`${formControlClass} h-10`}
-                onChange={(event) => setKnowledgeQuery(event.target.value)}
+                onChange={(event) => {
+                  setKnowledgeQuery(event.target.value);
+                  setSourceContext(null);
+                  setSourcePreviewError(null);
+                }}
                 value={knowledgeQuery}
               />
             </label>
@@ -3129,7 +3334,11 @@ function GenerationLauncher({
               <span className="text-xs font-medium text-muted">标签</span>
               <input
                 className={`${formControlClass} h-10`}
-                onChange={(event) => setTagsText(event.target.value)}
+                onChange={(event) => {
+                  setTagsText(event.target.value);
+                  setSourceContext(null);
+                  setSourcePreviewError(null);
+                }}
                 value={tagsText}
               />
             </label>
@@ -3199,6 +3408,13 @@ function GenerationLauncher({
                 去设置检查撰稿服务授权
               </button>
             ) : null}
+            <GenerationSourceEvidenceCard
+              disabled={!hasTopic || busyAction !== null}
+              error={sourcePreviewError}
+              onPreview={previewSourceContext}
+              previewBusy={sourcePreviewBusy}
+              sourceContext={visibleSourceContext}
+            />
             <div className="mt-4 border-l-4 border-amber pl-3 text-xs leading-5 text-muted">
               一键生成会按顺序处理文案、改写和封面；最终发布仍保持人工确认，不会自动发布。
             </div>

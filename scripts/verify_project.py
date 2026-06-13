@@ -55,7 +55,7 @@ def validate_required_files() -> int:
         ROOT / ".env.example",
         ROOT / "docker-compose.yml",
         ROOT / "backend" / "app" / "main.py",
-        ROOT / "backend" / "alembic" / "versions" / "0007_trend_collection_jobs.py",
+        ROOT / "backend" / "alembic" / "versions" / "0008_content_source_context.py",
         ROOT / "frontend" / "app" / "page.tsx",
         ROOT / "frontend" / "middleware.ts",
         ROOT / "frontend" / "public" / "mobile-assets" / "collection-collage.png",
@@ -110,6 +110,10 @@ def validate_migration_chain() -> int:
         (
             'revision = "0007_trend_collection_jobs"',
             'down_revision = "0006_generated_image_metadata"',
+        ),
+        (
+            'revision = "0008_content_source_context"',
+            'down_revision = "0007_trend_collection_jobs"',
         ),
     ]
     for expected_revision, expected_parent in expected_pairs:

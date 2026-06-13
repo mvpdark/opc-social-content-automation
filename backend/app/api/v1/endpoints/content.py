@@ -9,6 +9,7 @@ from app.models.user import User
 from app.schemas.content import (
     ContentGenerateRequest,
     ContentRead,
+    ContentSourcePreviewRead,
     ContentRewriteRequest,
 )
 from app.schemas.review import (
@@ -17,6 +18,7 @@ from app.schemas.review import (
     ContentReviewRequest,
 )
 from app.services.content_service import (
+    build_content_source_context,
     delete_content_with_assets,
     generate_content_draft,
     rewrite_content_body,
@@ -41,6 +43,17 @@ def generate_content(
 ) -> ContentRead:
     content = generate_content_draft(db, payload, current_user)
     return ContentRead.model_validate(content)
+
+
+@router.post("/source-preview", response_model=ContentSourcePreviewRead)
+def preview_content_sources(
+    payload: ContentGenerateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ContentSourcePreviewRead:
+    _ = current_user
+    source_context = build_content_source_context(db, payload)
+    return ContentSourcePreviewRead(source_context=source_context)
 
 
 @router.post("/rewrite", response_model=ContentRead)

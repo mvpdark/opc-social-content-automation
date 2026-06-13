@@ -1,8 +1,38 @@
+export type GenerationKnowledgeSource = {
+  category?: string | null;
+  content: string;
+  id: number;
+  match_type?: string | null;
+  score?: number | null;
+  title: string;
+};
+
+export type GenerationWebSearchSource = {
+  content: string;
+  score?: number | null;
+  title: string;
+  url: string;
+};
+
+export type GenerationSourceContext = {
+  knowledge_items?: GenerationKnowledgeSource[];
+  knowledge_query?: string | null;
+  review_note?: string;
+  web_search?: {
+    answer?: string | null;
+    provider?: string | null;
+    query?: string | null;
+    required?: boolean;
+    results?: GenerationWebSearchSource[];
+  };
+};
+
 export type GeneratedContent = {
   body: string;
   created_at?: string;
   id: number;
   platform: string;
+  source_context?: GenerationSourceContext | null;
   status: string;
   tags: string[] | null;
   title: string;

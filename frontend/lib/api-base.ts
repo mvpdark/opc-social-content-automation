@@ -46,6 +46,15 @@ function resolveConfiguredApiBase(
     const url = new URL(normalizedBase);
     const configuredIsLocalOrPrivate = isLocalOrPrivateHostname(url.hostname);
 
+    if (!configuredIsLocalOrPrivate && isLocalOrPrivateHostname(browserHostname)) {
+      const localUrl = new URL(browserOrigin ?? `http://${browserHostname || "localhost"}`);
+      localUrl.port = DEFAULT_API_PORT;
+      localUrl.pathname = "/api";
+      localUrl.search = "";
+      localUrl.hash = "";
+      return trimTrailingSlash(localUrl.toString());
+    }
+
     if (
       configuredIsLocalOrPrivate &&
       !isLocalOrPrivateHostname(browserHostname) &&

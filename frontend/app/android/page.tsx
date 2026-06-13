@@ -47,7 +47,9 @@ import {
   isGeneratedContent,
   isGeneratedImageAsset,
   type GeneratedContent,
-  type GeneratedImageAsset
+  type GeneratedImageAsset,
+  type GenerationKnowledgeSource,
+  type GenerationSourceContext
 } from "@/lib/generated-assets";
 import {
   fetchKnowledgeItems,
@@ -87,6 +89,7 @@ import {
   TOPIC_PRESET_REFRESH_MS,
   TOPIC_PRESET_ROTATION_SIZE,
   buildTopicCoverStyleNotes,
+  findGenerationTopicPresetByTopic,
   generationTopicPresets,
   pickGenerationTopicPresetBatch,
   type GenerationTopicPreset
@@ -2229,6 +2232,131 @@ function KnowledgeScreen({ onAction }: { onAction: (message: string) => void }) 
   );
 }
 
+function mobileSourceKnowledgeItemToKnowledgeItem(item: GenerationKnowledgeSource): KnowledgeItem {
+  return {
+    category: item.category ?? null,
+    content: item.content,
+    id: item.id,
+    match_type: item.match_type ?? undefined,
+    score: item.score ?? null,
+    title: item.title
+  };
+}
+
+function MobileSourceEvidencePanel({
+  error,
+  onPreview,
+  previewBusy,
+  sourceContext
+}: {
+  error?: string | null;
+  onPreview: () => void;
+  previewBusy: boolean;
+  sourceContext: GenerationSourceContext | null;
+}) {
+  const knowledgeItems = sourceContext?.knowledge_items ?? [];
+  const webSearch = sourceContext?.web_search;
+  const webRequired = Boolean(webSearch?.required);
+  const webResults = webSearch?.results ?? [];
+  const hasEvidence = knowledgeItems.length + webResults.length > 0;
+
+  return (
+    <div
+      className="mt-4 rounded-[24px] border border-white/[0.86] bg-[rgba(255,253,247,0.84)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.78)]"
+      data-project-swipe-ignore="true"
+      data-testid="mobile-source-evidence"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-black text-ink">检索依据</div>
+          <p className="mt-1 text-[11px] font-medium leading-5 text-muted">
+            生成前后都能看引用来源，确认后再复制发布。
+          </p>
+        </div>
+        <span
+          className={[
+            "rounded-full px-2.5 py-1 text-[11px] font-black",
+            hasEvidence ? "bg-[#e7f2ea] text-moss" : webRequired ? "bg-[#fff3d6] text-[#8a6110]" : "bg-white text-muted"
+          ].join(" ")}
+        >
+          {hasEvidence ? `${knowledgeItems.length + webResults.length} 条` : webRequired ? "需联网" : "待查看"}
+        </span>
+      </div>
+      {sourceContext?.knowledge_query ? (
+        <p className="mt-2 rounded-[16px] bg-white/70 px-3 py-2 text-[11px] font-medium leading-5 text-muted">
+          检索词：{sourceContext.knowledge_query}
+        </p>
+      ) : null}
+      <button
+        className="mt-3 flex h-10 w-full touch-manipulation items-center justify-center gap-2 rounded-full border border-white/[0.92] bg-white/80 text-xs font-black text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] active:scale-[0.99]"
+        data-testid="mobile-source-preview-button"
+        disabled={previewBusy}
+        onClick={onPreview}
+        type="button"
+      >
+        {previewBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+        {previewBusy ? "正在检索" : hasEvidence ? "重新查看依据" : "查看检索依据"}
+      </button>
+      {error ? <p className="mt-2 text-[11px] font-medium leading-5 text-[#c92a3f]">{error}</p> : null}
+      {knowledgeItems.length ? (
+        <div className="mt-3 space-y-2">
+          <div className="text-[11px] font-black text-muted">知识库引用</div>
+          {knowledgeItems.slice(0, 3).map((item) => {
+            const knowledgeItem = mobileSourceKnowledgeItemToKnowledgeItem(item);
+            return (
+              <article className="rounded-[18px] border border-white/[0.86] bg-white/70 px-3 py-2" key={item.id}>
+                <div className="flex items-start justify-between gap-2">
+                  <h4 className="line-clamp-2 text-xs font-black leading-5 text-ink">
+                    {knowledgeItemTitle(knowledgeItem)}
+                  </h4>
+                  <span className="shrink-0 rounded-full bg-[#e7f2ea] px-2 py-0.5 text-[10px] font-black text-moss">
+                    {knowledgeCategoryLabel(knowledgeItem.category)}
+                  </span>
+                </div>
+                <p className="mt-1 line-clamp-3 text-[11px] font-medium leading-5 text-muted">
+                  {knowledgeItemExcerpt(knowledgeItem, 120)}
+                </p>
+              </article>
+            );
+          })}
+        </div>
+      ) : null}
+      {webRequired ? (
+        <div className="mt-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-[11px] font-black text-muted">联网来源</div>
+            <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black text-muted">
+              {webResults.length ? `${webResults.length} 条` : "未返回"}
+            </span>
+          </div>
+          {webResults.length ? (
+            webResults.slice(0, 3).map((item) => (
+              <a
+                className="block rounded-[18px] border border-white/[0.86] bg-white/70 px-3 py-2"
+                href={item.url}
+                key={`${item.url}-${item.title}`}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <h4 className="line-clamp-2 text-xs font-black leading-5 text-ink">{item.title}</h4>
+                  <ExternalLink className="mt-1 h-3.5 w-3.5 shrink-0 text-muted" />
+                </div>
+                <p className="mt-1 truncate text-[10px] font-medium text-moss">{item.url}</p>
+                <p className="mt-1 line-clamp-3 text-[11px] font-medium leading-5 text-muted">{item.content}</p>
+              </a>
+            ))
+          ) : (
+            <p className="rounded-[18px] border border-[#f3dca3] bg-[#fff8e6] px-3 py-2 text-[11px] font-medium leading-5 text-muted">
+              这个选题需要实时资料，但本次还没拿到可见联网来源，请换关键词或检查 Tavily。
+            </p>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function CreateScreen({
   credentials,
   onAction
@@ -2247,6 +2375,9 @@ function CreateScreen({
   );
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const [generatedCover, setGeneratedCover] = useState<GeneratedImageAsset | null>(null);
+  const [sourceContext, setSourceContext] = useState<GenerationSourceContext | null>(null);
+  const [sourcePreviewBusy, setSourcePreviewBusy] = useState(false);
+  const [sourcePreviewError, setSourcePreviewError] = useState<string | null>(null);
   const [draftHistory, setDraftHistory] = useState<MobileDraftHistoryItem[]>([]);
   const [selectedDraftIds, setSelectedDraftIds] = useState<number[]>([]);
   const [draftPreview, setDraftPreview] = useState<DraftPreviewState>(defaultMobileDraftPreview);
@@ -2263,6 +2394,10 @@ function CreateScreen({
   const projectSwipeStartRef = useRef<{ ignored: boolean; x: number; y: number } | null>(null);
   const coverImageUrl = generatedCover ? resolveAssetUrl(generatedCover.image_url) : null;
   const selectedProject = findEnabledMobileCreationProject(selectedProjectId);
+  const selectedTopicPreset = findGenerationTopicPresetByTopic(topic);
+  const generationKnowledgeQuery = selectedTopicPreset?.knowledgeQuery ?? topic;
+  const visibleMobileSourceContext =
+    sourceContext ?? (generatedContent?.title === topic.trim() ? generatedContent.source_context ?? null : null);
   const todayDraftCount = countMobileDraftsToday(draftHistory);
   const selectedDraftIdSet = new Set(selectedDraftIds);
   const selectedDraftItems = draftHistory.filter((item) => selectedDraftIdSet.has(item.content.id));
@@ -2296,6 +2431,7 @@ function CreateScreen({
 
   function selectDraftHistoryItem(item: MobileDraftHistoryItem) {
     setGeneratedContent(item.content);
+    setSourceContext(item.content.source_context ?? null);
     setDraftPreview(draftStateFromContent(item.content));
     saveStoredMobileContent(item.content);
     if (item.cover) {
@@ -2341,6 +2477,8 @@ function CreateScreen({
     setTopic(preset.topic);
     setTargetAudience(preset.audience);
     setTagsText(preset.tags);
+    setSourceContext(null);
+    setSourcePreviewError(null);
     onAction(`已套用推荐选题：${preset.topic}`);
   }
 
@@ -2376,6 +2514,7 @@ function CreateScreen({
       const nextItem = nextItems[0] ?? null;
       if (nextItem) {
         setGeneratedContent(nextItem.content);
+        setSourceContext(nextItem.content.source_context ?? null);
         setDraftPreview(draftStateFromContent(nextItem.content));
         saveStoredMobileContent(nextItem.content);
         if (nextItem.cover) {
@@ -2388,6 +2527,7 @@ function CreateScreen({
       } else {
         setGeneratedContent(null);
         setGeneratedCover(null);
+        setSourceContext(null);
         setDraftPreview(defaultMobileDraftPreview);
         clearStoredMobileContent();
         clearStoredMobileCover();
@@ -2613,6 +2753,7 @@ function CreateScreen({
           const latestCover =
             normalized.find((item) => item.content.id === latestContent.id)?.cover ?? null;
           setGeneratedContent(latestContent);
+          setSourceContext(latestContent.source_context ?? null);
           setDraftPreview(draftStateFromContent(latestContent));
           saveStoredMobileContent(latestContent);
           if (storedCover?.content_id === latestContent.id) {
@@ -2672,11 +2813,14 @@ function CreateScreen({
     }
     if (visibleStoredContent?.platform === platform) {
       setGeneratedContent(visibleStoredContent);
+      setSourceContext(visibleStoredContent.source_context ?? null);
       setDraftPreview(draftStateFromContent(visibleStoredContent));
       if (storedCover?.content_id === visibleStoredContent.id) {
         setGeneratedCover(storedCover);
       }
       void loadLatestCover(visibleStoredContent.id);
+    } else {
+      setSourceContext(null);
     }
 
     void loadLatestContent();
@@ -2901,6 +3045,53 @@ function CreateScreen({
     }
   }
 
+  function buildMobileGenerationRequestPayload() {
+    return {
+      platform,
+      topic: topic.trim(),
+      knowledge_query: generationKnowledgeQuery.trim() || undefined,
+      tone: contentMode === "xiaohongshu" ? xhsMobileDraftTone : shortPostDraftTone,
+      target_audience: targetAudience.trim() || undefined,
+      knowledge_limit: 5,
+      tags: tagsText
+        .split(/[,，]/)
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+    };
+  }
+
+  async function previewMobileSourceContext() {
+    if (!topic.trim()) {
+      setSourcePreviewError("先填写选题，再查看检索依据。");
+      return;
+    }
+
+    setSourcePreviewBusy(true);
+    setSourcePreviewError(null);
+    onAction("正在检索知识库和联网来源。");
+    try {
+      const response = await fetch(`${API_BASE}/content/source-preview`, {
+        method: "POST",
+        headers: authHeaders(credentials),
+        body: JSON.stringify(buildMobileGenerationRequestPayload())
+      });
+      if (!response.ok) {
+        throw new Error(await readApiError(response, "检索依据读取失败。"));
+      }
+      const data = (await response.json()) as { source_context?: GenerationSourceContext };
+      setSourceContext(data.source_context ?? null);
+      onAction("检索依据已加载，请先核对来源。");
+    } catch (error) {
+      const message = sanitizeServiceErrorMessage(
+        error instanceof Error ? error.message : "检索依据读取失败。"
+      );
+      setSourcePreviewError(message);
+      onAction(message);
+    } finally {
+      setSourcePreviewBusy(false);
+    }
+  }
+
   async function generateDraftAndCover() {
     if (!topic.trim()) {
       onAction("先填写选题，再生成草稿。");
@@ -2916,23 +3107,15 @@ function CreateScreen({
       const response = await fetch(`${API_BASE}/content/generate`, {
         method: "POST",
         headers: authHeaders(credentials),
-        body: JSON.stringify({
-          platform,
-          topic: topic.trim(),
-          tone: contentMode === "xiaohongshu" ? xhsMobileDraftTone : shortPostDraftTone,
-          target_audience: targetAudience.trim() || undefined,
-          knowledge_limit: 5,
-          tags: tagsText
-            .split(/[,，]/)
-            .map((tag) => tag.trim())
-            .filter(Boolean)
-        })
+        body: JSON.stringify(buildMobileGenerationRequestPayload())
       });
       if (!response.ok) {
         throw new Error(await readApiError(response, "图文草稿生成失败。"));
       }
       const data = (await response.json()) as GeneratedContent;
       setGeneratedContent(data);
+      setSourceContext(data.source_context ?? null);
+      setSourcePreviewError(null);
       setDraftPreview(draftStateFromContent(data));
       saveStoredMobileContent(data);
       syncDraftIntoHistory(data, null);
@@ -3139,7 +3322,11 @@ function CreateScreen({
           <input
             className="mt-2 h-12 w-full rounded-full border border-white/[0.84] bg-[rgba(255,253,247,0.88)] px-4 text-sm font-medium text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.86)] outline-none focus:border-moss focus:ring-2 focus:ring-moss/[0.15]"
             data-testid="mobile-topic"
-            onChange={(event) => setTopic(event.target.value)}
+            onChange={(event) => {
+              setTopic(event.target.value);
+              setSourceContext(null);
+              setSourcePreviewError(null);
+            }}
             value={topic}
           />
         </label>
@@ -3181,6 +3368,12 @@ function CreateScreen({
             ))}
           </div>
         </div>
+        <MobileSourceEvidencePanel
+          error={sourcePreviewError}
+          onPreview={previewMobileSourceContext}
+          previewBusy={sourcePreviewBusy}
+          sourceContext={visibleMobileSourceContext}
+        />
         <label className="mt-3 block">
           <span className="text-xs font-medium text-muted">目标人群</span>
           <input
@@ -3196,6 +3389,8 @@ function CreateScreen({
             label={<PlatformLabel className="justify-center" iconSize="sm" platform="xiaohongshu" />}
             onClick={() => {
               setPlatform("xiaohongshu");
+              setSourceContext(null);
+              setSourcePreviewError(null);
               onAction("已切换到小红书生成。");
             }}
             testId="create-platform-xiaohongshu"
@@ -3210,6 +3405,8 @@ function CreateScreen({
             }
             onClick={() => {
               setPlatform("douyin");
+              setSourceContext(null);
+              setSourcePreviewError(null);
               onAction("已切换到抖音生成。");
             }}
             testId="create-platform-douyin"
@@ -3247,7 +3444,11 @@ function CreateScreen({
           <input
             className="mt-2 h-11 w-full rounded-full border border-white/[0.84] bg-[rgba(255,253,247,0.88)] px-4 text-sm font-medium text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.86)] outline-none focus:border-moss focus:ring-2 focus:ring-moss/[0.15]"
             data-testid="mobile-tags"
-            onChange={(event) => setTagsText(event.target.value)}
+            onChange={(event) => {
+              setTagsText(event.target.value);
+              setSourceContext(null);
+              setSourcePreviewError(null);
+            }}
             value={tagsText}
           />
         </label>
