@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode, type TouchEvent } from "react";
 import {
   ArrowLeft,
   Bell,
@@ -2260,6 +2260,7 @@ function CreateScreen({
   const lastProgressActionRef = useRef("");
   const audioContextRef = useRef<AudioContext | null>(null);
   const completionSoundReadyRef = useRef(false);
+  const projectSwipeStartRef = useRef<{ ignored: boolean; x: number; y: number } | null>(null);
   const coverImageUrl = generatedCover ? resolveAssetUrl(generatedCover.image_url) : null;
   const selectedProject = findEnabledMobileCreationProject(selectedProjectId);
   const todayDraftCount = countMobileDraftsToday(draftHistory);
@@ -3012,6 +3013,50 @@ function CreateScreen({
     onAction("已返回创作项目卡片。");
   }
 
+  function shouldIgnoreProjectSwipe(target: EventTarget | null) {
+    if (!(target instanceof Element)) {
+      return false;
+    }
+    return Boolean(
+      target.closest(
+        'button, input, textarea, select, a, [contenteditable="true"], [data-project-swipe-ignore="true"]'
+      )
+    );
+  }
+
+  function handleProjectTouchStart(event: TouchEvent<HTMLDivElement>) {
+    const touch = event.touches[0];
+    if (!touch) {
+      return;
+    }
+    projectSwipeStartRef.current = {
+      ignored: shouldIgnoreProjectSwipe(event.target),
+      x: touch.clientX,
+      y: touch.clientY
+    };
+  }
+
+  function handleProjectTouchEnd(event: TouchEvent<HTMLDivElement>) {
+    const start = projectSwipeStartRef.current;
+    projectSwipeStartRef.current = null;
+    if (!start || start.ignored) {
+      return;
+    }
+
+    const touch = event.changedTouches[0];
+    if (!touch) {
+      return;
+    }
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+    if (deltaX < -72 && absX > absY * 1.35) {
+      returnToProjects();
+    }
+  }
+
   if (!selectedProject) {
     return (
       <MobileCreationProjectGateway
@@ -3023,7 +3068,15 @@ function CreateScreen({
   }
 
   return (
-    <div className="space-y-4">
+    <div
+      className="space-y-4"
+      data-testid="mobile-create-project-detail"
+      onTouchCancel={() => {
+        projectSwipeStartRef.current = null;
+      }}
+      onTouchEnd={handleProjectTouchEnd}
+      onTouchStart={handleProjectTouchStart}
+    >
       <button
         className="flex h-12 w-full touch-manipulation items-center justify-between rounded-full border border-white/[0.84] bg-[rgba(255,253,247,0.88)] px-4 text-sm font-black text-ink shadow-[0_10px_26px_rgba(31,58,49,0.06),inset_0_1px_0_rgba(255,255,255,0.86)] active:scale-[0.99]"
         data-testid="mobile-return-projects"
@@ -3106,7 +3159,7 @@ function CreateScreen({
           <div className="mt-1 text-[11px] font-medium text-muted">
             每 45 秒自动换一批，可自定义
           </div>
-          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-1" data-project-swipe-ignore="true">
             {visibleTopicPresets.map((preset) => (
               <button
                 className="min-w-[128px] rounded-[18px] border border-white/[0.88] bg-[rgba(255,253,247,0.86)] px-3 py-2 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.74)] active:scale-[0.99]"
@@ -3874,7 +3927,10 @@ function DraftHistoryCarousel({
       </div>
 
       {items.length ? (
-        <div className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
+        <div
+          className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none]"
+          data-project-swipe-ignore="true"
+        >
           {items.map((item) => (
             <DraftHistoryCard
               active={activeContentId === item.content.id}
