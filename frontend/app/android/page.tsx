@@ -242,6 +242,7 @@ const mobileCreationProjects = [
   {
     id: "postgraduate-phd",
     title: "1.硕升博推广",
+    iconSrc: "/platform-icons/xiaohongshu-app.webp",
     category: "小红书图文获客",
     status: "可进入",
     description: "硕升博内容获客：生成图文草稿、封面方向和发布清单。",
@@ -253,6 +254,7 @@ const mobileCreationProjects = [
   {
     id: "ecommerce-listing",
     title: "2.抖音商品自动化",
+    iconSrc: "/platform-icons/douyin-app.webp",
     category: "电商转化",
     status: "规划中",
     description: "面向商品标题、卖点、详情页结构、FAQ 和客服话术。",
@@ -264,6 +266,7 @@ const mobileCreationProjects = [
   {
     id: "private-domain-sales",
     title: "3.私域商品自动化",
+    iconSrc: "/platform-icons/wechat-app.webp",
     category: "销售跟进",
     status: "规划中",
     description: "面向朋友圈、社群跟进、异议处理和成交 SOP。",
@@ -2469,22 +2472,9 @@ function MobileCreationProjectGateway({
             type="button"
           >
             <span
-              className={[
-                "flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-white shadow-[0_14px_28px_rgba(31,58,49,0.14)]",
-                project.id === "postgraduate-phd"
-                  ? "bg-[#ff2442]"
-                  : project.id === "ecommerce-listing"
-                    ? "bg-[#111312]"
-                    : "bg-[#2eb865]"
-              ].join(" ")}
+              className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[18px] shadow-[0_14px_28px_rgba(31,58,49,0.14)] ring-1 ring-black/10"
             >
-              {project.id === "postgraduate-phd" ? (
-                <PlatformIcon platform="xiaohongshu" size="md" />
-              ) : project.id === "ecommerce-listing" ? (
-                <PlatformIcon platform="douyin" size="md" />
-              ) : (
-                <WeChatIcon className="h-7 w-7" />
-              )}
+              <img alt="" className="h-full w-full object-cover" src={project.iconSrc} />
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-[17px] font-black leading-6">{project.title}</span>
@@ -2531,31 +2521,6 @@ function MobileCreationProjectGateway({
       </MobilePanel>
 
     </div>
-  );
-}
-
-function WeChatIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      aria-hidden="true"
-      className={className}
-      fill="none"
-      viewBox="0 0 32 32"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M13.4 6.6C7.7 6.6 3.2 10.2 3.2 14.7c0 2.5 1.4 4.7 3.6 6.2l-.8 3 3.4-1.7c1.2.4 2.5.6 4 .6.5 0 1 0 1.5-.1-.4-1-.6-2-.6-3.1 0-4.1 3.7-7.5 8.5-8-1.8-3-5.3-5-9.4-5Z"
-        fill="currentColor"
-      />
-      <path
-        d="M21.5 13.4c4.2 0 7.6 2.8 7.6 6.3 0 1.9-1 3.6-2.7 4.8l.6 2.5-2.8-1.4c-.9.3-1.8.4-2.8.4-4.2 0-7.6-2.8-7.6-6.3s3.5-6.3 7.7-6.3Z"
-        fill="currentColor"
-      />
-      <circle cx="9.8" cy="14.3" fill="#2eb865" r="1.15" />
-      <circle cx="15.4" cy="14.3" fill="#2eb865" r="1.15" />
-      <circle cx="18.8" cy="19.7" fill="#2eb865" r="0.95" />
-      <circle cx="23.6" cy="19.7" fill="#2eb865" r="0.95" />
-    </svg>
   );
 }
 
