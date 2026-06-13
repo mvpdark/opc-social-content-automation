@@ -159,12 +159,15 @@ Image generation can use an OpenAI-compatible image generation endpoint:
 ```bash
 IMAGE_PROVIDER=openai_compatible
 IMAGE_MODEL=gpt-image-2
-IMAGE_SIZE=1024x1536
+IMAGE_SIZE=1024x1365
 IMAGE_RESPONSE_FORMAT=
 IMAGE_TIMEOUT_SECONDS=180
 IMAGE_OPENAI_COMPATIBLE_BASE_URL=https://your-compatible-provider.example/v1
 IMAGE_OPENAI_COMPATIBLE_API_KEY=your-secret-key
 ```
+
+`IMAGE_SIZE` is only used when it matches the requested cover aspect ratio. If it
+does not match, the backend falls back to the template default size.
 
 If the provider returns `b64_json`, the backend stores the image under `backend/static/generated/` and returns a `/static/generated/...png` URL. If the provider returns a remote `url`, the backend stores that URL directly.
 

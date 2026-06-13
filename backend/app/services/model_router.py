@@ -18,6 +18,19 @@ PROMPT_ROOT = Path(__file__).resolve().parents[3] / "prompts"
 GENERATED_ASSET_ROOT = Path(__file__).resolve().parents[2] / "static" / "generated"
 TOKEN_RE = re.compile(r"[\w\u4e00-\u9fff]+", re.UNICODE)
 FILENAME_RE = re.compile(r"[^a-zA-Z0-9_-]+")
+IMAGE_PIXEL_SIZE_BY_ASPECT_RATIO = {
+    "1:1": (1080, 1080),
+    "3:4": (1024, 1365),
+    "4:5": (1080, 1350),
+    "9:16": (900, 1600),
+}
+IMAGE_PROVIDER_SIZE_BY_ASPECT_RATIO = {
+    "1:1": "1024x1024",
+    "3:4": "1024x1365",
+    "4:5": "1024x1280",
+    "9:16": "1024x1820",
+}
+DEFAULT_XIAOHONGSHU_IMAGE_SIZE = IMAGE_PROVIDER_SIZE_BY_ASPECT_RATIO["3:4"]
 
 
 def load_prompt(name: str) -> str:
@@ -141,6 +154,14 @@ def _chat_messages(prompt_template: str, payload: dict[str, object]) -> list[dic
             "content": json.dumps(payload, ensure_ascii=True, indent=2),
         },
     ]
+
+
+def _resolved_aspect_ratio(payload: dict[str, object]) -> str:
+    aspect_ratio = str(payload.get("aspect_ratio") or "3:4")
+    template = payload.get("template")
+    if isinstance(template, dict):
+        aspect_ratio = str(template.get("aspect_ratio") or aspect_ratio)
+    return aspect_ratio
 
 
 def _extract_chat_content(provider: str, data: dict[str, object]) -> str:
@@ -416,13 +437,38 @@ def _test_draft(payload: dict[str, object]) -> str:
 
 
 def _aspect_ratio_size(aspect_ratio: str) -> tuple[int, int]:
-    mapping = {
-        "1:1": (1080, 1080),
-        "3:4": (900, 1200),
-        "4:5": (1080, 1350),
-        "9:16": (900, 1600),
-    }
-    return mapping.get(aspect_ratio, (900, 1200))
+    return IMAGE_PIXEL_SIZE_BY_ASPECT_RATIO.get(
+        aspect_ratio,
+        IMAGE_PIXEL_SIZE_BY_ASPECT_RATIO["3:4"],
+    )
+
+
+def _ratio_value(value: str) -> float | None:
+    parts = value.lower().replace("x", ":").split(":")
+    if len(parts) != 2:
+        return None
+    try:
+        width = float(parts[0])
+        height = float(parts[1])
+    except ValueError:
+        return None
+    if width <= 0 or height <= 0:
+        return None
+    return width / height
+
+
+def _matching_configured_image_size(aspect_ratio: str) -> str | None:
+    configured_size = (settings.image_size or "").strip()
+    if not configured_size:
+        return None
+
+    target_ratio = _ratio_value(aspect_ratio)
+    configured_ratio = _ratio_value(configured_size)
+    if target_ratio is None or configured_ratio is None:
+        return configured_size
+    if abs(configured_ratio - target_ratio) / target_ratio <= 0.03:
+        return configured_size
+    return None
 
 
 def _wrap_svg_text(text: str, width: int = 12, max_lines: int = 4) -> list[str]:
@@ -433,7 +479,7 @@ def _wrap_svg_text(text: str, width: int = 12, max_lines: int = 4) -> list[str]:
 def _test_image(payload: dict[str, object]) -> str:
     title = str(payload.get("title") or "OPC 本地检查封面")
     platform = str(payload.get("platform") or "multi")
-    aspect_ratio = str(payload.get("aspect_ratio") or "3:4")
+    aspect_ratio = _resolved_aspect_ratio(payload)
     template = payload.get("template")
     template_name = "本地检查封面模板"
     if isinstance(template, dict):
@@ -484,13 +530,13 @@ def _test_image(payload: dict[str, object]) -> str:
 
 
 def _image_size(aspect_ratio: str) -> str:
-    mapping = {
-        "1:1": "1024x1024",
-        "3:4": "1024x1536",
-        "4:5": "1024x1536",
-        "9:16": "1024x1792",
-    }
-    return mapping.get(aspect_ratio, "1024x1536")
+    configured_size = _matching_configured_image_size(aspect_ratio)
+    if configured_size:
+        return configured_size
+    return IMAGE_PROVIDER_SIZE_BY_ASPECT_RATIO.get(
+        aspect_ratio,
+        DEFAULT_XIAOHONGSHU_IMAGE_SIZE,
+    )
 
 
 def _image_prompt(prompt_template: str, payload: dict[str, object]) -> str:
@@ -500,12 +546,11 @@ def _image_prompt(prompt_template: str, payload: dict[str, object]) -> str:
     body = str(payload.get("body") or "")
     tags = " ".join(f"#{tag}" for tag in _string_list(payload.get("tags")))
     style_notes = str(payload.get("style_notes") or "clean, readable, platform-ready")
-    aspect_ratio = str(payload.get("aspect_ratio") or "3:4")
+    aspect_ratio = _resolved_aspect_ratio(payload)
     template = payload.get("template")
     template_name = "cover"
     if isinstance(template, dict):
         template_name = str(template.get("name") or template_name)
-        aspect_ratio = str(template.get("aspect_ratio") or aspect_ratio)
     visual_direction = payload.get("visual_direction")
     visual_direction_lines: list[str] = []
     if isinstance(visual_direction, dict):
@@ -673,7 +718,7 @@ class ModelRouter:
                 "prompt": _image_prompt(prompt_template, payload),
                 "n": 1,
             }
-            request_payload["size"] = _image_size(str(payload.get("aspect_ratio") or "3:4"))
+            request_payload["size"] = _image_size(_resolved_aspect_ratio(payload))
             if settings.image_response_format:
                 request_payload["response_format"] = settings.image_response_format
             data = _post_image_generation(

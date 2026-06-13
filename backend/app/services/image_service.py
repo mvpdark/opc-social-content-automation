@@ -39,7 +39,7 @@ COVER_TEMPLATES = [
         "name": "Xiaohongshu cover",
         "platform": "xiaohongshu",
         "aspect_ratio": "3:4",
-        "description": "Readable title-led cover for notes and carousel posts.",
+        "description": "1K vertical 3:4 title-led cover for notes and carousel posts.",
     },
     {
         "id": "douyin-cover",
