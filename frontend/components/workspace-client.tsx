@@ -91,8 +91,11 @@ import {
 } from "@/lib/status-labels";
 import { formatTagLine } from "@/lib/tags";
 import {
+  TOPIC_PRESET_REFRESH_MS,
+  TOPIC_PRESET_ROTATION_SIZE,
   buildTopicCoverStyleNotes,
   generationTopicPresets,
+  pickGenerationTopicPresetBatch,
   type GenerationTopicPreset
 } from "@/lib/topic-presets";
 
@@ -2452,6 +2455,9 @@ function GenerationLauncher({
   const [topic, setTopic] = useState("硕升博申请第一步，不是先套磁");
   const [knowledgeQuery, setKnowledgeQuery] = useState("硕升博 高赞图文 写作参考");
   const [targetAudience, setTargetAudience] = useState("准备硕升博申请的学生");
+  const [visibleTopicPresets, setVisibleTopicPresets] = useState<GenerationTopicPreset[]>(() =>
+    generationTopicPresets.slice(0, TOPIC_PRESET_ROTATION_SIZE)
+  );
   const [stylePreset, setStylePreset] = useState<WritingStylePresetId>(defaultWritingStyle);
   const [styleOptions, setStyleOptions] =
     useState<Record<ExpressionOptionKey, boolean>>(defaultExpressionOptions);
@@ -2636,6 +2642,25 @@ function GenerationLauncher({
     setTagsText(preset.tags);
     setStatusText(`已套用推荐选题：${preset.topic}`);
   }
+
+  function refreshTopicPresets(manual = false) {
+    setVisibleTopicPresets((currentPresets) =>
+      pickGenerationTopicPresetBatch({
+        currentTopic: topic,
+        previousKeys: currentPresets.map((preset) => preset.key)
+      })
+    );
+    if (manual) {
+      setStatusText("已刷新推荐选题。");
+    }
+  }
+
+  useEffect(() => {
+    const refreshTimer = window.setInterval(() => {
+      refreshTopicPresets();
+    }, TOPIC_PRESET_REFRESH_MS);
+    return () => window.clearInterval(refreshTimer);
+  }, [topic]);
 
   async function generateDraft() {
     if (!topic.trim()) {
@@ -2877,10 +2902,19 @@ function GenerationLauncher({
             <div className="md:col-span-2" data-testid="topic-preset-list">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-xs font-medium text-muted">推荐选题</span>
-                <span className="text-[11px] text-muted">也可以直接修改为自定义选题</span>
+                <button
+                  className="flex h-8 items-center gap-1 rounded-md border border-line bg-paper/70 px-2 text-[11px] font-semibold text-moss transition hover:border-moss/60 hover:bg-moss/10"
+                  data-testid="topic-preset-refresh"
+                  onClick={() => refreshTopicPresets(true)}
+                  type="button"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  换一批
+                </button>
               </div>
-              <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-5">
-                {generationTopicPresets.map((preset) => (
+              <div className="mt-1 text-[11px] text-muted">每 45 秒自动换一批，也可以直接修改为自定义选题</div>
+              <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-3 xl:grid-cols-6">
+                {visibleTopicPresets.map((preset) => (
                   <button
                     className="min-h-[74px] rounded-md border border-steel/35 bg-paper/70 px-3 py-2 text-left transition hover:border-moss/60 hover:bg-moss/10"
                     data-testid={`topic-preset-${preset.key}`}

@@ -620,13 +620,18 @@ def validate_content_production_contract() -> int:
         "manualCopyRef.current?.select()",
         "targetRef.current?.select()",
         "generationTopicPresets",
+        "visibleTopicPresets",
+        "TOPIC_PRESET_REFRESH_MS",
+        "pickGenerationTopicPresetBatch",
+        "refreshTopicPresets",
         "function applyTopicPreset(preset: GenerationTopicPreset)",
         'data-testid="topic-preset-list"',
+        'data-testid="topic-preset-refresh"',
         'data-testid={`topic-preset-${preset.key}`}',
         "preset.desktopLabel",
         "preset.desktopHelper",
         "buildTopicCoverStyleNotes(",
-        "也可以直接修改为自定义选题",
+        "每 45 秒自动换一批，也可以直接修改为自定义选题",
     ]
     backend_contract_snippets = [
         'IMAGE_GENERATABLE_STATUSES = {"draft", "rewritten", "review_pending", "approved"}',
@@ -646,9 +651,15 @@ def validate_content_production_contract() -> int:
 
     topic_preset_contract_snippets = [
         "export const generationTopicPresets",
-        'key: "ranking"',
+        "TOPIC_PRESET_ROTATION_SIZE",
+        "TOPIC_PRESET_REFRESH_MS",
+        "pickGenerationTopicPresetBatch",
+        'key: "ranking-water-global"',
         'topic: "全球水博排名必看"',
         'knowledgeQuery: "全球 水博 博士 项目 排名 认证 预算 在职"',
+        'topic: "低预算海外博士怎么筛"',
+        'topic: "套磁邮件为什么没人回"',
+        'topic: "博士项目咨询前必问5个问题"',
         "desktopLabel",
         "desktopHelper",
         "mobileLabel",
@@ -662,13 +673,17 @@ def validate_content_production_contract() -> int:
         if snippet not in topic_presets_text:
             raise SystemExit(f"Missing shared topic preset contract: {snippet}")
 
-    expected_topic_preset_keys = {"ranking", "route", "mentor", "timeline", "sales"}
+    expected_topic_preset_prefixes = {"ranking", "route", "mentor", "timeline", "sales"}
     actual_topic_preset_keys = set(re.findall(r'key: "([^"]+)"', topic_presets_text))
-    total += len(expected_topic_preset_keys)
-    if actual_topic_preset_keys != expected_topic_preset_keys:
+    actual_topic_preset_prefixes = {key.split("-", 1)[0] for key in actual_topic_preset_keys}
+    total += len(expected_topic_preset_prefixes)
+    if not expected_topic_preset_prefixes.issubset(actual_topic_preset_prefixes):
         raise SystemExit(
             "Shared topic presets must cover ranking, route, mentor, timeline, and sales topics."
         )
+    total += 1
+    if len(actual_topic_preset_keys) < 20:
+        raise SystemExit("Shared topic presets must include at least 20 recommended topics.")
 
     topic_preset_required_fields = [
         "audience:",
@@ -683,7 +698,7 @@ def validate_content_production_contract() -> int:
     ]
     for field in topic_preset_required_fields:
         total += 1
-        if topic_presets_text.count(field) < len(expected_topic_preset_keys):
+        if topic_presets_text.count(field) < len(actual_topic_preset_keys):
             raise SystemExit(f"Every shared topic preset must define {field}")
 
     settings_access_contracts = [
@@ -820,13 +835,18 @@ def validate_content_production_contract() -> int:
 
     mobile_topic_recommendation_contract_snippets = [
         "generationTopicPresets",
+        "visibleTopicPresets",
+        "TOPIC_PRESET_REFRESH_MS",
+        "pickGenerationTopicPresetBatch",
+        "refreshMobileTopicPresets",
         "function applyMobileTopicPreset(preset: GenerationTopicPreset)",
         'data-testid="mobile-topic-preset-list"',
+        'data-testid="mobile-topic-preset-refresh"',
         'data-testid={`mobile-topic-preset-${preset.key}`}',
         "preset.mobileLabel",
         "preset.mobileHelper",
         "buildTopicCoverStyleNotes(",
-        "可自定义",
+        "每 45 秒自动换一批，可自定义",
     ]
     for snippet in mobile_topic_recommendation_contract_snippets:
         total += 1

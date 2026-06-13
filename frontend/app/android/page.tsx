@@ -76,8 +76,11 @@ import {
   type MobileDraftHistoryItem
 } from "@/lib/mobile-draft-storage";
 import {
+  TOPIC_PRESET_REFRESH_MS,
+  TOPIC_PRESET_ROTATION_SIZE,
   buildTopicCoverStyleNotes,
   generationTopicPresets,
+  pickGenerationTopicPresetBatch,
   type GenerationTopicPreset
 } from "@/lib/topic-presets";
 import { renderXhsExpressionText } from "@/lib/xhs-stickers";
@@ -1884,6 +1887,9 @@ function CreateScreen({
   const [topic, setTopic] = useState("硕升博申请第一步，不是先套磁");
   const [targetAudience, setTargetAudience] = useState("准备硕升博申请的学生");
   const [tagsText, setTagsText] = useState("硕升博,水博,博士申请,小红书获客");
+  const [visibleTopicPresets, setVisibleTopicPresets] = useState<GenerationTopicPreset[]>(() =>
+    generationTopicPresets.slice(0, TOPIC_PRESET_ROTATION_SIZE)
+  );
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const [generatedCover, setGeneratedCover] = useState<GeneratedImageAsset | null>(null);
   const [draftHistory, setDraftHistory] = useState<MobileDraftHistoryItem[]>([]);
@@ -1982,6 +1988,18 @@ function CreateScreen({
     onAction(`已套用推荐选题：${preset.topic}`);
   }
 
+  function refreshMobileTopicPresets(manual = false) {
+    setVisibleTopicPresets((currentPresets) =>
+      pickGenerationTopicPresetBatch({
+        currentTopic: topic,
+        previousKeys: currentPresets.map((preset) => preset.key)
+      })
+    );
+    if (manual) {
+      onAction("已刷新推荐选题。");
+    }
+  }
+
   function toggleDraftPin(item: MobileDraftHistoryItem) {
     persistDraftHistory(
       draftHistory.map((draftItem) =>
@@ -2071,6 +2089,13 @@ function CreateScreen({
       return nextIds.length === currentIds.length ? currentIds : nextIds;
     });
   }, [draftHistory]);
+
+  useEffect(() => {
+    const refreshTimer = window.setInterval(() => {
+      refreshMobileTopicPresets();
+    }, TOPIC_PRESET_REFRESH_MS);
+    return () => window.clearInterval(refreshTimer);
+  }, [topic]);
 
   useEffect(() => {
     let active = true;
@@ -2713,10 +2738,21 @@ function CreateScreen({
         <div className="mt-3" data-testid="mobile-topic-preset-list">
           <div className="flex items-center justify-between gap-3">
             <span className="text-xs font-medium text-muted">推荐选题</span>
-            <span className="text-[11px] text-muted">可自定义</span>
+            <button
+              className="flex h-7 items-center gap-1 rounded-full border border-white/[0.9] bg-[rgba(255,253,247,0.82)] px-2 text-[11px] font-black text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]"
+              data-testid="mobile-topic-preset-refresh"
+              onClick={() => refreshMobileTopicPresets(true)}
+              type="button"
+            >
+              <Sparkles className="h-3 w-3" />
+              换一批
+            </button>
+          </div>
+          <div className="mt-1 text-[11px] font-medium text-muted">
+            每 45 秒自动换一批，可自定义
           </div>
           <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-            {generationTopicPresets.map((preset) => (
+            {visibleTopicPresets.map((preset) => (
               <button
                 className="min-w-[128px] rounded-[18px] border border-white/[0.88] bg-[rgba(255,253,247,0.86)] px-3 py-2 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.74)] active:scale-[0.99]"
                 data-testid={`mobile-topic-preset-${preset.key}`}
