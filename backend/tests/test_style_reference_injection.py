@@ -44,6 +44,38 @@ def test_draft_prompt_package_preserves_detailed_style_guidance() -> None:
     assert package.payload["tone"] == tone
 
 
+def test_draft_prompt_package_includes_live_web_search_context(
+    monkeypatch,
+) -> None:
+    payload = ContentGenerateRequest(
+        platform="xiaohongshu",
+        topic="全球水博排名必看",
+        knowledge_limit=0,
+        tags=["水博", "排名"],
+    )
+    user = User(id=1, role="promoter", phone="test", password_hash="hash")
+
+    monkeypatch.setattr(
+        "app.services.content_service.build_live_web_search_context",
+        lambda **_kwargs: {
+            "provider": "tavily",
+            "query": "全球水博排名必看",
+            "results": [
+                {
+                    "title": "Official water PhD source",
+                    "url": "https://example.edu/water-phd",
+                    "content": "Official source snippet.",
+                }
+            ],
+        },
+    )
+
+    package = build_draft_prompt_package(db=None, payload=payload, current_user=user)  # type: ignore[arg-type]
+
+    assert package.payload["web_search_context"] is not None
+    assert "Official water PhD source" in str(package.payload["web_search_context"])
+
+
 def test_draft_prompt_template_requires_xhs_expression_layer() -> None:
     prompt = load_prompt("draft_generation")
     style_reference = load_prompt("xiaohongshu_style_reference")
@@ -57,6 +89,8 @@ def test_draft_prompt_template_requires_xhs_expression_layer() -> None:
     assert "structure" in prompt
     assert "全球水博排名必看" in prompt
     assert "supervisor matching" in prompt
+    assert "web_search_context" in prompt
+    assert "Tavily" in prompt
     assert "哦" in prompt
     assert "呀" in prompt
     assert "[哭惹R]" in style_reference

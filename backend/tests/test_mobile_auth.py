@@ -27,6 +27,8 @@ def test_mobile_login_endpoint_accepts_configured_account(monkeypatch) -> None:
     monkeypatch.setattr(settings, "openai_compatible_api_key", "existing-draft-key")
     monkeypatch.setattr(settings, "image_openai_compatible_api_key", "existing-image-key")
     monkeypatch.setattr(settings, "deepseek_api_key", "existing-rewrite-key")
+    monkeypatch.setattr(settings, "tavily_search_enabled", True)
+    monkeypatch.setattr(settings, "tavily_api_key", "existing-tavily-key")
     client = TestClient(create_app())
 
     for account in ("admin", "admin1", "admin2"):
@@ -42,11 +44,12 @@ def test_mobile_login_endpoint_accepts_configured_account(monkeypatch) -> None:
         assert payload["account"] == account
         assert payload["default_keys_bound"] is True
         assert payload["key_profile"] == "default"
-        assert len(provider_statuses) == 3
+        assert len(provider_statuses) == 4
         assert {item["status"] for item in provider_statuses} == {"configured"}
         assert "existing-draft-key" not in text
         assert "existing-image-key" not in text
         assert "existing-rewrite-key" not in text
+        assert "existing-tavily-key" not in text
 
 
 def test_mobile_login_endpoint_rejects_invalid_password() -> None:

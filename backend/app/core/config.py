@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_rewrite_model: str = "deepseek-v4-pro"
     deepseek_timeout_seconds: float = 60.0
+    tavily_api_key: str | None = None
+    tavily_base_url: str = "https://api.tavily.com"
+    tavily_search_enabled: bool = True
+    tavily_timeout_seconds: float = 25.0
+    tavily_max_results: int = 6
     frontend_origin: str = "http://localhost:3000"
     cors_origin_regex: str | None = (
         r"^https?://("

@@ -275,7 +275,18 @@ def _test_draft(payload: dict[str, object]) -> str:
         for item in context_items
         if isinstance(item, dict) and item.get("title")
     ][:3]
-    source_line = "、".join(context_titles) if context_titles else "暂无知识库引用"
+    web_search_context = payload.get("web_search_context")
+    web_search_titles: list[str] = []
+    if isinstance(web_search_context, dict):
+        raw_results = web_search_context.get("results")
+        if isinstance(raw_results, list):
+            web_search_titles = [
+                str(item.get("title"))
+                for item in raw_results
+                if isinstance(item, dict) and item.get("title")
+            ][:3]
+    source_titles = [*context_titles, *web_search_titles]
+    source_line = "、".join(source_titles) if source_titles else "暂无知识库引用"
     tag_line = " ".join(f"#{tag}" for tag in tags) if tags else "#硕升博 #博士申请"
     is_xiaohongshu = platform == "xiaohongshu"
     is_water_ranking_topic = any(term in topic for term in ("水博", "海外博士", "境外博士")) and any(

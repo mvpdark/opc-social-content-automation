@@ -10,6 +10,7 @@ from app.models.user import User
 from app.schemas.content import ContentGenerateRequest, ContentRewriteRequest
 from app.services.knowledge_service import search_knowledge_items
 from app.services.model_router import load_platform_style_reference, load_prompt, model_router
+from app.services.web_search_service import build_live_web_search_context
 
 
 WATER_ROUTE_TOPIC_TERMS = ("水博", "海外博士", "境外博士")
@@ -120,6 +121,11 @@ def build_draft_prompt_package(
             "target_audience": payload.target_audience,
             "knowledge_query": payload.knowledge_query,
             "knowledge_context": _knowledge_context(db, payload),
+            "web_search_context": build_live_web_search_context(
+                platform=payload.platform,
+                topic=payload.topic,
+                tags=payload.tags,
+            ),
             "style_reference": load_platform_style_reference(payload.platform),
             "user": {
                 "id": current_user.id,

@@ -138,6 +138,7 @@ def provider_status_items() -> list[ProviderStatusItem]:
     image_configured = settings.image_provider == "codex_test" or bool(
         settings.image_openai_compatible_api_key or settings.openai_compatible_api_key
     )
+    web_search_configured = settings.tavily_search_enabled and bool(settings.tavily_api_key)
 
     image_note = "本地连通性检查可用；正式封面仍需真实图片服务。"
     if settings.image_provider == "openai_compatible":
@@ -171,6 +172,18 @@ def provider_status_items() -> list[ProviderStatusItem]:
             configured=image_configured,
             status="configured" if image_configured else "missing_key",
             note=image_note,
+        ),
+        ProviderStatusItem(
+            name="Web search",
+            provider="tavily",
+            model=None,
+            configured=web_search_configured,
+            status="configured" if web_search_configured else "missing_key",
+            note=(
+                "联网检索已配置；需要实时资料的选题会先检索来源。"
+                if web_search_configured
+                else "联网检索未配置；需要实时资料时只能使用知识库和已采集素材。"
+            ),
         ),
     ]
 
