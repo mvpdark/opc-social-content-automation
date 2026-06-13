@@ -2041,7 +2041,7 @@ function CreateScreen({
   async function copyDraft() {
     try {
       await copyText(buildEditableDraftCopy(draftPreview));
-      onAction(generatedContent ? "当前草稿已复制。" : "当前预览文案已复制。");
+      onAction(generatedContent ? "已尝试复制当前草稿。" : "已尝试复制当前预览文案。");
       return true;
     } catch (_error) {
       onAction("复制失败，请长按正文区域手动选择复制。");
@@ -3047,8 +3047,8 @@ function DraftPreviewEditor({
     let message = "浏览器拦截了剪贴板，预览链接已展开，可长按全选复制。";
     if (copied) {
       message = isLocalPreview
-        ? "预览链接已复制；当前是这台设备或同一网络地址，外部用户需要部署到公网后才能打开。"
-        : "预览链接已复制，可以发给别人查看。";
+        ? "已尝试复制预览链接；当前是这台设备或同一网络地址，外部用户需要部署到公网后才能打开。"
+        : "已尝试复制预览链接，可以发给别人查看。";
     }
     publishExportStatus(message);
   }
