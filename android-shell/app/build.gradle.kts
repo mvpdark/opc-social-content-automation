@@ -45,3 +45,30 @@ android {
         }
     }
 }
+
+val androidArtifactsDir = rootProject.layout.projectDirectory.dir("../artifacts/android")
+
+tasks.register<Copy>("copyDebugApkToArtifacts") {
+    from(layout.buildDirectory.file("outputs/apk/debug/app-debug.apk")) {
+        rename { "ompc-workstation-debug.apk" }
+    }
+    from(layout.buildDirectory.file("outputs/apk/debug/app-debug.apk")) {
+        rename { "opc-mobile-webview-debug.apk" }
+    }
+    into(androidArtifactsDir)
+}
+
+tasks.register<Copy>("copyReleaseApkToArtifacts") {
+    dependsOn("assembleRelease")
+    from(layout.buildDirectory.file("outputs/apk/release/app-release.apk")) {
+        rename { "ompc-workstation-release.apk" }
+    }
+    from(layout.buildDirectory.file("outputs/apk/release/app-release.apk")) {
+        rename { "opc-mobile-webview-release.apk" }
+    }
+    into(androidArtifactsDir)
+}
+
+tasks.matching { it.name == "assembleDebug" }.configureEach {
+    finalizedBy("copyDebugApkToArtifacts")
+}
