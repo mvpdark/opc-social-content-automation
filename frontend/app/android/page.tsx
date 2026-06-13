@@ -2175,39 +2175,96 @@ function CreateScreen({
   useEffect(() => {
     let active = true;
 
-    async function loadLatestCover(contentId: number) {
+    async function fetchLatestCover(contentId: number) {
       try {
         const response = await fetch(`${API_BASE}/image/list?content_id=${contentId}&limit=1`);
         if (!response.ok) {
-          return;
+          return null;
         }
 
         const images: unknown = await response.json();
         if (!Array.isArray(images)) {
-          return;
+          return null;
         }
 
-        const latestCover = images.find(
+        return images.find(
           (image): image is GeneratedImageAsset =>
             isGeneratedImageAsset(image) && image.content_id === contentId
+        ) ?? null;
+      } catch (_error) {
+        return null;
+      }
+    }
+
+    function applyHistoryCover(latestCover: GeneratedImageAsset) {
+      setDraftHistory((currentItems) => {
+        const normalized = normalizeMobileDraftHistory(
+          currentItems.map((item) =>
+            item.content.id === latestCover.content_id ? { ...item, cover: latestCover } : item
+          )
         );
+        saveStoredMobileDraftHistory(normalized);
+        return normalized;
+      });
+    }
+
+    async function loadLatestCover(contentId: number) {
+      try {
+        const latestCover = await fetchLatestCover(contentId);
         if (active && latestCover) {
           setGeneratedCover(latestCover);
           saveStoredMobileCover(latestCover);
-          setDraftHistory((currentItems) => {
-            const normalized = normalizeMobileDraftHistory(
-              currentItems.map((item) =>
-                item.content.id === contentId ? { ...item, cover: latestCover } : item
-              )
-            );
-            saveStoredMobileDraftHistory(normalized);
-            return normalized;
-          });
+          applyHistoryCover(latestCover);
           onAction("已找回最近封面图。");
         }
       } catch (_error) {
         // Keep the cached cover visible if the network check fails.
       }
+    }
+
+    async function hydrateMissingHistoryCovers(items: MobileDraftHistoryItem[]) {
+      const missingCoverIds = items
+        .filter((item) => !item.cover)
+        .map((item) => item.content.id)
+        .slice(0, 20);
+      if (!missingCoverIds.length) {
+        return;
+      }
+
+      const covers = (await Promise.all(missingCoverIds.map(fetchLatestCover))).filter(
+        (cover): cover is GeneratedImageAsset => Boolean(cover)
+      );
+      if (!active || !covers.length) {
+        return;
+      }
+
+      const coverByContentId = new Map(covers.map((cover) => [cover.content_id, cover]));
+      setDraftHistory((currentItems) => {
+        const normalized = normalizeMobileDraftHistory(
+          currentItems.map((item) => ({
+            ...item,
+            cover: item.cover ?? coverByContentId.get(item.content.id) ?? null
+          }))
+        );
+        saveStoredMobileDraftHistory(normalized);
+        return normalized;
+      });
+
+      setGeneratedCover((currentCover) => {
+        if (currentCover) {
+          return currentCover;
+        }
+        const storedContent = readStoredMobileContent();
+        const visibleContentId = storedContent && !readStoredDeletedDraftIds().has(storedContent.id)
+          ? storedContent.id
+          : null;
+        const recoveredCover = visibleContentId ? coverByContentId.get(visibleContentId) : null;
+        if (recoveredCover) {
+          saveStoredMobileCover(recoveredCover);
+          return recoveredCover;
+        }
+        return currentCover;
+      });
     }
 
     async function loadLatestContent() {
@@ -2263,6 +2320,7 @@ function CreateScreen({
             setDraftHistory(normalized);
             saveStoredMobileDraftHistory(normalized);
           }
+          void hydrateMissingHistoryCovers(normalized);
           void loadLatestCover(latestContent.id);
         }
       } catch (_error) {
@@ -2293,8 +2351,10 @@ function CreateScreen({
         ...storedHistory
       ]);
       setDraftHistory(normalized);
+      void hydrateMissingHistoryCovers(normalized);
     } else {
       setDraftHistory(storedHistory);
+      void hydrateMissingHistoryCovers(storedHistory);
     }
     if (visibleStoredContent?.platform === platform) {
       setGeneratedContent(visibleStoredContent);
