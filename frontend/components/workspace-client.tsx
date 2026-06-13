@@ -1788,7 +1788,7 @@ function KnowledgeView() {
         <Panel helper="系统默认不跳过的项目规则。" title="入库规则">
           <SafetyGateList />
         </Panel>
-        <Panel helper="当前知识库还没有真实图文样本，下一步应从趋势采集页补齐。" title="当前状态">
+        <Panel helper="知识库还没有真实图文样本，下一步从趋势采集页补齐。" title="知识库进度">
           <div className={`${subtleCardClass} px-4 py-4 text-sm leading-6 text-muted`}>
             公开样本、内部资料、写作模板和来源链接已经拆成独立入口，等采集完成后即可沉淀为知识条目。
           </div>

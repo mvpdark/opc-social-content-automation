@@ -2004,7 +2004,7 @@ function CreateScreen({
           </div>
           <div className="mt-4 grid grid-cols-[minmax(0,1fr)_74px] gap-2">
             <div className="rounded-[17px] border border-white/70 bg-white/50 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.74)] backdrop-blur-md">
-              <div className="text-[11px] font-black text-ink/45">当前状态</div>
+              <div className="text-[11px] font-black text-ink/45">流程进度</div>
               <div className="mt-1 truncate text-xs font-black text-ink/72">{heroProgressLabel}</div>
             </div>
             <div className="flex items-center justify-center rounded-[17px] border border-[#ffdbe2] bg-[#fff5f7]/86 text-center text-xs font-black text-[#a2152c] shadow-[inset_0_1px_0_rgba(255,255,255,0.82)] backdrop-blur">
