@@ -51,6 +51,9 @@ export function KnowledgeScreen({
         query: normalizedQuery
       });
       setItems(data);
+      setSelectedItem((currentItem) =>
+        currentItem && data.some((item) => item.id === currentItem.id) ? currentItem : null
+      );
       const nextStatus = data.length
         ? normalizedQuery
           ? `找到 ${data.length} 条相关知识。`
@@ -65,6 +68,7 @@ export function KnowledgeScreen({
     } catch (error) {
       const message = error instanceof Error ? error.message : "知识库读取失败，请稍后再试。";
       setItems([]);
+      setSelectedItem(null);
       setStatus(message);
       if (announce) {
         onAction(message);
