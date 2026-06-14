@@ -37,6 +37,7 @@ export function MobileSourceEvidencePanel({
   const webRequired = Boolean(webSearch?.required);
   const webResults = webSearch?.results ?? [];
   const hasEvidence = knowledgeItems.length + webResults.length > 0;
+  const missingRequiredWebResults = webRequired && !webResults.length;
 
   return (
     <div
@@ -54,10 +55,14 @@ export function MobileSourceEvidencePanel({
         <span
           className={[
             "rounded-full px-2.5 py-1 text-[11px] font-black",
-            hasEvidence ? "bg-[#e7f2ea] text-moss" : webRequired ? "bg-[#fff3d6] text-[#8a6110]" : "bg-white text-muted"
+            missingRequiredWebResults
+              ? "bg-[#fff3d6] text-[#8a6110]"
+              : hasEvidence
+                ? "bg-[#e7f2ea] text-moss"
+                : "bg-white text-muted"
           ].join(" ")}
         >
-          {hasEvidence ? `${knowledgeItems.length + webResults.length} 条` : webRequired ? "需联网" : "待查看"}
+          {missingRequiredWebResults ? "缺联网" : hasEvidence ? `${knowledgeItems.length + webResults.length} 条` : "待查看"}
         </span>
       </div>
       {sourceContext?.knowledge_query ? (

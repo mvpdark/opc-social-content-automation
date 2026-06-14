@@ -73,6 +73,7 @@ export function GenerationSourceEvidenceCard({
   const webRequired = Boolean(webSearch?.required);
   const webResults = webSearch?.results ?? [];
   const knowledgeItems = sourceContext?.knowledge_items ?? [];
+  const missingRequiredWebResults = webRequired && !webResults.length;
 
   return (
     <div className="mt-4 rounded-md border border-line bg-paper/70 p-3" data-testid="generation-source-evidence">
@@ -83,8 +84,8 @@ export function GenerationSourceEvidenceCard({
             人工确认前先看这里：知识库和联网来源会直接展示，不再只给一个空确认。
           </p>
         </div>
-        <SourcePill tone={hasEvidence ? "green" : webRequired ? "amber" : "neutral"}>
-          {hasEvidence ? `${knowledgeCount + webCount} 条` : webRequired ? "需联网" : "待查看"}
+        <SourcePill tone={missingRequiredWebResults ? "amber" : hasEvidence ? "green" : "neutral"}>
+          {missingRequiredWebResults ? "缺联网" : hasEvidence ? `${knowledgeCount + webCount} 条` : "待查看"}
         </SourcePill>
       </div>
       {sourceContext?.knowledge_query ? (
