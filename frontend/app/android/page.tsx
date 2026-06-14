@@ -2351,12 +2351,16 @@ function CreateScreen({
     onAction("已退出草稿多选模式。");
   }
 
+  function clearMobileSourceEvidence() {
+    setSourceContext(null);
+    setSourcePreviewError(null);
+  }
+
   function applyMobileTopicPreset(preset: GenerationTopicPreset) {
     setTopic(preset.topic);
     setTargetAudience(preset.audience);
     setTagsText(preset.tags);
-    setSourceContext(null);
-    setSourcePreviewError(null);
+    clearMobileSourceEvidence();
     onAction(`已套用推荐选题：${preset.topic}`);
   }
 
@@ -3202,8 +3206,7 @@ function CreateScreen({
             data-testid="mobile-topic"
             onChange={(event) => {
               setTopic(event.target.value);
-              setSourceContext(null);
-              setSourcePreviewError(null);
+              clearMobileSourceEvidence();
             }}
             value={topic}
           />
@@ -3267,8 +3270,7 @@ function CreateScreen({
             label={<PlatformLabel className="justify-center" iconSize="sm" platform="xiaohongshu" />}
             onClick={() => {
               setPlatform("xiaohongshu");
-              setSourceContext(null);
-              setSourcePreviewError(null);
+              clearMobileSourceEvidence();
               onAction("已切换到小红书生成。");
             }}
             testId="create-platform-xiaohongshu"
@@ -3283,8 +3285,7 @@ function CreateScreen({
             }
             onClick={() => {
               setPlatform("douyin");
-              setSourceContext(null);
-              setSourcePreviewError(null);
+              clearMobileSourceEvidence();
               onAction("已切换到抖音生成。");
             }}
             testId="create-platform-douyin"
@@ -3324,8 +3325,7 @@ function CreateScreen({
             data-testid="mobile-tags"
             onChange={(event) => {
               setTagsText(event.target.value);
-              setSourceContext(null);
-              setSourcePreviewError(null);
+              clearMobileSourceEvidence();
             }}
             value={tagsText}
           />

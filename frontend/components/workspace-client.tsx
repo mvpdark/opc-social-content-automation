@@ -2758,13 +2758,17 @@ function GenerationLauncher({
     });
   }
 
+  function clearSourceEvidence() {
+    setSourceContext(null);
+    setSourcePreviewError(null);
+  }
+
   function applyTopicPreset(preset: GenerationTopicPreset) {
     setTopic(preset.topic);
     setKnowledgeQuery(preset.knowledgeQuery);
     setTargetAudience(preset.audience);
     setTagsText(preset.tags);
-    setSourceContext(null);
-    setSourcePreviewError(null);
+    clearSourceEvidence();
     setStatusText(`已套用推荐选题：${preset.topic}`);
   }
 
@@ -3033,8 +3037,7 @@ function GenerationLauncher({
                 value={platform}
                 onChange={(event) => {
                   setPlatform(event.target.value);
-                  setSourceContext(null);
-                  setSourcePreviewError(null);
+                  clearSourceEvidence();
                 }}
               >
                 <option value="xiaohongshu">小红书图文</option>
@@ -3064,8 +3067,7 @@ function GenerationLauncher({
                 data-testid="content-topic"
                 onChange={(event) => {
                   setTopic(event.target.value);
-                  setSourceContext(null);
-                  setSourcePreviewError(null);
+                  clearSourceEvidence();
                 }}
                 placeholder="输入要生成的图文主题"
                 value={topic}
@@ -3113,8 +3115,7 @@ function GenerationLauncher({
                 className={`${formControlClass} h-10`}
                 onChange={(event) => {
                   setKnowledgeQuery(event.target.value);
-                  setSourceContext(null);
-                  setSourcePreviewError(null);
+                  clearSourceEvidence();
                 }}
                 value={knowledgeQuery}
               />
@@ -3196,8 +3197,7 @@ function GenerationLauncher({
                 className={`${formControlClass} h-10`}
                 onChange={(event) => {
                   setTagsText(event.target.value);
-                  setSourceContext(null);
-                  setSourcePreviewError(null);
+                  clearSourceEvidence();
                 }}
                 value={tagsText}
               />
