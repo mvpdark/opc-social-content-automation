@@ -15,6 +15,7 @@ class TrendCollectRequest(BaseModel):
     favorites: int = 0
     comments: int = 0
     shares: int = 0
+    cover_url: str | None = Field(default=None, max_length=500)
     video_transcript: str | None = None
     screenshot_url: str | None = Field(default=None, max_length=500)
 
@@ -123,6 +124,7 @@ class TrendRead(BaseModel):
     favorites: int
     comments: int
     shares: int
+    cover_url: str | None
     video_transcript: str | None
     screenshot_url: str | None
     created_at: datetime

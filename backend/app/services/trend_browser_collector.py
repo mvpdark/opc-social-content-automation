@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +29,11 @@ COMPACT_CARD_DATE_RE = re.compile(
     r"\s+(?:\d{4}-\d{2}-\d{2}|\d{2}-\d{2}|\d+\s*天前|昨天|前天|刚刚)\b.*$"
 )
 DATE_MARKER_RE = re.compile(r"(?:\d{4}-\d{2}-\d{2}|\d{2}-\d{2}|\d+\s*天前|昨天|前天|刚刚)")
+COMPACT_XHS_METADATA_RE = re.compile(
+    r"(?P<author>.{2,60}?)\s+"
+    r"(?P<date>\d{4}-\d{2}-\d{2}|\d{2}-\d{2}|\d+\s*天前|昨天|前天|刚刚)"
+    r"\s*(?P<likes>\d+(?:\.\d+)?\s*(?:万|w|W|k|K|千)?)?$"
+)
 VIDEO_MARKERS = ("视频", "播放", "直播", "video-card", "video_note", "shorts")
 VIDEO_COLLECTION_DISABLED_DETAIL = (
     "视频采集暂未启用；需要先补齐转写、版权和人工复核流程。"
@@ -62,6 +67,17 @@ BLOCKED_MARKERS = (
     ".pdf",
 )
 RELATED_SEARCH_MARKERS = ("相关搜索",)
+METRIC_NUMBER_RE = re.compile(r"(\d+(?:\.\d+)?)\s*([万wWkK千]?)")
+AUTHOR_NOISE_MARKERS = (
+    "赞",
+    "收藏",
+    "评论",
+    "分享",
+    "转发",
+    "关注",
+    "登录",
+    "小红书",
+)
 
 
 def collection_session_dir(
@@ -81,10 +97,27 @@ class CollectedTrendAsset:
     content: str
     url: str | None
     tags: list[str]
+    author: str | None = None
+    likes: int = 0
+    favorites: int = 0
+    comments: int = 0
+    shares: int = 0
+    cover_url: str | None = None
 
 
 def normalize_visible_text(value: object) -> str:
     return SPACE_RE.sub(" ", str(value or "")).strip()
+
+
+def _split_repeated_compact_title(value: str) -> tuple[str, str] | None:
+    text = normalize_visible_text(value)
+    max_prefix_length = min(len(text) // 2, 140)
+    for index in range(max_prefix_length, 3, -1):
+        prefix = text[:index].strip()
+        repeated = f"{prefix} {prefix}"
+        if prefix and text.startswith(repeated):
+            return prefix, text[len(repeated) :].strip()
+    return None
 
 
 def _title_from_text(text: str, keyword: str) -> str:
@@ -95,6 +128,9 @@ def _title_from_text(text: str, keyword: str) -> str:
     if len(first) < 4 and len(lines) > 1:
         first = normalize_visible_text(lines[1])
     first = COMPACT_CARD_DATE_RE.sub("", first).strip() or first
+    repeated_title = _split_repeated_compact_title(first)
+    if repeated_title:
+        first = repeated_title[0]
     return first[:255] or keyword or "采集趋势素材"
 
 
@@ -107,6 +143,74 @@ def _tags_from_text(text: str, keyword: str) -> list[str]:
         if normalized and normalized not in tags:
             tags.append(normalized)
     return tags[:12]
+
+
+def _metric_count(value: object) -> int:
+    text = normalize_visible_text(value).replace(",", "")
+    if not text:
+        return 0
+    match = METRIC_NUMBER_RE.search(text)
+    if not match:
+        return 0
+    number = float(match.group(1))
+    unit = match.group(2).lower()
+    if unit in {"万", "w"}:
+        number *= 10_000
+    elif unit in {"千", "k"}:
+        number *= 1_000
+    return max(0, int(number))
+
+
+def _metric_from_raw(raw_item: dict[str, Any], key: str) -> int:
+    direct = raw_item.get(key)
+    if isinstance(direct, int):
+        return max(0, direct)
+    if isinstance(direct, float):
+        return max(0, int(direct))
+    return _metric_count(raw_item.get(f"{key}Text"))
+
+
+def _clean_author(value: object) -> str | None:
+    text = normalize_visible_text(value).strip("@：: ")
+    if not text:
+        return None
+    text = re.sub(r"^(作者|博主|用户)\s*[:：]?\s*", "", text).strip()
+    if len(text) < 2 or len(text) > 60:
+        return None
+    if DATE_MARKER_RE.search(text):
+        return None
+    if any(marker in text for marker in AUTHOR_NOISE_MARKERS):
+        return None
+    return text[:120]
+
+
+def _clean_cover_url(value: object) -> str | None:
+    text = normalize_visible_text(value)
+    if not text or not text.startswith(("http://", "https://", "/static/")):
+        return None
+    if text.startswith("data:"):
+        return None
+    return text[:500]
+
+
+def _compact_xhs_metadata(text: str, title: str) -> tuple[str | None, int]:
+    rest = normalize_visible_text(text)
+    date_match = DATE_MARKER_RE.search(rest)
+    if date_match:
+        before_date = rest[: date_match.start()].strip()
+        after_date = rest[date_match.end() :].strip()
+        repeated_title = _split_repeated_compact_title(before_date)
+        if repeated_title:
+            return _clean_author(repeated_title[1]), _metric_count(after_date)
+
+    normalized_title = normalize_visible_text(title)
+    for _ in range(2):
+        if normalized_title and rest.startswith(normalized_title):
+            rest = rest[len(normalized_title) :].strip()
+    match = COMPACT_XHS_METADATA_RE.search(rest)
+    if not match:
+        return None, 0
+    return _clean_author(match.group("author")), _metric_count(match.group("likes"))
 
 
 def _xhs_note_id_from_url(url: str | None) -> str | None:
@@ -194,13 +298,21 @@ def extract_candidate_assets(
             continue
         seen.add(key)
 
+        title = _title_from_text(str(raw_item.get("text") or text), keyword)
+        compact_author, compact_likes = _compact_xhs_metadata(text, title)
         assets.append(
             CollectedTrendAsset(
                 platform=platform,
-                title=_title_from_text(str(raw_item.get("text") or text), keyword),
+                title=title,
                 content=text[:3000],
                 url=url,
                 tags=_tags_from_text(text, keyword),
+                author=_clean_author(raw_item.get("author")) or compact_author,
+                likes=_metric_from_raw(raw_item, "likes") or compact_likes,
+                favorites=_metric_from_raw(raw_item, "favorites"),
+                comments=_metric_from_raw(raw_item, "comments"),
+                shares=_metric_from_raw(raw_item, "shares"),
+                cover_url=_clean_cover_url(raw_item.get("coverUrl")),
             )
         )
         if len(assets) >= max_items:
@@ -212,6 +324,43 @@ def extract_candidate_assets(
 def _raw_visible_items_script() -> str:
     return """
 () => {
+  const normalize = (value) => String(value || '').replace(/\\s+/g, ' ').trim();
+  const firstText = (root, selectors, maxLength = 80) => {
+    for (const selector of selectors) {
+      for (const element of Array.from(root.querySelectorAll(selector)).slice(0, 8)) {
+        const text = normalize(element.innerText || element.textContent || element.getAttribute('aria-label') || element.getAttribute('title') || '');
+        if (text && text.length <= maxLength) return text;
+      }
+    }
+    return '';
+  };
+  const metricText = (root, selectors) => {
+    const values = [];
+    for (const selector of selectors) {
+      for (const element of Array.from(root.querySelectorAll(selector)).slice(0, 8)) {
+        const text = normalize([
+          element.getAttribute('aria-label') || '',
+          element.getAttribute('title') || '',
+          element.innerText || element.textContent || ''
+        ].join(' '));
+        if (text) values.push(text);
+      }
+    }
+    return values.join(' ');
+  };
+  const coverUrl = (root) => {
+    const images = Array.from(root.querySelectorAll('img')).map((image) => {
+      const rect = image.getBoundingClientRect();
+      const url = image.currentSrc || image.src || image.getAttribute('data-src') || image.getAttribute('data-original') || '';
+      const marker = `${image.className || ''} ${image.alt || ''}`.toLowerCase();
+      return { url, area: rect.width * rect.height, marker };
+    }).filter((item) => {
+      if (!item.url || item.url.startsWith('data:')) return false;
+      if (item.area < 2500) return false;
+      return !/avatar|user|icon|logo/.test(item.marker);
+    }).sort((left, right) => right.area - left.area);
+    return images[0]?.url || '';
+  };
   const selectors = [
     'a[href*="/explore/"]',
     'a[href*="/discovery/item/"]',
@@ -245,12 +394,182 @@ def _raw_visible_items_script() -> str:
     ].join(' ').trim();
     if (!text || text.length < 20) continue;
     const url = linkNode ? linkNode.href : location.href;
-    items.push({ text, url, className: String(node.className || '') });
+    items.push({
+      text,
+      url,
+      className: String(node.className || ''),
+      author: firstText(node, [
+        '[class*="author"] [class*="name"]',
+        '[class*="author"]',
+        'a[href*="/user/profile/"]',
+        '[class*="user"] [class*="name"]',
+        '[class*="nickname"]'
+      ]),
+      likesText: metricText(node, ['[class*="like"]', '[aria-label*="赞"]', '[title*="赞"]']),
+      favoritesText: metricText(node, [
+        '[class*="collect"]',
+        '[class*="favorite"]',
+        '[aria-label*="藏"]',
+        '[aria-label*="收藏"]',
+        '[title*="藏"]',
+        '[title*="收藏"]'
+      ]),
+      commentsText: metricText(node, ['[class*="comment"]', '[aria-label*="评"]', '[title*="评"]']),
+      sharesText: metricText(node, [
+        '[class*="share"]',
+        '[aria-label*="转"]',
+        '[aria-label*="分享"]',
+        '[title*="转"]',
+        '[title*="分享"]'
+      ]),
+      coverUrl: coverUrl(node)
+    });
     if (items.length >= 240) break;
   }
   return items;
 }
 """.strip()
+
+
+def _detail_visible_item_script() -> str:
+    return """
+() => {
+  const normalize = (value) => String(value || '').replace(/\\s+/g, ' ').trim();
+  const meta = (selector) => normalize(document.querySelector(selector)?.getAttribute('content') || '');
+  const firstText = (selectors, maxLength = 160) => {
+    for (const selector of selectors) {
+      for (const element of Array.from(document.querySelectorAll(selector)).slice(0, 12)) {
+        const text = normalize(element.innerText || element.textContent || element.getAttribute('aria-label') || element.getAttribute('title') || '');
+        if (text && text.length <= maxLength) return text;
+      }
+    }
+    return '';
+  };
+  const longestText = (selectors) => {
+    const values = [];
+    for (const selector of selectors) {
+      for (const element of Array.from(document.querySelectorAll(selector)).slice(0, 24)) {
+        const text = normalize(element.innerText || element.textContent || '');
+        if (text && text.length >= 10) values.push(text);
+      }
+    }
+    values.sort((left, right) => right.length - left.length);
+    return values[0] || '';
+  };
+  const metricText = (selectors) => {
+    const values = [];
+    for (const selector of selectors) {
+      for (const element of Array.from(document.querySelectorAll(selector)).slice(0, 12)) {
+        const text = normalize([
+          element.getAttribute('aria-label') || '',
+          element.getAttribute('title') || '',
+          element.innerText || element.textContent || ''
+        ].join(' '));
+        if (text) values.push(text);
+      }
+    }
+    return values.join(' ');
+  };
+  const coverUrl = () => {
+    const metaImage = meta('meta[property="og:image"]') || meta('meta[name="og:image"]');
+    if (metaImage) return metaImage;
+    const images = Array.from(document.querySelectorAll('img')).map((image) => {
+      const rect = image.getBoundingClientRect();
+      const url = image.currentSrc || image.src || image.getAttribute('data-src') || image.getAttribute('data-original') || '';
+      const marker = `${image.className || ''} ${image.alt || ''}`.toLowerCase();
+      return { url, area: rect.width * rect.height, marker };
+    }).filter((item) => {
+      if (!item.url || item.url.startsWith('data:')) return false;
+      if (item.area < 2500) return false;
+      return !/avatar|user|icon|logo/.test(item.marker);
+    }).sort((left, right) => right.area - left.area);
+    return images[0]?.url || '';
+  };
+  return {
+    title: meta('meta[property="og:title"]') || firstText(['h1', '[class*="title"]']) || document.title,
+    content: meta('meta[name="description"]') || meta('meta[property="og:description"]') || longestText([
+      '[class*="desc"]',
+      '[class*="content"]',
+      '[class*="note"]',
+      'main'
+    ]),
+    author: firstText([
+      '[class*="author"] [class*="name"]',
+      '[class*="author"]',
+      'a[href*="/user/profile/"]',
+      '[class*="user"] [class*="name"]',
+      '[class*="nickname"]'
+    ], 80),
+    likesText: metricText(['[class*="like"]', '[aria-label*="赞"]', '[title*="赞"]']),
+    favoritesText: metricText([
+      '[class*="collect"]',
+      '[class*="favorite"]',
+      '[aria-label*="藏"]',
+      '[aria-label*="收藏"]',
+      '[title*="藏"]',
+      '[title*="收藏"]'
+    ]),
+    commentsText: metricText(['[class*="comment"]', '[aria-label*="评"]', '[title*="评"]']),
+    sharesText: metricText([
+      '[class*="share"]',
+      '[aria-label*="转"]',
+      '[aria-label*="分享"]',
+      '[title*="转"]',
+      '[title*="分享"]'
+    ]),
+    coverUrl: coverUrl()
+  };
+}
+""".strip()
+
+
+def _merge_detail_asset(
+    asset: CollectedTrendAsset,
+    detail: dict[str, Any],
+    keyword: str,
+) -> CollectedTrendAsset:
+    title = normalize_visible_text(detail.get("title")).replace(" - 小红书", "")
+    content = normalize_visible_text(detail.get("content"))
+    author = _clean_author(detail.get("author"))
+    cover_url = _clean_cover_url(detail.get("coverUrl"))
+
+    merged_text = " ".join(part for part in (title, content, asset.content) if part)
+    return replace(
+        asset,
+        title=(title[:255] if len(title) >= 4 else asset.title),
+        content=(content[:3000] if len(content) >= 10 else asset.content),
+        tags=_tags_from_text(merged_text, keyword) or asset.tags,
+        author=author or asset.author,
+        likes=_metric_from_raw(detail, "likes") or asset.likes,
+        favorites=_metric_from_raw(detail, "favorites") or asset.favorites,
+        comments=_metric_from_raw(detail, "comments") or asset.comments,
+        shares=_metric_from_raw(detail, "shares") or asset.shares,
+        cover_url=cover_url or asset.cover_url,
+    )
+
+
+def _enrich_assets_from_detail_pages(
+    page: Any,
+    assets: list[CollectedTrendAsset],
+    keyword: str,
+) -> list[CollectedTrendAsset]:
+    enriched: list[CollectedTrendAsset] = []
+    detail_script = _detail_visible_item_script()
+    for asset in assets:
+        if not asset.url or asset.platform != "xiaohongshu":
+            enriched.append(asset)
+            continue
+        try:
+            page.goto(asset.url, wait_until="domcontentloaded", timeout=30_000)
+            page.wait_for_timeout(1200)
+            detail = page.evaluate(detail_script) or {}
+            if isinstance(detail, dict):
+                enriched.append(_merge_detail_asset(asset, detail, keyword))
+            else:
+                enriched.append(asset)
+        except Exception:
+            enriched.append(asset)
+    return enriched
 
 
 def _blocked_candidate_count(raw_items: list[dict[str, Any]]) -> int:
@@ -342,13 +661,14 @@ def _store_assets(
             platform=asset.platform,
             title=asset.title,
             content=asset.content,
-            author=None,
+            author=asset.author,
             url=asset.url,
             tags=asset.tags,
-            likes=0,
-            favorites=0,
-            comments=0,
-            shares=0,
+            likes=asset.likes,
+            favorites=asset.favorites,
+            comments=asset.comments,
+            shares=asset.shares,
+            cover_url=asset.cover_url,
             video_transcript=None,
             screenshot_url=None,
         )
@@ -444,6 +764,7 @@ def run_browser_collection_job(
     db.refresh(job)
 
     raw_items: list[dict[str, Any]] = []
+    assets: list[CollectedTrendAsset] = []
     page_title: str | None = None
     final_url: str | None = target_url
     try:
@@ -483,6 +804,14 @@ def run_browser_collection_job(
                 page.mouse.wheel(0, random.randint(480, 980))
                 page.wait_for_timeout(random.randint(min_delay, max_delay) * 1000)
 
+            assets = extract_candidate_assets(
+                raw_items,
+                job.platform,
+                job.keyword,
+                max_items,
+                content_kind=content_kind,
+            )
+            assets = _enrich_assets_from_detail_pages(page, assets, job.keyword)
             context.close()
     except PlaywrightTimeoutError as exc:
         job.status = "needs_operator_review"
@@ -505,13 +834,14 @@ def run_browser_collection_job(
         db.commit()
         raise
 
-    assets = extract_candidate_assets(
-        raw_items,
-        job.platform,
-        job.keyword,
-        max_items,
-        content_kind=content_kind,
-    )
+    if not assets:
+        assets = extract_candidate_assets(
+            raw_items,
+            job.platform,
+            job.keyword,
+            max_items,
+            content_kind=content_kind,
+        )
     return _store_assets(
         db=db,
         job=job,

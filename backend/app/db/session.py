@@ -1,7 +1,7 @@
 from collections.abc import Generator
 from pathlib import Path
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -44,6 +44,20 @@ def initialize_local_database() -> None:
     from app.db.base import Base
 
     Base.metadata.create_all(bind=engine)
+    _ensure_sqlite_additive_columns()
+
+
+def _ensure_sqlite_additive_columns() -> None:
+    inspector = inspect(engine)
+    if "trend_contents" not in inspector.get_table_names():
+        return
+
+    trend_columns = {column["name"] for column in inspector.get_columns("trend_contents")}
+    with engine.begin() as connection:
+        if "cover_url" not in trend_columns:
+            connection.execute(
+                text("ALTER TABLE trend_contents ADD COLUMN cover_url VARCHAR(500)")
+            )
 
 
 def get_db() -> Generator[Session, None, None]:

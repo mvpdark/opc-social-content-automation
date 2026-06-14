@@ -10,6 +10,7 @@ from app.models.user import User
 from app.schemas.trend import TrendCollectionJobCreate
 from app.schemas.trend import TrendLinkImportRequest
 from app.schemas.trend import TrendKnowledgeDigestRequest
+from app.services.trend_browser_collector import extract_candidate_assets
 from app.services.trend_service import (
     build_xhs_link_import_target,
     build_platform_search_target,
@@ -31,6 +32,52 @@ def test_build_platform_search_target_encodes_keyword() -> None:
     assert target.requires_manual_login is False
     assert target.automation_mode == "public_first_visible_browser"
     assert any("不要绕过平台访问控制" in note for note in target.safety_notes)
+
+
+def test_extract_candidate_assets_preserves_source_metadata() -> None:
+    assets = extract_candidate_assets(
+        [
+            {
+                "text": "全球水博排名必看 适合预算有限的在职博士申请人 #水博 #博士",
+                "url": "https://www.xiaohongshu.com/explore/abc123",
+                "author": "瑶瑶硕博留学",
+                "likesText": "赞 1.2万",
+                "favoritesText": "收藏 980",
+                "commentsText": "评论 34",
+                "sharesText": "分享 5",
+                "coverUrl": "https://sns-img-qc.xhscdn.com/cover.jpg",
+            }
+        ],
+        platform="xiaohongshu",
+        keyword="水博",
+        max_items=5,
+    )
+
+    assert len(assets) == 1
+    assert assets[0].author == "瑶瑶硕博留学"
+    assert assets[0].likes == 12_000
+    assert assets[0].favorites == 980
+    assert assets[0].comments == 34
+    assert assets[0].shares == 5
+    assert assets[0].cover_url == "https://sns-img-qc.xhscdn.com/cover.jpg"
+
+
+def test_extract_candidate_assets_infers_compact_xhs_author_and_likes() -> None:
+    assets = extract_candidate_assets(
+        [
+            {
+                "text": "学位顶端的博士，含金量还在吗 学位顶端的博士，含金量还在吗 QM启明-海外博士 06-05 2",
+                "url": "https://www.xiaohongshu.com/explore/abc123",
+            }
+        ],
+        platform="xiaohongshu",
+        keyword="博士含金量",
+        max_items=5,
+    )
+
+    assert len(assets) == 1
+    assert assets[0].author == "QM启明-海外博士"
+    assert assets[0].likes == 2
 
 
 def test_build_xhs_link_import_target_extracts_supported_links() -> None:

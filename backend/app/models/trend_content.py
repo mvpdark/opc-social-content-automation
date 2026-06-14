@@ -21,6 +21,7 @@ class TrendContent(Base):
     favorites: Mapped[int] = mapped_column(Integer, default=0)
     comments: Mapped[int] = mapped_column(Integer, default=0)
     shares: Mapped[int] = mapped_column(Integer, default=0)
+    cover_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     video_transcript: Mapped[str | None] = mapped_column(Text, nullable=True)
     screenshot_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
