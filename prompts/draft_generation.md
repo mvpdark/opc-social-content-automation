@@ -68,6 +68,14 @@ For Xiaohongshu:
   research direction, recent papers/projects, overlap evidence, email timing,
   and what to prepare before contact. Do not turn it into a ranking or schedule
   post.
+- If the topic contains `研究方向` or `方向太散`, write a direction-narrowing
+  post: keyword clustering, problem awareness, methods, evidence from past work,
+  and how to express one focused direction. Do not turn it into a school ranking
+  or generic supervisor email checklist.
+- If the topic contains `没论文`, `没有论文`, `论文经历`, or `还能读博`, write a
+  background-strengthening post: project experience, work output, research plan,
+  weakness repair, and feasibility checks. Do not turn it into budget ranking or
+  route marketing.
 - If the topic contains `时间线`, `时间节点`, `什么时候`, or `时间怎么排`, write around
   stages and deadlines: 12-9 months, 9-6 months, 6-3 months, last month, and
   what should be done at each stage. Do not turn it into mentor matching.
@@ -75,6 +83,10 @@ For Xiaohongshu:
   consultation conversion: user needs, budget, project fit, objection handling,
   follow-up rhythm, and compliant sales language. Do not invent offers or
   promise admissions outcomes.
+- If the topic contains `含金量` or `怎么回答`, write a value/objection-handling
+  post: career goal, unit recognition, real cost, learning value, and how to
+  answer skeptical family, boss, or client questions. Do not promise salary,
+  status, or guaranteed recognition.
 - Mention uncertainty carefully instead of making guaranteed-outcome claims.
 - Do not include hashtags in the body; the application appends tags separately.
 

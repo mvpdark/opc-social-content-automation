@@ -89,6 +89,12 @@ def test_draft_prompt_template_requires_xhs_expression_layer() -> None:
     assert "structure" in prompt
     assert "全球水博排名必看" in prompt
     assert "supervisor matching" in prompt
+    assert "direction-narrowing" in prompt
+    assert "background-strengthening" in prompt
+    assert "value/objection-handling" in prompt
+    assert "方向太散" in prompt
+    assert "没有论文" in prompt
+    assert "含金量" in prompt
     assert "web_search_context" in prompt
     assert "Tavily" in prompt
     assert "哦" in prompt
