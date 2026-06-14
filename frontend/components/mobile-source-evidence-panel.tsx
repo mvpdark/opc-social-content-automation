@@ -108,7 +108,7 @@ export function MobileSourceEvidencePanel({
             </span>
           </div>
           {webSearch?.query ? (
-            <p className="rounded-[16px] bg-white/70 px-3 py-2 text-[11px] font-medium leading-5 text-muted">
+            <p className="break-words rounded-[16px] bg-white/70 px-3 py-2 text-[11px] font-medium leading-5 text-muted">
               Tavily 查询：{webSearch.query}
             </p>
           ) : null}
@@ -137,8 +137,8 @@ export function MobileSourceEvidencePanel({
               </a>
             ))
           ) : (
-            <p className="rounded-[18px] border border-[#f3dca3] bg-[#fff8e6] px-3 py-2 text-[11px] font-medium leading-5 text-muted">
-              这个选题需要实时资料，但本次还没拿到可见联网来源，请换关键词或检查 Tavily。
+            <p className="rounded-[18px] border border-[#f3dca3] bg-[#fff8e6] px-3 py-2 text-[11px] font-medium leading-5 text-[#8a6110]">
+              这个选题需要实时资料，但本次还没拿到可见联网来源；请换关键词、检查 Tavily，或只写核验框架，不要直接写学校、价格、logo 或排名结论。
             </p>
           )}
         </div>

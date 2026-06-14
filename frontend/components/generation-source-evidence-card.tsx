@@ -135,7 +135,7 @@ export function GenerationSourceEvidenceCard({
             </SourcePill>
           </div>
           {webSearch?.query ? (
-            <p className="rounded-md bg-mist/70 px-3 py-2 text-[11px] leading-5 text-muted">
+            <p className="break-words rounded-md bg-mist/70 px-3 py-2 text-[11px] leading-5 text-muted">
               Tavily 查询：{webSearch.query}
             </p>
           ) : null}
@@ -164,8 +164,8 @@ export function GenerationSourceEvidenceCard({
               </a>
             ))
           ) : (
-            <p className="rounded-md border border-amber/40 bg-amber/10 px-3 py-2 text-[11px] leading-5 text-muted">
-              这个选题需要实时资料，但本次还没有可见联网来源；请先换关键词或检查 Tavily 配置。
+            <p className="rounded-md border border-amber/40 bg-amber/10 px-3 py-2 text-[11px] leading-5 text-[#8a6110]">
+              这个选题需要实时资料，但本次还没有可见联网来源；请先换关键词、检查 Tavily，或只写核验框架，不要直接写学校、价格、logo 或排名结论。
             </p>
           )}
         </div>
