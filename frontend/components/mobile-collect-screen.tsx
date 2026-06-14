@@ -658,16 +658,16 @@ export function CollectScreen({
 
   return (
     <div className="-mt-1 space-y-3 pb-8">
-      <section className="relative overflow-hidden rounded-[34px] border border-white/[0.92] bg-[rgba(255,253,247,0.82)] px-3.5 pb-2.5 pt-3 shadow-[0_22px_46px_rgba(31,58,49,0.13),inset_0_1px_0_rgba(255,255,255,0.96)] backdrop-blur-xl">
+      <section className="relative overflow-hidden rounded-[34px] border border-white/[0.92] bg-[rgba(255,253,247,0.82)] px-3.5 pb-2 pt-2.5 shadow-[0_22px_46px_rgba(31,58,49,0.13),inset_0_1px_0_rgba(255,255,255,0.96)] backdrop-blur-xl">
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-cover bg-center opacity-20"
           style={{ backgroundImage: "url(/mobile-assets/collection-collage.png)" }}
         />
         <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(105deg,rgba(255,253,247,0.96)_0%,rgba(255,253,247,0.84)_52%,rgba(234,241,232,0.72)_100%)]" />
-        <div aria-hidden="true" className="absolute -left-7 top-10 h-20 w-20 rounded-full border border-dashed border-[#2f9a55]/[0.28]" />
-        <div aria-hidden="true" className="absolute left-8 top-[70px] flex h-16 w-16 items-center justify-center rounded-full bg-[conic-gradient(#2f9a55_0_28%,rgba(47,154,85,0.12)_28%_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(255,253,247,0.94)] text-[#2f9a55] shadow-[0_10px_24px_rgba(31,58,49,0.08)]">
+        <div aria-hidden="true" className="absolute -left-7 top-9 h-[74px] w-[74px] rounded-full border border-dashed border-[#2f9a55]/[0.28]" />
+        <div aria-hidden="true" className="absolute left-8 top-[66px] flex h-14 w-14 items-center justify-center rounded-full bg-[conic-gradient(#2f9a55_0_28%,rgba(47,154,85,0.12)_28%_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(255,253,247,0.94)] text-[#2f9a55] shadow-[0_10px_24px_rgba(31,58,49,0.08)]">
             <Clock3 className="h-5 w-5" />
           </div>
         </div>
@@ -682,14 +682,14 @@ export function CollectScreen({
             </span>
           </div>
 
-          <div className="mt-2.5 grid grid-cols-[76px_1fr] items-center gap-3">
-            <div aria-hidden="true" className="h-16" />
+          <div className="mt-2 grid grid-cols-[70px_1fr] items-center gap-3">
+            <div aria-hidden="true" className="h-14" />
             <div className="min-w-0">
-              <p className="text-[15px] font-black leading-6 text-ink">
-                每 <span className="px-1 text-[22px] text-[#2f9a55]">{intervalMinutes}</span> 分钟执行一次
+              <p className="text-[14px] font-black leading-5 text-ink">
+                每 <span className="px-1 text-[20px] text-[#2f9a55]">{intervalMinutes}</span> 分钟执行一次
               </p>
               <button
-                className="mt-1.5 flex h-10 w-full touch-manipulation items-center justify-center gap-3 rounded-full bg-[linear-gradient(180deg,#35a95f,#23854f)] text-sm font-black text-white shadow-[0_16px_30px_rgba(35,133,79,0.28),inset_0_1px_0_rgba(255,255,255,0.24)] active:scale-[0.99]"
+                className="mt-1 flex h-9 w-full touch-manipulation items-center justify-center gap-3 rounded-full bg-[linear-gradient(180deg,#35a95f,#23854f)] text-sm font-black text-white shadow-[0_16px_30px_rgba(35,133,79,0.28),inset_0_1px_0_rgba(255,255,255,0.24)] active:scale-[0.99]"
                 onClick={() => onAction("定时采集任务详情已展开，可以继续修改周期和来源。")}
                 type="button"
               >
@@ -699,17 +699,17 @@ export function CollectScreen({
             </div>
           </div>
 
-          <div className="mt-2 grid grid-cols-3 divide-x divide-[#d9d0c1] rounded-[23px] border border-white/[0.82] bg-[rgba(255,253,247,0.76)] px-2 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.86)]">
+          <div className="mt-1.5 grid grid-cols-3 divide-x divide-[#d9d0c1] rounded-[23px] border border-white/[0.82] bg-[rgba(255,253,247,0.76)] px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.86)]">
             <div className="px-2 text-center">
-              <div className="text-[23px] font-black leading-7 text-[#2f9a55]">{maxItems}</div>
+              <div className="text-[21px] font-black leading-6 text-[#2f9a55]">{maxItems}</div>
               <div className="mt-1 text-[11px] font-bold text-muted">今日目标</div>
             </div>
             <div className="px-2 text-center">
-              <div className="text-[23px] font-black leading-7 text-ink">{collectedMetricValue}</div>
+              <div className="text-[21px] font-black leading-6 text-ink">{collectedMetricValue}</div>
               <div className="mt-1 text-[11px] font-bold text-muted">已采集</div>
             </div>
             <div className="min-w-0 px-2 text-center">
-              <div className="truncate text-[18px] font-black leading-7 text-ink">{formatScheduleTime(nextRunAt)}</div>
+              <div className="truncate text-[17px] font-black leading-6 text-ink">{formatScheduleTime(nextRunAt)}</div>
               <div className="mt-1 text-[11px] font-bold text-muted">下次执行</div>
             </div>
           </div>

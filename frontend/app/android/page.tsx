@@ -955,7 +955,7 @@ function MobileHeader({
       className={[
         "relative overflow-hidden px-4 pt-[calc(12px+env(safe-area-inset-top))] backdrop-blur-xl",
         isCollect
-          ? "bg-[rgba(251,247,237,0.54)] pb-7"
+          ? "bg-[rgba(251,247,237,0.54)] pb-4"
           : "bg-[rgba(251,247,237,0.82)] pb-3.5 shadow-[0_8px_22px_rgba(31,58,49,0.05),inset_0_1px_0_rgba(255,255,255,0.86)]"
       ].join(" ")}
     >
