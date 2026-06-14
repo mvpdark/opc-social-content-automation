@@ -336,6 +336,9 @@ def build_image_prompt_package(
             "title": content.title,
             "body": content.body,
             "tags": content.tags or [],
+            "source_context": content.source_context
+            if isinstance(content.source_context, dict)
+            else None,
             "content_status": content.status,
             "template": template,
             "aspect_ratio": payload.aspect_ratio,

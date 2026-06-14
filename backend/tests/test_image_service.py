@@ -97,6 +97,18 @@ def test_image_prompt_payload_includes_visual_direction(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     content = make_content(status="approved")
+    content.source_context = {
+        "web_search": {
+            "required": True,
+            "results": [
+                {
+                    "title": "Official program page",
+                    "url": "https://example.edu/program",
+                }
+            ],
+        },
+        "review_note": "请先人工核对来源。",
+    }
     user = User(id=1, role="promoter", phone="test", password_hash="hash")
     captured: dict[str, object] = {}
 
@@ -122,6 +134,7 @@ def test_image_prompt_payload_includes_visual_direction(
     assert isinstance(captured["visual_direction"], dict)
     assert captured["visual_direction"]["id"]
     assert "instructions" in captured["visual_direction"]
+    assert captured["source_context"] == content.source_context
 
 
 def test_draft_image_generation_downloads_remote_cover_before_saving(

@@ -6,7 +6,8 @@ generation prompt, not a publishing approval.
 Core rules:
 
 - Use the content title, body, platform, selected cover template, aspect ratio,
-  tags, style notes, `visual_direction`, and `style_reference`.
+  tags, style notes, `visual_direction`, `source_context`, and
+  `style_reference`.
 - For Xiaohongshu covers using `3:4`, target a 2K-wide mobile canvas:
   2048px wide by about 2736px tall, with the same vertical cover feel used in
   Xiaohongshu notes.
@@ -41,6 +42,11 @@ High-attraction Xiaohongshu cover formula:
   headline, verified school/project names only when supplied, and one short cue
   per item. If verified school data is not supplied, use route labels and
   decision criteria instead of inventing names.
+- If the cover needs school names, project names, rankings, prices, logos,
+  official pages, or policy snippets, use only fields visible in
+  `source_context`. If the required source data is missing, draw source-review
+  cards, placeholder rows, category labels, or verification criteria instead of
+  making up factual names, numbers, logos, seals, or official marks.
 - Keep the cover readable on a phone. Prefer one strong composition over many
   small labels.
 - Avoid generic gradient posters, empty abstract backgrounds, tiny unreadable
