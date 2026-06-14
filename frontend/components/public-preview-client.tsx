@@ -123,8 +123,8 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
               </span>
             </div>
             <div className="mt-14 text-[34px] font-black leading-tight text-ink">
-              {content.title.split(/[，,]/).slice(0, 3).map((line) => (
-                <span className="block" key={line}>
+              {content.title.split(/[，,]/).slice(0, 3).map((line, index) => (
+                <span className="block" key={`title-line-${index}-${line}`}>
                   {line}
                 </span>
               ))}
@@ -159,8 +159,8 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
 
           {tags.length ? (
             <div className="mt-4 flex flex-wrap gap-2 text-sm font-medium text-[#346cb0]">
-              {tags.map((tag) => (
-                <span key={tag}>{tag}</span>
+              {tags.map((tag, index) => (
+                <span key={`tag-${index}-${tag}`}>{tag}</span>
               ))}
             </div>
           ) : null}

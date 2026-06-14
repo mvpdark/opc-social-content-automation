@@ -1614,8 +1614,8 @@ function DashboardView({
                 <div className="absolute bottom-5 left-5 right-5">
                   <div className="mb-4 h-1.5 w-14 rounded-full bg-coral" />
                   <div className="space-y-1 text-[2.15rem] font-black leading-[1.06] text-ink">
-                    {coverLines.map((line) => (
-                      <div key={line}>{line}</div>
+                    {coverLines.map((line, index) => (
+                      <div key={`draft-cover-line-${index}-${line}`}>{line}</div>
                     ))}
                   </div>
                 </div>
@@ -4404,8 +4404,8 @@ function DraftHistoryCard({
             <div className="absolute inset-x-3 bottom-4">
               <div className="mb-2 h-1 w-8 rounded-full bg-coral" />
               <div className="space-y-1 text-[1.2rem] font-black leading-[1.08] text-ink">
-                {coverLines.slice(0, 3).map((line) => (
-                  <div key={line}>{line}</div>
+                {coverLines.slice(0, 3).map((line, index) => (
+                  <div key={`history-cover-line-${index}-${line}`}>{line}</div>
                 ))}
               </div>
             </div>
@@ -4641,8 +4641,8 @@ function DraftPanel({
                   <div className="absolute inset-x-7 bottom-8">
                     <div className="mb-4 h-1.5 w-14 rounded-full bg-coral" />
                     <div className="space-y-1 text-[2.55rem] font-black leading-[1.06] text-ink">
-                      {coverLines.map((line) => (
-                        <div key={line}>{line}</div>
+                      {coverLines.map((line, index) => (
+                        <div key={`preview-cover-line-${index}-${line}`}>{line}</div>
                       ))}
                     </div>
                   </div>

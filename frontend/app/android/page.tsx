@@ -3785,7 +3785,10 @@ function ReferencePreviewSheet({
             <h1 className="mt-10 text-[32px] font-black leading-tight text-ink">{reference.title}</h1>
             <div className="mt-8 space-y-2 text-xs font-semibold text-ink/[0.70]">
               {reference.coverNotes.map((note, index) => (
-                <div className="rounded-md bg-white/[0.85] px-3 py-2" key={note}>
+                <div
+                  className="rounded-md bg-white/[0.85] px-3 py-2"
+                  key={`cover-note-${index}-${note}`}
+                >
                   {index + 1}. {note}
                 </div>
               ))}
@@ -3816,7 +3819,7 @@ function ReferencePreviewSheet({
                 {reference.takeaways.map((takeaway, index) => (
                   <div
                     className="flex gap-3 rounded-md border border-[#d6e8df] bg-[#f6fbf6] px-3 py-2 text-sm font-medium"
-                    key={takeaway}
+                    key={`takeaway-${index}-${takeaway}`}
                   >
                     <span className="text-moss">{index + 1}</span>
                     <span>{takeaway}</span>
@@ -4439,11 +4442,11 @@ function DraftPreviewEditor({
                   </span>
                 </div>
                 <div className="mt-14 text-[34px] font-black leading-tight text-ink">
-                  {titleLines.map((line) => (
-                  <span className="block" key={line}>
-                    {line}
-                  </span>
-                ))}
+                  {titleLines.map((line, index) => (
+                    <span className="block" key={`title-line-${index}-${line}`}>
+                      {line}
+                    </span>
+                  ))}
                 </div>
                 <div className="mt-8 space-y-2 text-xs font-semibold text-ink/[0.70]">
                   {draft.points.map((point, index) => (
@@ -4533,8 +4536,10 @@ function DraftPreviewEditor({
                 />
               ) : (
                 <div className="mt-4 flex flex-wrap gap-2 text-sm font-medium text-[#346cb0]">
-                  {tags.map((tag) => (
-                    <span key={tag}>{tag.startsWith("#") ? tag : `#${tag}`}</span>
+                  {tags.map((tag, index) => (
+                    <span key={`tag-${index}-${tag}`}>
+                      {tag.startsWith("#") ? tag : `#${tag}`}
+                    </span>
                   ))}
                 </div>
               )}
