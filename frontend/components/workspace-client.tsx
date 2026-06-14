@@ -2873,7 +2873,8 @@ function GenerationLauncher({
       content &&
         content.title === topic.trim() &&
         content.platform === selectedPlatform &&
-        tagsMatchText(content.tags, tagsText)
+        tagsMatchText(content.tags, tagsText) &&
+        sourceContextMatchesKnowledgeQuery(content.source_context, knowledgeQuery)
     );
   }
 

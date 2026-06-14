@@ -911,6 +911,7 @@ def validate_content_production_contract() -> int:
         "content.title === topic.trim()",
         "content.platform === selectedPlatform",
         "tagsMatchText(content.tags, tagsText)",
+        "sourceContextMatchesKnowledgeQuery(content.source_context, knowledgeQuery)",
         "contentMatchesCurrentInputs(lastContent)",
         "contentMatchesCurrentInputs(latestContent)",
         "const exportContentMatchesCurrentInputs = Boolean(currentExportContent);",
