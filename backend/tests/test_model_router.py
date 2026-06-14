@@ -1,3 +1,6 @@
+import re
+from pathlib import Path
+
 import httpx
 import pytest
 from fastapi import HTTPException
@@ -226,6 +229,47 @@ def test_codex_test_draft_provider_matches_recommended_topic_intent(
         assert term in result
     for term in forbidden_terms:
         assert term not in result
+
+
+def test_codex_test_draft_provider_covers_all_recommended_topic_presets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "draft_provider", "codex_test")
+    project_root = Path(__file__).resolve().parents[2]
+    preset_text = (project_root / "frontend" / "lib" / "topic-presets.ts").read_text(
+        encoding="utf-8"
+    )
+    preset_objects = re.findall(
+        r'\{\s*(audience:.*?topic:\s*"[^"]+"\s*)\}',
+        preset_text,
+        re.S,
+    )
+    expected_terms_by_label = {
+        "榜单型": ("筛选", "预算", "认证", "风险", "榜"),
+        "路线型": ("路线", "选择", "适配"),
+        "导师型": ("导师", "匹配", "关键词"),
+        "时间型": ("时间", "12-9 个月", "DDL", "材料"),
+        "来源型": ("来源核验", "官网", "待复核", "URL"),
+        "转化型": ("转化", "需求", "异议", "价值"),
+    }
+
+    assert len(preset_objects) >= 20
+    for raw_preset in preset_objects:
+        fields = dict(re.findall(r'(\w+):\s*"([^"]*)"', raw_preset))
+        tags = [tag.strip() for tag in re.split(r"[,，、;；]+", fields["tags"]) if tag.strip()]
+        result = model_router.draft_model(
+            "draft_generation",
+            {
+                "platform": "xiaohongshu",
+                "topic": fields["topic"],
+                "tags": tags,
+            },
+        )
+
+        assert fields["topic"] in result, fields["key"]
+        assert "研究方向、目标导师和时间节点" not in result, fields["key"]
+        expected_terms = expected_terms_by_label[fields["desktopLabel"]]
+        assert any(term in result for term in expected_terms), fields["key"]
 
 
 def test_codex_test_image_provider_creates_svg(monkeypatch: pytest.MonkeyPatch) -> None:
