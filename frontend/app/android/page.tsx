@@ -943,14 +943,16 @@ export default function AndroidPreviewPage() {
         <div className="relative z-10" hidden={activeTab !== "knowledge"}>
           <KnowledgeScreen onAction={setStatus} />
         </div>
-        <div className="relative z-10" hidden={activeTab !== "review"}>
-          <ReviewScreen
-            credentials={credentials}
-            onAction={setStatus}
-            onOpenCreate={() => openTab("create", "已打开创作项目页，可以继续修改退回草稿。")}
-            onPendingCountChange={setReviewPendingCount}
-          />
-        </div>
+        {activeTab === "review" ? (
+          <div className="relative z-10">
+            <ReviewScreen
+              credentials={credentials}
+              onAction={setStatus}
+              onOpenCreate={() => openTab("create", "已打开创作项目页，可以继续修改退回草稿。")}
+              onPendingCountChange={setReviewPendingCount}
+            />
+          </div>
+        ) : null}
         <div className="relative z-10" hidden={activeTab !== "create"}>
           <CreateScreen credentials={credentials} onAction={setStatus} />
         </div>
