@@ -200,6 +200,8 @@ def validate_safety_gates() -> int:
             "official logo school emblem",
             "tuition fees total cost",
             '"include_answer": True',
+            "Tavily 授权失败",
+            "额度或频率限制",
         ],
         "prompts/image_generation.md": [
             "primary cover headline must copy the content title verbatim",

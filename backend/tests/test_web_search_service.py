@@ -127,3 +127,31 @@ def test_tavily_search_rejects_empty_results(monkeypatch: pytest.MonkeyPatch) ->
 
     assert exc.value.status_code == 502
     assert "没有返回可用来源" in exc.value.detail
+
+
+@pytest.mark.parametrize(
+    ("status_code", "expected_detail"),
+    [
+        (401, "授权失败"),
+        (403, "授权失败"),
+        (429, "额度或频率限制"),
+        (503, "服务暂时不可用"),
+    ],
+)
+def test_tavily_search_explains_http_failures(
+    monkeypatch: pytest.MonkeyPatch,
+    status_code: int,
+    expected_detail: str,
+) -> None:
+    def fake_post(url: str, **kwargs: object) -> httpx.Response:
+        return httpx.Response(status_code, request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(settings, "tavily_search_enabled", True)
+    monkeypatch.setattr(settings, "tavily_api_key", "test-key")
+    monkeypatch.setattr("app.services.web_search_service.httpx.post", fake_post)
+
+    with pytest.raises(HTTPException) as exc:
+        tavily_search("全球水博排名必看")
+
+    assert exc.value.status_code == 502
+    assert expected_detail in exc.value.detail

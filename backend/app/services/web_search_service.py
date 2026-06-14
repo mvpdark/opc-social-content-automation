@@ -155,6 +155,18 @@ def _safe_max_results(value: int) -> int:
     return max(1, min(value, 10))
 
 
+def _tavily_status_error_detail(status_code: int | None) -> str:
+    if status_code in {401, 403}:
+        return "Tavily 授权失败，请检查 Tavily 服务授权是否已保存并有效。"
+    if status_code == 429:
+        return "Tavily 联网检索触发额度或频率限制，请稍后重试，或减少批量检索请求。"
+    if status_code and status_code >= 500:
+        return f"Tavily 服务暂时不可用（HTTP {status_code}），请稍后重试。"
+    if status_code:
+        return f"Tavily 联网检索失败（HTTP {status_code}），请检查关键词或服务配置。"
+    return "Tavily 联网检索失败，请稍后重试。"
+
+
 def _parse_tavily_results(data: dict[str, Any], query: str) -> WebSearchContext:
     raw_results = data.get("results")
     results: list[WebSearchResult] = []
@@ -210,12 +222,10 @@ def tavily_search(query: str, *, max_results: int | None = None) -> WebSearchCon
         data = response.json()
     except httpx.HTTPStatusError as exc:
         status_code = exc.response.status_code if exc.response is not None else None
-        detail = (
-            f"Tavily 联网检索失败（HTTP {status_code}）。"
-            if status_code
-            else "Tavily 联网检索失败。"
-        )
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=detail) from exc
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=_tavily_status_error_detail(status_code),
+        ) from exc
     except (httpx.HTTPError, ValueError) as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
