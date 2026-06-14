@@ -1527,7 +1527,10 @@ def validate_content_production_contract() -> int:
         "export function tagsMatchText",
         "export function formatTags",
         "export function formatTagLine",
-        "tag.trim().replace(/^#+/, \"\")",
+        "const TAG_SPLIT_PATTERN",
+        "tag.trim().replace(/^[#＃]+/, \"\")",
+        "tagsText.replace(/[#＃]/g, \" #\").split(TAG_SPLIT_PATTERN)",
+        "new Set<string>()",
     ]
     for snippet in tag_contract_snippets:
         total += 1
