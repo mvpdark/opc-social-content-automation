@@ -3331,7 +3331,9 @@ function GenerationLauncher({
             <label className="block">
               <span className="text-xs font-medium text-muted">知识检索词</span>
               <input
+                aria-label="知识检索词"
                 className={`${formControlClass} h-10`}
+                data-testid="content-knowledge-query"
                 onChange={(event) => {
                   setKnowledgeQuery(event.target.value);
                   clearSourceEvidence();
@@ -3342,7 +3344,9 @@ function GenerationLauncher({
             <label className="block">
               <span className="text-xs font-medium text-muted">目标人群</span>
               <input
+                aria-label="目标人群"
                 className={`${formControlClass} h-10`}
+                data-testid="content-target-audience"
                 onChange={(event) => setTargetAudience(event.target.value)}
                 value={targetAudience}
               />
@@ -3404,7 +3408,9 @@ function GenerationLauncher({
                 <span>{tone.length}/420</span>
               </span>
               <textarea
+                aria-label="风格要求"
                 className={`${formControlClass} min-h-24 resize-y py-2 leading-6`}
+                data-testid="content-style-notes"
                 maxLength={420}
                 onChange={(event) => setTone(event.target.value)}
                 value={tone}
@@ -3413,7 +3419,9 @@ function GenerationLauncher({
             <label className="block md:col-span-2">
               <span className="text-xs font-medium text-muted">标签</span>
               <input
+                aria-label="标签"
                 className={`${formControlClass} h-10`}
+                data-testid="content-tags"
                 onChange={(event) => {
                   setTagsText(event.target.value);
                   clearSourceEvidence();
