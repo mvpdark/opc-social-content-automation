@@ -2611,12 +2611,10 @@ function GenerationLauncher({
   const draftProviderBlocked = draftProviderMissing || draftProviderCheckFailed;
   const canGenerate = hasTopic && busyAction === null && !draftProviderBlocked;
   const exportContent = lastContent ?? latestContent;
-  const currentExportContent =
-    exportContent &&
-      exportContent.title === topic.trim() &&
-      exportContent.platform === selectedPlatform &&
-      tagsMatchText(exportContent.tags, tagsText)
-      ? exportContent
+  const currentExportContent = contentMatchesCurrentInputs(lastContent)
+    ? lastContent
+    : contentMatchesCurrentInputs(latestContent)
+      ? latestContent
       : null;
   const exportContentMatchesCurrentInputs = Boolean(currentExportContent);
   const matchingSourceContext = sourceContextMatchesKnowledgeQuery(sourceContext, knowledgeQuery)
@@ -2867,6 +2865,17 @@ function GenerationLauncher({
     }, TOPIC_PRESET_REFRESH_MS);
     return () => window.clearInterval(refreshTimer);
   }, [topic]);
+
+  function contentMatchesCurrentInputs(
+    content: GeneratedContent | null | undefined
+  ): content is GeneratedContent {
+    return Boolean(
+      content &&
+        content.title === topic.trim() &&
+        content.platform === selectedPlatform &&
+        tagsMatchText(content.tags, tagsText)
+    );
+  }
 
   function buildGenerationRequestPayload() {
     return {
