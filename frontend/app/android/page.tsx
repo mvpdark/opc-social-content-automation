@@ -34,6 +34,7 @@ import {
 
 import { PlatformIcon, PlatformLabel } from "@/components/platform-icon";
 import { MobileSourceEvidencePanel } from "@/components/mobile-source-evidence-panel";
+import { ReviewScreen, fetchMobileReviewContents } from "@/components/mobile-review-screen";
 import { getApiBase, isLocalOrPrivateHostname } from "@/lib/api-base";
 import { resolveAssetUrl } from "@/lib/asset-url";
 import { copyText, tryCopyText } from "@/lib/clipboard";
@@ -95,7 +96,7 @@ import {
 } from "@/lib/topic-presets";
 import { renderXhsExpressionText } from "@/lib/xhs-stickers";
 
-type MobileTab = "home" | "collect" | "knowledge" | "create" | "settings";
+type MobileTab = "home" | "collect" | "knowledge" | "review" | "create" | "settings";
 type MobilePlatform = "douyin" | "xiaohongshu";
 type MobileHistoryState = {
   opcMobileTab?: MobileTab;
@@ -188,6 +189,11 @@ const mobileScreenArt: Record<MobileTab, { image: string; opacity: string; posit
     opacity: "opacity-72",
     position: "center top"
   },
+  review: {
+    image: MOBILE_CREATE_CARD_BG,
+    opacity: "opacity-86",
+    position: "center top"
+  },
   settings: {
     image: MOBILE_COLLECTION_COLLAGE,
     opacity: "opacity-58",
@@ -256,7 +262,8 @@ const bottomTabs: Array<{ id: MobileTab; icon: typeof Home; label: string }> = [
 const workItems = [
   { label: "补公开图文素材", state: "进入采集", icon: Radar, tab: "collect" },
   { label: "查看知识库", state: "进入知识", icon: BookOpenText, tab: "knowledge" },
-  { label: "生成硕升博草稿", state: "进入创作", icon: PenLine, tab: "create" }
+  { label: "生成硕升博草稿", state: "进入创作", icon: PenLine, tab: "create" },
+  { label: "确认待发布草稿", state: "进入确认", icon: ShieldCheck, tab: "review" }
 ] satisfies Array<{
   icon: typeof Radar;
   label: string;
@@ -267,7 +274,7 @@ const workItems = [
 const progressSteps = [
   { label: "采集", state: "当前", icon: Database, tab: "collect" },
   { label: "知识库", state: "可查看", icon: BookOpenText, tab: "knowledge" },
-  { label: "确认", state: "待处理", icon: ShieldCheck, tab: "create" }
+  { label: "确认", state: "待处理", icon: ShieldCheck, tab: "review" }
 ] satisfies Array<{
   icon: typeof Database;
   label: string;
@@ -278,7 +285,7 @@ const progressSteps = [
 const quickMetrics = [
   { label: "趋势素材", value: "0", tone: "blue", tab: "collect" },
   { label: "知识条目", value: "查看", tone: "green", tab: "knowledge" },
-  { label: "待确认", value: "0", tone: "coral", tab: "create" }
+  { label: "待确认", value: "0", tone: "coral", tab: "review" }
 ] satisfies Array<{
   label: string;
   tab: MobileTab;
@@ -290,6 +297,7 @@ const taskActionCopy: Record<MobileTab, string> = {
   home: "已回到首页。",
   collect: "已打开采集页，可以切换平台、编辑关键词和保存知识摘要。",
   knowledge: "已打开知识库，可以查看最近入库内容或搜索知识条目。",
+  review: "已打开人工确认台，可以核对草稿、封面和来源后通过或退回。",
   create: "已打开创作项目页，先选择项目再进入生成入口。",
   settings: "已打开设置页，可以查看账号状态和发布确认规则。"
 };
@@ -299,6 +307,7 @@ function isMobileTab(value: unknown): value is MobileTab {
     value === "home" ||
     value === "collect" ||
     value === "knowledge" ||
+    value === "review" ||
     value === "create" ||
     value === "settings"
   );
@@ -722,6 +731,7 @@ export default function AndroidPreviewPage() {
   const [mobileAccount, setMobileAccount] = useState<string | null>(null);
   const [authLoaded, setAuthLoaded] = useState(false);
   const [providerStatuses, setProviderStatuses] = useState<ProviderStatusItem[]>([]);
+  const [reviewPendingCount, setReviewPendingCount] = useState(0);
   const activeTabRef = useRef<MobileTab>("home");
   const mobileHistoryReadyRef = useRef(false);
   const skipNextHistoryPushRef = useRef(false);
@@ -841,6 +851,32 @@ export default function AndroidPreviewPage() {
     };
   }, [mobileAccount]);
 
+  useEffect(() => {
+    if (!mobileAccount || !credentialsLoaded) {
+      return undefined;
+    }
+
+    let active = true;
+
+    async function loadReviewPendingCount() {
+      try {
+        const contents = await fetchMobileReviewContents(credentials);
+        if (active) {
+          setReviewPendingCount(contents.length);
+        }
+      } catch (_error) {
+        if (active) {
+          setReviewPendingCount(0);
+        }
+      }
+    }
+
+    void loadReviewPendingCount();
+    return () => {
+      active = false;
+    };
+  }, [activeTab, credentials.workspaceToken, credentialsLoaded, mobileAccount]);
+
   function openTab(tab: MobileTab, message = taskActionCopy[tab]) {
     setActiveTab(tab);
     setStatus(message);
@@ -895,13 +931,25 @@ export default function AndroidPreviewPage() {
           {status}
         </div>
         <div className="relative z-10" hidden={activeTab !== "home"}>
-          <HomeScreen onAction={setStatus} onChangeTab={openTab} />
+          <HomeScreen
+            onAction={setStatus}
+            onChangeTab={openTab}
+            reviewPendingCount={reviewPendingCount}
+          />
         </div>
         <div className="relative z-10" hidden={activeTab !== "collect"}>
           <CollectScreen credentials={credentials} onAction={setStatus} />
         </div>
         <div className="relative z-10" hidden={activeTab !== "knowledge"}>
           <KnowledgeScreen onAction={setStatus} />
+        </div>
+        <div className="relative z-10" hidden={activeTab !== "review"}>
+          <ReviewScreen
+            credentials={credentials}
+            onAction={setStatus}
+            onOpenCreate={() => openTab("create", "已打开创作项目页，可以继续修改退回草稿。")}
+            onPendingCountChange={setReviewPendingCount}
+          />
         </div>
         <div className="relative z-10" hidden={activeTab !== "create"}>
           <CreateScreen credentials={credentials} onAction={setStatus} />
@@ -1087,6 +1135,7 @@ function MobileHeader({
     home: "今日工作台",
     collect: "趋势采集",
     knowledge: "知识库",
+    review: "人工确认",
     create: "创作项目",
     settings: "设置"
   };
@@ -1137,11 +1186,22 @@ function MobileHeader({
 
 function HomeScreen({
   onAction,
-  onChangeTab
+  onChangeTab,
+  reviewPendingCount
 }: {
   onAction: (message: string) => void;
   onChangeTab: (tab: MobileTab, message?: string) => void;
+  reviewPendingCount: number;
 }) {
+  const visibleQuickMetrics = quickMetrics.map((metric) =>
+    metric.tab === "review" ? { ...metric, value: String(reviewPendingCount) } : metric
+  );
+  const visibleProgressSteps = progressSteps.map((step) =>
+    step.tab === "review"
+      ? { ...step, state: reviewPendingCount > 0 ? `${reviewPendingCount} 条` : "待处理" }
+      : step
+  );
+
   return (
     <div className="space-y-4">
       <section className="relative mt-8 overflow-hidden rounded-[30px] border border-white/[0.88] bg-[rgba(255,253,247,0.92)] p-5 text-ink shadow-[0_18px_42px_rgba(31,58,49,0.11),inset_0_1px_0_rgba(255,255,255,0.90)] backdrop-blur-sm">
@@ -1247,7 +1307,7 @@ function HomeScreen({
 
       <MobilePanel title="生产节奏">
         <div className="mb-3 grid grid-cols-3 gap-2">
-          {quickMetrics.map((metric, index) => (
+          {visibleQuickMetrics.map((metric, index) => (
             <Metric
               key={`home-metric-${index}-${metric.tab}`}
               label={metric.label}
@@ -1259,7 +1319,7 @@ function HomeScreen({
           ))}
         </div>
         <div className="grid grid-cols-3 gap-2">
-          {progressSteps.map((step, index) => (
+          {visibleProgressSteps.map((step, index) => (
             <StepTile
               key={`home-progress-${index}-${step.tab}`}
               icon={<step.icon className="h-4 w-4" />}
