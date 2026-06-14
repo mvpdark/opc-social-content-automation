@@ -429,12 +429,20 @@ export function CreateScreen({
     async function loadLatestCover(contentId: number) {
       try {
         const latestCover = await fetchLatestCover(contentId);
-        if (active && latestCover) {
-          setGeneratedCover(latestCover);
-          saveStoredMobileCover(latestCover);
-          applyHistoryCover(latestCover);
-          onAction("已找回最近封面图。");
+        if (!active || !latestCover) {
+          return;
         }
+        const currentStoredContent = readStoredMobileContent();
+        if (
+          currentStoredContent?.id !== contentId ||
+          readStoredDeletedDraftIds().has(contentId)
+        ) {
+          return;
+        }
+        setGeneratedCover(latestCover);
+        saveStoredMobileCover(latestCover);
+        applyHistoryCover(latestCover);
+        onAction("已找回最近封面图。");
       } catch (_error) {
         // Keep the cached cover visible if the network check fails.
       }
@@ -611,12 +619,15 @@ export function CreateScreen({
       setGeneratedContent(visibleStoredContent);
       setSourceContext(visibleStoredContent.source_context ?? null);
       setDraftPreview(draftStateFromContent(visibleStoredContent));
-      if (storedCover?.content_id === visibleStoredContent.id) {
-        setGeneratedCover(storedCover);
-      }
+      setGeneratedCover(
+        storedCover?.content_id === visibleStoredContent.id ? storedCover : null
+      );
       void loadLatestCover(visibleStoredContent.id);
     } else {
+      setGeneratedContent(null);
+      setGeneratedCover(null);
       setSourceContext(null);
+      setDraftPreview(defaultMobileDraftPreview);
     }
 
     void loadLatestContent();
