@@ -22,6 +22,7 @@ from app.schemas.trend import (
     TrendKnowledgeDigestRequest,
     TrendKnowledgeDigestResponse,
 )
+from app.services.image_service import localize_image_url
 from app.services.knowledge_service import create_knowledge_item
 
 
@@ -313,6 +314,28 @@ def list_collection_jobs(
     if status_filter:
         statement = statement.where(TrendCollectionJob.status == status_filter)
     return list(db.scalars(statement).all())
+
+
+def ensure_trend_covers_are_local(db: Session, items: list[TrendContent]) -> None:
+    changed = False
+    for item in items:
+        if not item.cover_url or not item.cover_url.startswith(("http://", "https://")):
+            continue
+        try:
+            localized_url = localize_image_url(
+                item.cover_url,
+                content_id=item.id,
+                template="trend-cover",
+            )
+        except HTTPException:
+            continue
+        if localized_url != item.cover_url:
+            item.cover_url = localized_url
+            changed = True
+
+    if changed:
+        db.flush()
+        db.commit()
 
 
 def create_trend_asset(

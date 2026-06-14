@@ -43,6 +43,10 @@ VIDEO_COLLECTION_DISABLED_DETAIL = (
     "视频采集暂未启用；需要先补齐转写、版权和人工复核流程。"
 )
 BLOCKED_MARKERS = (
+    "\u5f53\u524d\u7b14\u8bb0\u6682\u65f6\u65e0\u6cd5\u6d4f\u89c8",
+    "\u5b89\u5168\u9650\u5236",
+    "IP\u5b58\u5728\u98ce\u9669",
+    "\u8bf7\u5207\u6362\u53ef\u9760\u7f51\u7edc\u73af\u5883",
     "登录后查看搜索结果",
     "手机号登录",
     "获取验证码",
@@ -81,6 +85,13 @@ AUTHOR_NOISE_MARKERS = (
     "关注",
     "登录",
     "小红书",
+)
+
+BLOCKED_DETAIL_MARKERS = (
+    "\u5f53\u524d\u7b14\u8bb0\u6682\u65f6\u65e0\u6cd5\u6d4f\u89c8",
+    "\u5b89\u5168\u9650\u5236",
+    "IP\u5b58\u5728\u98ce\u9669",
+    "\u8bf7\u5207\u6362\u53ef\u9760\u7f51\u7edc\u73af\u5883",
 )
 
 
@@ -332,6 +343,9 @@ def _merge_detail_asset(
 ) -> CollectedTrendAsset:
     title = normalize_visible_text(detail.get("title")).replace(" - 小红书", "")
     content = normalize_visible_text(detail.get("content"))
+    detail_marker_source = f"{title} {content}".lower()
+    if any(marker.lower() in detail_marker_source for marker in BLOCKED_DETAIL_MARKERS):
+        return asset
     author = _clean_author(detail.get("author"))
     cover_url = _clean_cover_url(detail.get("coverUrl"))
 

@@ -27,6 +27,7 @@ from app.services.trend_service import (
     create_collection_job,
     create_trend_knowledge_digest,
     create_trend_asset,
+    ensure_trend_covers_are_local,
     list_collection_jobs,
     mark_collection_job_for_auto_start,
     trend_report as build_trend_report,
@@ -79,7 +80,9 @@ def list_trends(
     statement = select(TrendContent).order_by(desc(TrendContent.created_at)).limit(limit)
     if platform:
         statement = statement.where(TrendContent.platform == platform)
-    return [TrendRead.model_validate(item) for item in db.scalars(statement).all()]
+    items = list(db.scalars(statement).all())
+    ensure_trend_covers_are_local(db, items)
+    return [TrendRead.model_validate(item) for item in items]
 
 
 @router.get("/report")

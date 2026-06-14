@@ -5,7 +5,9 @@ from app.models.trend_collection_job import TrendCollectionJob
 from app.services.trend_browser_collector import (
     _blocked_candidate_count,
     _content_kind,
+    _merge_detail_asset,
     _operator_wait_seconds,
+    CollectedTrendAsset,
     collection_session_dir,
     extract_candidate_assets,
     normalize_visible_text,
@@ -318,3 +320,30 @@ def test_extract_candidate_assets_skips_browser_warning_text() -> None:
     )
 
     assert assets == []
+
+
+def test_merge_detail_asset_keeps_card_data_when_detail_is_blocked() -> None:
+    asset = CollectedTrendAsset(
+        platform="xiaohongshu",
+        title="全球水博排名必看",
+        content="卡片里有认证、预算和在职适配信息。",
+        url="https://www.xiaohongshu.com/explore/ranking",
+        tags=["水博", "排名"],
+        author="瑶瑶硕博留学",
+        likes=120,
+        cover_url="https://sns-img-qc.xhscdn.com/cover.jpg",
+    )
+
+    merged = _merge_detail_asset(
+        asset,
+        {
+            "title": "当前笔记暂时无法浏览",
+            "content": "安全限制，请切换可靠网络环境后再试。",
+            "author": "小红书",
+            "likesText": "赞 0",
+            "coverUrl": "https://sns-img-qc.xhscdn.com/block-page.jpg",
+        },
+        keyword="水博",
+    )
+
+    assert merged == asset

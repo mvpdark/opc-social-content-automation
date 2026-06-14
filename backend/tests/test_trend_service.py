@@ -17,6 +17,7 @@ from app.services.trend_service import (
     build_safety_profile,
     collection_job_has_pending_auto_start,
     create_trend_knowledge_digest,
+    ensure_trend_covers_are_local,
     ensure_trend_sources_reviewed,
     mark_collection_job_for_auto_start,
     render_trend_knowledge_digest,
@@ -271,6 +272,39 @@ def test_render_trend_knowledge_digest_includes_sources() -> None:
     assert "博士申请时间线" in content
     assert "视频转写摘要" in content
     assert "发布前都必须人工复核" in content
+
+
+def test_ensure_trend_covers_are_local_persists_remote_cover(monkeypatch: pytest.MonkeyPatch) -> None:
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    def fake_localize_image_url(image_url: str, content_id: int, template: str) -> str:
+        assert image_url == "https://sns-img-qc.xhscdn.com/cover.jpg"
+        assert content_id == 7
+        assert template == "trend-cover"
+        return "/static/generated/remote-cover-7-trend-cover-test.jpg"
+
+    monkeypatch.setattr(
+        "app.services.trend_service.localize_image_url",
+        fake_localize_image_url,
+    )
+
+    with Session(engine) as db:
+        item = TrendContent(
+            id=7,
+            platform="xiaohongshu",
+            title="水博榜单",
+            content="榜单围绕认证、预算和在职适配。",
+            url="https://www.xiaohongshu.com/explore/ranking",
+            cover_url="https://sns-img-qc.xhscdn.com/cover.jpg",
+        )
+        db.add(item)
+        db.commit()
+
+        ensure_trend_covers_are_local(db, [item])
+        db.refresh(item)
+
+    assert item.cover_url == "/static/generated/remote-cover-7-trend-cover-test.jpg"
 
 
 def test_create_trend_digest_uses_reviewed_ids_over_keyword_filter() -> None:
