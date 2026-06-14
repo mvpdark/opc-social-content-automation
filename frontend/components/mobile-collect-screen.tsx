@@ -80,6 +80,19 @@ type CollectionScheduleStorage = {
   scheduleMessage: string;
 };
 
+function mobileDiagnosticToneClass(tone: CollectionJobDiagnosticItem["tone"]) {
+  switch (tone) {
+    case "good":
+      return "border-[#2f9a55]/[0.26] bg-[#e7f2ea]/[0.72] text-[#1f7548]";
+    case "warning":
+      return "border-[#e1be64]/[0.40] bg-[#fff4cf]/[0.72] text-[#8a6418]";
+    case "danger":
+      return "border-[#ef6b6b]/[0.34] bg-[#ffe8e8]/[0.72] text-[#b23b3b]";
+    default:
+      return "border-[#ded8cc] bg-[rgba(255,253,247,0.72)] text-ink";
+  }
+}
+
 export function CollectScreen({
   active = true,
   apiBase,
@@ -884,7 +897,25 @@ export function CollectScreen({
             </button>
           </div>
 
-          <div className="sr-only" data-testid="mobile-collection-diagnostic-grid">
+          <div className="mt-3 grid grid-cols-2 gap-2" data-testid="mobile-collection-diagnostic-grid">
+            {diagnosticItems.length ? (
+              diagnosticItems.slice(0, 8).map((item, index) => (
+                <div
+                  className={`min-w-0 rounded-[18px] border px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.74)] ${mobileDiagnosticToneClass(item.tone)}`}
+                  key={`mobile-diagnostic-${item.label}-${index}`}
+                >
+                  <div className="truncate text-[11px] font-black leading-4 opacity-75">{item.label}</div>
+                  <div className="mt-0.5 line-clamp-2 text-[14px] font-black leading-5">{item.value}</div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-2 rounded-[18px] border border-[#ded8cc] bg-[rgba(255,253,247,0.72)] px-3 py-2 text-[13px] font-bold leading-5 text-muted shadow-[inset_0_1px_0_rgba(255,255,255,0.74)]">
+                {scheduleMessage}
+              </div>
+            )}
+          </div>
+
+          <div className="sr-only">
             {scheduleMessage}
             {diagnosticItems.map((item) => `${item.label}${item.value}`).join(" ")}
             下次运行：{formatScheduleTime(nextRunAt)}

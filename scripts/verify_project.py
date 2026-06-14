@@ -649,7 +649,9 @@ def validate_frontend_design_contract() -> int:
         "create-card-bg.png",
         "style={{ backgroundImage: `url(${MOBILE_CREATE_CARD_BG})` }}",
         "MOBILE_HEADER_ICON_BUTTON_CLASS",
-        "className={MOBILE_HEADER_ICON_BUTTON_CLASS}",
+        'aria-label="返回 PC 工作台"',
+        'aria-label="查看通知状态"',
+        "className={`${MOBILE_HEADER_ICON_BUTTON_CLASS}",
     ]
     for snippet in mobile_shell_contracts:
         if snippet not in android_text:
@@ -658,6 +660,9 @@ def validate_frontend_design_contract() -> int:
     knowledge_api_text = (ROOT / "frontend" / "lib" / "knowledge-api.ts").read_text(
         encoding="utf-8"
     )
+    mobile_knowledge_text = (
+        ROOT / "frontend" / "components" / "mobile-knowledge-screen.tsx"
+    ).read_text(encoding="utf-8")
     knowledge_visibility_contracts = [
         (
             workspace_text,
@@ -670,7 +675,7 @@ def validate_frontend_design_contract() -> int:
             "PC knowledge library visibility",
         ),
         (
-            android_text,
+            f"{android_text}\n{mobile_knowledge_text}",
             [
                 '"knowledge"',
                 '{ id: "knowledge", icon: BookOpenText, label: "知识" }',
@@ -730,12 +735,44 @@ def validate_content_production_contract() -> int:
     mobile_draft_storage_text = (
         ROOT / "frontend" / "lib" / "mobile-draft-storage.ts"
     ).read_text(encoding="utf-8")
-    mobile_draft_contract_text = f"{android_text}\n{mobile_draft_storage_text}"
+    mobile_create_text = (
+        ROOT / "frontend" / "components" / "mobile-create-screen.tsx"
+    ).read_text(encoding="utf-8")
+    mobile_draft_preview_text = (
+        ROOT / "frontend" / "components" / "mobile-draft-preview-editor.tsx"
+    ).read_text(encoding="utf-8")
+    mobile_draft_history_text = (
+        ROOT / "frontend" / "components" / "mobile-draft-history.tsx"
+    ).read_text(encoding="utf-8")
+    mobile_reference_templates_text = (
+        ROOT / "frontend" / "components" / "mobile-reference-templates.tsx"
+    ).read_text(encoding="utf-8")
+    mobile_back_navigation_text = (
+        ROOT / "frontend" / "lib" / "mobile-back-navigation.ts"
+    ).read_text(encoding="utf-8")
+    mobile_cover_share_text = (
+        ROOT / "frontend" / "lib" / "mobile-cover-share.ts"
+    ).read_text(encoding="utf-8")
+    mobile_create_contract_text = "\n".join(
+        [
+            android_text,
+            mobile_create_text,
+            mobile_draft_preview_text,
+            mobile_draft_history_text,
+            mobile_reference_templates_text,
+            mobile_back_navigation_text,
+            mobile_cover_share_text,
+        ]
+    )
+    mobile_draft_contract_text = f"{mobile_create_contract_text}\n{mobile_draft_storage_text}"
     public_preview_text = (
         ROOT / "frontend" / "components" / "public-preview-client.tsx"
     ).read_text(encoding="utf-8")
     trend_collector_text = (
         ROOT / "frontend" / "components" / "trend-collector-panel.tsx"
+    ).read_text(encoding="utf-8")
+    mobile_collect_text = (
+        ROOT / "frontend" / "components" / "mobile-collect-screen.tsx"
     ).read_text(encoding="utf-8")
     image_service_text = (
         ROOT / "backend" / "app" / "services" / "image_service.py"
@@ -1002,13 +1039,13 @@ def validate_content_production_contract() -> int:
             "PC collection job status helper usage",
         ),
         (
-            android_text,
+            f"{android_text}\n{mobile_collect_text}",
             [
                 'from "@/lib/collection-job-status"',
                 "collectionJobDiagnosticItems(data)",
                 "collectionJobDiagnosticItems(job)",
                 "fetchLatestCollectionJob()",
-                'fetch(`${API_BASE}/trends/jobs?limit=1`',
+                'fetch(`${apiBase}/trends/jobs?limit=1`',
                 'formatCollectionJobStatus(job, "mobile")',
                 'formatCollectionJobStatus(data, "mobile")',
                 'data-testid="mobile-collection-diagnostic-grid"',
@@ -1053,7 +1090,7 @@ def validate_content_production_contract() -> int:
     ]
     for snippet in mobile_xhs_copy_contract_snippets:
         total += 1
-        if snippet not in android_text:
+        if snippet not in mobile_create_contract_text:
             raise SystemExit(f"Missing mobile Xiaohongshu copy contract: {snippet}")
 
     mobile_static_reference_contract_snippets = [
@@ -1064,7 +1101,7 @@ def validate_content_production_contract() -> int:
     ]
     for snippet in mobile_static_reference_contract_snippets:
         total += 1
-        if snippet not in android_text:
+        if snippet not in mobile_create_contract_text:
             raise SystemExit(f"Missing mobile static reference contract: {snippet}")
 
     mobile_topic_recommendation_contract_snippets = [
@@ -1089,7 +1126,7 @@ def validate_content_production_contract() -> int:
     ]
     for snippet in mobile_topic_recommendation_contract_snippets:
         total += 1
-        if snippet not in android_text:
+        if snippet not in mobile_create_contract_text:
             raise SystemExit(f"Missing mobile topic recommendation contract: {snippet}")
 
     mobile_source_evidence_contract_snippets = [
@@ -1140,22 +1177,26 @@ def validate_content_production_contract() -> int:
                 raise SystemExit(f"Missing {contract_name} contract: {snippet}")
 
     mobile_project_swipe_contract_snippets = [
-        "projectSwipeStartRef",
-        "function shouldIgnoreProjectSwipe(target: EventTarget | null)",
-        "function handleProjectTouchStart(event: TouchEvent<HTMLDivElement>)",
-        "function handleProjectTouchEnd(event: TouchEvent<HTMLDivElement>)",
+        "mobileBackGestureStartRef",
+        "function shouldIgnoreMobileBackGesture(target: EventTarget | null)",
+        "function beginMobileBackGesture({",
+        "function finishMobileBackGesture({",
+        "const isLeftBackSwipe = start.edge === \"left\"",
+        "const isRightBackSwipe = start.edge === \"right\"",
+        "handleMobileBackRequest(\"gesture\")",
+        "requestMobileNestedBack(source)",
+        "addMobileBackHandler(() =>",
+        "if (selectedProjectId) {",
+        "setSelectedProjectId(null);",
         'data-testid="mobile-create-project-detail"',
         'data-project-swipe-ignore="true"',
-        "deltaX < -72",
-        "absX > absY * 1.35",
-        "returnToProjects();",
     ]
     for snippet in mobile_project_swipe_contract_snippets:
         total += 1
-        if snippet not in android_text:
+        if snippet not in mobile_create_contract_text:
             raise SystemExit(f"Missing mobile project swipe-back contract: {snippet}")
     total += 1
-    if android_text.count('data-project-swipe-ignore="true"') < 2:
+    if mobile_create_contract_text.count('data-project-swipe-ignore="true"') < 2:
         raise SystemExit(
             "Mobile project swipe-back must ignore both topic presets and draft carousel."
         )
@@ -1169,11 +1210,12 @@ def validate_content_production_contract() -> int:
         "const normalized = normalizeVisibleDraftHistory(nextItems);",
         "MOBILE_COVER_HYDRATION_RETRY_LIMIT",
         "MOBILE_COVER_HYDRATION_RETRY_MS",
-        "const XHS_COVER_WIDTH = 2048;",
-        "const XHS_COVER_HEIGHT = 2736;",
+        "export const XHS_COVER_WIDTH = 2048;",
+        "export const XHS_COVER_HEIGHT = 2736;",
         "canvas.width = image.naturalWidth || XHS_COVER_WIDTH;",
         "canvas.width = XHS_COVER_WIDTH;",
-        'width="${XHS_COVER_WIDTH}" height="${XHS_COVER_HEIGHT}"',
+        "context.scale(canvas.width / XHS_COVER_BASE_WIDTH, canvas.height / XHS_COVER_BASE_HEIGHT);",
+        'return new File([blob], `${sanitizeFilename(draft.title)}.png`, { type: "image/png" });',
         "async function fetchLatestCover(contentId: number)",
         "function scheduleMissingCoverRetry(items: MobileDraftHistoryItem[], attempt: number)",
         "async function hydrateMissingHistoryCovers(items: MobileDraftHistoryItem[], attempt = 0)",
@@ -1190,7 +1232,7 @@ def validate_content_production_contract() -> int:
         "function beginDraftSelection(item: MobileDraftHistoryItem)",
         "function toggleDraftSelection(item: MobileDraftHistoryItem)",
         "async function deleteSelectedDraftHistoryItems(items: MobileDraftHistoryItem[])",
-        "await fetch(`${API_BASE}/content/${item.content.id}`",
+        "await fetch(`${apiBase}/content/${item.content.id}`",
         'method: "DELETE"',
         "rememberDeletedDraftId(item.content.id)",
         "已进入草稿多选模式。",
@@ -1205,12 +1247,12 @@ def validate_content_production_contract() -> int:
         if snippet not in mobile_draft_contract_text:
             raise SystemExit(f"Missing mobile draft delete contract: {snippet}")
 
-    mobile_xhs_export_start = android_text.index("async function handleOpenXiaohongshu")
-    mobile_xhs_export_end = android_text.index(
+    mobile_xhs_export_start = mobile_draft_preview_text.index("async function handleOpenXiaohongshu")
+    mobile_xhs_export_end = mobile_draft_preview_text.index(
         "async function copyPreviewLink",
         mobile_xhs_export_start,
     )
-    mobile_xhs_export_text = android_text[
+    mobile_xhs_export_text = mobile_draft_preview_text[
         mobile_xhs_export_start:mobile_xhs_export_end
     ]
     mobile_xhs_export_contract_snippets = [
@@ -1326,7 +1368,7 @@ def validate_content_production_contract() -> int:
             "PC writing particle style",
         ),
         (
-            android_text,
+            mobile_create_contract_text,
             ["哦、哟、呀、啊、嘛、呢、啦、哈", "不要每句都堆"],
             "Android writing particle style",
         ),
@@ -1372,7 +1414,7 @@ def validate_content_production_contract() -> int:
             "PC cover reference preview",
         ),
         (
-            android_text,
+            mobile_create_contract_text,
             ["路线矩阵", "榜单矩阵", "已核实知识库"],
             "mobile route-matrix cover guidance",
         ),
