@@ -73,6 +73,7 @@ import {
   buildEditableDraftCopy,
   clearStoredMobileContent,
   clearStoredMobileCover,
+  filterDeletedMobileDraftHistory,
   normalizeMobileDraftHistory,
   readStoredDeletedDraftIds,
   readStoredMobileContent,
@@ -2276,8 +2277,12 @@ function CreateScreen({
   const selectedDraftItems = draftHistory.filter((item) => selectedDraftIdSet.has(item.content.id));
   const selectionMode = selectedDraftIds.length > 0;
 
+  function normalizeVisibleDraftHistory(nextItems: MobileDraftHistoryItem[]) {
+    return filterDeletedMobileDraftHistory(normalizeMobileDraftHistory(nextItems));
+  }
+
   function persistDraftHistory(nextItems: MobileDraftHistoryItem[]) {
-    const normalized = normalizeMobileDraftHistory(nextItems);
+    const normalized = normalizeVisibleDraftHistory(nextItems);
     setDraftHistory(normalized);
     saveStoredMobileDraftHistory(normalized);
     return normalized;
@@ -2287,7 +2292,7 @@ function CreateScreen({
     const savedAt = content.created_at ?? new Date().toISOString();
     let normalized: MobileDraftHistoryItem[] = [];
     setDraftHistory((currentItems) => {
-      normalized = normalizeMobileDraftHistory([
+      normalized = normalizeVisibleDraftHistory([
         {
           content,
           cover,
@@ -2493,7 +2498,7 @@ function CreateScreen({
 
     function applyHistoryCover(latestCover: GeneratedImageAsset) {
       setDraftHistory((currentItems) => {
-        const normalized = normalizeMobileDraftHistory(
+        const normalized = normalizeVisibleDraftHistory(
           currentItems.map((item) =>
             item.content.id === latestCover.content_id ? { ...item, cover: latestCover } : item
           )
@@ -2563,7 +2568,7 @@ function CreateScreen({
       const coverByContentId = new Map(covers.map((cover) => [cover.content_id, cover]));
       const stillMissingCover = missingCoverIds.some((contentId) => !coverByContentId.has(contentId));
       setDraftHistory((currentItems) => {
-        const normalized = normalizeMobileDraftHistory(
+        const normalized = normalizeVisibleDraftHistory(
           currentItems.map((item) => ({
             ...item,
             cover: item.cover ?? coverByContentId.get(item.content.id) ?? null
@@ -2621,7 +2626,7 @@ function CreateScreen({
           const currentHistory = readStoredMobileDraftHistory().filter(
             (item) => item.content.platform === platform
           );
-          const normalized = normalizeMobileDraftHistory([...currentHistory, ...latestItems]);
+          const normalized = normalizeVisibleDraftHistory([...currentHistory, ...latestItems]);
           const latestContent = normalized[0].content;
           const latestCover =
             normalized.find((item) => item.content.id === latestContent.id)?.cover ?? null;
@@ -2631,7 +2636,7 @@ function CreateScreen({
           saveStoredMobileContent(latestContent);
           if (storedCover?.content_id === latestContent.id) {
             setGeneratedCover(storedCover);
-            const nextHistory = normalizeMobileDraftHistory(
+            const nextHistory = normalizeVisibleDraftHistory(
               normalized.map((item) =>
                 item.content.id === latestContent.id ? { ...item, cover: storedCover } : item
               )
@@ -2669,7 +2674,7 @@ function CreateScreen({
       clearStoredMobileCover();
     }
     if (visibleStoredContent?.platform === platform) {
-      const normalized = normalizeMobileDraftHistory([
+      const normalized = normalizeVisibleDraftHistory([
         {
           content: visibleStoredContent,
           cover: storedCover?.content_id === visibleStoredContent.id ? storedCover : null,
