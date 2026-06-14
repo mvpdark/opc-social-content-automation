@@ -111,6 +111,33 @@ def test_codex_test_draft_provider_keeps_water_ranking_topic(
     assert "研究方向、目标导师和时间节点" not in result
 
 
+def test_codex_test_draft_provider_warns_missing_sources_for_water_ranking_topic(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "draft_provider", "codex_test")
+
+    result = model_router.draft_model(
+        "draft_generation",
+        {
+            "platform": "xiaohongshu",
+            "topic": "全球水博排名必看",
+            "tags": ["水博", "排名"],
+            "web_search_context": {
+                "required": True,
+                "query": "global water resources PhD programs official sources",
+                "results": [],
+                "usage_note": "Live web search was required but no Tavily sources were available.",
+            },
+        },
+    )
+
+    assert "全球水博排名必看" in result
+    assert "没有可见 Tavily 来源" in result
+    assert "核验框架" in result
+    assert "硬编学校名" in result
+    assert "研究方向、目标导师和时间节点" not in result
+
+
 def test_codex_test_draft_provider_keeps_colloquial_school_list_topic(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
