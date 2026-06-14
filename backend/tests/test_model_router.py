@@ -111,6 +111,27 @@ def test_codex_test_draft_provider_keeps_water_ranking_topic(
     assert "研究方向、目标导师和时间节点" not in result
 
 
+def test_codex_test_draft_provider_keeps_colloquial_school_list_topic(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "draft_provider", "codex_test")
+
+    result = model_router.draft_model(
+        "draft_generation",
+        {
+            "platform": "xiaohongshu",
+            "topic": "水博哪个学校好",
+            "tags": ["水博", "博士项目"],
+        },
+    )
+
+    assert "水博哪个学校好" in result
+    assert "认证" in result
+    assert "预算" in result
+    assert "硬编学校名" in result
+    assert "研究方向、目标导师和时间节点" not in result
+
+
 @pytest.mark.parametrize(
     ("topic", "expected_terms", "forbidden_terms"),
     [
