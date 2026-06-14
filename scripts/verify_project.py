@@ -1086,6 +1086,7 @@ def validate_content_production_contract() -> int:
         'data-testid="mobile-source-evidence"',
         "Tavily 查询：{webSearch.query}",
         "Tavily 摘要：",
+        "摘要仅作线索，发布前请点开下方 URL 核对原文。",
         "sourceContext?.review_note",
         "{sourceContext.review_note}",
     ]
@@ -1104,6 +1105,7 @@ def validate_content_production_contract() -> int:
                 'key={`${item.url}-${item.title}-${index}`}',
                 "webSearch?.answer",
                 "Tavily 摘要：",
+                "摘要仅作线索，发布前请点开下方 URL 核对原文。",
             ],
             "PC source evidence stable keys",
         ),
@@ -1116,6 +1118,7 @@ def validate_content_production_contract() -> int:
                 'key={`${item.url}-${item.title}-${index}`}',
                 "webSearch?.answer",
                 "Tavily 摘要：",
+                "摘要仅作线索，发布前请点开下方 URL 核对原文。",
             ],
             "mobile source evidence stable keys",
         ),

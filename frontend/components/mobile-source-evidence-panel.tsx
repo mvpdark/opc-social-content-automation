@@ -116,6 +116,7 @@ export function MobileSourceEvidencePanel({
             <p className="rounded-[16px] border border-white/[0.86] bg-white/80 px-3 py-2 text-[11px] font-medium leading-5 text-ink">
               <span className="font-black text-moss">Tavily 摘要：</span>
               {webSearch.answer}
+              <span className="mt-1 block text-muted">摘要仅作线索，发布前请点开下方 URL 核对原文。</span>
             </p>
           ) : null}
           {webResults.length ? (
