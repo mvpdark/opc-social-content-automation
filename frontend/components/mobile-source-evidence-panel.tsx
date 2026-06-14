@@ -107,6 +107,11 @@ export function MobileSourceEvidencePanel({
               {webResults.length ? `${webResults.length} 条` : "未返回"}
             </span>
           </div>
+          {webSearch?.query ? (
+            <p className="rounded-[16px] bg-white/70 px-3 py-2 text-[11px] font-medium leading-5 text-muted">
+              Tavily 查询：{webSearch.query}
+            </p>
+          ) : null}
           {webResults.length ? (
             webResults.slice(0, 3).map((item) => (
               <a
@@ -129,6 +134,11 @@ export function MobileSourceEvidencePanel({
               这个选题需要实时资料，但本次还没拿到可见联网来源，请换关键词或检查 Tavily。
             </p>
           )}
+        </div>
+      ) : null}
+      {sourceContext?.review_note ? (
+        <div className="mt-3 border-l-4 border-[#f0c76b] pl-3 text-[11px] font-medium leading-5 text-muted">
+          {sourceContext.review_note}
         </div>
       ) : null}
     </div>

@@ -721,6 +721,9 @@ def validate_content_production_contract() -> int:
     app_shell_text = (ROOT / "frontend" / "components" / "app-shell.tsx").read_text(
         encoding="utf-8"
     )
+    mobile_source_evidence_text = (
+        ROOT / "frontend" / "components" / "mobile-source-evidence-panel.tsx"
+    ).read_text(encoding="utf-8")
     service_error_text = (
         ROOT / "frontend" / "lib" / "service-error-copy.ts"
     ).read_text(encoding="utf-8")
@@ -1043,6 +1046,17 @@ def validate_content_production_contract() -> int:
         total += 1
         if snippet not in android_text:
             raise SystemExit(f"Missing mobile topic recommendation contract: {snippet}")
+
+    mobile_source_evidence_contract_snippets = [
+        'data-testid="mobile-source-evidence"',
+        "Tavily 查询：{webSearch.query}",
+        "sourceContext?.review_note",
+        "{sourceContext.review_note}",
+    ]
+    for snippet in mobile_source_evidence_contract_snippets:
+        total += 1
+        if snippet not in mobile_source_evidence_text:
+            raise SystemExit(f"Missing mobile source evidence contract: {snippet}")
 
     mobile_project_swipe_contract_snippets = [
         "projectSwipeStartRef",
