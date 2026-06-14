@@ -48,6 +48,22 @@ def test_compile_knowledge_base_creates_ai_ready_item() -> None:
     assert "mentor matching note" in result.item.content
 
 
+def test_compile_knowledge_base_does_not_create_empty_compilation() -> None:
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as db:
+        result = compile_knowledge_base(db, force=True, source_limit=20)
+        latest = latest_knowledge_compilation(db)
+
+    assert result.compiled is False
+    assert result.due is True
+    assert result.item is None
+    assert result.source_count == 0
+    assert result.message == "no_source_knowledge_items"
+    assert latest is None
+
+
 def test_compile_knowledge_base_skips_fresh_compilation_and_excludes_prior_outputs() -> None:
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
