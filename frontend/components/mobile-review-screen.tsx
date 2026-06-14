@@ -111,6 +111,10 @@ function mobileReviewEvidenceCount(sourceContext?: GenerationSourceContext | nul
   return (sourceContext?.knowledge_items?.length ?? 0) + (sourceContext?.web_search?.results?.length ?? 0);
 }
 
+function mobileReviewNeedsWebSourceReview(sourceContext?: GenerationSourceContext | null) {
+  return Boolean(sourceContext?.web_search?.required && !(sourceContext.web_search.results?.length ?? 0));
+}
+
 function formatMobileReviewTime(value?: string) {
   if (!value) {
     return "刚刚";
@@ -454,6 +458,7 @@ function ReviewQueueCard({
 }) {
   const coverUrl = item.cover ? resolveAssetUrl(item.cover.image_url) : buildLocalReviewCoverUrl(item.content);
   const evidenceCount = mobileReviewEvidenceCount(item.content.source_context);
+  const needsWebSourceReview = mobileReviewNeedsWebSourceReview(item.content.source_context);
 
   return (
     <article
@@ -484,6 +489,11 @@ function ReviewQueueCard({
             <span className="rounded-full bg-white/[0.74] px-2 py-1 text-[10px] font-black text-moss">
               来源 {evidenceCount} 条
             </span>
+            {needsWebSourceReview ? (
+              <span className="rounded-full bg-[#fff4d7] px-2 py-1 text-[10px] font-black text-[#8a6110]">
+                待补联网来源
+              </span>
+            ) : null}
             <span className="rounded-full bg-white/[0.74] px-2 py-1 text-[10px] font-black text-muted">
               封面 {item.cover ? "已生成" : "待补"}
             </span>
@@ -570,6 +580,11 @@ function ReviewDetailSheet({
             <span className="rounded-full bg-white/[0.78] px-2.5 py-1 text-[11px] font-black text-muted">
               来源 {mobileReviewEvidenceCount(item.content.source_context)} 条
             </span>
+            {mobileReviewNeedsWebSourceReview(item.content.source_context) ? (
+              <span className="rounded-full bg-[#fff4d7] px-2.5 py-1 text-[11px] font-black text-[#8a6110]">
+                需核对联网来源
+              </span>
+            ) : null}
           </div>
           <article className="mt-4 rounded-[24px] border border-white/[0.86] bg-white/[0.72] px-4 py-4">
             <h4 className="text-xs font-black text-muted">正文预览</h4>
@@ -618,6 +633,7 @@ function ReviewEvidenceBlock({ sourceContext }: { sourceContext: GenerationSourc
   const webSearch = sourceContext?.web_search;
   const webResults = webSearch?.results ?? [];
   const hasEvidence = knowledgeItems.length + webResults.length > 0;
+  const missingRequiredWebResults = Boolean(webSearch?.required && !webResults.length);
 
   return (
     <section className="mt-4 rounded-[24px] border border-white/[0.86] bg-white/[0.72] px-4 py-4">
@@ -667,6 +683,13 @@ function ReviewEvidenceBlock({ sourceContext }: { sourceContext: GenerationSourc
               <p className="mt-1 line-clamp-3 break-words text-[11px] font-semibold leading-5 text-muted">{item.content}</p>
             </a>
           ))}
+        </div>
+      ) : null}
+      {missingRequiredWebResults ? (
+        <div className="mt-3 rounded-[18px] border border-[#f3dca3] bg-[#fff8e6] px-3 py-2 text-[11px] font-semibold leading-5 text-[#8a6110]">
+          <p>这个选题需要联网来源，但当前没有可见 Tavily 结果。</p>
+          {webSearch?.query ? <p className="mt-1 break-words">联网检索词：{webSearch.query}</p> : null}
+          <p className="mt-1">请退回补充来源，或改成核验框架后再发布。</p>
         </div>
       ) : null}
       {sourceContext?.review_note ? (
