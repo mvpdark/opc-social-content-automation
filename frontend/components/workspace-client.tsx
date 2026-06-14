@@ -105,6 +105,7 @@ import {
   buildCustomTopicAudience,
   buildCustomTopicTags,
   buildTopicCoverStyleNotes,
+  findGenerationTopicPresetByTopic,
   isKnownGenerationTopicAudience,
   isKnownGenerationTopicKnowledgeQuery,
   isKnownGenerationTopicTags,
@@ -2672,6 +2673,7 @@ function GenerationLauncher({
   const [sourcePreviewError, setSourcePreviewError] = useState<string | null>(null);
 
   const selectedPlatform: PlatformId = platform === "douyin" ? "douyin" : "xiaohongshu";
+  const selectedTopicPreset = findGenerationTopicPresetByTopic(topic);
   const hasTopic = topic.trim().length > 0;
   const draftProviderStatus = providerStatuses.find((item) => item.name === "Draft generation");
   const draftProviderMissing = Boolean(providerStatuses.length && !draftProviderStatus?.configured);
@@ -3289,25 +3291,41 @@ function GenerationLauncher({
               </div>
               <div className="mt-1 text-[11px] text-muted">每 45 秒自动换一批，也可以直接修改为自定义选题</div>
               <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-                {visibleTopicPresets.map((preset) => (
-                  <button
-                    className="min-h-[94px] rounded-[16px] border border-steel/35 bg-paper/70 px-3 py-2.5 text-left transition hover:translate-y-[-1px] hover:border-moss/60 hover:bg-moss/10"
-                    data-testid={`topic-preset-${preset.key}`}
-                    key={preset.key}
-                    onClick={() => applyTopicPreset(preset)}
-                    type="button"
-                  >
-                    <span className="block text-xs font-semibold text-moss">
-                      {preset.desktopLabel}
-                    </span>
-                    <span className="mt-1 block text-sm font-semibold leading-5 text-ink">
-                      {preset.topic}
-                    </span>
-                    <span className="mt-1 block text-[11px] leading-4 text-muted">
-                      {preset.desktopHelper}
-                    </span>
-                  </button>
-                ))}
+                {visibleTopicPresets.map((preset) => {
+                  const selected = selectedTopicPreset?.key === preset.key;
+                  return (
+                    <button
+                      aria-pressed={selected}
+                      className={[
+                        "min-h-[94px] rounded-[16px] border px-3 py-2.5 text-left transition hover:translate-y-[-1px]",
+                        selected
+                          ? "border-moss/70 bg-moss/12 shadow-[inset_0_1px_0_rgb(var(--glass-highlight)/0.44)]"
+                          : "border-steel/35 bg-paper/70 hover:border-moss/60 hover:bg-moss/10"
+                      ].join(" ")}
+                      data-testid={`topic-preset-${preset.key}`}
+                      key={preset.key}
+                      onClick={() => applyTopicPreset(preset)}
+                      type="button"
+                    >
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-moss">
+                          {preset.desktopLabel}
+                        </span>
+                        {selected ? (
+                          <span className="rounded-full bg-moss/15 px-2 py-0.5 text-[10px] font-semibold text-moss">
+                            当前
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="mt-1 block text-sm font-semibold leading-5 text-ink">
+                        {preset.topic}
+                      </span>
+                      <span className="mt-1 block text-[11px] leading-4 text-muted">
+                        {preset.desktopHelper}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <label className="block">
