@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
   ArrowLeft,
   CheckCircle2,
-  ExternalLink
+  ExternalLink,
+  Trash2
 } from "lucide-react";
 
 import { PlatformIcon } from "@/components/platform-icon";
@@ -156,14 +157,20 @@ function MobileOverlayPortal({ children }: { children: ReactNode }) {
 }
 
 export function TrendSourceCard({
+  deleting = false,
   item,
+  onConfirmSwipe,
+  onDeleteSwipe,
   onOpen,
   onOpenUrl,
   onToggle,
   reviewed,
   selected
 }: {
+  deleting?: boolean;
   item: MobileTrendContent;
+  onConfirmSwipe: () => void;
+  onDeleteSwipe: () => void;
   onOpen: () => void;
   onOpenUrl: () => void;
   onToggle: () => void;
@@ -175,20 +182,126 @@ export function TrendSourceCard({
   const platformLabel = mobilePlatformText(item.platform);
   const author = mobileTrendAuthor(item);
   const date = item.publish_time || formatMobileTrendDate(item.created_at);
-  const metrics = `赞 ${mobileTrendLikes(item)} · 藏 ${item.favorites} · 转 ${item.shares}`;
+  const metrics = `赞 ${mobileTrendLikes(item)} · 藏 ${item.favorites} · 评 ${item.comments} · 转 ${item.shares}`;
+  const [dragX, setDragX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const startRef = useRef<{ x: number; y: number; pointerId: number } | null>(null);
+  const suppressClickRef = useRef(false);
+  const swipeThreshold = 86;
+
+  function clampDrag(value: number) {
+    return Math.max(-116, Math.min(116, value));
+  }
+
+  function suppressNextClick() {
+    if (!suppressClickRef.current) {
+      return false;
+    }
+    suppressClickRef.current = false;
+    return true;
+  }
+
+  function handlePointerDown(event: PointerEvent<HTMLElement>) {
+    if (deleting || event.button !== 0) {
+      return;
+    }
+    if ((event.target as HTMLElement).closest("[data-swipe-ignore='true']")) {
+      return;
+    }
+    startRef.current = { x: event.clientX, y: event.clientY, pointerId: event.pointerId };
+    setDragging(true);
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  }
+
+  function handlePointerMove(event: PointerEvent<HTMLElement>) {
+    const start = startRef.current;
+    if (!start || start.pointerId !== event.pointerId) {
+      return;
+    }
+    const deltaX = event.clientX - start.x;
+    const deltaY = event.clientY - start.y;
+    if (Math.abs(deltaY) > 42 && Math.abs(deltaY) > Math.abs(deltaX) * 1.3) {
+      startRef.current = null;
+      setDragging(false);
+      setDragX(0);
+      return;
+    }
+    if (Math.abs(deltaX) > 8) {
+      suppressClickRef.current = true;
+      setDragX(clampDrag(deltaX));
+    }
+  }
+
+  function resetSwipe() {
+    startRef.current = null;
+    setDragging(false);
+    setDragX(0);
+  }
+
+  function handlePointerUp(event: PointerEvent<HTMLElement>) {
+    const start = startRef.current;
+    if (!start || start.pointerId !== event.pointerId) {
+      resetSwipe();
+      return;
+    }
+    const finalDrag = dragX || event.clientX - start.x;
+    if (finalDrag >= swipeThreshold) {
+      suppressClickRef.current = true;
+      resetSwipe();
+      onConfirmSwipe();
+      return;
+    }
+    if (finalDrag <= -swipeThreshold) {
+      suppressClickRef.current = true;
+      resetSwipe();
+      onDeleteSwipe();
+      return;
+    }
+    resetSwipe();
+  }
+
+  function handlePointerCancel() {
+    resetSwipe();
+  }
 
   return (
     <article
       className={[
-        "rounded-[24px] border bg-[rgba(255,253,247,0.80)] p-2.5 text-left shadow-[0_10px_24px_rgba(31,58,49,0.06),inset_0_1px_0_rgba(255,255,255,0.90)]",
-        selected ? "border-[#23854f] ring-2 ring-[#23854f]/[0.12]" : "border-white/[0.86]"
+        "relative overflow-hidden rounded-[24px] text-left",
+        deleting ? "opacity-55" : ""
       ].join(" ")}
       data-testid={`mobile-trend-source-${item.id}`}
+      onPointerCancel={handlePointerCancel}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
     >
+      <div aria-hidden="true" className="absolute inset-0 grid grid-cols-2 rounded-[24px]">
+        <div className="flex items-center gap-2 bg-[#23854f] px-4 text-xs font-black text-white">
+          <CheckCircle2 className="h-4 w-4" />
+          右滑确认
+        </div>
+        <div className="flex items-center justify-end gap-2 bg-[#ef4444] px-4 text-xs font-black text-white">
+          左滑删除
+          <Trash2 className="h-4 w-4" />
+        </div>
+      </div>
+      <div
+        className={[
+        "relative rounded-[24px] border bg-[rgba(255,253,247,0.88)] p-2.5 shadow-[0_10px_24px_rgba(31,58,49,0.06),inset_0_1px_0_rgba(255,255,255,0.90)]",
+        dragging ? "" : "transition-transform duration-200 ease-out",
+        selected ? "border-[#23854f] ring-2 ring-[#23854f]/[0.12]" : "border-white/[0.86]"
+      ].join(" ")}
+        style={{ transform: `translateX(${dragX}px)` }}
+      >
       <div className="flex items-center gap-3">
         <button
           className="h-[74px] w-[74px] shrink-0 overflow-hidden rounded-[18px] border border-white/[0.88] bg-[#eef4ed] shadow-[0_8px_18px_rgba(31,58,49,0.08)] active:scale-[0.98]"
-          onClick={onOpen}
+          onClick={() => {
+            if (!suppressNextClick()) {
+              onOpen();
+            }
+          }}
           type="button"
         >
           {coverUrl ? (
@@ -202,7 +315,15 @@ export function TrendSourceCard({
           )}
         </button>
 
-        <button className="min-w-0 flex-1 touch-manipulation text-left active:scale-[0.995]" onClick={onOpen} type="button">
+        <button
+          className="min-w-0 flex-1 touch-manipulation text-left active:scale-[0.995]"
+          onClick={() => {
+            if (!suppressNextClick()) {
+              onOpen();
+            }
+          }}
+          type="button"
+        >
           <div className="flex min-w-0 items-center gap-2">
             <span
               className={[
@@ -235,6 +356,7 @@ export function TrendSourceCard({
                 ? "border-[#23854f] bg-[#23854f] text-white"
                 : "border-transparent bg-[#ecebe2] text-[#9ca28f]"
             ].join(" ")}
+            data-swipe-ignore="true"
             onClick={onToggle}
             type="button"
           >
@@ -244,6 +366,7 @@ export function TrendSourceCard({
           <button
             aria-label="打开来源链接"
             className="mt-1 flex h-7 w-7 touch-manipulation items-center justify-center rounded-full border border-[#d6e8df] bg-white/[0.72] text-muted active:scale-[0.98] disabled:opacity-40"
+            data-swipe-ignore="true"
             disabled={!item.url}
             onClick={onOpenUrl}
             type="button"
@@ -251,6 +374,7 @@ export function TrendSourceCard({
             <ExternalLink className="h-3.5 w-3.5" />
           </button>
         </div>
+      </div>
       </div>
     </article>
   );

@@ -27,6 +27,7 @@ export function isKnowledgeItem(value: unknown): value is KnowledgeItem {
 }
 
 const knowledgeCategoryLabels: Record<string, string> = {
+  "ai-compiled-weekly": "AI编译版",
   "trend-insight": "趋势摘要",
   "xiaohongshu-case": "小红书案例",
   xiaohongshu_reference: "高赞参考"

@@ -351,6 +351,18 @@ def create_trend_asset(
     return item
 
 
+def delete_trend_asset(db: Session, trend_id: int, current_user: User) -> None:
+    _ = current_user
+    item = db.get(TrendContent, trend_id)
+    if item is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="未找到采集素材。",
+        )
+    db.delete(item)
+    db.commit()
+
+
 def _trend_filter_statement(payload: TrendKnowledgeDigestRequest):
     statement = select(TrendContent).order_by(desc(TrendContent.created_at))
     if payload.trend_ids:

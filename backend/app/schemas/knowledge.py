@@ -16,3 +16,23 @@ class KnowledgeSearchResult(BaseModel):
     match_type: str = "keyword"
 
     model_config = {"from_attributes": True}
+
+
+class KnowledgeCompileRequest(BaseModel):
+    force: bool = False
+    source_limit: int = Field(default=120, ge=1, le=500)
+
+
+class KnowledgeCompileResponse(BaseModel):
+    item: KnowledgeSearchResult | None = None
+    compiled: bool
+    due: bool
+    interval_hours: int
+    source_count: int
+    message: str
+
+
+class KnowledgeCompileStatus(BaseModel):
+    latest: KnowledgeSearchResult | None = None
+    due: bool
+    interval_hours: int

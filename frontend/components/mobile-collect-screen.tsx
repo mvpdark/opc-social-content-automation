@@ -105,6 +105,7 @@ export function CollectScreen({
   const [trendItems, setTrendItems] = useState<MobileTrendContent[]>([]);
   const [selectedTrendIds, setSelectedTrendIds] = useState<number[]>([]);
   const [reviewedTrendIds, setReviewedTrendIds] = useState<number[]>([]);
+  const [deletingTrendIds, setDeletingTrendIds] = useState<number[]>([]);
   const [selectedTrendItem, setSelectedTrendItem] = useState<MobileTrendContent | null>(null);
   const [trendListLoading, setTrendListLoading] = useState(false);
   const [trendListStatus, setTrendListStatus] = useState("正在读取采集素材...");
@@ -579,6 +580,32 @@ export function CollectScreen({
     onAction(`已确认来源：${item.title}`);
   }
 
+  async function deleteTrendSource(item: MobileTrendContent) {
+    if (deletingTrendIds.includes(item.id)) {
+      return;
+    }
+    setDeletingTrendIds((currentIds) => [...currentIds, item.id]);
+    onAction(`正在删除采集素材：${item.title}`);
+    try {
+      const response = await fetch(`${apiBase}/trends/${item.id}`, {
+        headers: authHeaders(credentials),
+        method: "DELETE"
+      });
+      if (!response.ok) {
+        throw new Error(await readApiError(response, "采集素材删除失败。"));
+      }
+      setTrendItems((currentItems) => currentItems.filter((currentItem) => currentItem.id !== item.id));
+      setSelectedTrendIds((currentIds) => currentIds.filter((id) => id !== item.id));
+      setReviewedTrendIds((currentIds) => currentIds.filter((id) => id !== item.id));
+      setSelectedTrendItem((currentItem) => (currentItem?.id === item.id ? null : currentItem));
+      onAction(`已删除采集素材：${item.title}`);
+    } catch (error) {
+      onAction(error instanceof Error ? error.message : "采集素材删除失败。");
+    } finally {
+      setDeletingTrendIds((currentIds) => currentIds.filter((id) => id !== item.id));
+    }
+  }
+
   function openTrendSourceUrl(item: MobileTrendContent) {
     if (!item.url) {
       onAction("这条素材没有来源链接。");
@@ -891,8 +918,11 @@ export function CollectScreen({
           {trendItems.length ? (
             trendItems.map((item) => (
               <TrendSourceCard
+                deleting={deletingTrendIds.includes(item.id)}
                 item={item}
                 key={`mobile-trend-source-${item.id}`}
+                onConfirmSwipe={() => confirmSingleTrendSource(item)}
+                onDeleteSwipe={() => void deleteTrendSource(item)}
                 onOpen={() => {
                   setSelectedTrendItem(item);
                   onAction("已打开采集素材详情。");

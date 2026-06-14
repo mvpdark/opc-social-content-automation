@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     tavily_search_enabled: bool = True
     tavily_timeout_seconds: float = 25.0
     tavily_max_results: int = 6
+    knowledge_compile_enabled: bool = True
+    knowledge_compile_interval_hours: int = 168
+    knowledge_compile_check_interval_seconds: int = 3600
+    knowledge_compile_source_limit: int = 120
     frontend_origin: str = "http://localhost:3000"
     cors_origin_regex: str | None = (
         r"^https?://("

@@ -27,6 +27,7 @@ from app.services.trend_service import (
     create_collection_job,
     create_trend_knowledge_digest,
     create_trend_asset,
+    delete_trend_asset,
     ensure_trend_covers_are_local,
     list_collection_jobs,
     mark_collection_job_for_auto_start,
@@ -213,3 +214,12 @@ def collect_trend(
 ) -> TrendRead:
     item = create_trend_asset(db, payload, current_user)
     return TrendRead.model_validate(item)
+
+
+@router.delete("/{trend_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_trend(
+    trend_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    delete_trend_asset(db, trend_id, current_user)

@@ -11,7 +11,7 @@ from app.models.generation_log import GenerationLog
 from app.models.publish_record import PublishRecord
 from app.models.user import User
 from app.schemas.content import ContentGenerateRequest, ContentRewriteRequest
-from app.services.knowledge_service import search_knowledge_items
+from app.services.knowledge_service import latest_knowledge_compilation, search_knowledge_items
 from app.services.model_router import load_platform_style_reference, load_prompt, model_router
 from app.services.topic_intent import (
     RANKING_DRAFT_TERMS,
@@ -70,6 +70,11 @@ def _knowledge_context(
         limit=payload.knowledge_limit,
         mode="hybrid",
     )
+    compiled = latest_knowledge_compilation(db)
+    merged_results = []
+    if compiled is not None:
+        merged_results.append(compiled)
+    merged_results.extend(item for item in results if compiled is None or item.id != compiled.id)
     return [
         {
             "id": item.id,
@@ -79,7 +84,7 @@ def _knowledge_context(
             "score": item.score,
             "match_type": item.match_type,
         }
-        for item in results
+        for item in merged_results[: payload.knowledge_limit]
     ]
 
 
