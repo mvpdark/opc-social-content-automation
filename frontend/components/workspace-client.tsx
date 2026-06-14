@@ -53,6 +53,7 @@ import { copyText } from "@/lib/clipboard";
 import {
   isGeneratedContent,
   isGeneratedImageAsset,
+  sourceContextMatchesKnowledgeQuery,
   type GeneratedContent,
   type GeneratedImageAsset,
   type GenerationSourceContext
@@ -2606,9 +2607,16 @@ function GenerationLauncher({
       exportContent.title === topic.trim() &&
       exportContent.platform === selectedPlatform
   );
+  const matchingSourceContext = sourceContextMatchesKnowledgeQuery(sourceContext, knowledgeQuery)
+    ? sourceContext
+    : null;
+  const matchingExportSourceContext =
+    exportContentMatchesCurrentInputs &&
+    sourceContextMatchesKnowledgeQuery(exportContent?.source_context, knowledgeQuery)
+      ? exportContent?.source_context ?? null
+      : null;
   const visibleSourceContext =
-    sourceContext ??
-    (exportContentMatchesCurrentInputs ? exportContent?.source_context ?? null : null);
+    matchingSourceContext ?? matchingExportSourceContext;
   const generateButtonLabel = !hasTopic
       ? "先填写选题"
       : draftProviderMissing

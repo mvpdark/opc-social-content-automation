@@ -23,6 +23,7 @@ import { copyText } from "@/lib/clipboard";
 import {
   isGeneratedContent,
   isGeneratedImageAsset,
+  sourceContextMatchesKnowledgeQuery,
   type GeneratedContent,
   type GeneratedImageAsset,
   type GenerationSourceContext
@@ -138,9 +139,16 @@ export function CreateScreen({
       generatedContent.title === topic.trim() &&
       generatedContent.platform === platform
   );
+  const matchingMobileSourceContext = sourceContextMatchesKnowledgeQuery(sourceContext, generationKnowledgeQuery)
+    ? sourceContext
+    : null;
+  const matchingMobileGeneratedSourceContext =
+    generatedContentMatchesCurrentInputs &&
+    sourceContextMatchesKnowledgeQuery(generatedContent?.source_context, generationKnowledgeQuery)
+      ? generatedContent?.source_context ?? null
+      : null;
   const visibleMobileSourceContext =
-    sourceContext ??
-    (generatedContentMatchesCurrentInputs ? generatedContent?.source_context ?? null : null);
+    matchingMobileSourceContext ?? matchingMobileGeneratedSourceContext;
   const todayDraftCount = countMobileDraftsToday(draftHistory);
   const selectedDraftIdSet = new Set(selectedDraftIds);
   const selectedDraftItems = draftHistory.filter((item) => selectedDraftIdSet.has(item.content.id));

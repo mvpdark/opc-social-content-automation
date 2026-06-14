@@ -38,6 +38,14 @@ export type GeneratedContent = {
   title: string;
 };
 
+export function sourceContextMatchesKnowledgeQuery(
+  sourceContext: GenerationSourceContext | null | undefined,
+  knowledgeQuery: string
+) {
+  const sourceQuery = sourceContext?.knowledge_query?.trim();
+  return Boolean(sourceQuery && sourceQuery === knowledgeQuery.trim());
+}
+
 export type GeneratedImageAsset = {
   content_id: number;
   created_at?: string;

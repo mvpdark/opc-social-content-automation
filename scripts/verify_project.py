@@ -1079,6 +1079,15 @@ def validate_content_production_contract() -> int:
 
     mobile_source_evidence_query_contracts = [
         (
+            generated_assets_text,
+            [
+                "export function sourceContextMatchesKnowledgeQuery(",
+                "sourceContext?.knowledge_query?.trim()",
+                "sourceQuery === knowledgeQuery.trim()",
+            ],
+            "source evidence query match helper",
+        ),
+        (
             source_evidence_text,
             [
                 "fallbackKnowledgeQuery?: string;",
@@ -1092,6 +1101,8 @@ def validate_content_production_contract() -> int:
             [
                 "fallbackKnowledgeQuery={knowledgeQuery}",
                 'const [knowledgeQuery, setKnowledgeQuery] = useState("硕升博 高赞图文 写作参考");',
+                "sourceContextMatchesKnowledgeQuery(sourceContext, knowledgeQuery)",
+                "sourceContextMatchesKnowledgeQuery(exportContent?.source_context, knowledgeQuery)",
             ],
             "PC create source evidence query wiring",
         ),
@@ -1109,6 +1120,8 @@ def validate_content_production_contract() -> int:
             [
                 "fallbackKnowledgeQuery={generationKnowledgeQuery}",
                 "const generationKnowledgeQuery = selectedTopicPreset?.knowledgeQuery ?? topic;",
+                "sourceContextMatchesKnowledgeQuery(sourceContext, generationKnowledgeQuery)",
+                "sourceContextMatchesKnowledgeQuery(generatedContent?.source_context, generationKnowledgeQuery)",
             ],
             "mobile create source evidence query wiring",
         ),
