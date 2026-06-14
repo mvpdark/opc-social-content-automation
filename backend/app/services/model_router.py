@@ -290,6 +290,13 @@ def _public_tone(value: object) -> str:
     return tone.split("隐藏撰稿规则：", 1)[0].rstrip("；; ") or "自然、可信、克制"
 
 
+def _missing_required_web_sources(value: object) -> bool:
+    if not isinstance(value, dict) or value.get("required") is not True:
+        return False
+    raw_results = value.get("results")
+    return not isinstance(raw_results, list) or not raw_results
+
+
 def _test_draft(payload: dict[str, object]) -> str:
     topic = str(payload.get("topic") or "未命名选题")
     platform = str(payload.get("platform") or "unknown")
@@ -319,6 +326,7 @@ def _test_draft(payload: dict[str, object]) -> str:
     is_xiaohongshu = platform == "xiaohongshu"
     is_water_ranking = is_water_ranking_topic(topic, tags)
     topic_intent = first_matching_topic_intent(topic, tags)
+    missing_required_web_sources = _missing_required_web_sources(web_search_context)
     if is_xiaohongshu and is_water_ranking:
         body_lines = [
             f"👉💧姐妹们，想看“{topic}”，先别急着找一张“万能榜单”哈！！[哇R]",
@@ -333,6 +341,20 @@ def _test_draft(payload: dict[str, object]) -> str:
             f"🔥所以“{topic}”更适合写成：认证优先榜、预算友好榜、毕业压力榜、在职友好榜。",
             "🎓等知识库补齐真实学校/项目后，再把具体学校放进榜单；没核实前只给筛选框架，不假装有内部排名。",
             "💓宝子，榜单不是为了制造焦虑，是帮你少踩坑呀～",
+        ]
+    elif is_xiaohongshu and missing_required_web_sources:
+        body_lines = [
+            f"👉💧姐妹们，“{topic}”这个选题不能靠印象写哈！！[哇R]",
+            "它涉及学校/项目、价格、logo/校徽、排名或政策这类实时信息；没有可见 Tavily 来源时，先做核验框架，不要硬编具体名字。",
+            "👇可以先这样拆：",
+            "",
+            "📍1. 官方来源：先找学校官网、项目页、认证说明和公开费用页。不能只看搬运帖。",
+            "📍2. 信息字段：把学校/项目名、价格、logo/校徽、认证、出勤和毕业要求分列核对。",
+            "📍3. 风险标记：来源缺失、年份不明、费用口径不一致的内容，先标成待复核。",
+            "📍4. 输出方式：没有来源前只讲核验步骤和对比维度，不写具体排行榜或价格结论。",
+            "",
+            "🔥所以这篇更适合先做“来源复核清单”，等 Tavily 或知识库补齐后再填学校、价格和排名。",
+            "💓宁愿慢一点，也别把没核实的信息写得像官方结论呀～",
         ]
     elif is_xiaohongshu and topic_intent and topic_intent.key == "route":
         body_lines = [

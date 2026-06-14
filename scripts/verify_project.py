@@ -193,6 +193,8 @@ def validate_safety_gates() -> int:
             "load_prompt",
             "load_platform_style_reference",
             "确认服务尚未配置。",
+            "_missing_required_web_sources",
+            "没有可见 Tavily 来源",
         ],
         "backend/app/services/web_search_service.py": [
             '"校徽"',

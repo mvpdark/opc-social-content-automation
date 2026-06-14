@@ -132,6 +132,33 @@ def test_codex_test_draft_provider_keeps_colloquial_school_list_topic(
     assert "研究方向、目标导师和时间节点" not in result
 
 
+def test_codex_test_draft_provider_handles_missing_required_web_sources(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "draft_provider", "codex_test")
+
+    result = model_router.draft_model(
+        "draft_generation",
+        {
+            "platform": "xiaohongshu",
+            "topic": "水博项目校徽和价格怎么对比",
+            "tags": ["水博", "价格", "校徽"],
+            "web_search_context": {
+                "required": True,
+                "query": "global water resources PhD programs official logo tuition",
+                "results": [],
+                "usage_note": "Live web search was required but no Tavily sources were available.",
+            },
+        },
+    )
+
+    assert "水博项目校徽和价格怎么对比" in result
+    assert "没有可见 Tavily 来源" in result
+    assert "核验框架" in result
+    assert "学校/项目名、价格、logo/校徽" in result
+    assert "研究方向、目标导师和时间节点" not in result
+
+
 @pytest.mark.parametrize(
     ("topic", "expected_terms", "forbidden_terms"),
     [
