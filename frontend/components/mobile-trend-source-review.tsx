@@ -181,7 +181,9 @@ export function TrendSourceCard({
   const coverUrl = mobileTrendCoverUrl(item);
   const platformLabel = mobilePlatformText(item.platform);
   const author = mobileTrendAuthor(item);
-  const date = item.publish_time || formatMobileTrendDate(item.created_at);
+  const date = item.publish_time
+    ? formatMobileTrendDate(item.publish_time)
+    : formatMobileTrendDate(item.created_at);
   const metrics = `赞 ${mobileTrendLikes(item)} · 藏 ${item.favorites} · 评 ${item.comments} · 转 ${item.shares}`;
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
