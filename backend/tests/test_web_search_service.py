@@ -99,8 +99,11 @@ def test_tavily_search_posts_to_api_and_parses_results(monkeypatch: pytest.Monke
     context = tavily_search("全球水博排名必看")
 
     assert context is not None
+    payload_context = context.to_prompt_payload()
     assert context.provider == "tavily"
     assert context.answer == "Official sources should be checked before using a ranking summary."
+    assert "answer summary" in str(payload_context["usage_note"])
+    assert "not standalone proof" in str(payload_context["usage_note"])
     assert context.results[0].title == "World university water resources program"
     assert context.results[0].url == "https://example.edu/water-phd"
     assert requests[0]["url"] == "https://api.tavily.test/search"

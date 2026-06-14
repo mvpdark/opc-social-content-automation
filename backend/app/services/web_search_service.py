@@ -89,8 +89,10 @@ class WebSearchContext:
                 for item in self.results
             ],
             "usage_note": (
-                "These are live web search results. Use them as source context, "
-                "keep uncertainty visible, and do not invent facts not present in sources."
+                "These are live web search results. Use titles, URLs, snippets, and "
+                "answer summary as source context; treat the answer as orientation, "
+                "not standalone proof. Keep uncertainty visible, and do not invent "
+                "facts not present in sources."
             ),
         }
 
