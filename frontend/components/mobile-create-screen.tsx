@@ -49,8 +49,12 @@ import {
 } from "@/lib/mobile-draft-storage";
 import {
   TOPIC_PRESET_REFRESH_MS,
+  buildCustomTopicAudience,
+  buildCustomTopicTags,
   buildTopicCoverStyleNotes,
   findGenerationTopicPresetByTopic,
+  isKnownGenerationTopicAudience,
+  isKnownGenerationTopicTags,
   pickGenerationTopicPresetBatch,
   type GenerationTopicPreset
 } from "@/lib/topic-presets";
@@ -83,6 +87,9 @@ const xhsMobileDraftTone = [
 const shortPostDraftTone =
   "短段正文风格，表达克制、清楚、有行动建议，不制造录取承诺。";
 
+const defaultMobileTargetAudience = "准备硕升博申请的学生";
+const defaultMobileTagsText = "硕升博,水博,博士申请,小红书获客";
+
 function draftStateFromContent(content: GeneratedContent): DraftPreviewState {
   return {
     body: content.body,
@@ -107,8 +114,8 @@ export function CreateScreen({
   const [platform, setPlatform] = useState<MobilePlatform>("xiaohongshu");
   const [contentMode, setContentMode] = useState<"short" | "xiaohongshu">("xiaohongshu");
   const [topic, setTopic] = useState("硕升博申请第一步，不是先套磁");
-  const [targetAudience, setTargetAudience] = useState("准备硕升博申请的学生");
-  const [tagsText, setTagsText] = useState("硕升博,水博,博士申请,小红书获客");
+  const [targetAudience, setTargetAudience] = useState(defaultMobileTargetAudience);
+  const [tagsText, setTagsText] = useState(defaultMobileTagsText);
   const [visibleTopicPresets, setVisibleTopicPresets] = useState<GenerationTopicPreset[]>(() =>
     pickGenerationTopicPresetBatch()
   );
@@ -231,6 +238,35 @@ export function CreateScreen({
   function clearMobileSourceEvidence() {
     setSourceContext(null);
     setSourcePreviewError(null);
+  }
+
+  function updateMobileTopicAndAutoContext(nextTopic: string) {
+    const previousTopic = topic.trim();
+    const nextTopicText = nextTopic.trim();
+    setTopic(nextTopic);
+    setTargetAudience((currentAudience) => {
+      const normalizedAudience = currentAudience.trim();
+      const shouldSyncAudience =
+        !normalizedAudience ||
+        normalizedAudience === defaultMobileTargetAudience ||
+        normalizedAudience === buildCustomTopicAudience(previousTopic) ||
+        isKnownGenerationTopicAudience(normalizedAudience);
+      return shouldSyncAudience
+        ? buildCustomTopicAudience(nextTopicText) || defaultMobileTargetAudience
+        : currentAudience;
+    });
+    setTagsText((currentTags) => {
+      const normalizedTags = currentTags.trim();
+      const shouldSyncTags =
+        !normalizedTags ||
+        normalizedTags === previousTopic ||
+        normalizedTags === defaultMobileTagsText ||
+        isKnownGenerationTopicTags(normalizedTags);
+      return shouldSyncTags
+        ? buildCustomTopicTags(nextTopicText) || defaultMobileTagsText
+        : currentTags;
+    });
+    clearMobileSourceEvidence();
   }
 
   function applyMobileTopicPreset(preset: GenerationTopicPreset) {
@@ -1057,8 +1093,7 @@ export function CreateScreen({
             className="mt-2 h-12 w-full rounded-full border border-white/[0.84] bg-[rgba(255,253,247,0.88)] px-4 text-sm font-medium text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.86)] outline-none focus:border-moss focus:ring-2 focus:ring-moss/[0.15]"
             data-testid="mobile-topic"
             onChange={(event) => {
-              setTopic(event.target.value);
-              clearMobileSourceEvidence();
+              updateMobileTopicAndAutoContext(event.target.value);
             }}
             value={topic}
           />

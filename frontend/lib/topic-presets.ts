@@ -348,6 +348,25 @@ export function isKnownGenerationTopicKnowledgeQuery(knowledgeQuery: string) {
   );
 }
 
+export function isKnownGenerationTopicAudience(audience: string) {
+  const normalizedAudience = audience.trim();
+  return generationTopicPresets.some((preset) => preset.audience === normalizedAudience);
+}
+
+export function isKnownGenerationTopicTags(tags: string) {
+  const normalizedTags = tags.trim();
+  return generationTopicPresets.some((preset) => preset.tags === normalizedTags);
+}
+
+export function buildCustomTopicAudience(topic: string) {
+  const normalizedTopic = topic.trim();
+  return normalizedTopic ? `对“${normalizedTopic}”感兴趣的申请人` : "";
+}
+
+export function buildCustomTopicTags(topic: string) {
+  return topic.trim();
+}
+
 export function buildTopicCoverStyleNotes(baseStyleNotes: string, topic: string) {
   const preset = findGenerationTopicPresetByTopic(topic);
   if (!preset) {
