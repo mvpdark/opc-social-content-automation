@@ -8,6 +8,7 @@ from app.services.web_search_service import (
     tavily_search,
     topic_needs_live_web_search,
 )
+from topic_preset_helpers import load_generation_topic_presets, split_topic_tags
 
 
 def test_topic_needs_live_web_search_for_ranking_topic() -> None:
@@ -29,6 +30,28 @@ def test_topic_needs_live_web_search_for_ranking_topic() -> None:
     assert topic_needs_live_web_search("海外博士来源核验清单", ["官网核验"]) is True
     assert topic_needs_live_web_search("博士项目费用页怎么核验", ["海外博士"]) is True
     assert topic_needs_live_web_search("学校官网学费表怎么查", ["博士项目"]) is True
+
+
+def test_split_topic_tags_handles_chinese_delimiters() -> None:
+    assert split_topic_tags("水博，海外博士、在职博士；博士项目") == [
+        "水博",
+        "海外博士",
+        "在职博士",
+        "博士项目",
+    ]
+
+
+def test_fact_sensitive_recommended_topics_require_live_web_search() -> None:
+    fact_sensitive_labels = {"榜单型", "来源型"}
+
+    for preset in load_generation_topic_presets():
+        if preset["desktopLabel"] not in fact_sensitive_labels:
+            continue
+
+        assert topic_needs_live_web_search(
+            preset["topic"],
+            split_topic_tags(preset["tags"]),
+        ), preset["key"]
 
 
 def test_build_tavily_query_expands_water_phd_topic() -> None:
