@@ -2438,7 +2438,7 @@ function CreationProjectGateway({
               {liveProject.workflow.map((step, index) => (
                 <div
                   className="rounded-md border border-steel/30 bg-steel/10 px-2.5 py-1.5 text-xs font-semibold text-ink"
-                  key={step}
+                  key={`live-project-step-${index}-${step}`}
                 >
                   <span className="mr-1 text-muted">{index + 1}</span>
                   {step}
@@ -2528,10 +2528,10 @@ function CreationProjectGateway({
                 </div>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                {project.workflow.map((step) => (
+                {project.workflow.map((step, index) => (
                   <span
                     className="rounded-md border border-line bg-paper/60 px-2 py-1 text-[11px] font-medium text-muted"
-                    key={step}
+                    key={`${project.id}-workflow-${index}-${step}`}
                   >
                     {step}
                   </span>
@@ -4772,8 +4772,8 @@ function PublishingTable() {
             </tr>
           </thead>
           <tbody className="glass-subtle divide-y divide-line">
-            {publishingRecords.map((record) => (
-              <tr key={record.content}>
+            {publishingRecords.map((record, index) => (
+              <tr key={`${index}-${record.platform}-${record.content}`}>
                 <td className="px-4 py-3 font-medium">{record.content}</td>
                 <td className="px-4 py-3">
                   <PlatformRecordBadge platform={record.platform} />

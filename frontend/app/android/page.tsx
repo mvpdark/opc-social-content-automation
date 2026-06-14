@@ -3540,12 +3540,12 @@ function SettingsScreen({
               ["撰稿", providerBindings.draft],
               ["图片", providerBindings.image],
               ["改写", providerBindings.rewrite]
-            ].map(([label, bound]) => (
+            ].map(([label, bound], index) => (
               <div
                 className={`rounded-[20px] border border-white/[0.72] px-3 py-2 text-center text-xs font-black shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] ${
                   bound ? "bg-[#e7f2ea]/[0.88] text-moss" : "bg-[#fff6d8]/[0.88] text-[#8a5a00]"
                 }`}
-                key={String(label)}
+                key={`provider-binding-${index}-${String(label)}`}
               >
                 <div>{label}</div>
                 <div className="mt-1 text-[10px]">{bound ? "已绑定" : "待授权"}</div>
