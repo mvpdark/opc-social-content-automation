@@ -2611,19 +2611,21 @@ function GenerationLauncher({
   const draftProviderBlocked = draftProviderMissing || draftProviderCheckFailed;
   const canGenerate = hasTopic && busyAction === null && !draftProviderBlocked;
   const exportContent = lastContent ?? latestContent;
-  const exportContentMatchesCurrentInputs = Boolean(
+  const currentExportContent =
     exportContent &&
       exportContent.title === topic.trim() &&
       exportContent.platform === selectedPlatform &&
       tagsMatchText(exportContent.tags, tagsText)
-  );
+      ? exportContent
+      : null;
+  const exportContentMatchesCurrentInputs = Boolean(currentExportContent);
   const matchingSourceContext = sourceContextMatchesKnowledgeQuery(sourceContext, knowledgeQuery)
     ? sourceContext
     : null;
   const matchingExportSourceContext =
-    exportContentMatchesCurrentInputs &&
-    sourceContextMatchesKnowledgeQuery(exportContent?.source_context, knowledgeQuery)
-      ? exportContent?.source_context ?? null
+    currentExportContent &&
+    sourceContextMatchesKnowledgeQuery(currentExportContent.source_context, knowledgeQuery)
+      ? currentExportContent.source_context ?? null
       : null;
   const visibleSourceContext =
     matchingSourceContext ?? matchingExportSourceContext;
@@ -2651,7 +2653,7 @@ function GenerationLauncher({
   const primaryGenerateLabel =
     busyAction === "draft"
       ? "正在一键生成"
-      : exportContent
+      : exportContentMatchesCurrentInputs
         ? "重新一键生成"
         : generateButtonLabel;
   const providerDisplayItems = [
@@ -3053,8 +3055,10 @@ function GenerationLauncher({
     <div data-testid="generation-launcher">
       <Panel
         action={
-          <Pill tone={exportContent ? "green" : "blue"}>
-            {exportContent ? "最近草稿" : "主入口"}
+          <Pill
+            tone={exportContentMatchesCurrentInputs ? "green" : exportContent ? "amber" : "blue"}
+          >
+            {exportContentMatchesCurrentInputs ? "当前草稿" : exportContent ? "历史草稿" : "主入口"}
           </Pill>
         }
         helper="一键生成会生成文案并尝试生成封面，不会自动发布；发布前仍需人工确认。"
@@ -3063,8 +3067,10 @@ function GenerationLauncher({
         <div className="mb-4 rounded-md border border-steel/40 bg-steel/10 p-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <Pill tone={exportContent ? "green" : "blue"}>
-                {exportContent ? "最近草稿" : "生产入口"}
+              <Pill
+                tone={exportContentMatchesCurrentInputs ? "green" : exportContent ? "amber" : "blue"}
+              >
+                {exportContentMatchesCurrentInputs ? "当前草稿" : exportContent ? "历史草稿" : "生产入口"}
               </Pill>
               <h3 className="mt-3 text-lg font-semibold leading-6 text-ink">
                 选题确认后，点这里一键生成
@@ -3352,10 +3358,10 @@ function GenerationLauncher({
             </div>
           </div>
         </div>
-        {exportContent ? (
+        {currentExportContent ? (
           <GeneratedPostExportCard
-            key={exportContent.id}
-            content={exportContent}
+            key={currentExportContent.id}
+            content={currentExportContent}
             generatedImageAsset={latestImageAsset}
             generationBusy={busyAction !== null}
             imageProviderReady={liveImageProviderReady}

@@ -966,13 +966,21 @@ export function CreateScreen({
     }
   }
 
-  const heroProgressPercent = busy ? progressPercent : generatedContent ? 100 : 0;
+  const heroProgressPercent = busy
+    ? progressPercent
+    : generatedContentMatchesCurrentInputs
+      ? 100
+      : 0;
   const heroProgressLabel = busy
     ? progressLabel
-    : generatedContent
+    : generatedContentMatchesCurrentInputs
       ? "草稿和封面可继续编辑"
       : "点击下方按钮开始生成";
-  const heroProgressValue = busy ? `${progressPercent}%` : generatedContent ? "已就绪" : "未开始";
+  const heroProgressValue = busy
+    ? `${progressPercent}%`
+    : generatedContentMatchesCurrentInputs
+      ? "已就绪"
+      : "未开始";
 
   function enterProject(projectId: MobileCreationProjectId) {
     const project = findEnabledMobileCreationProject(projectId);
@@ -1227,7 +1235,7 @@ export function CreateScreen({
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
           {busy
             ? `${progressLabel} ${progressPercent}%`
-            : generatedContent
+            : generatedContentMatchesCurrentInputs
               ? "重新一键生成"
               : "一键撰稿+封面图"}
         </button>
