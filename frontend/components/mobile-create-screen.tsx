@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type TouchEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ChevronRight, Loader2, Sparkles } from "lucide-react";
 
 import { PlatformIcon, PlatformLabel } from "@/components/platform-icon";
@@ -13,6 +13,7 @@ import {
 import { DraftPreviewEditor } from "@/components/mobile-draft-preview-editor";
 import { MobilePanel, ModeChip } from "@/components/mobile-ui";
 import { resolveAssetUrl } from "@/lib/asset-url";
+import { addMobileBackHandler } from "@/lib/mobile-back-navigation";
 import { copyText } from "@/lib/clipboard";
 import {
   isGeneratedContent,
@@ -144,10 +145,12 @@ function draftStateFromContent(content: GeneratedContent): DraftPreviewState {
 }
 
 export function CreateScreen({
+  active = true,
   apiBase,
   credentials,
   onAction
 }: {
+  active?: boolean;
   apiBase: string;
   credentials: CredentialSettings;
   onAction: (message: string) => void;
@@ -179,7 +182,6 @@ export function CreateScreen({
   const lastProgressActionRef = useRef("");
   const audioContextRef = useRef<AudioContext | null>(null);
   const completionSoundReadyRef = useRef(false);
-  const projectSwipeStartRef = useRef<{ ignored: boolean; x: number; y: number } | null>(null);
   const coverImageUrl = generatedCover ? resolveAssetUrl(generatedCover.image_url) : null;
   const selectedProject = findEnabledMobileCreationProject(selectedProjectId);
   const selectedTopicPreset = findGenerationTopicPresetByTopic(topic);
@@ -998,49 +1000,29 @@ export function CreateScreen({
     onAction("已返回创作项目卡片。");
   }
 
-  function shouldIgnoreProjectSwipe(target: EventTarget | null) {
-    if (!(target instanceof Element)) {
+  useEffect(() => {
+    return addMobileBackHandler(() => {
+      if (!active) {
+        return false;
+      }
+      if (previewOpen) {
+        setPreviewOpen(false);
+        onAction("已关闭草稿预览。");
+        return true;
+      }
+      if (selectedDraftIds.length > 0) {
+        setSelectedDraftIds([]);
+        onAction("已退出草稿多选。");
+        return true;
+      }
+      if (selectedProjectId) {
+        setSelectedProjectId(null);
+        onAction("已返回创作项目卡片。");
+        return true;
+      }
       return false;
-    }
-    return Boolean(
-      target.closest(
-        'button, input, textarea, select, a, [contenteditable="true"], [data-project-swipe-ignore="true"]'
-      )
-    );
-  }
-
-  function handleProjectTouchStart(event: TouchEvent<HTMLDivElement>) {
-    const touch = event.touches[0];
-    if (!touch) {
-      return;
-    }
-    projectSwipeStartRef.current = {
-      ignored: shouldIgnoreProjectSwipe(event.target),
-      x: touch.clientX,
-      y: touch.clientY
-    };
-  }
-
-  function handleProjectTouchEnd(event: TouchEvent<HTMLDivElement>) {
-    const start = projectSwipeStartRef.current;
-    projectSwipeStartRef.current = null;
-    if (!start || start.ignored) {
-      return;
-    }
-
-    const touch = event.changedTouches[0];
-    if (!touch) {
-      return;
-    }
-
-    const deltaX = touch.clientX - start.x;
-    const deltaY = touch.clientY - start.y;
-    const absX = Math.abs(deltaX);
-    const absY = Math.abs(deltaY);
-    if (deltaX < -72 && absX > absY * 1.35) {
-      returnToProjects();
-    }
-  }
+    });
+  }, [active, onAction, previewOpen, selectedDraftIds.length, selectedProjectId]);
 
   if (!selectedProject) {
     return (
@@ -1056,11 +1038,6 @@ export function CreateScreen({
     <div
       className="space-y-4"
       data-testid="mobile-create-project-detail"
-      onTouchCancel={() => {
-        projectSwipeStartRef.current = null;
-      }}
-      onTouchEnd={handleProjectTouchEnd}
-      onTouchStart={handleProjectTouchStart}
     >
       <button
         className="flex h-12 w-full touch-manipulation items-center justify-between rounded-full border border-white/[0.84] bg-[rgba(255,253,247,0.88)] px-4 text-sm font-black text-ink shadow-[0_10px_26px_rgba(31,58,49,0.06),inset_0_1px_0_rgba(255,255,255,0.86)] active:scale-[0.99]"

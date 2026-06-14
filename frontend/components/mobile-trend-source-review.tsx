@@ -5,7 +5,6 @@ import { createPortal } from "react-dom";
 import {
   ArrowLeft,
   CheckCircle2,
-  ChevronRight,
   ExternalLink
 } from "lucide-react";
 
@@ -80,10 +79,6 @@ function formatMobileTrendDate(value: string | null) {
   return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, "0")}:${String(
     date.getMinutes()
   ).padStart(2, "0")}`;
-}
-
-function mobileTrendMetrics(item: MobileTrendContent) {
-  return `赞 ${mobileTrendLikes(item)} · 藏 ${item.favorites} · 评 ${item.comments} · 转 ${item.shares}`;
 }
 
 function mobileTrendCoverUrl(item: MobileTrendContent) {
@@ -176,78 +171,79 @@ export function TrendSourceCard({
   selected: boolean;
 }) {
   const knownPlatform = item.platform === "xiaohongshu" || item.platform === "douyin" ? item.platform : null;
-  const tags = item.tags?.filter((tag) => tag.trim()).slice(0, 3) ?? [];
   const coverUrl = mobileTrendCoverUrl(item);
+  const platformLabel = mobilePlatformText(item.platform);
+  const author = mobileTrendAuthor(item);
+  const date = item.publish_time || formatMobileTrendDate(item.created_at);
+  const metrics = `赞 ${mobileTrendLikes(item)} · 藏 ${item.favorites} · 转 ${item.shares}`;
 
   return (
     <article
       className={[
-        "rounded-[22px] border bg-[rgba(255,253,247,0.88)] p-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.86)]",
-        selected ? "border-[#23854f] ring-2 ring-[#23854f]/[0.12]" : "border-white/[0.84]"
+        "rounded-[24px] border bg-[rgba(255,253,247,0.80)] p-2.5 text-left shadow-[0_10px_24px_rgba(31,58,49,0.06),inset_0_1px_0_rgba(255,255,255,0.90)]",
+        selected ? "border-[#23854f] ring-2 ring-[#23854f]/[0.12]" : "border-white/[0.86]"
       ].join(" ")}
       data-testid={`mobile-trend-source-${item.id}`}
     >
-      <button className="block w-full touch-manipulation text-left active:scale-[0.995]" onClick={onOpen} type="button">
-        <div className="flex items-start gap-3">
+      <div className="flex items-center gap-3">
+        <button
+          className="h-[74px] w-[74px] shrink-0 overflow-hidden rounded-[18px] border border-white/[0.88] bg-[#eef4ed] shadow-[0_8px_18px_rgba(31,58,49,0.08)] active:scale-[0.98]"
+          onClick={onOpen}
+          type="button"
+        >
           {coverUrl ? (
-            <img
-              alt=""
-              className="h-20 w-16 shrink-0 rounded-[18px] border border-white/[0.86] bg-[#eef4ed] object-cover"
-              src={coverUrl}
-            />
-          ) : null}
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              {knownPlatform ? <PlatformIcon platform={knownPlatform} size="sm" /> : null}
-              <span className="rounded-full bg-[#e7f2ea] px-2 py-0.5 text-[10px] font-black text-moss">
-                {mobilePlatformText(item.platform)}
-              </span>
-              {reviewed ? (
-                <span className="rounded-full bg-[#e7f2ea] px-2 py-0.5 text-[10px] font-black text-moss">
-                  已确认
-                </span>
-              ) : null}
-            </div>
-            <h3 className="mt-2 line-clamp-2 text-sm font-black leading-5 text-ink">{item.title}</h3>
-          </div>
-          <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted" />
-        </div>
-        <p className="mt-2 line-clamp-3 text-xs font-semibold leading-5 text-muted">
-          {mobileTrendExcerpt(item)}
-        </p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {tags.length ? (
-            tags.map((tag, index) => (
-              <span
-                className="rounded-full bg-white/[0.72] px-2 py-0.5 text-[10px] font-bold text-ink/[0.58]"
-                key={`${item.id}-${index}-${tag}`}
-              >
-                #{tag.replace(/^#/, "")}
-              </span>
-            ))
+            <img alt="" className="h-full w-full object-cover" src={coverUrl} />
           ) : (
-            <span className="text-[10px] font-bold text-ink/[0.45]">暂无标签</span>
+            <span
+              aria-hidden="true"
+              className="block h-full w-full bg-cover bg-center"
+              style={{ backgroundImage: "url(/mobile-assets/collection-collage.png)" }}
+            />
           )}
-        </div>
-      </button>
-      <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#e6dece] pt-2">
-        <div className="min-w-0 text-[11px] font-bold leading-5 text-muted">
-          <div className="truncate">{mobileTrendAuthor(item)} · {formatMobileTrendDate(item.created_at)}</div>
-          <div className="truncate">{mobileTrendMetrics(item)}</div>
-        </div>
-        <div className="flex shrink-0 gap-1.5">
+        </button>
+
+        <button className="min-w-0 flex-1 touch-manipulation text-left active:scale-[0.995]" onClick={onOpen} type="button">
+          <div className="flex min-w-0 items-center gap-2">
+            <span
+              className={[
+                "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[11px] font-black text-white",
+                item.platform === "douyin" ? "bg-[#101010]" : "bg-[#ff2442]"
+              ].join(" ")}
+            >
+              {knownPlatform ? <PlatformIcon platform={knownPlatform} size="sm" /> : null}
+              {platformLabel}
+            </span>
+            {reviewed ? (
+              <span className="shrink-0 rounded-full bg-[#e7f2ea] px-2 py-0.5 text-[10px] font-black text-moss">
+                已确认
+              </span>
+            ) : null}
+          </div>
+          <h3 className="mt-1.5 line-clamp-2 text-[14px] font-black leading-5 text-ink">{item.title}</h3>
+          <div className="mt-1 truncate text-xs font-semibold leading-5 text-muted">
+            {author} · {date}
+          </div>
+          <div className="mt-0.5 truncate text-xs font-black text-ink/[0.70]">{metrics}</div>
+          <span className="sr-only">{mobileTrendExcerpt(item)}</span>
+        </button>
+
+        <div className="flex w-12 shrink-0 flex-col items-center gap-1">
           <button
             className={[
-              "flex h-8 min-w-16 touch-manipulation items-center justify-center rounded-full px-2 text-[11px] font-black active:scale-[0.98]",
-              selected ? "bg-[#23854f] text-white" : "border border-[#d6e8df] bg-white text-ink"
+              "flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border text-[11px] font-black active:scale-[0.98]",
+              selected
+                ? "border-[#23854f] bg-[#23854f] text-white"
+                : "border-transparent bg-[#ecebe2] text-[#9ca28f]"
             ].join(" ")}
             onClick={onToggle}
             type="button"
           >
-            {selected ? "已选" : "选择"}
+            <CheckCircle2 className="h-5 w-5" />
           </button>
+          <span className="text-xs font-black text-muted">{selected ? "已选" : "选择"}</span>
           <button
-            className="flex h-8 w-8 touch-manipulation items-center justify-center rounded-full border border-[#d6e8df] bg-white text-ink active:scale-[0.98] disabled:opacity-40"
+            aria-label="打开来源链接"
+            className="mt-1 flex h-7 w-7 touch-manipulation items-center justify-center rounded-full border border-[#d6e8df] bg-white/[0.72] text-muted active:scale-[0.98] disabled:opacity-40"
             disabled={!item.url}
             onClick={onOpenUrl}
             type="button"

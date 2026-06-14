@@ -145,6 +145,23 @@ public class MainActivity extends Activity {
     }
 
     private void handleBackNavigation() {
+        if (webView == null) {
+            finish();
+            return;
+        }
+
+        webView.evaluateJavascript(
+            "(function(){try{return !!(window.OMPCMobileBack && window.OMPCMobileBack());}catch(error){return false;}})();",
+            handled -> {
+                if ("true".equals(handled)) {
+                    return;
+                }
+                handleWebViewBackNavigation();
+            }
+        );
+    }
+
+    private void handleWebViewBackNavigation() {
         if (webView != null && webView.canGoBack()) {
             String previousUrl = null;
             int currentIndex = webView.copyBackForwardList().getCurrentIndex();

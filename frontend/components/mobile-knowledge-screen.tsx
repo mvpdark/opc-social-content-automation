@@ -5,6 +5,7 @@ import { ArrowLeft, BookOpenText, Clipboard, Loader2, Search } from "lucide-reac
 
 import { MobilePanel } from "@/components/mobile-ui";
 import { copyText } from "@/lib/clipboard";
+import { addMobileBackHandler } from "@/lib/mobile-back-navigation";
 import {
   fetchKnowledgeItems,
   knowledgeCategoryLabel,
@@ -15,9 +16,11 @@ import {
 } from "@/lib/knowledge-api";
 
 export function KnowledgeScreen({
+  active = true,
   apiBase,
   onAction
 }: {
+  active?: boolean;
   apiBase: string;
   onAction: (message: string) => void;
 }) {
@@ -26,6 +29,17 @@ export function KnowledgeScreen({
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<KnowledgeItem | null>(null);
   const [status, setStatus] = useState("正在读取最近入库内容...");
+
+  useEffect(() => {
+    return addMobileBackHandler(() => {
+      if (!active || !selectedItem) {
+        return false;
+      }
+      setSelectedItem(null);
+      onAction("已关闭知识详情。");
+      return true;
+    });
+  }, [active, onAction, selectedItem]);
 
   async function loadKnowledge(nextQuery = query, announce = false) {
     const normalizedQuery = nextQuery.trim();

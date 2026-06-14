@@ -13,6 +13,7 @@ import {
 
 import { getApiBase } from "@/lib/api-base";
 import { resolveAssetUrl } from "@/lib/asset-url";
+import { addMobileBackHandler } from "@/lib/mobile-back-navigation";
 import {
   isGeneratedContent,
   isGeneratedImageAsset,
@@ -264,11 +265,13 @@ function MobilePanel({ action, children, title }: { action?: ReactNode; children
 }
 
 export function ReviewScreen({
+  active = true,
   credentials,
   onAction,
   onOpenCreate,
   onPendingCountChange
 }: {
+  active?: boolean;
   credentials: MobileCredentialSettings;
   onAction: (message: string) => void;
   onOpenCreate: () => void;
@@ -279,6 +282,17 @@ export function ReviewScreen({
   const [loading, setLoading] = useState(true);
   const [busyContentId, setBusyContentId] = useState<number | null>(null);
   const [status, setStatus] = useState("正在读取待确认草稿...");
+
+  useEffect(() => {
+    return addMobileBackHandler(() => {
+      if (!active || !selectedItem) {
+        return false;
+      }
+      setSelectedItem(null);
+      onAction("已关闭待确认详情。");
+      return true;
+    });
+  }, [active, onAction, selectedItem]);
 
   async function loadReviewQueue(announce = false) {
     setLoading(true);

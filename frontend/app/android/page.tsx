@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type PointerEvent,
+  type ReactNode,
+  type TouchEvent
+} from "react";
 import {
   ArrowLeft,
   Bell,
@@ -31,6 +39,10 @@ import {
 } from "@/components/mobile-ui";
 import { getApiBase } from "@/lib/api-base";
 import {
+  requestMobileNestedBack,
+  type MobileBackRequestSource
+} from "@/lib/mobile-back-navigation";
+import {
   providerBindingDefaultsFromStatuses,
   sanitizeProviderStatusItems,
   type ProviderStatusItem
@@ -51,6 +63,20 @@ type MobileTab = "home" | "collect" | "knowledge" | "review" | "create" | "setti
 type MobileHistoryState = {
   opcMobileTab?: MobileTab;
 };
+
+type MobileBackGestureStart = {
+  edge: "left" | "right";
+  ignored: boolean;
+  pointerId?: number;
+  x: number;
+  y: number;
+};
+
+declare global {
+  interface Window {
+    OMPCMobileBack?: () => boolean;
+  }
+}
 
 type MobileLoginResponse = {
   account: string;
@@ -105,6 +131,10 @@ const API_BASE = getApiBase();
 const MOBILE_PAPER_TEXTURE = "/mobile-assets/paper-texture.png";
 const MOBILE_COLLECTION_COLLAGE = "/mobile-assets/collection-collage.png";
 const MOBILE_CREATE_CARD_BG = "/mobile-assets/create-card-bg.png";
+const MOBILE_BACK_GESTURE_EDGE_WIDTH = 64;
+const MOBILE_BACK_GESTURE_MIN_DISTANCE = 72;
+const MOBILE_BACK_GESTURE_MAX_VERTICAL = 96;
+const MOBILE_BACK_GESTURE_DIRECTION_RATIO = 1.25;
 const mobileScreenArt: Record<MobileTab, { image: string; opacity: string; position: string }> = {
   home: {
     image: MOBILE_COLLECTION_COLLAGE,
@@ -256,7 +286,10 @@ export default function AndroidPreviewPage() {
   const [providerStatuses, setProviderStatuses] = useState<ProviderStatusItem[]>([]);
   const [reviewPendingCount, setReviewPendingCount] = useState(0);
   const activeTabRef = useRef<MobileTab>("home");
+  const mobileTabStackRef = useRef<MobileTab[]>(["home"]);
+  const mobileHistoryDepthRef = useRef(1);
   const mobileHistoryReadyRef = useRef(false);
+  const mobileBackGestureStartRef = useRef<MobileBackGestureStart | null>(null);
   const skipNextHistoryPushRef = useRef(false);
 
   useEffect(() => {
@@ -287,6 +320,8 @@ export default function AndroidPreviewPage() {
       "",
       buildMobileTabUrl(initialTab)
     );
+    mobileTabStackRef.current = [initialTab];
+    mobileHistoryDepthRef.current = 1;
     mobileHistoryReadyRef.current = true;
 
     function handlePopState(event: PopStateEvent) {
@@ -294,6 +329,13 @@ export default function AndroidPreviewPage() {
       if (!isMobileTab(nextTab)) {
         return;
       }
+      const stack = mobileTabStackRef.current;
+      if (stack.length > 1 && stack[stack.length - 2] === nextTab) {
+        stack.pop();
+      } else if (stack[stack.length - 1] !== nextTab) {
+        stack.push(nextTab);
+      }
+      mobileHistoryDepthRef.current = mobileTabStackRef.current.length;
       skipNextHistoryPushRef.current = true;
       setActiveTab(nextTab);
       setStatus(nextTab === "home" ? "已按返回手势回到首页。" : taskActionCopy[nextTab]);
@@ -325,6 +367,11 @@ export default function AndroidPreviewPage() {
       "",
       buildMobileTabUrl(activeTab)
     );
+    const stack = mobileTabStackRef.current;
+    if (stack[stack.length - 1] !== activeTab) {
+      stack.push(activeTab);
+    }
+    mobileHistoryDepthRef.current = stack.length;
   }, [activeTab, authLoaded, mobileAccount]);
 
   useEffect(() => {
@@ -401,8 +448,205 @@ export default function AndroidPreviewPage() {
   }, [activeTab, credentials.workspaceToken, credentialsLoaded, mobileAccount]);
 
   function openTab(tab: MobileTab, message = taskActionCopy[tab]) {
+    if (activeTabRef.current === tab) {
+      setStatus(message);
+      return;
+    }
     setActiveTab(tab);
     setStatus(message);
+  }
+
+  function replaceMobileTab(tab: MobileTab, message: string, options: { resetStack?: boolean } = {}) {
+    if (typeof window !== "undefined" && mobileHistoryReadyRef.current) {
+      window.history.replaceState(
+        { ...(window.history.state ?? {}), opcMobileTab: tab } satisfies MobileHistoryState,
+        "",
+        buildMobileTabUrl(tab)
+      );
+      skipNextHistoryPushRef.current = true;
+    }
+    if (options.resetStack ?? true) {
+      mobileTabStackRef.current = [tab];
+    }
+    mobileHistoryDepthRef.current = mobileTabStackRef.current.length;
+    setActiveTab(tab);
+    setStatus(message);
+  }
+
+  function handleMobileBackRequest(source: MobileBackRequestSource) {
+    if (!authLoaded || !mobileAccount) {
+      return false;
+    }
+
+    if (requestMobileNestedBack(source)) {
+      setStatus("已返回上一级页面。");
+      return true;
+    }
+
+    const stack = mobileTabStackRef.current;
+    if (stack.length > 1) {
+      stack.pop();
+      const previousTab = stack[stack.length - 1] ?? "home";
+      replaceMobileTab(
+        previousTab,
+        previousTab === "home" ? "已按返回手势回到首页。" : taskActionCopy[previousTab],
+        { resetStack: false }
+      );
+      return true;
+    }
+
+    if (activeTabRef.current !== "home") {
+      replaceMobileTab("home", "已返回首页。");
+      return true;
+    }
+
+    return false;
+  }
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const handler = () => handleMobileBackRequest("native");
+    window.OMPCMobileBack = handler;
+    return () => {
+      if (window.OMPCMobileBack === handler) {
+        delete window.OMPCMobileBack;
+      }
+    };
+  });
+
+  function shouldIgnoreMobileBackGesture(target: EventTarget | null) {
+    if (!(target instanceof Element)) {
+      return false;
+    }
+    return Boolean(
+      target.closest(
+        'button, input, textarea, select, a, [contenteditable="true"], [data-mobile-back-swipe-ignore="true"], [data-project-swipe-ignore="true"]'
+      )
+    );
+  }
+
+  function beginMobileBackGesture({
+    clientX,
+    clientY,
+    pointerId,
+    target
+  }: {
+    clientX: number;
+    clientY: number;
+    pointerId?: number;
+    target: EventTarget | null;
+  }) {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+    const isLeftEdge = clientX <= MOBILE_BACK_GESTURE_EDGE_WIDTH;
+    const isRightEdge = clientX >= viewportWidth - MOBILE_BACK_GESTURE_EDGE_WIDTH;
+    if (!isLeftEdge && !isRightEdge) {
+      mobileBackGestureStartRef.current = null;
+      return;
+    }
+
+    mobileBackGestureStartRef.current = {
+      edge: isLeftEdge ? "left" : "right",
+      ignored: shouldIgnoreMobileBackGesture(target),
+      pointerId,
+      x: clientX,
+      y: clientY
+    };
+  }
+
+  function clearMobileBackGesture() {
+    mobileBackGestureStartRef.current = null;
+  }
+
+  function finishMobileBackGesture({
+    clientX,
+    clientY,
+    preventDefault,
+    stopPropagation
+  }: {
+    clientX: number;
+    clientY: number;
+    preventDefault: () => void;
+    stopPropagation: () => void;
+  }) {
+    const start = mobileBackGestureStartRef.current;
+    mobileBackGestureStartRef.current = null;
+    if (!start || start.ignored) {
+      return;
+    }
+
+    const deltaX = clientX - start.x;
+    const deltaY = clientY - start.y;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+    const isLeftBackSwipe = start.edge === "left" && deltaX >= MOBILE_BACK_GESTURE_MIN_DISTANCE;
+    const isRightBackSwipe = start.edge === "right" && deltaX <= -MOBILE_BACK_GESTURE_MIN_DISTANCE;
+
+    if (
+      (isLeftBackSwipe || isRightBackSwipe) &&
+      absY <= MOBILE_BACK_GESTURE_MAX_VERTICAL &&
+      absX > absY * MOBILE_BACK_GESTURE_DIRECTION_RATIO
+    ) {
+      preventDefault();
+      stopPropagation();
+      handleMobileBackRequest("gesture");
+    }
+  }
+
+  function handleMobileBackTouchStart(event: TouchEvent<HTMLDivElement>) {
+    const touch = event.touches[0];
+    if (!touch) {
+      return;
+    }
+    beginMobileBackGesture({
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+      target: event.target
+    });
+  }
+
+  function handleMobileBackTouchEnd(event: TouchEvent<HTMLDivElement>) {
+    const touch = event.changedTouches[0];
+    if (!touch) {
+      return;
+    }
+    finishMobileBackGesture({
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+      preventDefault: () => event.preventDefault(),
+      stopPropagation: () => event.stopPropagation()
+    });
+  }
+
+  function handleMobileBackPointerStart(event: PointerEvent<HTMLDivElement>) {
+    if (event.pointerType === "mouse" && event.button !== 0) {
+      return;
+    }
+    beginMobileBackGesture({
+      clientX: event.clientX,
+      clientY: event.clientY,
+      pointerId: event.pointerId,
+      target: event.target
+    });
+  }
+
+  function handleMobileBackPointerEnd(event: PointerEvent<HTMLDivElement>) {
+    const start = mobileBackGestureStartRef.current;
+    if (start?.pointerId !== undefined && start.pointerId !== event.pointerId) {
+      return;
+    }
+    finishMobileBackGesture({
+      clientX: event.clientX,
+      clientY: event.clientY,
+      preventDefault: () => event.preventDefault(),
+      stopPropagation: () => event.stopPropagation()
+    });
   }
 
   function login(
@@ -413,6 +657,8 @@ export default function AndroidPreviewPage() {
     saveStoredMobileAccount(account);
     setMobileAccount(account);
     setProviderStatuses(nextProviderStatuses);
+    mobileTabStackRef.current = ["home"];
+    mobileHistoryDepthRef.current = 1;
     setActiveTab("home");
     setStatus(defaultKeysBound ? `已登录：${account}，默认服务授权已就绪。` : `已登录：${account}，请在电脑端检查服务授权。`);
   }
@@ -420,6 +666,8 @@ export default function AndroidPreviewPage() {
   function logout() {
     clearStoredMobileAccount();
     setMobileAccount(null);
+    mobileTabStackRef.current = ["home"];
+    mobileHistoryDepthRef.current = 1;
     setActiveTab("home");
     setStatus("已退出登录。");
   }
@@ -437,7 +685,14 @@ export default function AndroidPreviewPage() {
   }
 
   return (
-    <MobileShell>
+    <MobileShell
+      onBackGestureCancel={clearMobileBackGesture}
+      onBackGestureEnd={handleMobileBackTouchEnd}
+      onBackPointerCancel={clearMobileBackGesture}
+      onBackPointerEnd={handleMobileBackPointerEnd}
+      onBackPointerStart={handleMobileBackPointerStart}
+      onBackGestureStart={handleMobileBackTouchStart}
+    >
       <MobileHeader
         activeTab={activeTab}
         isNativeShell={isNativeShell}
@@ -447,7 +702,10 @@ export default function AndroidPreviewPage() {
         <MobileScreenBackdrop activeTab={activeTab} />
         <div
           aria-live="polite"
-          className="relative z-10 mb-2 ml-1 inline-flex max-w-[calc(100%-0.5rem)] rounded-full border border-white/[0.82] bg-[rgba(255,253,247,0.78)] px-3 py-1.5 text-[11px] font-semibold leading-5 text-ink/[0.70] shadow-[0_10px_24px_rgba(27,58,48,0.06),inset_0_1px_0_rgba(255,255,255,0.88)] backdrop-blur-md"
+          className={[
+            "relative z-10 mb-2 ml-1 max-w-[calc(100%-0.5rem)] rounded-full border border-white/[0.82] bg-[rgba(255,253,247,0.78)] px-3 py-1.5 text-[11px] font-semibold leading-5 text-ink/[0.70] shadow-[0_10px_24px_rgba(27,58,48,0.06),inset_0_1px_0_rgba(255,255,255,0.88)] backdrop-blur-md",
+            activeTab === "collect" ? "sr-only" : "inline-flex"
+          ].join(" ")}
           data-testid="mobile-status"
           role="status"
         >
@@ -461,14 +719,15 @@ export default function AndroidPreviewPage() {
           />
         </div>
         <div className="relative z-10" hidden={activeTab !== "collect"}>
-          <CollectScreen apiBase={API_BASE} credentials={credentials} onAction={setStatus} />
+          <CollectScreen active={activeTab === "collect"} apiBase={API_BASE} credentials={credentials} onAction={setStatus} />
         </div>
         <div className="relative z-10" hidden={activeTab !== "knowledge"}>
-          <KnowledgeScreen apiBase={API_BASE} onAction={setStatus} />
+          <KnowledgeScreen active={activeTab === "knowledge"} apiBase={API_BASE} onAction={setStatus} />
         </div>
         {activeTab === "review" ? (
           <div className="relative z-10">
             <ReviewScreen
+              active={activeTab === "review"}
               credentials={credentials}
               onAction={setStatus}
               onOpenCreate={() => openTab("create", "已打开创作项目页，可以继续修改退回草稿。")}
@@ -477,7 +736,7 @@ export default function AndroidPreviewPage() {
           </div>
         ) : null}
         <div className="relative z-10" hidden={activeTab !== "create"}>
-          <CreateScreen apiBase={API_BASE} credentials={credentials} onAction={setStatus} />
+          <CreateScreen active={activeTab === "create"} apiBase={API_BASE} credentials={credentials} onAction={setStatus} />
         </div>
         <div className="relative z-10" hidden={activeTab !== "settings"}>
           <SettingsScreen
@@ -493,11 +752,33 @@ export default function AndroidPreviewPage() {
   );
 }
 
-function MobileShell({ children }: { children: ReactNode }) {
+function MobileShell({
+  children,
+  onBackGestureCancel,
+  onBackGestureEnd,
+  onBackGestureStart,
+  onBackPointerCancel,
+  onBackPointerEnd,
+  onBackPointerStart
+}: {
+  children: ReactNode;
+  onBackGestureCancel?: () => void;
+  onBackGestureEnd?: (event: TouchEvent<HTMLDivElement>) => void;
+  onBackGestureStart?: (event: TouchEvent<HTMLDivElement>) => void;
+  onBackPointerCancel?: () => void;
+  onBackPointerEnd?: (event: PointerEvent<HTMLDivElement>) => void;
+  onBackPointerStart?: (event: PointerEvent<HTMLDivElement>) => void;
+}) {
   return (
     <main className="opc-mobile-shell min-h-[100dvh] bg-[#d8e6dc] px-0 py-0 text-ink sm:px-6 sm:py-6">
       <div
         className="relative mx-auto h-[100dvh] max-w-[430px] overflow-hidden bg-[#f8f5ec] bg-cover shadow-[0_24px_70px_rgba(20,48,41,0.18)] sm:h-[calc(100dvh-48px)] sm:min-h-[680px] sm:rounded-[30px] sm:border sm:border-white/[0.80]"
+        onPointerCancel={onBackPointerCancel}
+        onPointerDown={onBackPointerStart}
+        onPointerUp={onBackPointerEnd}
+        onTouchCancel={onBackGestureCancel}
+        onTouchEnd={onBackGestureEnd}
+        onTouchStart={onBackGestureStart}
         style={{ backgroundImage: `url(${MOBILE_PAPER_TEXTURE})` }}
       >
         <div className="flex h-full flex-col">{children}</div>
@@ -664,23 +945,49 @@ function MobileHeader({
     create: "创作项目",
     settings: "设置"
   };
+  const subtitles: Partial<Record<MobileTab, string>> = {
+    collect: "自动采集优质内容，持续补给选题灵感"
+  };
+  const isCollect = activeTab === "collect";
 
   return (
-    <header className="relative overflow-hidden bg-[rgba(251,247,237,0.82)] px-4 pb-3.5 pt-[calc(12px+env(safe-area-inset-top))] shadow-[0_8px_22px_rgba(31,58,49,0.05),inset_0_1px_0_rgba(255,255,255,0.86)] backdrop-blur-xl">
+    <header
+      className={[
+        "relative overflow-hidden px-4 pt-[calc(12px+env(safe-area-inset-top))] backdrop-blur-xl",
+        isCollect
+          ? "bg-[rgba(251,247,237,0.54)] pb-7"
+          : "bg-[rgba(251,247,237,0.82)] pb-3.5 shadow-[0_8px_22px_rgba(31,58,49,0.05),inset_0_1px_0_rgba(255,255,255,0.86)]"
+      ].join(" ")}
+    >
+      {isCollect ? (
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-[-22%] top-[-72px] h-[240px] bg-cover opacity-70"
+          style={{
+            backgroundImage: `url(${MOBILE_COLLECTION_COLLAGE})`,
+            backgroundPosition: "center top"
+          }}
+        />
+      ) : null}
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.70),rgba(255,255,255,0.22)_48%,rgba(210,230,216,0.20))]"
+        className={[
+          "absolute inset-0",
+          isCollect
+            ? "bg-[linear-gradient(180deg,rgba(255,253,247,0.70)_0%,rgba(255,253,247,0.22)_74%,rgba(255,253,247,0)_100%)]"
+            : "bg-[linear-gradient(135deg,rgba(255,255,255,0.70),rgba(255,255,255,0.22)_48%,rgba(210,230,216,0.20))]"
+        ].join(" ")}
       />
-      <div className="relative flex items-center justify-between gap-3">
+      <div className={["relative flex items-start justify-between gap-3", isCollect ? "pt-1" : "items-center"].join(" ")}>
         {isNativeShell ? (
           <div
             aria-hidden="true"
-            className={`${MOBILE_HEADER_ICON_BUTTON_CLASS} pointer-events-none opacity-0`}
+            className={`${MOBILE_HEADER_ICON_BUTTON_CLASS} pointer-events-none ${isCollect ? "hidden" : "opacity-0"}`}
           />
         ) : (
           <button
             aria-label="返回 PC 工作台"
-            className={MOBILE_HEADER_ICON_BUTTON_CLASS}
+            className={`${MOBILE_HEADER_ICON_BUTTON_CLASS} ${isCollect ? "mt-1" : ""}`}
             onClick={() => {
               window.location.href = getPcReturnHref();
             }}
@@ -690,14 +997,21 @@ function MobileHeader({
           </button>
         )}
         <div className="min-w-0 flex-1">
-          <div className="text-[11px] font-black text-moss">
+          <div className={["font-black text-moss", isCollect ? "text-[17px] leading-6" : "text-[11px]"].join(" ")}>
             {isNativeShell ? "OMPC工作站" : "OPC Mobile"}
           </div>
-          <h1 className="truncate text-[25px] font-black leading-8">{titles[activeTab]}</h1>
+          <h1 className={isCollect ? "mt-1 text-[44px] font-black leading-[1.03] tracking-normal" : "truncate text-[25px] font-black leading-8"}>
+            {titles[activeTab]}
+          </h1>
+          {subtitles[activeTab] ? (
+            <p className="mt-3 text-base font-semibold leading-6 text-ink/[0.62]">
+              {subtitles[activeTab]}
+            </p>
+          ) : null}
         </div>
         <button
           aria-label="查看通知状态"
-          className={MOBILE_HEADER_ICON_BUTTON_CLASS}
+          className={`${MOBILE_HEADER_ICON_BUTTON_CLASS} ${isCollect ? "mt-3 h-[58px] w-[58px] rounded-[24px]" : ""}`}
           onClick={onNotify}
           title="通知状态"
           type="button"
