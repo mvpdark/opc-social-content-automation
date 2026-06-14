@@ -245,6 +245,7 @@ export function CreateScreen({
   function updateMobileTopicAndAutoContext(nextTopic: string) {
     const previousTopic = topic.trim();
     const nextTopicText = nextTopic.trim();
+    const nextTopicPreset = findGenerationTopicPresetByTopic(nextTopicText);
     setTopic(nextTopic);
     setTargetAudience((currentAudience) => {
       const normalizedAudience = currentAudience.trim();
@@ -253,9 +254,13 @@ export function CreateScreen({
         normalizedAudience === defaultMobileTargetAudience ||
         normalizedAudience === buildCustomTopicAudience(previousTopic) ||
         isKnownGenerationTopicAudience(normalizedAudience);
-      return shouldSyncAudience
-        ? buildCustomTopicAudience(nextTopicText) || defaultMobileTargetAudience
-        : currentAudience;
+      if (nextTopicPreset) {
+        return nextTopicPreset.audience;
+      }
+      if (shouldSyncAudience) {
+        return buildCustomTopicAudience(nextTopicText) || defaultMobileTargetAudience;
+      }
+      return currentAudience;
     });
     setTagsText((currentTags) => {
       const normalizedTags = currentTags.trim();
@@ -264,11 +269,18 @@ export function CreateScreen({
         normalizedTags === previousTopic ||
         normalizedTags === defaultMobileTagsText ||
         isKnownGenerationTopicTags(normalizedTags);
-      return shouldSyncTags
-        ? buildCustomTopicTags(nextTopicText) || defaultMobileTagsText
-        : currentTags;
+      if (nextTopicPreset) {
+        return nextTopicPreset.tags;
+      }
+      if (shouldSyncTags) {
+        return buildCustomTopicTags(nextTopicText) || defaultMobileTagsText;
+      }
+      return currentTags;
     });
     clearMobileSourceEvidence();
+    if (nextTopicPreset) {
+      onAction(`已识别推荐选题：${nextTopicPreset.topic}`);
+    }
   }
 
   function applyMobileTopicPreset(preset: GenerationTopicPreset) {
