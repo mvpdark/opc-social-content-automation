@@ -343,11 +343,15 @@ export function CollectScreen({
     const validIds = new Set(trendItems.map((item) => item.id));
     setSelectedTrendIds((currentIds) => currentIds.filter((id) => validIds.has(id)));
     setReviewedTrendIds((currentIds) => currentIds.filter((id) => validIds.has(id)));
+    setSelectedTrendItem((currentItem) =>
+      currentItem ? trendItems.find((item) => item.id === currentItem.id) ?? null : null
+    );
   }, [trendItems]);
 
   useEffect(() => {
     setSelectedTrendIds([]);
     setReviewedTrendIds([]);
+    setSelectedTrendItem(null);
   }, [platform, query]);
 
   function formatScheduleTime(value: string | null) {
