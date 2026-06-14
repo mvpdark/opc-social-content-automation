@@ -1,11 +1,9 @@
-import re
-from pathlib import Path
-
 import pytest
 
 from app.schemas.content import ContentGenerateRequest
 from app.services.content_service import _draft_topic_relevance_issue
 from app.services.topic_intent import first_matching_topic_intent
+from topic_preset_helpers import load_generation_topic_presets, split_topic_tags
 
 
 def test_water_ranking_topic_rejects_generic_application_draft() -> None:
@@ -284,15 +282,7 @@ def test_recommended_topic_title_intent_takes_priority_over_generic_tags(
 
 
 def test_generation_topic_presets_align_with_backend_intents() -> None:
-    project_root = Path(__file__).resolve().parents[2]
-    preset_text = (project_root / "frontend" / "lib" / "topic-presets.ts").read_text(
-        encoding="utf-8"
-    )
-    preset_objects = re.findall(
-        r'\{\s*(audience:.*?topic:\s*"[^"]+"\s*)\}',
-        preset_text,
-        re.S,
-    )
+    presets = load_generation_topic_presets()
     compatible_labels = {
         "榜单型": {"榜单/筛选"},
         "路线型": {"路线/选择", "背景补强"},
@@ -302,11 +292,10 @@ def test_generation_topic_presets_align_with_backend_intents() -> None:
         "转化型": {"咨询转化"},
     }
 
-    assert len(preset_objects) >= 20
-    for raw_preset in preset_objects:
-        fields = dict(re.findall(r'(\w+):\s*"([^"]*)"', raw_preset))
-        tags = [tag.strip() for tag in re.split(r"[,，、;；]+", fields["tags"]) if tag.strip()]
-        rule = first_matching_topic_intent(fields["topic"], tags)
+    assert len(presets) >= 20
+    for preset in presets:
+        tags = split_topic_tags(preset["tags"])
+        rule = first_matching_topic_intent(preset["topic"], tags)
 
-        assert rule is not None, fields["key"]
-        assert rule.label in compatible_labels[fields["desktopLabel"]], fields["key"]
+        assert rule is not None, preset["key"]
+        assert rule.label in compatible_labels[preset["desktopLabel"]], preset["key"]

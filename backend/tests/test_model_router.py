@@ -1,6 +1,3 @@
-import re
-from pathlib import Path
-
 import httpx
 import pytest
 from fastapi import HTTPException
@@ -11,6 +8,7 @@ from app.services.model_router import (
     load_platform_style_reference,
     model_router,
 )
+from topic_preset_helpers import load_generation_topic_presets, split_topic_tags
 
 
 def test_embedding_model_is_deterministic() -> None:
@@ -235,15 +233,7 @@ def test_codex_test_draft_provider_covers_all_recommended_topic_presets(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(settings, "draft_provider", "codex_test")
-    project_root = Path(__file__).resolve().parents[2]
-    preset_text = (project_root / "frontend" / "lib" / "topic-presets.ts").read_text(
-        encoding="utf-8"
-    )
-    preset_objects = re.findall(
-        r'\{\s*(audience:.*?topic:\s*"[^"]+"\s*)\}',
-        preset_text,
-        re.S,
-    )
+    presets = load_generation_topic_presets()
     expected_terms_by_label = {
         "榜单型": ("筛选", "预算", "认证", "风险", "榜"),
         "路线型": ("路线", "选择", "适配"),
@@ -253,23 +243,22 @@ def test_codex_test_draft_provider_covers_all_recommended_topic_presets(
         "转化型": ("转化", "需求", "异议", "价值"),
     }
 
-    assert len(preset_objects) >= 20
-    for raw_preset in preset_objects:
-        fields = dict(re.findall(r'(\w+):\s*"([^"]*)"', raw_preset))
-        tags = [tag.strip() for tag in re.split(r"[,，、;；]+", fields["tags"]) if tag.strip()]
+    assert len(presets) >= 20
+    for preset in presets:
+        tags = split_topic_tags(preset["tags"])
         result = model_router.draft_model(
             "draft_generation",
             {
                 "platform": "xiaohongshu",
-                "topic": fields["topic"],
+                "topic": preset["topic"],
                 "tags": tags,
             },
         )
 
-        assert fields["topic"] in result, fields["key"]
-        assert "研究方向、目标导师和时间节点" not in result, fields["key"]
-        expected_terms = expected_terms_by_label[fields["desktopLabel"]]
-        assert any(term in result for term in expected_terms), fields["key"]
+        assert preset["topic"] in result, preset["key"]
+        assert "研究方向、目标导师和时间节点" not in result, preset["key"]
+        expected_terms = expected_terms_by_label[preset["desktopLabel"]]
+        assert any(term in result for term in expected_terms), preset["key"]
 
 
 def test_codex_test_image_provider_creates_svg(monkeypatch: pytest.MonkeyPatch) -> None:
