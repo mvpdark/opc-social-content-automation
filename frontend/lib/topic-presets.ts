@@ -44,6 +44,19 @@ export const generationTopicPresets: GenerationTopicPreset[] = [
     topic: "低预算海外博士怎么筛"
   },
   {
+    audience: "准备引用学校官网、费用页或校徽素材的硕升博申请人",
+    coverDirection:
+      "使用来源核验清单或证据卡片，突出官网 URL、费用口径、校徽/logo 授权、认证年份和待复核字段，不展示未经核实的校徽或价格结论。",
+    desktopHelper: "按官网、价格、校徽和认证字段核验",
+    desktopLabel: "来源型",
+    key: "source-logo-price",
+    knowledgeQuery: "水博 海外博士 官网 校徽 logo 价格 学费 费用 认证 政策 来源 核验",
+    mobileHelper: "来源核验",
+    mobileLabel: "来源",
+    tags: "水博,海外博士,官网核验,校徽logo,学费价格",
+    topic: "水博项目校徽和价格怎么核验"
+  },
+  {
     audience: "担心遇到不靠谱博士项目的咨询用户",
     coverDirection:
       "使用红黄绿风险清单或避坑榜，突出认证、官网信息、毕业要求、授课模式和付款节点。",

@@ -380,6 +380,7 @@ def validate_topic_presets_contract() -> int:
         "路线型": ("route-", ("路线", "选择", "取舍", "路径", "国内", "海外")),
         "导师型": ("mentor-", ("导师", "套磁", "研究方向", "论文")),
         "时间型": ("timeline-", ("时间", "节点", "材料", "DDL", "月份", "优先级")),
+        "来源型": ("source-", ("来源", "核验", "官网", "校徽", "价格", "费用", "学费", "认证", "logo")),
         "转化型": ("sales-", ("咨询", "转化", "私域", "线索", "话术", "价值")),
     }
 
@@ -872,6 +873,8 @@ def validate_content_production_contract() -> int:
         'topic: "全球水博排名必看"',
         'knowledgeQuery: "全球 水博 博士 项目 排名 认证 预算 在职"',
         'topic: "低预算海外博士怎么筛"',
+        'key: "source-logo-price"',
+        'topic: "水博项目校徽和价格怎么核验"',
         'topic: "套磁邮件为什么没人回"',
         'topic: "博士项目咨询前必问5个问题"',
         "desktopLabel",
@@ -887,13 +890,13 @@ def validate_content_production_contract() -> int:
         if snippet not in topic_presets_text:
             raise SystemExit(f"Missing shared topic preset contract: {snippet}")
 
-    expected_topic_preset_prefixes = {"ranking", "route", "mentor", "timeline", "sales"}
+    expected_topic_preset_prefixes = {"ranking", "route", "mentor", "timeline", "source", "sales"}
     actual_topic_preset_keys = set(re.findall(r'key: "([^"]+)"', topic_presets_text))
     actual_topic_preset_prefixes = {key.split("-", 1)[0] for key in actual_topic_preset_keys}
     total += len(expected_topic_preset_prefixes)
     if not expected_topic_preset_prefixes.issubset(actual_topic_preset_prefixes):
         raise SystemExit(
-            "Shared topic presets must cover ranking, route, mentor, timeline, and sales topics."
+            "Shared topic presets must cover ranking, route, mentor, timeline, source, and sales topics."
         )
     total += 1
     if len(actual_topic_preset_keys) < 20:

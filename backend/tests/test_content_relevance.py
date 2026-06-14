@@ -228,6 +228,11 @@ def test_topic_intent_relevance_rejects_drift_and_accepts_matching_draft(
             "来源核验",
         ),
         (
+            "水博项目校徽和价格怎么核验",
+            ["水博", "官网核验", "校徽logo", "学费价格"],
+            "来源核验",
+        ),
+        (
             "私域里怎么筛选博士咨询客户",
             ["私域运营", "博士咨询", "线索筛选", "项目适配"],
             "咨询转化",
@@ -260,6 +265,7 @@ def test_generation_topic_presets_align_with_backend_intents() -> None:
         "路线型": {"路线/选择", "背景补强"},
         "导师型": {"导师匹配"},
         "时间型": {"时间安排"},
+        "来源型": {"来源核验"},
         "转化型": {"咨询转化"},
     }
 
