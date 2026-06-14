@@ -110,6 +110,9 @@ policy, prefer source-backed facts. If the search context is weak or incomplete,
 say exact ranking/details need verified sources and provide a source-backed
 framework instead of fabricating names. Do not treat the answer summary as
 standalone proof if no returned URL/snippet supports the claim.
+If `web_search_context.required` is true but `web_search_context.results` is
+empty, do not name schools, logos, prices, rankings, policies, or current facts;
+write only a verification framework and ask for source review.
 Do not include admissions guarantees, fake scarcity, fake official endorsements,
 or promises such as guaranteed admission, internal quota, guaranteed graduation,
 or guaranteed supervisor response.

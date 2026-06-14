@@ -165,6 +165,27 @@ def build_content_source_context(
     return _public_source_context(payload, knowledge_context, web_search_context)
 
 
+def _prompt_web_search_context(
+    source_context: dict[str, object],
+    web_search_context: dict[str, object] | None,
+) -> dict[str, object] | None:
+    if web_search_context is not None:
+        return web_search_context
+
+    raw_web_search = source_context.get("web_search")
+    if not isinstance(raw_web_search, dict) or not raw_web_search.get("required"):
+        return None
+
+    return {
+        **raw_web_search,
+        "usage_note": (
+            "Live web search was required but no Tavily sources were available. "
+            "Do not name schools, prices, logos, rankings, policies, or current "
+            "facts; provide a verification framework and ask for source review."
+        ),
+    }
+
+
 def _is_water_ranking_topic(payload: ContentGenerateRequest) -> bool:
     return is_water_ranking_topic(payload.topic, payload.tags)
 
@@ -201,6 +222,7 @@ def build_draft_prompt_package(
         topic=payload.topic,
         tags=payload.tags,
     )
+    source_context = _public_source_context(payload, knowledge_context, web_search_context)
     return PromptPackage(
         prompt_name="draft_generation",
         prompt_template=load_prompt("draft_generation"),
@@ -212,8 +234,8 @@ def build_draft_prompt_package(
             "target_audience": payload.target_audience,
             "knowledge_query": payload.knowledge_query,
             "knowledge_context": knowledge_context,
-            "web_search_context": web_search_context,
-            "source_context": _public_source_context(payload, knowledge_context, web_search_context),
+            "web_search_context": _prompt_web_search_context(source_context, web_search_context),
+            "source_context": source_context,
             "style_reference": load_platform_style_reference(payload.platform),
             "user": {
                 "id": current_user.id,

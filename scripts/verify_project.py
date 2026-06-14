@@ -217,6 +217,8 @@ def validate_safety_gates() -> int:
             "这个选题需要实时来源",
             "没有可见 Tavily 结果",
             "不能编学校、价格、logo 或排名",
+            "Live web search was required but no Tavily sources were available",
+            "_prompt_web_search_context",
         ],
         "backend/app/api/deps.py": [
             "settings.auth_required",
@@ -1313,6 +1315,7 @@ def validate_content_production_contract() -> int:
                 "哪个项目",
                 "provide verification dimensions instead of inventing",
                 "Do not treat the answer summary as",
+                "web_search_context.required",
             ],
             "draft prompt school/project list source guard",
         ),

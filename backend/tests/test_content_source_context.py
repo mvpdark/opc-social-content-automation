@@ -6,7 +6,11 @@ from app.models.knowledge_base import KnowledgeBase
 from app.models.user import User
 from app.schemas.content import ContentGenerateRequest
 from app.services import content_service
-from app.services.content_service import build_content_source_context, generate_content_draft
+from app.services.content_service import (
+    build_content_source_context,
+    build_draft_prompt_package,
+    generate_content_draft,
+)
 
 
 def test_source_context_exposes_knowledge_and_web_sources(monkeypatch) -> None:
@@ -84,6 +88,37 @@ def test_source_context_warns_when_required_web_search_is_missing(monkeypatch) -
     assert context["web_search"]["results"] == []
     assert "没有可见 Tavily 结果" in context["review_note"]
     assert "不能编学校、价格、logo 或排名" in context["review_note"]
+
+
+def test_draft_prompt_marks_missing_required_web_search(monkeypatch) -> None:
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as db:
+        user = User(id=1, phone="test", password_hash="hash", role="promoter")
+        monkeypatch.setattr(
+            "app.services.content_service.build_live_web_search_context",
+            lambda **_kwargs: None,
+        )
+
+        package = build_draft_prompt_package(
+            db,
+            ContentGenerateRequest(
+                platform="xiaohongshu",
+                topic="水博项目校徽和价格怎么对比",
+                tags=["水博", "价格", "校徽"],
+            ),
+            user,
+        )
+
+    web_search_context = package.payload["web_search_context"]
+    assert isinstance(web_search_context, dict)
+    assert web_search_context["required"] is True
+    assert web_search_context["results"] == []
+    assert "no Tavily sources were available" in web_search_context["usage_note"]
+    assert "Do not name schools" in web_search_context["usage_note"]
+    assert isinstance(package.payload["source_context"], dict)
+    assert "没有可见 Tavily 结果" in package.payload["source_context"]["review_note"]
 
 
 def test_generated_content_persists_visible_source_context(monkeypatch) -> None:
