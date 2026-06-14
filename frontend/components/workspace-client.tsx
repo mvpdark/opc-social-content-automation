@@ -2695,6 +2695,12 @@ function GenerationLauncher({
       ? latestContent
       : null;
   const exportContentMatchesCurrentInputs = Boolean(currentExportContent);
+  const mismatchedExportContent = exportContent && !currentExportContent ? exportContent : null;
+  const mismatchedExportContentMessage = mismatchedExportContent
+    ? mismatchedExportContent.title === topic.trim()
+      ? "当前已有草稿的标签或检索依据和表单不一致，复制前请重新生成或重新选择对应草稿。"
+      : `当前已有草稿标题是“${mismatchedExportContent.title}”，不是当前选题“${topic.trim()}”，复制前请重新生成。`
+    : null;
   const matchingSourceContext = sourceContextMatchesKnowledgeQuery(sourceContext, knowledgeQuery)
     ? sourceContext
     : null;
@@ -3467,6 +3473,14 @@ function GenerationLauncher({
           <div className={`${subtleCardClass} p-4`}>
             <div className="text-sm font-semibold">启动状态</div>
             <p className="mt-2 text-sm leading-6 text-muted">{launchStatusText}</p>
+            {mismatchedExportContentMessage ? (
+              <div
+                className="mt-3 rounded-md border border-amber/40 bg-amber/10 p-3 text-xs leading-5 text-ink"
+                data-testid="stale-draft-warning"
+              >
+                {mismatchedExportContentMessage}
+              </div>
+            ) : null}
             <div className="mt-4 rounded-md border border-line bg-mist/60 p-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="text-xs font-semibold text-ink">服务配置检测</div>
