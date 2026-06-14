@@ -28,7 +28,7 @@ import {
 } from "@/lib/mobile-cover-share";
 import { renderXhsExpressionText } from "@/lib/xhs-stickers";
 
-const XHS_COPY_TEXT_ONLY_LABEL = "?????";
+const XHS_COPY_TEXT_ONLY_LABEL = "只复制文案";
 
 export function DraftPreviewEditor({
   coverImageUrl,
