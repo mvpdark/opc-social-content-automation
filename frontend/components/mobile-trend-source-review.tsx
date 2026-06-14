@@ -244,7 +244,7 @@ export function TrendSourceCard({
       resetSwipe();
       return;
     }
-    const finalDrag = dragX || event.clientX - start.x;
+    const finalDrag = clampDrag(event.clientX - start.x);
     if (finalDrag >= swipeThreshold) {
       suppressClickRef.current = true;
       resetSwipe();
@@ -288,42 +288,42 @@ export function TrendSourceCard({
       </div>
       <div
         className={[
-        "relative rounded-[24px] border bg-[rgba(255,253,247,0.88)] p-2.5 shadow-[0_10px_24px_rgba(31,58,49,0.06),inset_0_1px_0_rgba(255,255,255,0.90)]",
-        dragging ? "" : "transition-transform duration-200 ease-out",
-        selected ? "border-[#23854f] ring-2 ring-[#23854f]/[0.12]" : "border-white/[0.86]"
-      ].join(" ")}
+          "relative rounded-[24px] border bg-[rgba(255,253,247,0.88)] p-2.5 shadow-[0_10px_24px_rgba(31,58,49,0.06),inset_0_1px_0_rgba(255,255,255,0.90)]",
+          dragging ? "" : "transition-transform duration-200 ease-out",
+          selected ? "border-[#23854f] ring-2 ring-[#23854f]/[0.12]" : "border-white/[0.86]"
+        ].join(" ")}
         style={{ transform: `translateX(${dragX}px)` }}
       >
-      <div className="flex items-center gap-3">
-        <button
-          className="h-[74px] w-[74px] shrink-0 overflow-hidden rounded-[18px] border border-white/[0.88] bg-[#eef4ed] shadow-[0_8px_18px_rgba(31,58,49,0.08)] active:scale-[0.98]"
-          onClick={() => {
-            if (!suppressNextClick()) {
-              onOpen();
-            }
-          }}
-          type="button"
-        >
-          {coverUrl ? (
-            <img alt="" className="h-full w-full object-cover" src={coverUrl} />
-          ) : (
-            <span
-              aria-hidden="true"
-              className="block h-full w-full bg-cover bg-center"
-              style={{ backgroundImage: "url(/mobile-assets/collection-collage.png)" }}
-            />
-          )}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            className="h-[74px] w-[74px] shrink-0 overflow-hidden rounded-[18px] border border-white/[0.88] bg-[#eef4ed] shadow-[0_8px_18px_rgba(31,58,49,0.08)] active:scale-[0.98]"
+            onClick={() => {
+              if (!suppressNextClick()) {
+                onOpen();
+              }
+            }}
+            type="button"
+          >
+            {coverUrl ? (
+              <img alt="" className="h-full w-full object-cover" src={coverUrl} />
+            ) : (
+              <span
+                aria-hidden="true"
+                className="block h-full w-full bg-cover bg-center"
+                style={{ backgroundImage: "url(/mobile-assets/collection-collage.png)" }}
+              />
+            )}
+          </button>
 
-        <button
-          className="min-w-0 flex-1 touch-manipulation text-left active:scale-[0.995]"
-          onClick={() => {
-            if (!suppressNextClick()) {
-              onOpen();
-            }
-          }}
-          type="button"
-        >
+          <button
+            className="min-w-0 flex-1 touch-manipulation text-left active:scale-[0.995]"
+            onClick={() => {
+              if (!suppressNextClick()) {
+                onOpen();
+              }
+            }}
+            type="button"
+          >
           <div className="flex min-w-0 items-center gap-2">
             <span
               className={[
@@ -346,9 +346,9 @@ export function TrendSourceCard({
           </div>
           <div className="mt-0.5 truncate text-xs font-black text-ink/[0.70]">{metrics}</div>
           <span className="sr-only">{mobileTrendExcerpt(item)}</span>
-        </button>
+          </button>
 
-        <div className="flex w-12 shrink-0 flex-col items-center gap-1">
+          <div className="flex w-12 shrink-0 flex-col items-center gap-1">
           <button
             className={[
               "flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border text-[11px] font-black active:scale-[0.98]",
@@ -373,8 +373,8 @@ export function TrendSourceCard({
           >
             <ExternalLink className="h-3.5 w-3.5" />
           </button>
+          </div>
         </div>
-      </div>
       </div>
     </article>
   );
