@@ -176,6 +176,12 @@ def test_water_list_topic_accepts_verified_checklist_structure() -> None:
             "回答博士含金量时要按职业目标、单位认可、现实成本和价值解释处理异议。",
             "咨询转化",
         ),
+        (
+            "水博项目校徽和价格怎么对比",
+            "先确认研究方向，再看导师近三年论文，最后准备套磁邮件。",
+            "水博项目校徽和价格要按官网来源、官方 logo/校徽、学费费用、认证政策和待复核字段做核验清单。",
+            "来源核验",
+        ),
     ],
 )
 def test_topic_intent_relevance_rejects_drift_and_accepts_matching_draft(
@@ -215,6 +221,11 @@ def test_topic_intent_relevance_rejects_drift_and_accepts_matching_draft(
             "博士项目咨询前必问5个问题",
             ["博士咨询", "项目筛选", "在职博士", "私域转化"],
             "咨询转化",
+        ),
+        (
+            "海外博士价格怎么对比",
+            ["海外博士", "价格", "学费"],
+            "来源核验",
         ),
         (
             "私域里怎么筛选博士咨询客户",

@@ -196,6 +196,11 @@ def validate_safety_gates() -> int:
             "_missing_required_web_sources",
             "没有可见 Tavily 来源",
         ],
+        "backend/app/services/topic_intent.py": [
+            'key="source_check"',
+            "来源核验",
+            "价格/校徽/认证字段",
+        ],
         "backend/app/services/web_search_service.py": [
             '"校徽"',
             '"价格"',
