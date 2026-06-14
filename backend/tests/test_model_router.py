@@ -362,10 +362,13 @@ def test_openai_compatible_draft_provider_calls_chat_completion(
     assert request_json["temperature"] == 0.55
     messages = request_json["messages"]
     assert isinstance(messages, list)
+    system_message = messages[0]
+    assert isinstance(system_message, dict)
+    assert "Compatibility note" not in str(system_message["content"])
     user_message = messages[1]
     assert isinstance(user_message, dict)
-    assert "\\u" in str(user_message["content"])
-    assert "硕升博" not in str(user_message["content"])
+    assert "\\u" not in str(user_message["content"])
+    assert "硕升博" in str(user_message["content"])
     assert secret not in str(request_json)
 
 
