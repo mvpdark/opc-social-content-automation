@@ -1095,6 +1095,7 @@ export function CreateScreen({
         </div>
         <MobileSourceEvidencePanel
           error={sourcePreviewError}
+          fallbackKnowledgeQuery={generationKnowledgeQuery}
           onPreview={previewMobileSourceContext}
           previewBusy={sourcePreviewBusy}
           sourceContext={visibleMobileSourceContext}

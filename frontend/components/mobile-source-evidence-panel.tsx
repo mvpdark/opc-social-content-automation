@@ -23,11 +23,13 @@ function mobileSourceKnowledgeItemToKnowledgeItem(item: GenerationKnowledgeSourc
 
 export function MobileSourceEvidencePanel({
   error,
+  fallbackKnowledgeQuery,
   onPreview,
   previewBusy,
   sourceContext
 }: {
   error?: string | null;
+  fallbackKnowledgeQuery?: string;
   onPreview: () => void;
   previewBusy: boolean;
   sourceContext: GenerationSourceContext | null;
@@ -38,6 +40,7 @@ export function MobileSourceEvidencePanel({
   const webResults = webSearch?.results ?? [];
   const hasEvidence = knowledgeItems.length + webResults.length > 0;
   const missingRequiredWebResults = webRequired && !webResults.length;
+  const visibleKnowledgeQuery = sourceContext?.knowledge_query || fallbackKnowledgeQuery?.trim() || "";
 
   return (
     <div
@@ -65,9 +68,9 @@ export function MobileSourceEvidencePanel({
           {missingRequiredWebResults ? "缺联网" : hasEvidence ? `${knowledgeItems.length + webResults.length} 条` : "待查看"}
         </span>
       </div>
-      {sourceContext?.knowledge_query ? (
+      {visibleKnowledgeQuery ? (
         <p className="mt-2 rounded-[16px] bg-white/70 px-3 py-2 text-[11px] font-medium leading-5 text-muted">
-          检索词：{sourceContext.knowledge_query}
+          检索词：{visibleKnowledgeQuery}
         </p>
       ) : null}
       <button

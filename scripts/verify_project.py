@@ -1077,6 +1077,31 @@ def validate_content_production_contract() -> int:
         if snippet not in mobile_trend_source_review_text:
             raise SystemExit(f"Missing mobile trend source body visibility contract: {snippet}")
 
+    mobile_source_evidence_query_contracts = [
+        (
+            mobile_source_evidence_text,
+            [
+                "fallbackKnowledgeQuery?: string;",
+                'const visibleKnowledgeQuery = sourceContext?.knowledge_query || fallbackKnowledgeQuery?.trim() || "";',
+                "检索词：{visibleKnowledgeQuery}",
+            ],
+            "mobile source evidence fallback query",
+        ),
+        (
+            mobile_create_text,
+            [
+                "fallbackKnowledgeQuery={generationKnowledgeQuery}",
+                "const generationKnowledgeQuery = selectedTopicPreset?.knowledgeQuery ?? topic;",
+            ],
+            "mobile create source evidence query wiring",
+        ),
+    ]
+    for text, snippets, contract_name in mobile_source_evidence_query_contracts:
+        for snippet in snippets:
+            total += 1
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
+
     mobile_xhs_copy_contract_snippets = [
         "tryCopyText(draftText)",
         "function publishExportStatus(message: string)",
