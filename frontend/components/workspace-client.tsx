@@ -2584,9 +2584,7 @@ function GenerationLauncher({
   const [providerStatusError, setProviderStatusError] = useState<string | null>(null);
   const [draftCheckStatus, setDraftCheckStatus] = useState<ProviderCheckResult | null>(null);
   const [draftCheckBusy, setDraftCheckBusy] = useState(false);
-  const [sourceContext, setSourceContext] = useState<GenerationSourceContext | null>(
-    () => latestContent?.source_context ?? null
-  );
+  const [sourceContext, setSourceContext] = useState<GenerationSourceContext | null>(null);
   const [sourcePreviewBusy, setSourcePreviewBusy] = useState(false);
   const [sourcePreviewError, setSourcePreviewError] = useState<string | null>(null);
 
@@ -2600,7 +2598,14 @@ function GenerationLauncher({
   const draftProviderBlocked = draftProviderMissing || draftProviderCheckFailed;
   const canGenerate = hasTopic && busyAction === null && !draftProviderBlocked;
   const exportContent = lastContent ?? latestContent;
-  const visibleSourceContext = sourceContext ?? exportContent?.source_context ?? null;
+  const exportContentMatchesCurrentInputs = Boolean(
+    exportContent &&
+      exportContent.title === topic.trim() &&
+      exportContent.platform === selectedPlatform
+  );
+  const visibleSourceContext =
+    sourceContext ??
+    (exportContentMatchesCurrentInputs ? exportContent?.source_context ?? null : null);
   const generateButtonLabel = !hasTopic
       ? "先填写选题"
       : draftProviderMissing
@@ -2656,10 +2661,21 @@ function GenerationLauncher({
   }, [defaultWritingStyle]);
 
   useEffect(() => {
-    if (latestContent?.source_context) {
+    if (
+      latestContent?.source_context &&
+      latestContent.title === topic.trim() &&
+      latestContent.platform === selectedPlatform
+    ) {
       setSourceContext(latestContent.source_context);
     }
-  }, [latestContent?.id, latestContent?.source_context]);
+  }, [
+    latestContent?.id,
+    latestContent?.platform,
+    latestContent?.source_context,
+    latestContent?.title,
+    selectedPlatform,
+    topic
+  ]);
 
   async function refreshProviderStatuses() {
     try {
