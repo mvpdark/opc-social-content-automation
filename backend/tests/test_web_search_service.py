@@ -36,6 +36,18 @@ def test_build_tavily_query_expands_water_phd_topic() -> None:
     assert query.startswith("global water resources PhD programs")
 
 
+def test_build_tavily_query_preserves_logo_and_price_intent() -> None:
+    logo_query = build_tavily_query("水博项目校徽怎么找", "xiaohongshu", ["水博"])
+    price_query = build_tavily_query("海外博士价格怎么对比", "xiaohongshu", ["海外博士"])
+
+    assert "official logo" in logo_query
+    assert "school emblem" in logo_query
+    assert "校徽" in logo_query
+    assert "total cost" in price_query
+    assert "tuition fees" in price_query
+    assert "价格" in price_query
+
+
 def test_build_tavily_query_keeps_budget_overseas_doctorate_general() -> None:
     query = build_tavily_query(
         "低预算海外博士怎么筛",

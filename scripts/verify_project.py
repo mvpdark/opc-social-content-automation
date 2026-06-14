@@ -197,6 +197,8 @@ def validate_safety_gates() -> int:
         "backend/app/services/web_search_service.py": [
             '"校徽"',
             '"价格"',
+            "official logo school emblem",
+            "tuition fees total cost",
             '"include_answer": True',
         ],
         "prompts/image_generation.md": [

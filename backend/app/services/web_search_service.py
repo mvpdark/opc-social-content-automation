@@ -55,6 +55,9 @@ LIVE_SEARCH_SCOPE_TERMS = (
     "境外博士",
 )
 
+LOGO_QUERY_TERMS = ("logo", "校徽", "标志")
+PRICE_QUERY_TERMS = ("价格", "费用", "学费", "预算")
+
 
 @dataclass(frozen=True)
 class WebSearchResult:
@@ -100,24 +103,45 @@ def topic_needs_live_web_search(topic: str, tags: list[str] | None = None) -> bo
     return has_fact_term or (has_list_term and has_scope_term)
 
 
+def _query_focus_terms(topic_text: str) -> str:
+    normalized = topic_text.lower()
+    focus_terms: list[str] = []
+    if any(term.lower() in normalized for term in LOGO_QUERY_TERMS):
+        focus_terms.append("official logo school emblem brand identity 校徽 官方 标志")
+    if any(term.lower() in normalized for term in PRICE_QUERY_TERMS):
+        focus_terms.append("tuition fees total cost budget 学费 费用 价格")
+    return " ".join(focus_terms)
+
+
+def _join_query_parts(*parts: str) -> str:
+    return " ".join(part.strip() for part in parts if part.strip())
+
+
 def build_tavily_query(topic: str, platform: str, tags: list[str] | None = None) -> str:
     tag_text = " ".join(tags or [])
     topic_text = f"{topic} {tag_text}".strip()
+    focus_terms = _query_focus_terms(topic_text)
     if any(term in topic_text for term in ("水博", "水资源")):
-        return (
+        return _join_query_parts(
             "global water resources PhD programs university rankings official sources "
-            "tuition accreditation in-service doctoral program "
-            f"{topic_text} 全球 博士 项目 学校 排名 认证 学费 官网"
-        ).strip()
+            "tuition accreditation in-service doctoral program",
+            focus_terms,
+            f"{topic_text} 全球 博士 项目 学校 排名 认证 学费 官网",
+        )
     if any(term in topic_text for term in ("海外博士", "境外博士", "在职博士", "低预算")):
-        return (
+        return _join_query_parts(
             "overseas doctoral programs official sources tuition accreditation "
-            "in-service doctoral program budget application requirements "
-            f"{topic_text} 博士 项目 学校 认证 学费 费用 官网"
-        ).strip()
+            "in-service doctoral program budget application requirements",
+            focus_terms,
+            f"{topic_text} 博士 项目 学校 认证 学费 费用 官网",
+        )
     if platform == "xiaohongshu":
-        return f"official sources current facts Xiaohongshu content research {topic_text}".strip()
-    return f"official sources current facts {topic_text}".strip()
+        return _join_query_parts(
+            "official sources current facts Xiaohongshu content research",
+            focus_terms,
+            topic_text,
+        )
+    return _join_query_parts("official sources current facts", focus_terms, topic_text)
 
 
 def _clean_text(value: object, max_length: int) -> str:
