@@ -1,0 +1,1127 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  ChevronRight,
+  ExternalLink,
+  Loader2,
+  PenLine,
+  Play,
+  Radar,
+  Save,
+  Search,
+  ShieldCheck,
+  UserRound
+} from "lucide-react";
+
+import { PlatformIcon } from "@/components/platform-icon";
+import { MobileOverlayPortal, MobilePanel, ModeChip } from "@/components/mobile-ui";
+import {
+  TrendSourceCard,
+  TrendSourceReviewSheet,
+  mobilePlatformText,
+  sanitizeMobileTrendItems,
+  type MobileTrendContent
+} from "@/components/mobile-trend-source-review";
+import {
+  collectionJobDiagnosticItems,
+  type CollectionJobDiagnosticItem,
+  formatCollectionJobStatus,
+  isActiveCollectionJob,
+  type CollectionJobStatusSnapshot
+} from "@/lib/collection-job-status";
+import { renderXhsExpressionText } from "@/lib/xhs-stickers";
+import {
+  COLLECTION_SCHEDULE_STORAGE_KEY,
+  authHeaders,
+  readApiError,
+  readMobileStorage,
+  writeMobileStorage,
+  type CredentialSettings,
+  type MobilePlatform
+} from "@/lib/mobile-runtime";
+
+type LinkImportTarget = {
+  accepted_count: number;
+  extracted_count: number;
+  links: Array<{
+    accepted: boolean;
+    link_type: string;
+    normalized_url: string;
+    reason: string | null;
+  }>;
+};
+
+type MobileCollectionJob = CollectionJobStatusSnapshot & {
+  created_at?: string;
+  updated_at?: string;
+};
+
+type CollectionScheduleStorage = {
+  autoEnabled: boolean;
+  intervalMinutes: number;
+  keyword: string;
+  lastJobId: number | null;
+  lastRunAt: string | null;
+  maxItems: number;
+  nextRunAt: string | null;
+  platform: MobilePlatform;
+  scheduleMessage: string;
+};
+
+function mobileDiagnosticToneClass(tone: CollectionJobDiagnosticItem["tone"]) {
+  if (tone === "good") {
+    return "border-moss/25 bg-moss/10";
+  }
+  if (tone === "warning") {
+    return "border-[#f3c96b]/[0.40] bg-[#fff5d8]";
+  }
+  if (tone === "danger") {
+    return "border-coral/30 bg-coral/10";
+  }
+  return "border-[#d6e8df] bg-white";
+}
+
+const sampleReferences = [
+  {
+    body:
+      "姐妹们，硕升博别一上来就套磁。[哭惹R]\n\n先确认研究方向、导师项目和自己的材料匹配度，再去写邮件，第一印象会稳很多。\n\n真正要先做的是：把方向拆清楚，把导师近期成果读一遍，把你能贡献什么写成一句话。",
+    coverNotes: ["路线矩阵", "决策地图", "封面轮换"],
+    cue: "反常识开头 + 路线结构",
+    meta: "结构模板 · 参考版式",
+    takeaways: ["先打断常见误区", "再给 3 个动作", "结尾给温和提醒"],
+    title: "不是先套磁，先确认这 3 件事"
+  },
+  {
+    body:
+      "宝子，群发邮件真的不是越早越好～\n\n如果方向没拆清楚，邮件看起来就会像模板，导师也很难判断你到底适不适合他的组。\n\n先做一个小动作：把每位导师的研究主题、近两年成果、你能接上的经历放在同一张表里。",
+    coverNotes: ["误区提醒", "邮件场景", "行动表格"],
+    cue: "先打断误区，再给动作",
+    meta: "结构模板 · 参考版式",
+    takeaways: ["用场景切入", "指出群发风险", "给出表格化动作"],
+    title: "硕升博申请别急着群发邮件"
+  },
+  {
+    body:
+      "导师匹配前，先做一次方向自查！！[赞R]\n\n不是看导师名气有多大，而是看你的经历、兴趣和他正在做的项目能不能接上。\n\n可以从三个问题开始：我能研究什么？我已经做过什么？我为什么适合这个方向？",
+    coverNotes: ["步骤化封面", "方向自查", "清爽正文"],
+    cue: "步骤化封面 + 低噪正文",
+    meta: "封面模板 · 参考版式",
+    takeaways: ["问题式开头", "降低焦虑", "强调匹配逻辑"],
+    title: "导师匹配前要做的方向自查"
+  }
+];
+
+export function CollectScreen({
+  apiBase,
+  credentials,
+  onAction
+}: {
+  apiBase: string;
+  credentials: CredentialSettings;
+  onAction: (message: string) => void;
+}) {
+  const [platform, setPlatform] = useState<MobilePlatform>("xiaohongshu");
+  const [query, setQuery] = useState("硕升博 高赞图文");
+  const [maxItems, setMaxItems] = useState(20);
+  const [autoEnabled, setAutoEnabled] = useState(false);
+  const [intervalMinutes, setIntervalMinutes] = useState(60);
+  const [nextRunAt, setNextRunAt] = useState<string | null>(null);
+  const [lastRunAt, setLastRunAt] = useState<string | null>(null);
+  const [lastJobId, setLastJobId] = useState<number | null>(null);
+  const [activeCollectionJobId, setActiveCollectionJobId] = useState<number | null>(null);
+  const [scheduleMessage, setScheduleMessage] = useState("定时采集未启用。");
+  const [diagnosticItems, setDiagnosticItems] = useState<CollectionJobDiagnosticItem[]>([]);
+  const [trendItems, setTrendItems] = useState<MobileTrendContent[]>([]);
+  const [selectedTrendIds, setSelectedTrendIds] = useState<number[]>([]);
+  const [reviewedTrendIds, setReviewedTrendIds] = useState<number[]>([]);
+  const [selectedTrendItem, setSelectedTrendItem] = useState<MobileTrendContent | null>(null);
+  const [trendListLoading, setTrendListLoading] = useState(false);
+  const [trendListStatus, setTrendListStatus] = useState("正在读取采集素材...");
+  const [linkText, setLinkText] = useState("");
+  const [linkResult, setLinkResult] = useState<LinkImportTarget | null>(null);
+  const [selectedReference, setSelectedReference] = useState(sampleReferences[0].title);
+  const [referencePreview, setReferencePreview] = useState<(typeof sampleReferences)[number] | null>(null);
+  const [busyAction, setBusyAction] = useState<"digest" | "job" | "link" | "search" | null>(null);
+  const scheduleRunningRef = useRef(false);
+  const collectedMetricValue =
+    diagnosticItems.find((item) => item.label === "已采集")?.value ?? "0";
+  const selectedTrendIdSet = new Set(selectedTrendIds);
+  const reviewedTrendIdSet = new Set(reviewedTrendIds);
+  const reviewedSelectedCount = selectedTrendIds.filter((id) => reviewedTrendIdSet.has(id)).length;
+  const sourceReviewed =
+    selectedTrendIds.length > 0 && reviewedSelectedCount === selectedTrendIds.length;
+
+  useEffect(() => {
+    try {
+      const stored = readMobileStorage(COLLECTION_SCHEDULE_STORAGE_KEY);
+      if (!stored) {
+        return;
+      }
+      const parsed = JSON.parse(stored) as Partial<CollectionScheduleStorage>;
+      if (parsed.platform === "xiaohongshu" || parsed.platform === "douyin") {
+        setPlatform(parsed.platform);
+      }
+      if (typeof parsed.keyword === "string" && parsed.keyword.trim()) {
+        setQuery(parsed.keyword);
+      }
+      if (typeof parsed.maxItems === "number") {
+        setMaxItems(parsed.maxItems);
+      }
+      if (typeof parsed.intervalMinutes === "number") {
+        setIntervalMinutes(parsed.intervalMinutes);
+      }
+      setAutoEnabled(Boolean(parsed.autoEnabled));
+      setNextRunAt(parsed.nextRunAt ?? null);
+      setLastRunAt(parsed.lastRunAt ?? null);
+      setLastJobId(parsed.lastJobId ?? null);
+      setScheduleMessage(parsed.scheduleMessage ?? "已读取定时采集配置。");
+    } catch (_error) {
+      setScheduleMessage("定时采集配置读取失败，请重新保存。");
+    }
+  }, []);
+
+  useEffect(() => {
+    const payload: CollectionScheduleStorage = {
+      autoEnabled,
+      intervalMinutes,
+      keyword: query,
+      lastJobId,
+      lastRunAt,
+      maxItems,
+      nextRunAt,
+      platform,
+      scheduleMessage
+    };
+    writeMobileStorage(COLLECTION_SCHEDULE_STORAGE_KEY, JSON.stringify(payload));
+  }, [
+    autoEnabled,
+    intervalMinutes,
+    lastJobId,
+    lastRunAt,
+    maxItems,
+    nextRunAt,
+    platform,
+    query,
+    scheduleMessage
+  ]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (!autoEnabled || !nextRunAt || scheduleRunningRef.current) {
+        return;
+      }
+      if (Date.now() < new Date(nextRunAt).getTime()) {
+        return;
+      }
+      void runCollectionJob("schedule");
+    }, 10000);
+    return () => window.clearInterval(timer);
+  }, [autoEnabled, nextRunAt, platform, query, maxItems, intervalMinutes, credentials]);
+
+  useEffect(() => {
+    if (lastJobId || activeCollectionJobId !== null || !credentials.workspaceToken.trim()) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    async function restoreLatestJob() {
+      try {
+        const job = await fetchLatestCollectionJob();
+        if (cancelled || !job) {
+          return;
+        }
+        setLastJobId(job.id);
+        setLastRunAt(job.updated_at ?? job.created_at ?? null);
+        setScheduleMessage(formatCollectionJobStatus(job, "mobile"));
+        setDiagnosticItems(collectionJobDiagnosticItems(job));
+        if (isActiveCollectionJob(job)) {
+          setActiveCollectionJobId(job.id);
+        }
+      } catch {
+        // No saved mobile job yet, or the current account cannot read collection history.
+      }
+    }
+
+    void restoreLatestJob();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeCollectionJobId, credentials.workspaceToken, lastJobId]);
+
+  useEffect(() => {
+    if (!lastJobId || activeCollectionJobId !== null) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    async function refreshLastJob() {
+      try {
+        const job = await fetchCollectionJobStatus(lastJobId as number);
+        if (cancelled) {
+          return;
+        }
+        setScheduleMessage(formatCollectionJobStatus(job, "mobile"));
+        setDiagnosticItems(collectionJobDiagnosticItems(job));
+        if (isActiveCollectionJob(job)) {
+          setActiveCollectionJobId(job.id);
+        }
+      } catch {
+        // The user can still create a fresh collection task if the old job no longer exists.
+      }
+    }
+
+    void refreshLastJob();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeCollectionJobId, credentials.workspaceToken, lastJobId]);
+
+  useEffect(() => {
+    if (activeCollectionJobId === null) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let timer: number | undefined;
+
+    async function pollCollectionJob() {
+      try {
+        const job = await fetchCollectionJobStatus(activeCollectionJobId as number);
+        if (cancelled) {
+          return;
+        }
+        const message = formatCollectionJobStatus(job, "mobile");
+        setScheduleMessage(message);
+        setDiagnosticItems(collectionJobDiagnosticItems(job));
+        if (!isActiveCollectionJob(job)) {
+          setActiveCollectionJobId(null);
+          onAction(message);
+          if (job.status === "completed") {
+            void loadTrendItems(true);
+          }
+          return;
+        }
+        timer = window.setTimeout(pollCollectionJob, 3000);
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        setScheduleMessage(error instanceof Error ? error.message : "采集状态刷新失败。");
+        setDiagnosticItems([]);
+        timer = window.setTimeout(pollCollectionJob, 5000);
+      }
+    }
+
+    timer = window.setTimeout(pollCollectionJob, 800);
+
+    return () => {
+      cancelled = true;
+      if (timer) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, [activeCollectionJobId, credentials.workspaceToken, onAction]);
+
+  useEffect(() => {
+    void loadTrendItems(false);
+  }, [credentials.workspaceToken, maxItems, platform]);
+
+  useEffect(() => {
+    const validIds = new Set(trendItems.map((item) => item.id));
+    setSelectedTrendIds((currentIds) => currentIds.filter((id) => validIds.has(id)));
+    setReviewedTrendIds((currentIds) => currentIds.filter((id) => validIds.has(id)));
+  }, [trendItems]);
+
+  useEffect(() => {
+    setSelectedTrendIds([]);
+    setReviewedTrendIds([]);
+  }, [platform, query]);
+
+  function formatScheduleTime(value: string | null) {
+    if (!value) {
+      return "未安排";
+    }
+    return new Date(value).toLocaleString("zh-CN", {
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      month: "2-digit"
+    });
+  }
+
+  function scheduleNextRun(fromDate = new Date()) {
+    const safeInterval = Number.isFinite(intervalMinutes) ? Math.max(5, intervalMinutes) : 60;
+    const nextDate = new Date(fromDate.getTime() + safeInterval * 60_000);
+    setNextRunAt(nextDate.toISOString());
+    return nextDate;
+  }
+
+  async function fetchLatestCollectionJob() {
+    const response = await fetch(`${apiBase}/trends/jobs?limit=1`, {
+      headers: authHeaders(credentials)
+    });
+    if (!response.ok) {
+      throw new Error(await readApiError(response, "最近采集状态读取失败。"));
+    }
+    const jobs = (await response.json()) as MobileCollectionJob[];
+    return jobs[0] ?? null;
+  }
+
+  async function fetchCollectionJobStatus(jobId: number) {
+    const response = await fetch(`${apiBase}/trends/jobs/${jobId}`, {
+      headers: authHeaders(credentials)
+    });
+    if (!response.ok) {
+      throw new Error(await readApiError(response, "采集状态刷新失败。"));
+    }
+    return (await response.json()) as MobileCollectionJob;
+  }
+
+  async function loadTrendItems(announce = false) {
+    const limit = Math.min(100, Math.max(20, maxItems));
+    const params = new URLSearchParams({
+      limit: String(limit),
+      platform
+    });
+    setTrendListLoading(true);
+    setTrendListStatus("正在读取采集素材...");
+    try {
+      const response = await fetch(`${apiBase}/trends/list?${params.toString()}`, {
+        headers: authHeaders(credentials)
+      });
+      if (!response.ok) {
+        throw new Error(await readApiError(response, "采集素材读取失败。"));
+      }
+      const items = sanitizeMobileTrendItems(await response.json());
+      const nextStatus = items.length
+        ? `已显示最近 ${items.length} 条${mobilePlatformText(platform)}采集素材。`
+        : "还没有可确认的采集素材，先运行采集或导入链接。";
+      setTrendItems(items);
+      setTrendListStatus(nextStatus);
+      if (announce) {
+        onAction(nextStatus);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "采集素材读取失败。";
+      setTrendItems([]);
+      setTrendListStatus(message);
+      if (announce) {
+        onAction(message);
+      }
+    } finally {
+      setTrendListLoading(false);
+    }
+  }
+
+  function saveSchedule() {
+    if (!query.trim()) {
+      onAction("先填写关键词，再保存定时采集设置。");
+      return;
+    }
+    const nextDate = autoEnabled ? scheduleNextRun() : null;
+    if (!autoEnabled) {
+      setNextRunAt(null);
+      setScheduleMessage("定时采集已保存，但当前未启用。");
+      onAction("定时采集已保存，当前未启用。");
+      return;
+    }
+    const message = `定时采集已启用，下次运行：${formatScheduleTime(nextDate?.toISOString() ?? null)}。`;
+    setScheduleMessage(message);
+    onAction(message);
+  }
+
+  async function openSearchPage() {
+    const keyword = query.trim();
+    if (!keyword) {
+      onAction("先填关键词，再打开平台搜索。");
+      return;
+    }
+
+    const searchUrl =
+      platform === "xiaohongshu"
+        ? `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(keyword)}`
+        : `https://www.douyin.com/search/${encodeURIComponent(keyword)}`;
+    window.open(searchUrl, "_blank", "noopener,noreferrer");
+    onAction(`已打开${platform === "xiaohongshu" ? "小红书" : "抖音"}搜索：${keyword}`);
+  }
+
+  async function runCollectionJob(source: "manual" | "schedule") {
+    const keyword = query.trim();
+    if (!keyword) {
+      onAction("先填关键词，再开始采集。");
+      return;
+    }
+
+    scheduleRunningRef.current = true;
+    setBusyAction("job");
+    const startedAt = new Date();
+    const runLabel = source === "schedule" ? "定时采集" : "立即采集";
+    onAction(`${runLabel}正在准备采集。`);
+    try {
+      const response = await fetch(`${apiBase}/trends/jobs`, {
+        method: "POST",
+        headers: authHeaders(credentials),
+        body: JSON.stringify({
+          platform,
+          keyword,
+          content_kind: "image_text",
+          max_items: maxItems,
+          min_delay_seconds: 4,
+          max_delay_seconds: 12,
+          operator_wait_seconds: 30,
+          session_label: platform,
+          persist_session: true,
+          persist_cookies: true
+        })
+      });
+      if (!response.ok) {
+        throw new Error(await readApiError(response, "开始采集失败。"));
+      }
+      const data = (await response.json()) as MobileCollectionJob;
+      const nextDate = autoEnabled ? scheduleNextRun(startedAt) : null;
+      setLastJobId(data.id);
+      setLastRunAt(startedAt.toISOString());
+      setActiveCollectionJobId(data.id);
+      setDiagnosticItems(collectionJobDiagnosticItems(data));
+      const message = `${runLabel}已开始，${formatCollectionJobStatus(data, "mobile")}${
+        nextDate ? ` 下次运行：${formatScheduleTime(nextDate.toISOString())}。` : ""
+      }`;
+      setScheduleMessage(message);
+      onAction(message);
+    } catch (error) {
+      const nextDate = autoEnabled ? scheduleNextRun(startedAt) : null;
+      const message = error instanceof Error ? error.message : "开始采集失败。";
+      setScheduleMessage(
+        `${runLabel}失败：${message}${nextDate ? ` 下次重试：${formatScheduleTime(nextDate.toISOString())}。` : ""}`
+      );
+      setDiagnosticItems([]);
+      onAction(message);
+    } finally {
+      scheduleRunningRef.current = false;
+      setBusyAction(null);
+    }
+  }
+
+  async function parseLinks() {
+    if (platform !== "xiaohongshu") {
+      onAction("链接导入当前只支持小红书；抖音请用关键词采集。");
+      return;
+    }
+    if (!linkText.trim()) {
+      onAction("先粘贴小红书分享文本或链接。");
+      return;
+    }
+
+    setBusyAction("link");
+    onAction("正在解析小红书链接。");
+    try {
+      const response = await fetch(`${apiBase}/trends/link-import-target`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          raw_text: linkText,
+          max_links: 10,
+          download_media: false,
+          persist_cookies: false
+        })
+      });
+      if (!response.ok) {
+        throw new Error(await readApiError(response, "链接解析失败。"));
+      }
+      const data = (await response.json()) as LinkImportTarget;
+      setLinkResult(data);
+      onAction(`已解析 ${data.extracted_count} 个链接，可导入 ${data.accepted_count} 个。`);
+    } catch (error) {
+      onAction(error instanceof Error ? error.message : "链接解析失败。");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  function toggleTrendSelection(itemId: number) {
+    setSelectedTrendIds((currentIds) =>
+      currentIds.includes(itemId)
+        ? currentIds.filter((id) => id !== itemId)
+        : [...currentIds, itemId]
+    );
+  }
+
+  function selectVisibleTrendItems() {
+    if (!trendItems.length) {
+      onAction("当前没有可选素材，请先运行采集。");
+      return;
+    }
+    setSelectedTrendIds(trendItems.map((item) => item.id));
+    onAction(`已选中 ${trendItems.length} 条采集素材，请继续人工确认。`);
+  }
+
+  function clearTrendSelection() {
+    setSelectedTrendIds([]);
+    onAction("已清空已选采集素材。");
+  }
+
+  function confirmSelectedTrendSources() {
+    if (!selectedTrendIds.length) {
+      onAction("先选择至少一条采集素材，再确认来源。");
+      return;
+    }
+    setReviewedTrendIds((currentIds) => Array.from(new Set([...currentIds, ...selectedTrendIds])));
+    onAction(`已人工确认 ${selectedTrendIds.length} 条采集来源。`);
+  }
+
+  function confirmSingleTrendSource(item: MobileTrendContent) {
+    setSelectedTrendIds((currentIds) =>
+      currentIds.includes(item.id) ? currentIds : [...currentIds, item.id]
+    );
+    setReviewedTrendIds((currentIds) =>
+      currentIds.includes(item.id) ? currentIds : [...currentIds, item.id]
+    );
+    setSelectedTrendItem(null);
+    onAction(`已确认来源：${item.title}`);
+  }
+
+  function openTrendSourceUrl(item: MobileTrendContent) {
+    if (!item.url) {
+      onAction("这条素材没有来源链接。");
+      return;
+    }
+    window.open(item.url, "_blank", "noopener,noreferrer");
+    onAction("已打开采集来源链接。");
+  }
+
+  async function saveKnowledgeDigest() {
+    const keyword = query.trim();
+    if (!keyword) {
+      onAction("先填关键词，再保存知识摘要。");
+      return;
+    }
+    if (!selectedTrendIds.length) {
+      onAction("先在“采集结果确认”里选择至少一条素材。");
+      return;
+    }
+    if (!sourceReviewed) {
+      onAction("先确认已选采集来源，再保存知识摘要。");
+      return;
+    }
+
+    setBusyAction("digest");
+    onAction("正在从采集素材生成知识摘要。");
+    try {
+      const response = await fetch(`${apiBase}/trends/knowledge-digest`, {
+        method: "POST",
+        headers: authHeaders(credentials),
+        body: JSON.stringify({
+          platform,
+          keyword,
+          trend_ids: selectedTrendIds,
+          limit: Math.min(100, selectedTrendIds.length),
+          category: "trend-insight",
+          source_reviewed: true
+        })
+      });
+      if (!response.ok) {
+        throw new Error(await readApiError(response, "知识摘要生成失败。"));
+      }
+      const data = (await response.json()) as { item_count: number; knowledge_id: number };
+      onAction(`知识条目 #${data.knowledge_id} 已生成，来源素材 ${data.item_count} 条。`);
+    } catch (error) {
+      onAction(error instanceof Error ? error.message : "知识摘要生成失败。");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <section className="relative mt-10 overflow-hidden rounded-[30px] border border-white/[0.88] bg-[rgba(255,253,247,0.92)] p-4 shadow-[0_18px_42px_rgba(31,58,49,0.11),inset_0_1px_0_rgba(255,255,255,0.90)] backdrop-blur-sm">
+        <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-28 bg-[linear-gradient(180deg,transparent,rgba(232,240,232,0.62))]" />
+        <div className="relative">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-[17px] font-black leading-6">定时采集任务</h2>
+            <span className="rounded-full bg-[#e7f2ea]/[0.95] px-3 py-1.5 text-[11px] font-black text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.82)]">
+              {autoEnabled ? "运行中" : "待开启"}
+            </span>
+          </div>
+          <div className="mt-4 flex items-center gap-3 rounded-[26px] border border-white/[0.82] bg-[rgba(255,253,247,0.82)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.86)]">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] bg-[#e7f2ea] text-moss">
+              <Radar className="h-6 w-6" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-black">高赞图文采集</div>
+              <div className="mt-1 text-xs font-semibold text-muted">每 {intervalMinutes} 分钟执行一次</div>
+            </div>
+            <button
+              className="h-9 shrink-0 rounded-full bg-[#2f9a55] px-3 text-xs font-black text-white shadow-[0_10px_22px_rgba(47,154,85,0.20)] active:scale-[0.98]"
+              onClick={() => onAction("定时采集任务详情已展开，可以继续修改周期和来源。")}
+              type="button"
+            >
+              查看详情
+            </button>
+          </div>
+          <div className="mt-4 grid grid-cols-3 divide-x divide-[#ded6c7] rounded-[24px] bg-[rgba(255,253,247,0.72)] px-2 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.78)]">
+            <div className="px-2 text-center">
+              <div className="text-lg font-black text-ink">{maxItems}</div>
+              <div className="mt-1 text-[10px] font-bold text-muted">今日目标</div>
+            </div>
+            <div className="px-2 text-center">
+              <div className="text-lg font-black text-ink">{collectedMetricValue}</div>
+              <div className="mt-1 text-[10px] font-bold text-muted">已采集</div>
+            </div>
+            <div className="min-w-0 px-2 text-center">
+              <div className="truncate text-sm font-black leading-6 text-ink">{formatScheduleTime(nextRunAt)}</div>
+              <div className="mt-1 text-[10px] font-bold text-muted">下次执行</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <MobilePanel
+        title="定时采集任务"
+        action={<span className="rounded-full bg-[#e7f2ea]/[0.90] px-2.5 py-1 text-xs font-black text-moss">{autoEnabled ? "运行中" : "可启用"}</span>}
+      >
+        <label className="mb-3 flex items-start gap-3 rounded-[26px] border border-white/[0.84] bg-[rgba(255,253,247,0.86)] px-3.5 py-3 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.86)]">
+          <input
+            checked={autoEnabled}
+            className="mt-1 h-4 w-4"
+            data-testid="mobile-auto-collect-enabled"
+            onChange={(event) => setAutoEnabled(event.target.checked)}
+            type="checkbox"
+          />
+          <span>
+            <span className="block font-semibold">启用定时采集</span>
+            <span className="mt-1 block text-xs leading-5 text-muted">
+              页面保持打开时会按间隔自动开始采集，不参与一键生成。
+            </span>
+          </span>
+        </label>
+        <label className="block">
+          <span className="text-xs font-medium text-muted">关键词</span>
+          <div className="mt-2 flex min-h-12 items-center gap-2 rounded-full border border-white/[0.84] bg-[rgba(255,253,247,0.88)] px-4 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.86)]">
+            <Search className="h-4 w-4 shrink-0 text-muted" />
+            <input
+              aria-label="采集关键词"
+              className="min-w-0 flex-1 bg-transparent text-sm font-medium text-ink outline-none"
+              data-testid="mobile-collect-query"
+              onChange={(event) => setQuery(event.target.value)}
+              value={query}
+            />
+          </div>
+        </label>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <ModeChip
+            active={platform === "xiaohongshu"}
+            label={
+              <span className="flex items-center justify-center gap-2">
+                <PlatformIcon platform="xiaohongshu" size="sm" />
+                小红书
+              </span>
+            }
+            onClick={() => {
+              setPlatform("xiaohongshu");
+              onAction("已切换到小红书图文采集。");
+            }}
+            testId="platform-xiaohongshu"
+          />
+          <ModeChip
+            active={platform === "douyin"}
+            label={
+              <span className="flex items-center justify-center gap-2">
+                <PlatformIcon platform="douyin" size="sm" />
+                抖音图文
+              </span>
+            }
+            onClick={() => {
+              setPlatform("douyin");
+              onAction("已切换到抖音图文采集。");
+            }}
+            testId="platform-douyin"
+          />
+        </div>
+        <label className="mt-3 block">
+          <span className="text-xs font-medium text-muted">最大采集条数</span>
+          <input
+            className="mt-2 h-12 w-full rounded-full border border-[#d6e8df] bg-white px-4 text-sm font-medium text-ink outline-none"
+            data-testid="mobile-max-items"
+            max={100}
+            min={1}
+            onChange={(event) => {
+              const nextValue = Number(event.target.value);
+              setMaxItems(Number.isFinite(nextValue) ? nextValue : 20);
+            }}
+            type="number"
+            value={maxItems}
+          />
+        </label>
+        <label className="mt-3 block">
+          <span className="text-xs font-medium text-muted">采集间隔（分钟）</span>
+          <input
+            className="mt-2 h-12 w-full rounded-full border border-[#d6e8df] bg-white px-4 text-sm font-medium text-ink outline-none"
+            data-testid="mobile-collect-interval"
+            max={1440}
+            min={5}
+            onChange={(event) => {
+              const nextValue = Number(event.target.value);
+              setIntervalMinutes(Number.isFinite(nextValue) ? nextValue : 60);
+            }}
+            type="number"
+            value={intervalMinutes}
+          />
+        </label>
+        <div className="mt-3 rounded-[24px] border border-white/[0.84] bg-[rgba(255,253,247,0.86)] px-4 py-3 text-xs leading-5 text-muted shadow-[inset_0_1px_0_rgba(255,255,255,0.84)]">
+          <div>{scheduleMessage}</div>
+          {diagnosticItems.length ? (
+            <div className="mt-3 grid grid-cols-2 gap-2" data-testid="mobile-collection-diagnostic-grid">
+              {diagnosticItems.map((item, index) => (
+                <div
+                  className={`rounded-[16px] border px-3 py-2 ${mobileDiagnosticToneClass(item.tone)}`}
+                  data-tone={item.tone}
+                  key={`mobile-diagnostic-${index}-${item.label}-${item.value}`}
+                >
+                  <div className="text-[11px] text-muted">{item.label}</div>
+                  <div className="mt-1 truncate text-xs font-black text-ink">{item.value}</div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <div>下次运行：{formatScheduleTime(nextRunAt)}</div>
+          <div>
+            上次运行：{formatScheduleTime(lastRunAt)}
+            {activeCollectionJobId ? "，正在追踪进度" : lastJobId ? "，已开始" : ""}
+          </div>
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button
+            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full border border-white/[0.84] bg-[rgba(255,253,247,0.88)] text-sm font-semibold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.86)] active:scale-[0.99]"
+            data-testid="mobile-save-schedule"
+            onClick={saveSchedule}
+            type="button"
+          >
+            <Save className="h-4 w-4" />
+            保存定时
+          </button>
+          <button
+            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full bg-[#23854f] text-sm font-semibold text-white shadow-[0_12px_26px_rgba(35,133,79,0.18)] active:scale-[0.99] disabled:opacity-60"
+            data-testid="mobile-run-collection-now"
+            disabled={busyAction === "job"}
+            onClick={() => void runCollectionJob("manual")}
+            type="button"
+          >
+            {busyAction === "job" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+            {busyAction === "job" ? "运行中" : "立即运行"}
+          </button>
+        </div>
+        <button
+          className="mt-3 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-full border border-white/[0.84] bg-[rgba(255,253,247,0.88)] text-sm font-semibold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.86)] active:scale-[0.99]"
+          data-testid="mobile-open-search"
+          onClick={openSearchPage}
+          type="button"
+        >
+          <ExternalLink className="h-4 w-4" />
+          手动打开搜索页
+        </button>
+      </MobilePanel>
+
+      <MobilePanel
+        action={`${reviewedSelectedCount}/${selectedTrendIds.length || trendItems.length}`}
+        title="采集结果确认"
+      >
+        <div className="rounded-[22px] border border-white/[0.84] bg-[rgba(255,253,247,0.86)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.84)]">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-black text-ink">先看来源，再入知识库</p>
+              <p className="mt-1 text-xs font-semibold leading-5 text-muted" data-testid="mobile-trend-list-status">
+                {trendListStatus}
+              </p>
+            </div>
+            <span
+              className={[
+                "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-black",
+                sourceReviewed ? "bg-[#e7f2ea] text-moss" : "bg-[#fff6e3] text-[#8a5d16]"
+              ].join(" ")}
+              data-testid="mobile-source-reviewed"
+            >
+              {sourceReviewed ? "已确认" : "待确认"}
+            </span>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              className="flex h-10 touch-manipulation items-center justify-center gap-2 rounded-full border border-white/[0.84] bg-white/[0.78] text-xs font-black text-ink active:scale-[0.99] disabled:opacity-60"
+              disabled={trendListLoading}
+              onClick={() => void loadTrendItems(true)}
+              type="button"
+            >
+              {trendListLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+              刷新素材
+            </button>
+            <button
+              className="flex h-10 touch-manipulation items-center justify-center rounded-full border border-white/[0.84] bg-white/[0.78] text-xs font-black text-ink active:scale-[0.99]"
+              onClick={selectedTrendIds.length === trendItems.length && trendItems.length > 0 ? clearTrendSelection : selectVisibleTrendItems}
+              type="button"
+            >
+              {selectedTrendIds.length === trendItems.length && trendItems.length > 0 ? "清空选择" : "全选可见"}
+            </button>
+          </div>
+        </div>
+
+        <div
+          className="mt-3 max-h-[430px] space-y-2 overflow-y-auto pr-1"
+          data-testid="mobile-trend-source-list"
+        >
+          {trendItems.length ? (
+            trendItems.map((item) => (
+              <TrendSourceCard
+                item={item}
+                key={`mobile-trend-source-${item.id}`}
+                onOpen={() => {
+                  setSelectedTrendItem(item);
+                  onAction("已打开采集素材详情。");
+                }}
+                onOpenUrl={() => openTrendSourceUrl(item)}
+                onToggle={() => toggleTrendSelection(item.id)}
+                reviewed={reviewedTrendIdSet.has(item.id)}
+                selected={selectedTrendIdSet.has(item.id)}
+              />
+            ))
+          ) : (
+            <div className="rounded-[22px] border border-dashed border-[#d6e8df] bg-white/[0.54] px-4 py-5 text-center text-xs font-semibold leading-5 text-muted">
+              {trendListLoading ? "正在读取采集素材..." : "暂无可确认素材，点击立即运行或刷新素材。"}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button
+            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full border border-[#d6e8df] bg-white/[0.82] text-sm font-black text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.86)] active:scale-[0.99] disabled:opacity-60"
+            disabled={!selectedTrendIds.length}
+            onClick={confirmSelectedTrendSources}
+            type="button"
+          >
+            <ShieldCheck className="h-4 w-4" />
+            确认所选
+          </button>
+          <button
+            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full bg-[#23854f] text-sm font-black text-white shadow-[0_12px_26px_rgba(35,133,79,0.18)] active:scale-[0.99] disabled:opacity-60"
+            data-testid="mobile-save-digest"
+            disabled={busyAction === "digest" || !sourceReviewed}
+            onClick={saveKnowledgeDigest}
+            type="button"
+          >
+            {busyAction === "digest" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {busyAction === "digest" ? "保存中" : "保存摘要"}
+          </button>
+        </div>
+      </MobilePanel>
+
+      <MobilePanel title="手动采集">
+        <textarea
+          className="min-h-24 w-full resize-y rounded-[24px] border border-white/[0.84] bg-[rgba(255,253,247,0.88)] px-4 py-3 text-sm leading-6 text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.86)] outline-none"
+          data-testid="mobile-link-text"
+          onChange={(event) => setLinkText(event.target.value)}
+          placeholder="粘贴小红书分享文本或链接"
+          value={linkText}
+        />
+        <button
+          className="mt-3 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-full bg-[#23854f] text-sm font-semibold text-white shadow-[0_12px_26px_rgba(35,133,79,0.18)] active:scale-[0.99] disabled:opacity-60"
+          data-testid="mobile-parse-links"
+          disabled={busyAction === "link"}
+          onClick={parseLinks}
+          type="button"
+        >
+          {busyAction === "link" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+          {busyAction === "link" ? "解析中" : "解析链接"}
+        </button>
+        {linkResult ? (
+          <div className="mt-3 rounded-[24px] border border-white/[0.84] bg-[rgba(255,253,247,0.86)] px-4 py-3 text-xs leading-5 text-muted shadow-[inset_0_1px_0_rgba(255,255,255,0.84)]">
+            已解析 {linkResult.extracted_count} 个链接，可导入 {linkResult.accepted_count} 个。
+          </div>
+        ) : null}
+      </MobilePanel>
+
+      <MobilePanel title="采集来源">
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { icon: <CheckCircle2 className="h-4 w-4" />, label: "高赞榜单" },
+            { icon: <PenLine className="h-4 w-4" />, label: "热门话题" },
+            { icon: <UserRound className="h-4 w-4" />, label: "关注账号" },
+            { icon: <ExternalLink className="h-4 w-4" />, label: "自定义链接" }
+          ].map((item, index) => (
+            <button
+              className="flex min-h-[76px] touch-manipulation flex-col items-center justify-center gap-2 rounded-[24px] border border-white/[0.84] bg-[rgba(255,253,247,0.86)] text-[11px] font-black text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.84)] active:scale-[0.98]"
+              key={`collect-source-${index}-${item.label}`}
+              onClick={() => onAction(`已选择采集来源：${item.label}`)}
+              type="button"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-[15px] bg-[#e7f2ea] text-moss">
+                {item.icon}
+              </span>
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </MobilePanel>
+
+      <MobilePanel title="结构模板">
+        <div className="space-y-3">
+          {sampleReferences.map((item, index) => (
+            <button
+              aria-pressed={selectedReference === item.title}
+              key={`sample-reference-${index}-${item.title}`}
+              className={[
+                "block w-full touch-manipulation rounded-[22px] border bg-white p-3 text-left active:scale-[0.99]",
+                selectedReference === item.title ? "border-moss ring-2 ring-moss/[0.15]" : "border-[#d6e8df]"
+              ].join(" ")}
+              data-testid={`reference-${index}`}
+              onClick={() => {
+                setSelectedReference(item.title);
+                setReferencePreview(item);
+                onAction(`已打开参考预览：${item.title}`);
+              }}
+              type="button"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold leading-5">{item.title}</h3>
+                  <p className="mt-1 text-xs text-muted">{item.meta}</p>
+                </div>
+                <ChevronRight className="mt-1 h-4 w-4 text-muted" />
+              </div>
+              <div className="mt-3 rounded-md bg-[#fff6e3] px-3 py-2 text-xs font-medium text-[#8a5d16]">
+                {item.cue}
+              </div>
+            </button>
+          ))}
+        </div>
+      </MobilePanel>
+      {referencePreview ? (
+        <ReferencePreviewSheet
+          reference={referencePreview}
+          onClose={() => {
+            setReferencePreview(null);
+            onAction("已关闭参考预览。");
+          }}
+        />
+      ) : null}
+      {selectedTrendItem ? (
+        <TrendSourceReviewSheet
+          item={selectedTrendItem}
+          onClose={() => {
+            setSelectedTrendItem(null);
+            onAction("已关闭采集素材详情。");
+          }}
+          onConfirm={() => confirmSingleTrendSource(selectedTrendItem)}
+          onOpenUrl={() => openTrendSourceUrl(selectedTrendItem)}
+          reviewed={reviewedTrendIdSet.has(selectedTrendItem.id)}
+          selected={selectedTrendIdSet.has(selectedTrendItem.id)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function ReferencePreviewSheet({
+  onClose,
+  reference
+}: {
+  onClose: () => void;
+  reference: (typeof sampleReferences)[number];
+}) {
+  return (
+    <MobileOverlayPortal>
+      <div
+        aria-modal="true"
+        className="fixed inset-0 z-[80] flex justify-center bg-white"
+        data-testid="reference-preview"
+        role="dialog"
+      >
+        <div className="flex h-[100dvh] w-full max-w-[430px] flex-col bg-[#f6fbf6] text-ink">
+        <header className="shrink-0 border-b border-[#d6e8df] bg-white px-4 pb-3 pt-3">
+          <div className="flex items-center justify-between gap-3">
+            <button
+              aria-label="关闭参考预览"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f5f5f5] text-ink"
+              data-testid="reference-preview-close"
+              onClick={onClose}
+              type="button"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <div className="min-w-0 flex-1">
+              <div className="text-[11px] font-semibold text-moss">结构模板</div>
+              <h2 className="truncate text-lg font-semibold leading-6">参考预览</h2>
+            </div>
+            <span className="rounded-full bg-[#fff6e3] px-3 py-1 text-[11px] font-semibold text-[#8a5d16]">
+              待确认
+            </span>
+          </div>
+        </header>
+
+        <section className="min-h-0 flex-1 overflow-y-auto pb-[calc(24px+env(safe-area-inset-bottom))]">
+          <div className="bg-[linear-gradient(160deg,#fff7df,#d9f1e5_52%,#f7cdbf)] px-5 pb-8 pt-5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-steel">封面结构</span>
+              <span className="rounded-full bg-white/[0.75] px-3 py-1 text-[11px] font-semibold text-ink/[0.70]">
+                参考
+              </span>
+            </div>
+            <h1 className="mt-10 text-[32px] font-black leading-tight text-ink">{reference.title}</h1>
+            <div className="mt-8 space-y-2 text-xs font-semibold text-ink/[0.70]">
+              {reference.coverNotes.map((note, index) => (
+                <div
+                  className="rounded-md bg-white/[0.85] px-3 py-2"
+                  key={`cover-note-${index}-${note}`}
+                >
+                  {index + 1}. {note}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <article className="bg-white px-4 pb-6 pt-4">
+            <div className="flex items-center justify-between gap-3 border-b border-[#f1f1f1] pb-3">
+              <div className="min-w-0">
+                <h3 className="text-base font-bold leading-6">{reference.title}</h3>
+                <p className="mt-1 text-xs text-muted">{reference.meta}</p>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-md bg-[#fff6e3] px-3 py-2 text-xs font-semibold text-[#8a5d16]">
+              {reference.cue}
+            </div>
+
+            <div className="mt-4 space-y-3 text-[15px] leading-7 text-ink">
+              {reference.body.split(/\n+/).map((paragraph, index) => (
+                <p key={`${index}-${paragraph}`}>{renderXhsExpressionText(paragraph)}</p>
+              ))}
+            </div>
+
+            <div className="mt-6 border-t border-[#f1f1f1] pt-4">
+              <div className="text-xs font-semibold text-muted">可借鉴点</div>
+              <div className="mt-3 space-y-2">
+                {reference.takeaways.map((takeaway, index) => (
+                  <div
+                    className="flex gap-3 rounded-md border border-[#d6e8df] bg-[#f6fbf6] px-3 py-2 text-sm font-medium"
+                    key={`takeaway-${index}-${takeaway}`}
+                  >
+                    <span className="text-moss">{index + 1}</span>
+                    <span>{takeaway}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-md border border-[#d6e8df] bg-[#f6fbf6] px-3 py-2 text-xs leading-5 text-muted">
+              这是参考预览，不是自动发布内容；真实采集来源仍需要人工确认。
+            </div>
+          </article>
+        </section>
+        </div>
+      </div>
+    </MobileOverlayPortal>
+  );
+}
