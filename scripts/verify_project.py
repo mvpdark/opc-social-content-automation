@@ -798,10 +798,10 @@ def validate_content_production_contract() -> int:
         "setManualCopyText(null)",
         "manualCopyRef.current?.select()",
         "targetRef.current?.select()",
-        "generationTopicPresets",
         "visibleTopicPresets",
         "TOPIC_PRESET_REFRESH_MS",
         "pickGenerationTopicPresetBatch",
+        "pickGenerationTopicPresetBatch()",
         "refreshTopicPresets",
         "function applyTopicPreset(preset: GenerationTopicPreset)",
         'data-testid="topic-preset-list"',
@@ -1015,10 +1015,10 @@ def validate_content_production_contract() -> int:
             raise SystemExit(f"Missing mobile static reference contract: {snippet}")
 
     mobile_topic_recommendation_contract_snippets = [
-        "generationTopicPresets",
         "visibleTopicPresets",
         "TOPIC_PRESET_REFRESH_MS",
         "pickGenerationTopicPresetBatch",
+        "pickGenerationTopicPresetBatch()",
         "refreshMobileTopicPresets",
         "function applyMobileTopicPreset(preset: GenerationTopicPreset)",
         'data-testid="mobile-topic-preset-list"',

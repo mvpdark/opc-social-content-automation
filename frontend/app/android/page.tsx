@@ -87,10 +87,8 @@ import {
 } from "@/lib/mobile-draft-storage";
 import {
   TOPIC_PRESET_REFRESH_MS,
-  TOPIC_PRESET_ROTATION_SIZE,
   buildTopicCoverStyleNotes,
   findGenerationTopicPresetByTopic,
-  generationTopicPresets,
   pickGenerationTopicPresetBatch,
   type GenerationTopicPreset
 } from "@/lib/topic-presets";
@@ -2246,7 +2244,7 @@ function CreateScreen({
   const [targetAudience, setTargetAudience] = useState("准备硕升博申请的学生");
   const [tagsText, setTagsText] = useState("硕升博,水博,博士申请,小红书获客");
   const [visibleTopicPresets, setVisibleTopicPresets] = useState<GenerationTopicPreset[]>(() =>
-    generationTopicPresets.slice(0, TOPIC_PRESET_ROTATION_SIZE)
+    pickGenerationTopicPresetBatch()
   );
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const [generatedCover, setGeneratedCover] = useState<GeneratedImageAsset | null>(null);

@@ -101,9 +101,7 @@ import {
 import { formatTagLine } from "@/lib/tags";
 import {
   TOPIC_PRESET_REFRESH_MS,
-  TOPIC_PRESET_ROTATION_SIZE,
   buildTopicCoverStyleNotes,
-  generationTopicPresets,
   pickGenerationTopicPresetBatch,
   type GenerationTopicPreset
 } from "@/lib/topic-presets";
@@ -2569,7 +2567,7 @@ function GenerationLauncher({
   const [knowledgeQuery, setKnowledgeQuery] = useState("硕升博 高赞图文 写作参考");
   const [targetAudience, setTargetAudience] = useState("准备硕升博申请的学生");
   const [visibleTopicPresets, setVisibleTopicPresets] = useState<GenerationTopicPreset[]>(() =>
-    generationTopicPresets.slice(0, TOPIC_PRESET_ROTATION_SIZE)
+    pickGenerationTopicPresetBatch()
   );
   const [stylePreset, setStylePreset] = useState<WritingStylePresetId>(defaultWritingStyle);
   const [styleOptions, setStyleOptions] =
