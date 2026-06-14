@@ -92,6 +92,9 @@ def test_draft_prompt_template_requires_xhs_expression_layer() -> None:
     assert "direction-narrowing" in prompt
     assert "background-strengthening" in prompt
     assert "value/objection-handling" in prompt
+    assert "strongest task word" in prompt
+    assert "timing terms" in prompt
+    assert "stay timeline even if the topic also says `导师`" in prompt
     assert "方向太散" in prompt
     assert "没有论文" in prompt
     assert "含金量" in prompt
