@@ -273,6 +273,14 @@ li {
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.65), transparent 76%);
 }
 
+.workspace-primary-nav {
+  scrollbar-width: none;
+}
+
+.workspace-primary-nav::-webkit-scrollbar {
+  display: none;
+}
+
 .glass-sidebar,
 .glass-topbar,
 .glass-panel,

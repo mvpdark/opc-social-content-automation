@@ -77,7 +77,7 @@ export function AppShell({
           </div>
           <nav
             aria-label="工作台主导航"
-            className="flex gap-1 overflow-x-auto p-3 xl:block xl:p-4"
+            className="workspace-primary-nav flex gap-1 overflow-x-auto p-3 xl:block xl:p-4"
           >
             {navigation.map((item) => {
               const active = item.id === activeTab;
