@@ -2737,6 +2737,32 @@ function GenerationLauncher({
   );
   const liveImageProviderReady = hasLiveImageProvider(providerStatuses);
   const rewriteProviderReady = Boolean(rewriteProviderStatus?.configured);
+  const launcherChecklist = [
+    {
+      detail: hasTopic ? "已填写" : "待填写",
+      icon: Search,
+      label: "选题",
+      tone: hasTopic ? "green" : "amber"
+    },
+    {
+      detail: draftProviderBlocked ? "需检查" : "可启动",
+      icon: PenLine,
+      label: "撰稿",
+      tone: draftProviderBlocked ? "red" : "blue"
+    },
+    {
+      detail: liveImageProviderReady ? "可生成" : "待检测",
+      icon: Image,
+      label: "封面",
+      tone: liveImageProviderReady ? "green" : "amber"
+    },
+    {
+      detail: "手动确认",
+      icon: ShieldCheck,
+      label: "发布",
+      tone: "amber"
+    }
+  ] as const;
 
   function authHeaders() {
     return {
@@ -3144,41 +3170,59 @@ function GenerationLauncher({
         helper="一键生成会生成文案并尝试生成封面，不会自动发布；发布前仍需人工确认。"
         title="一键生成图文+封面"
       >
-        <div className="mb-4 rounded-md border border-steel/40 bg-steel/10 p-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="mb-5 overflow-hidden rounded-[26px] border border-steel/35 bg-[linear-gradient(135deg,rgb(var(--steel)/0.13),rgb(var(--moss)/0.10),rgb(var(--glass)/0.42))] p-4 shadow-[inset_0_1px_0_rgb(var(--glass-highlight)/0.52)] lg:p-5">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(260px,360px)] xl:items-center">
             <div>
               <Pill
                 tone={exportContentMatchesCurrentInputs ? "green" : exportContent ? "amber" : "blue"}
               >
                 {exportContentMatchesCurrentInputs ? "当前草稿" : exportContent ? "历史草稿" : "生产入口"}
               </Pill>
-              <h3 className="mt-3 text-lg font-semibold leading-6 text-ink">
+              <h3 className="mt-3 text-xl font-black leading-7 text-ink">
                 选题确认后，点这里一键生成
               </h3>
-              <p className="mt-1 text-sm leading-6 text-muted">
-                当前会生成一篇营销图文草稿，自动改写并尝试生成封面图；不会自动发布。
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+                当前会生成一篇营销图文草稿，自动改写并尝试生成封面图；知识依据、标签和封面方向会跟随当前选题，不会自动发布。
               </p>
             </div>
-            <button
-              aria-label={primaryGenerateLabel}
-              className="flex h-12 min-w-44 items-center justify-center gap-2 rounded-md bg-ink px-5 text-sm font-semibold text-paper shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
-              data-flow="one-click-generate"
-              data-testid="start-production-button"
-              disabled={!canGenerate}
-              onClick={generateDraft}
-              title={generateButtonTitle}
-              type="button"
-            >
-              {busyAction === "draft" ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <PenLine className="h-4 w-4" />
-              )}
-              {primaryGenerateLabel}
-            </button>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                {launcherChecklist.map((item) => (
+                  <div
+                    className="rounded-[18px] border border-line/70 bg-paper/58 px-3 py-3"
+                    key={`launcher-checklist-${item.label}`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <IconBox tone={item.tone}>
+                        <item.icon className="h-4 w-4" />
+                      </IconBox>
+                      <span className="text-[11px] font-semibold text-muted">{item.detail}</span>
+                    </div>
+                    <div className="mt-2 text-xs font-semibold text-ink">{item.label}</div>
+                  </div>
+                ))}
+              </div>
+              <button
+                aria-label={primaryGenerateLabel}
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-ink px-5 text-sm font-semibold text-paper shadow-sm transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60"
+                data-flow="one-click-generate"
+                data-testid="start-production-button"
+                disabled={!canGenerate}
+                onClick={generateDraft}
+                title={generateButtonTitle}
+                type="button"
+              >
+                {busyAction === "draft" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <PenLine className="h-4 w-4" />
+                )}
+                {primaryGenerateLabel}
+              </button>
+            </div>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="block">
               <span className="flex items-center justify-between gap-3 text-xs font-medium text-muted">
@@ -3244,10 +3288,10 @@ function GenerationLauncher({
                 </button>
               </div>
               <div className="mt-1 text-[11px] text-muted">每 45 秒自动换一批，也可以直接修改为自定义选题</div>
-              <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-3 xl:grid-cols-6">
+              <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
                 {visibleTopicPresets.map((preset) => (
                   <button
-                    className="min-h-[74px] rounded-md border border-steel/35 bg-paper/70 px-3 py-2 text-left transition hover:border-moss/60 hover:bg-moss/10"
+                    className="min-h-[94px] rounded-[16px] border border-steel/35 bg-paper/70 px-3 py-2.5 text-left transition hover:translate-y-[-1px] hover:border-moss/60 hover:bg-moss/10"
                     data-testid={`topic-preset-${preset.key}`}
                     key={preset.key}
                     onClick={() => applyTopicPreset(preset)}
