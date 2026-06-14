@@ -118,8 +118,11 @@ export function collectionJobDiagnosticItems(
           : isStaleAutoStartedQueuedJob(job)
             ? "warning"
           : "neutral";
+  const statusLabel = isStaleAutoStartedQueuedJob(job)
+    ? "后台启动中断"
+    : collectionJobStatusLabel(job.status);
 
-  pushDiagnosticItem(items, "当前状态", collectionJobStatusLabel(job.status), statusTone);
+  pushDiagnosticItem(items, "当前状态", statusLabel, statusTone);
   pushDiagnosticItem(items, "已采集", summary?.collected_items, "good");
   pushDiagnosticItem(items, "候选", summary?.raw_candidates);
   pushDiagnosticItem(items, "已过滤", summary?.blocked_candidates, "warning");

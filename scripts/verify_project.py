@@ -922,6 +922,7 @@ def validate_content_production_contract() -> int:
                 "raw_candidates",
                 "blocked_candidates",
                 "operator_wait_seconds",
+                "后台启动中断",
                 "处理登录/验证码后重试",
                 "重试、换关键词或链接导入",
                 "请点击“继续上次采集”",
