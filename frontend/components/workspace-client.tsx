@@ -4675,10 +4675,11 @@ function DraftHistoryCard({
   return (
     <article
       className={[
-        "relative w-[174px] flex-none overflow-hidden rounded-[18px] border bg-paper shadow-sm transition",
+        "relative w-[174px] flex-none snap-start overflow-hidden rounded-[18px] border bg-paper shadow-sm transition",
         isSelected ? "border-moss ring-2 ring-moss/25" : "border-line hover:border-steel/50"
       ].join(" ")}
       data-testid="draft-history-card"
+      role="listitem"
     >
       <button
         aria-label={`查看草稿：${content.title}`}
@@ -4886,8 +4887,10 @@ function DraftPanel({
 
         {hasHistory ? (
           <div
-            className="-mx-1 mt-3 flex gap-3 overflow-x-auto px-1 pb-2"
+            aria-label="历史图文草稿列表"
+            className="-mx-1 mt-3 flex snap-x gap-3 overflow-x-auto scroll-smooth px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             data-testid="draft-history-strip"
+            role="list"
           >
             {history.map((item) => (
               <DraftHistoryCard
