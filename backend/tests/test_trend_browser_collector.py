@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import pytest
 from fastapi import HTTPException
 
@@ -7,6 +9,7 @@ from app.services.trend_browser_collector import (
     _content_kind,
     _merge_detail_asset,
     _operator_wait_seconds,
+    _parse_xhs_publish_time,
     CollectedTrendAsset,
     collection_session_dir,
     extract_candidate_assets,
@@ -187,6 +190,50 @@ def test_extract_candidate_assets_accepts_compact_xhs_note_card() -> None:
     assert assets[0].url is not None
     assert assets[0].title == "山大硕博连读申请要求 水水学姐"
     assert assets[0].tags == ["硕升博"]
+    assert assets[0].likes == 165
+    assert assets[0].publish_time is not None
+    assert (assets[0].publish_time.month, assets[0].publish_time.day) == (3, 31)
+
+
+def test_extract_candidate_assets_records_repeated_card_publish_time() -> None:
+    assets = extract_candidate_assets(
+        raw_items=[
+            {
+                "text": (
+                    "请大数据把这个水博榜推给想读在职博士的你 "
+                    "请大数据把这个水博榜推给想读在职博士的你 "
+                    "瑶瑶硕博留学（宽灌） 2025-11-04 191"
+                ),
+                "url": "https://www.xiaohongshu.com/explore/6891bbe00000000004004393",
+            }
+        ],
+        platform="xiaohongshu",
+        keyword="水博",
+        max_items=5,
+    )
+
+    assert len(assets) == 1
+    assert assets[0].author == "瑶瑶硕博留学（宽灌）"
+    assert assets[0].likes == 191
+    assert assets[0].publish_time == datetime(2025, 11, 4, tzinfo=timezone.utc)
+
+
+def test_parse_xhs_publish_time_handles_relative_dates() -> None:
+    now = datetime(2026, 6, 14, 8, 30, tzinfo=timezone.utc)
+
+    assert _parse_xhs_publish_time("刚刚", now) == now
+    assert _parse_xhs_publish_time("昨天", now) == datetime(
+        2026, 6, 13, 8, 30, tzinfo=timezone.utc
+    )
+    assert _parse_xhs_publish_time("前天", now) == datetime(
+        2026, 6, 12, 8, 30, tzinfo=timezone.utc
+    )
+    assert _parse_xhs_publish_time("4天前", now) == datetime(
+        2026, 6, 10, 8, 30, tzinfo=timezone.utc
+    )
+    assert _parse_xhs_publish_time("12-31", now) == datetime(
+        2025, 12, 31, tzinfo=timezone.utc
+    )
 
 
 def test_extract_candidate_assets_keeps_short_meaningful_xhs_title() -> None:

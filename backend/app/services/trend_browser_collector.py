@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 import re
 from dataclasses import dataclass, replace
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -118,6 +119,7 @@ class CollectedTrendAsset:
     comments: int = 0
     shares: int = 0
     cover_url: str | None = None
+    publish_time: datetime | None = None
 
 
 def normalize_visible_text(value: object) -> str:
@@ -208,15 +210,49 @@ def _clean_cover_url(value: object) -> str | None:
     return text[:500]
 
 
-def _compact_xhs_metadata(text: str, title: str) -> tuple[str | None, int]:
+def _parse_xhs_publish_time(value: str, now: datetime | None = None) -> datetime | None:
+    marker = normalize_visible_text(value)
+    if not marker:
+        return None
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    if marker == "刚刚":
+        return current
+    if marker == "昨天":
+        return current - timedelta(days=1)
+    if marker == "前天":
+        return current - timedelta(days=2)
+    relative_match = re.fullmatch(r"(\d+)\s*天前", marker)
+    if relative_match:
+        return current - timedelta(days=int(relative_match.group(1)))
+    full_date_match = re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", marker)
+    if full_date_match:
+        year, month, day = map(int, full_date_match.groups())
+        return datetime(year, month, day, tzinfo=timezone.utc)
+    short_date_match = re.fullmatch(r"(\d{2})-(\d{2})", marker)
+    if short_date_match:
+        month, day = map(int, short_date_match.groups())
+        inferred = datetime(current.year, month, day, tzinfo=timezone.utc)
+        if inferred > current + timedelta(days=1):
+            inferred = inferred.replace(year=current.year - 1)
+        return inferred
+    return None
+
+
+def _compact_xhs_metadata(text: str, title: str) -> tuple[str | None, datetime | None, int]:
     rest = normalize_visible_text(text)
     date_match = DATE_MARKER_RE.search(rest)
+    publish_time = None
+    likes_after_date = 0
     if date_match:
         before_date = rest[: date_match.start()].strip()
         after_date = rest[date_match.end() :].strip()
+        publish_time = _parse_xhs_publish_time(date_match.group(0))
+        likes_after_date = _metric_count(after_date)
         repeated_title = _split_repeated_compact_title(before_date)
         if repeated_title:
-            return _clean_author(repeated_title[1]), _metric_count(after_date)
+            return _clean_author(repeated_title[1]), publish_time, likes_after_date
 
     normalized_title = normalize_visible_text(title)
     for _ in range(2):
@@ -224,8 +260,12 @@ def _compact_xhs_metadata(text: str, title: str) -> tuple[str | None, int]:
             rest = rest[len(normalized_title) :].strip()
     match = COMPACT_XHS_METADATA_RE.search(rest)
     if not match:
-        return None, 0
-    return _clean_author(match.group("author")), _metric_count(match.group("likes"))
+        return None, publish_time, likes_after_date
+    return (
+        _clean_author(match.group("author")),
+        _parse_xhs_publish_time(match.group("date")),
+        _metric_count(match.group("likes")),
+    )
 
 
 def _xhs_note_id_from_url(url: str | None) -> str | None:
@@ -314,7 +354,7 @@ def extract_candidate_assets(
         seen.add(key)
 
         title = _title_from_text(str(raw_item.get("text") or text), keyword)
-        compact_author, compact_likes = _compact_xhs_metadata(text, title)
+        compact_author, compact_publish_time, compact_likes = _compact_xhs_metadata(text, title)
         assets.append(
             CollectedTrendAsset(
                 platform=platform,
@@ -328,6 +368,7 @@ def extract_candidate_assets(
                 comments=_metric_from_raw(raw_item, "comments"),
                 shares=_metric_from_raw(raw_item, "shares"),
                 cover_url=_clean_cover_url(raw_item.get("coverUrl")),
+                publish_time=compact_publish_time,
             )
         )
         if len(assets) >= max_items:
@@ -478,6 +519,7 @@ def _store_assets(
             title=asset.title,
             content=asset.content,
             author=asset.author,
+            publish_time=asset.publish_time,
             url=asset.url,
             tags=asset.tags,
             likes=asset.likes,
