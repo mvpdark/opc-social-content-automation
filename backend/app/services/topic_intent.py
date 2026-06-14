@@ -2,7 +2,25 @@ from dataclasses import dataclass
 
 
 WATER_ROUTE_TOPIC_TERMS = ("水博", "海外博士", "境外博士")
-RANKING_TOPIC_TERMS = ("排名", "排行", "榜", "榜单", "清单", "必看")
+SCHOOL_PROJECT_LIST_TOPIC_TERMS = (
+    "哪些学校",
+    "有哪些学校",
+    "哪几所学校",
+    "哪些院校",
+    "有哪些院校",
+    "哪些项目",
+    "有哪些项目",
+    "哪几个项目",
+)
+RANKING_TOPIC_TERMS = (
+    "排名",
+    "排行",
+    "榜",
+    "榜单",
+    "清单",
+    "必看",
+    *SCHOOL_PROJECT_LIST_TOPIC_TERMS,
+)
 RANKING_DRAFT_TERMS = (
     "排名",
     "排行",
@@ -31,7 +49,17 @@ class TopicIntentRule:
 TOPIC_INTENT_RULES = (
     TopicIntentRule(
         key="list_filter",
-        topic_terms=("排名", "排行", "榜", "榜单", "怎么筛", "筛选", "避坑榜", "清单怎么看"),
+        topic_terms=(
+            "排名",
+            "排行",
+            "榜",
+            "榜单",
+            "怎么筛",
+            "筛选",
+            "避坑榜",
+            "清单怎么看",
+            *SCHOOL_PROJECT_LIST_TOPIC_TERMS,
+        ),
         draft_terms=(
             "排名",
             "排行",

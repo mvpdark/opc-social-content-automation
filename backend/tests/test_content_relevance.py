@@ -56,6 +56,29 @@ def test_water_ranking_topic_detects_ranking_terms_from_tags() -> None:
     assert "水博榜单/排名" in issue
 
 
+def test_water_school_list_topic_rejects_mentor_drift() -> None:
+    payload = ContentGenerateRequest(
+        platform="xiaohongshu",
+        topic="水博有哪些学校",
+        tags=["水博", "博士项目"],
+    )
+
+    issue = _draft_topic_relevance_issue(
+        payload,
+        "先确认研究方向，再看导师近三年论文，最后准备套磁邮件。",
+    )
+
+    assert issue is not None
+    assert "水博榜单/排名" in issue
+    assert (
+        _draft_topic_relevance_issue(
+            payload,
+            "水博学校池要按认证、预算、毕业难度和在职适配做清单，再逐项核验官网。",
+        )
+        is None
+    )
+
+
 def test_water_list_topic_accepts_verified_checklist_structure() -> None:
     payload = ContentGenerateRequest(
         platform="xiaohongshu",
