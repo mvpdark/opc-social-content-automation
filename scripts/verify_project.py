@@ -893,6 +893,9 @@ def validate_content_production_contract() -> int:
         "pickGenerationTopicPresetBatch()",
         "refreshTopicPresets",
         "function applyTopicPreset(preset: GenerationTopicPreset)",
+        "function updateTopicAndAutoKnowledgeQuery(nextTopic: string)",
+        "isKnownGenerationTopicKnowledgeQuery(normalizedQuery)",
+        "normalizedQuery === previousTopic",
         "function clearSourceEvidence()",
         "clearSourceEvidence();",
         "const exportContentMatchesCurrentInputs = Boolean(",
@@ -943,6 +946,7 @@ def validate_content_production_contract() -> int:
         "coverDirection",
         "buildTopicCoverStyleNotes",
         "findGenerationTopicPresetByTopic",
+        "export function isKnownGenerationTopicKnowledgeQuery",
     ]
     for snippet in topic_preset_contract_snippets:
         total += 1
@@ -1122,7 +1126,8 @@ def validate_content_production_contract() -> int:
             workspace_text,
             [
                 "fallbackKnowledgeQuery={knowledgeQuery}",
-                'const [knowledgeQuery, setKnowledgeQuery] = useState("硕升博 高赞图文 写作参考");',
+                'const defaultGenerationKnowledgeQuery = "硕升博 高赞图文 写作参考";',
+                "const [knowledgeQuery, setKnowledgeQuery] = useState(defaultGenerationKnowledgeQuery);",
                 "sourceContextMatchesKnowledgeQuery(sourceContext, knowledgeQuery)",
                 "sourceContextMatchesKnowledgeQuery(exportContent?.source_context, knowledgeQuery)",
             ],

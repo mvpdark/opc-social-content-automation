@@ -341,6 +341,13 @@ export function findGenerationTopicPresetByTopic(topic: string) {
   );
 }
 
+export function isKnownGenerationTopicKnowledgeQuery(knowledgeQuery: string) {
+  const normalizedKnowledgeQuery = knowledgeQuery.trim();
+  return generationTopicPresets.some(
+    (preset) => preset.knowledgeQuery === normalizedKnowledgeQuery
+  );
+}
+
 export function buildTopicCoverStyleNotes(baseStyleNotes: string, topic: string) {
   const preset = findGenerationTopicPresetByTopic(topic);
   if (!preset) {

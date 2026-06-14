@@ -103,6 +103,7 @@ import { formatTagLine } from "@/lib/tags";
 import {
   TOPIC_PRESET_REFRESH_MS,
   buildTopicCoverStyleNotes,
+  isKnownGenerationTopicKnowledgeQuery,
   pickGenerationTopicPresetBatch,
   type GenerationTopicPreset
 } from "@/lib/topic-presets";
@@ -360,6 +361,8 @@ const expressionOptions = [
 
 const hiddenXhsStickerToneGuide =
   "隐藏撰稿规则：如果平台是小红书，生成正文时必须自然少量使用小红书可识别的表情字符码，优先 [笑哭R]、[哭惹R]、[哇R]、[赞R]、[doge]、[蹲后续H]，每篇 2-5 个；字符码要融入正文语气，不要解释字符码，不要列出表情清单。";
+
+const defaultGenerationKnowledgeQuery = "硕升博 高赞图文 写作参考";
 
 const xhsHighAttractionCoverStyle =
   "小红书高吸引封面：先按选题选择不同封面路线，优先轮换路线/榜单矩阵、决策地图、学术蓝图、杂志页、黑板批注、手机信息拼贴等结构；只有需要时才用学习桌或清单芯片。水博/在职博士/升博类内容可参考“水博榜”的路线矩阵思路，但学校、价格、认证和毕业难度必须来自已核实知识库，不能编造；避免官方标志、校徽、录取承诺和重复的奶油珊瑚薄荷模板。";
@@ -2568,7 +2571,7 @@ function GenerationLauncher({
 }) {
   const [platform, setPlatform] = useState("xiaohongshu");
   const [topic, setTopic] = useState("硕升博申请第一步，不是先套磁");
-  const [knowledgeQuery, setKnowledgeQuery] = useState("硕升博 高赞图文 写作参考");
+  const [knowledgeQuery, setKnowledgeQuery] = useState(defaultGenerationKnowledgeQuery);
   const [targetAudience, setTargetAudience] = useState("准备硕升博申请的学生");
   const [visibleTopicPresets, setVisibleTopicPresets] = useState<GenerationTopicPreset[]>(() =>
     pickGenerationTopicPresetBatch()
@@ -2788,6 +2791,21 @@ function GenerationLauncher({
   function clearSourceEvidence() {
     setSourceContext(null);
     setSourcePreviewError(null);
+  }
+
+  function updateTopicAndAutoKnowledgeQuery(nextTopic: string) {
+    const previousTopic = topic.trim();
+    setTopic(nextTopic);
+    setKnowledgeQuery((currentQuery) => {
+      const normalizedQuery = currentQuery.trim();
+      const shouldSyncQuery =
+        !normalizedQuery ||
+        normalizedQuery === previousTopic ||
+        normalizedQuery === defaultGenerationKnowledgeQuery ||
+        isKnownGenerationTopicKnowledgeQuery(normalizedQuery);
+      return shouldSyncQuery ? nextTopic.trim() : currentQuery;
+    });
+    clearSourceEvidence();
   }
 
   function applyTopicPreset(preset: GenerationTopicPreset) {
@@ -3093,8 +3111,7 @@ function GenerationLauncher({
                 className={`${formControlClass} h-10`}
                 data-testid="content-topic"
                 onChange={(event) => {
-                  setTopic(event.target.value);
-                  clearSourceEvidence();
+                  updateTopicAndAutoKnowledgeQuery(event.target.value);
                 }}
                 placeholder="输入要生成的图文主题"
                 value={topic}
