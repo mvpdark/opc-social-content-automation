@@ -145,7 +145,8 @@ export function CreateScreen({
     generatedContent &&
       generatedContent.title === topic.trim() &&
       generatedContent.platform === platform &&
-      tagsMatchText(generatedContent.tags, tagsText)
+      tagsMatchText(generatedContent.tags, tagsText) &&
+      sourceContextMatchesKnowledgeQuery(generatedContent.source_context, generationKnowledgeQuery)
   );
   const matchingMobileSourceContext = sourceContextMatchesKnowledgeQuery(sourceContext, generationKnowledgeQuery)
     ? sourceContext

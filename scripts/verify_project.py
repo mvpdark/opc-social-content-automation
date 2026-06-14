@@ -1247,6 +1247,7 @@ def validate_content_production_contract() -> int:
         "generatedContent.title === topic.trim()",
         "generatedContent.platform === platform",
         "tagsMatchText(generatedContent.tags, tagsText)",
+        "sourceContextMatchesKnowledgeQuery(generatedContent.source_context, generationKnowledgeQuery)",
         "parseTagText(tagsText)",
         "const heroProgressPercent = busy",
         "generatedContentMatchesCurrentInputs\n      ? 100",
