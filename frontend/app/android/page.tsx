@@ -1179,10 +1179,10 @@ function HomeScreen({
             { icon: <PenLine className="h-5 w-5" />, label: "创作项目", tab: "create" as const },
             { icon: <BookOpenText className="h-5 w-5" />, label: "知识库", tab: "knowledge" as const },
             { icon: <Settings className="h-5 w-5" />, label: "系统设置", tab: "settings" as const }
-          ].map((item) => (
+          ].map((item, index) => (
             <button
               className="flex min-h-[86px] touch-manipulation flex-col items-center justify-center gap-2 rounded-[24px] border border-white/[0.86] bg-[rgba(255,253,247,0.88)] text-xs font-black text-ink shadow-[0_10px_24px_rgba(31,58,49,0.06),inset_0_1px_0_rgba(255,255,255,0.86)] active:scale-[0.98]"
-              key={item.label}
+              key={`home-shortcut-${index}-${item.tab}`}
               onClick={() => onChangeTab(item.tab)}
               type="button"
             >
@@ -1232,9 +1232,9 @@ function HomeScreen({
         }
       >
         <div className="space-y-2">
-          {workItems.map((item) => (
+          {workItems.map((item, index) => (
             <TaskRow
-              key={item.label}
+              key={`home-work-item-${index}-${item.tab}`}
               icon={<item.icon className="h-4 w-4" />}
               label={item.label}
               onClick={() => onChangeTab(item.tab)}
@@ -1247,9 +1247,9 @@ function HomeScreen({
 
       <MobilePanel title="生产节奏">
         <div className="mb-3 grid grid-cols-3 gap-2">
-          {quickMetrics.map((metric) => (
+          {quickMetrics.map((metric, index) => (
             <Metric
-              key={metric.label}
+              key={`home-metric-${index}-${metric.tab}`}
               label={metric.label}
               onClick={() => onChangeTab(metric.tab)}
               testId={`metric-${metric.tab}`}
@@ -1259,9 +1259,9 @@ function HomeScreen({
           ))}
         </div>
         <div className="grid grid-cols-3 gap-2">
-          {progressSteps.map((step) => (
+          {progressSteps.map((step, index) => (
             <StepTile
-              key={step.label}
+              key={`home-progress-${index}-${step.tab}`}
               icon={<step.icon className="h-4 w-4" />}
               label={step.label}
               onClick={() => onChangeTab(step.tab)}
@@ -1816,11 +1816,11 @@ function CollectScreen({
           <div>{scheduleMessage}</div>
           {diagnosticItems.length ? (
             <div className="mt-3 grid grid-cols-2 gap-2" data-testid="mobile-collection-diagnostic-grid">
-              {diagnosticItems.map((item) => (
+              {diagnosticItems.map((item, index) => (
                 <div
                   className={`rounded-[16px] border px-3 py-2 ${mobileDiagnosticToneClass(item.tone)}`}
                   data-tone={item.tone}
-                  key={`${item.label}-${item.value}`}
+                  key={`mobile-diagnostic-${index}-${item.label}-${item.value}`}
                 >
                   <div className="text-[11px] text-muted">{item.label}</div>
                   <div className="mt-1 truncate text-xs font-black text-ink">{item.value}</div>
@@ -1923,10 +1923,10 @@ function CollectScreen({
             { icon: <PenLine className="h-4 w-4" />, label: "热门话题" },
             { icon: <UserRound className="h-4 w-4" />, label: "关注账号" },
             { icon: <ExternalLink className="h-4 w-4" />, label: "自定义链接" }
-          ].map((item) => (
+          ].map((item, index) => (
             <button
               className="flex min-h-[76px] touch-manipulation flex-col items-center justify-center gap-2 rounded-[24px] border border-white/[0.84] bg-[rgba(255,253,247,0.86)] text-[11px] font-black text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.84)] active:scale-[0.98]"
-              key={item.label}
+              key={`collect-source-${index}-${item.label}`}
               onClick={() => onAction(`已选择采集来源：${item.label}`)}
               type="button"
             >
@@ -1944,7 +1944,7 @@ function CollectScreen({
           {sampleReferences.map((item, index) => (
             <button
               aria-pressed={selectedReference === item.title}
-              key={item.title}
+              key={`sample-reference-${index}-${item.title}`}
               className={[
                 "block w-full touch-manipulation rounded-[22px] border bg-white p-3 text-left active:scale-[0.99]",
                 selectedReference === item.title ? "border-moss ring-2 ring-moss/[0.15]" : "border-[#d6e8df]"
@@ -3476,10 +3476,10 @@ function MobileCreationProjectGateway({
             { label: "项目数", value: String(mobileCreationProjects.length), tone: "text-[#e58a00]" },
             { label: "今日生成", value: String(todayDraftCount), tone: "text-[#1d72d2]" },
             { label: "已发布", value: "0", tone: "text-moss" }
-          ].map((item) => (
+          ].map((item, index) => (
             <div
               className="rounded-[20px] border border-white/[0.84] bg-[rgba(255,253,247,0.86)] px-2 py-3 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.84)]"
-              key={item.label}
+              key={`create-stat-${index}-${item.label}`}
             >
               <div className={`text-2xl font-black leading-7 ${item.tone}`}>{item.value}</div>
               <div className="mt-1 text-[10px] font-bold text-muted">{item.label}</div>
@@ -4452,7 +4452,7 @@ function DraftPreviewEditor({
                 </div>
                 <div className="mt-14 text-[34px] font-black leading-tight text-ink">
                   {titleLines.map((line, index) => (
-                    <span className="block" key={`title-line-${index}-${line}`}>
+                    <span className="block" key={`draft-title-line-${index}-${line}`}>
                       {line}
                     </span>
                   ))}
@@ -4527,7 +4527,7 @@ function DraftPreviewEditor({
                       aria-label={`编辑封面清单 ${index + 1}`}
                       className="h-11 w-full rounded-md border border-[#d6e8df] bg-white px-3 text-sm font-medium text-ink outline-none focus:border-[#ff2442]"
                       data-testid={`draft-edit-point-${index}`}
-                      key={index}
+                      key={`draft-edit-point-${index}`}
                       onChange={(event) => updatePoint(index, event.target.value)}
                       value={point}
                     />

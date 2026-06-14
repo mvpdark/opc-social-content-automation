@@ -856,8 +856,8 @@ export function TrendCollectorPanel({
                 </div>
                 <div className="max-h-44 divide-y divide-line overflow-auto">
                   {linkImportTarget.links.length ? (
-                    linkImportTarget.links.map((item) => (
-                      <div className="px-3 py-2 text-xs" key={item.original_url}>
+                    linkImportTarget.links.map((item, index) => (
+                      <div className="px-3 py-2 text-xs" key={`import-link-${index}-${item.original_url}`}>
                         <div className="flex items-center justify-between gap-3">
                           <span className="font-medium text-ink">{item.link_type}</span>
                           <span className={item.accepted ? "text-moss" : "text-coral"}>
@@ -891,11 +891,11 @@ export function TrendCollectorPanel({
               <p className="mt-1 text-sm leading-5 text-muted">{statusText}</p>
               {diagnosticItems.length ? (
                 <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2" data-testid="collection-diagnostic-grid">
-                  {diagnosticItems.map((item) => (
+                  {diagnosticItems.map((item, index) => (
                     <div
                       className={`rounded-md border px-3 py-2 text-xs ${diagnosticToneClass(item.tone)}`}
                       data-tone={item.tone}
-                      key={`${item.label}-${item.value}`}
+                      key={`collector-diagnostic-${index}-${item.label}-${item.value}`}
                     >
                       <div className="text-muted">{item.label}</div>
                       <div className="mt-1 truncate font-semibold text-ink">{item.value}</div>

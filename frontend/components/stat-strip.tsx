@@ -10,9 +10,9 @@ const toneClass = {
 export function StatStrip() {
   return (
     <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      {stats.map((stat) => (
+      {stats.map((stat, index) => (
         <div
-          key={stat.label}
+          key={`stat-${index}-${stat.label}`}
           className="glass-panel rounded-md border px-4 py-3"
         >
           <div className="flex items-start justify-between gap-3">

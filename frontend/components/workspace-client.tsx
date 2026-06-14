@@ -1368,8 +1368,11 @@ function PcLoginPage({
                   { icon: PenLine, title: "生成草稿", body: "标题、正文、标签统一输出。" },
                   { icon: Image, title: "封面预览", body: "先看发布后的首屏效果。" },
                   { icon: ShieldCheck, title: "安全确认", body: "发布前保留人工把关。" }
-                ].map((item) => (
-                  <div className="rounded-[18px] border border-line bg-paper/55 p-4" key={item.title}>
+                ].map((item, index) => (
+                  <div
+                    className="rounded-[18px] border border-line bg-paper/55 p-4"
+                    key={`home-feature-${index}-${item.title}`}
+                  >
                     <item.icon className="h-4 w-4 text-steel" />
                     <div className="mt-3 font-semibold text-ink">{item.title}</div>
                     <div className="mt-1 text-xs leading-5">{item.body}</div>
@@ -1644,8 +1647,8 @@ function DashboardView({
       </section>
 
       <section className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        {statusLanes.map((lane) => (
-          <div className="glass-panel rounded-[20px] border p-4" key={lane.title}>
+        {statusLanes.map((lane, index) => (
+          <div className="glass-panel rounded-[20px] border p-4" key={`status-lane-${index}-${lane.title}`}>
             <div className="flex items-start justify-between gap-3">
               <IconBox tone={lane.tone}>
                 <lane.icon className="h-4 w-4" />
@@ -1685,7 +1688,7 @@ function DashboardView({
                         ? buildWorkspaceUrl("content")
                         : buildWorkspaceUrl("settings")
                 }
-                key={step.title}
+                key={`pipeline-step-${index}-${step.title}`}
               >
                 <step.icon className="h-3.5 w-3.5 text-steel transition group-hover:text-ink" />
                 {step.title}
@@ -1840,8 +1843,8 @@ function DependencyDoctorPanel() {
           ) : null}
           {attentionItems.length > 0 ? (
             <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">
-              {attentionItems.map((item) => (
-                <div className={`${subtleCardClass} p-3`} key={`${item.category}-${item.name}`}>
+              {attentionItems.map((item, index) => (
+                <div className={`${subtleCardClass} p-3`} key={`attention-${index}-${item.category}-${item.name}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
@@ -2051,8 +2054,8 @@ function KnowledgeView() {
         </Panel>
         <Panel helper="这些是知识资产的类型说明，不是虚构样本。" title="知识资产类型">
           <div className="grid grid-cols-1 gap-3">
-            {knowledgeAssets.map((asset) => (
-              <div key={asset.title} className={`${subtleCardClass} p-4`}>
+            {knowledgeAssets.map((asset, index) => (
+              <div key={`knowledge-asset-${index}-${asset.title}`} className={`${subtleCardClass} p-4`}>
                 <div className="flex items-start gap-3">
                   <IconBox tone="green">
                     <asset.icon className="h-4 w-4" />
@@ -2353,8 +2356,8 @@ function ContentView({
         <div className="space-y-4">
           <Panel helper="生成前需要明确输入、改写和确认边界。" title="生产控制">
             <div className="space-y-3">
-              {contentControls.map((control) => (
-                <div key={control.title} className={`${subtleCardClass} p-3`}>
+              {contentControls.map((control, index) => (
+                <div key={`content-control-${index}-${control.title}`} className={`${subtleCardClass} p-3`}>
                   <div className="flex items-center gap-3">
                     <IconBox tone="blue">
                       <control.icon className="h-4 w-4" />
@@ -3232,7 +3235,7 @@ function GenerationLauncher({
                 {providerStatusError ? (
                   <Pill tone="red">检测失败</Pill>
                 ) : providerDisplayItems.some((item) => item.status) ? (
-                  providerDisplayItems.map((item) => {
+                  providerDisplayItems.map((item, index) => {
                     const isDraft = item.name === "Draft generation";
                     const configured = Boolean(item.status?.configured);
                     const tone = needsProviderSettings && isDraft ? "red" : configured ? "green" : "amber";
@@ -3243,7 +3246,7 @@ function GenerationLauncher({
                           ? "已填写"
                           : "未填写";
                     return (
-                      <Pill key={item.name} tone={tone}>
+                      <Pill key={`provider-status-${index}-${item.name}`} tone={tone}>
                         {item.label} {label}
                       </Pill>
                     );
@@ -3653,8 +3656,8 @@ function CoverView({ contentHref }: { contentHref: string }) {
       <div className="space-y-4">
         <Panel helper="从封面需求到人工复核的图片流程。" title="图片流程">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            {imageWorkflow.map((step) => (
-              <div key={step.title} className={`${subtleCardClass} p-4`}>
+            {imageWorkflow.map((step, index) => (
+              <div key={`image-workflow-${index}-${step.title}`} className={`${subtleCardClass} p-4`}>
                 <IconBox tone={step.status === "强制" ? "red" : "blue"}>
                   <step.icon className="h-4 w-4" />
                 </IconBox>
@@ -3682,8 +3685,8 @@ function DeliveryView() {
     <div className="space-y-4">
       <Panel helper="没有已确认内容时保持禁用；确认后再生成复制包和发布记录。" title="发布动作">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-          {promoterActions.map((action) => (
-            <div key={action.title} className={`${subtleCardClass} p-4`}>
+          {promoterActions.map((action, index) => (
+            <div key={`promoter-action-${index}-${action.title}`} className={`${subtleCardClass} p-4`}>
               <IconBox tone="green">
                 <action.icon className="h-4 w-4" />
               </IconBox>
@@ -3710,8 +3713,8 @@ function DeliveryView() {
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <Panel helper="运营队列里的待处理事项。" title="工作队列">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {queues.map((queue) => (
-              <div key={queue.name} className={`${subtleCardClass} px-4 py-3`}>
+            {queues.map((queue, index) => (
+              <div key={`publish-queue-${index}-${queue.name}`} className={`${subtleCardClass} px-4 py-3`}>
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="text-sm font-semibold">{queue.name}</div>
@@ -4055,7 +4058,7 @@ function SettingsView({
                 <div className="text-xs text-muted">当前共 {themeTemplates.length} 个模板。</div>
               </div>
               <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
-                {themeTemplates.map((template) => {
+                {themeTemplates.map((template, index) => {
                   const selected = template.style === interfaceStyle;
                   return (
                     <a
@@ -4068,7 +4071,7 @@ function SettingsView({
                           : "glass-subtle text-ink hover:border-steel/60"
                       ].join(" ")}
                       href={settingsThemeHref(template.style)}
-                      key={template.label}
+                      key={`theme-template-${index}-${template.label}`}
                     >
                       <span className="flex items-center justify-between gap-2">
                         <span className="text-xs font-semibold">{template.label}</span>
@@ -4209,8 +4212,8 @@ function ExternalSkillRadarPanel() {
       title="外部能力接入雷达"
     >
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
-        {externalSkillCandidates.map((candidate) => (
-          <article className={`${subtleCardClass} p-4`} key={candidate.source}>
+        {externalSkillCandidates.map((candidate, index) => (
+          <article className={`${subtleCardClass} p-4`} key={`external-skill-${index}-${candidate.source}`}>
             <div className="flex items-start gap-3">
               <IconBox tone={candidate.status === "优先试点" ? "green" : "blue"}>
                 <candidate.icon className="h-4 w-4" />
@@ -4803,8 +4806,8 @@ function ReferencePanel({
   return (
     <Panel helper={helper} title={title}>
       <div className="grid grid-cols-1 gap-3">
-        {items.map((item) => (
-          <div key={item.title} className={`${subtleCardClass} p-4`}>
+        {items.map((item, index) => (
+          <div key={`detail-card-${index}-${item.title}`} className={`${subtleCardClass} p-4`}>
             <div className="flex items-start gap-3">
               <IconBox tone="amber">
                 <item.icon className="h-4 w-4" />
@@ -4827,8 +4830,8 @@ function ReferencePanel({
 function SafetyGateList() {
   return (
     <div className="glass-subtle grid grid-cols-1 divide-y divide-line rounded-md border">
-      {safetyGates.map((gate) => (
-        <div key={gate.label} className="flex items-center justify-between gap-3 px-4 py-3">
+      {safetyGates.map((gate, index) => (
+        <div key={`safety-gate-${index}-${gate.label}`} className="flex items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
             <gate.icon className="h-4 w-4 text-moss" />
             <span className="text-sm text-ink/80">{gate.label}</span>
@@ -4869,8 +4872,8 @@ function CoverReferencePreview({ compact = false }: { compact?: boolean }) {
         再判断
       </div>
       <div className={["grid grid-cols-2 gap-2 text-xs font-semibold", compact ? "mt-5" : "mt-8"].join(" ")}>
-        {routes.map((route) => (
-          <div key={route.label} className="rounded-md border border-white/80 bg-white/85 px-3 py-2">
+        {routes.map((route, index) => (
+          <div key={`route-card-${index}-${route.label}`} className="rounded-md border border-white/80 bg-white/85 px-3 py-2">
             <div className="text-ink">{route.label}</div>
             <div className="mt-1 text-[11px] font-medium text-ink/55">{route.detail}</div>
           </div>
