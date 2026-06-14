@@ -2270,8 +2270,14 @@ function CreateScreen({
   const selectedProject = findEnabledMobileCreationProject(selectedProjectId);
   const selectedTopicPreset = findGenerationTopicPresetByTopic(topic);
   const generationKnowledgeQuery = selectedTopicPreset?.knowledgeQuery ?? topic;
+  const generatedContentMatchesCurrentInputs = Boolean(
+    generatedContent &&
+      generatedContent.title === topic.trim() &&
+      generatedContent.platform === platform
+  );
   const visibleMobileSourceContext =
-    sourceContext ?? (generatedContent?.title === topic.trim() ? generatedContent.source_context ?? null : null);
+    sourceContext ??
+    (generatedContentMatchesCurrentInputs ? generatedContent?.source_context ?? null : null);
   const todayDraftCount = countMobileDraftsToday(draftHistory);
   const selectedDraftIdSet = new Set(selectedDraftIds);
   const selectedDraftItems = draftHistory.filter((item) => selectedDraftIdSet.has(item.content.id));
