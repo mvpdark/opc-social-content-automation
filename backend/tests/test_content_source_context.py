@@ -58,6 +58,32 @@ def test_source_context_exposes_knowledge_and_web_sources(monkeypatch) -> None:
     assert context["web_search"]["provider"] == "tavily"
     assert "accreditation" in context["web_search"]["answer"]
     assert context["web_search"]["results"][0]["url"] == "https://example.edu/water-phd"
+    assert "请先人工核对来源" in context["review_note"]
+
+
+def test_source_context_warns_when_required_web_search_is_missing(monkeypatch) -> None:
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as db:
+        monkeypatch.setattr(
+            "app.services.content_service.build_live_web_search_context",
+            lambda **_kwargs: None,
+        )
+
+        context = build_content_source_context(
+            db,
+            ContentGenerateRequest(
+                platform="xiaohongshu",
+                topic="水博项目校徽和价格怎么对比",
+                tags=["水博", "价格", "校徽"],
+            ),
+        )
+
+    assert context["web_search"]["required"] is True
+    assert context["web_search"]["results"] == []
+    assert "没有可见 Tavily 结果" in context["review_note"]
+    assert "不能编学校、价格、logo 或排名" in context["review_note"]
 
 
 def test_generated_content_persists_visible_source_context(monkeypatch) -> None:

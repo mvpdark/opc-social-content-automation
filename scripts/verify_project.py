@@ -213,6 +213,11 @@ def validate_safety_gates() -> int:
             "provider_status_items",
             "missing_key",
         ],
+        "backend/app/services/content_service.py": [
+            "这个选题需要实时来源",
+            "没有可见 Tavily 结果",
+            "不能编学校、价格、logo 或排名",
+        ],
         "backend/app/api/deps.py": [
             "settings.auth_required",
             "DEFAULT_PLANNER_USER",

@@ -104,6 +104,15 @@ def _public_source_context(
                         "score": raw_result.get("score"),
                     }
                 )
+    review_note = (
+        "这些是本次生成可见的检索依据。需要排名、学校、logo、学费或认证时，"
+        "请先人工核对来源，再复制到平台发布。"
+    )
+    if web_search_required and not web_results:
+        review_note = (
+            "这个选题需要实时来源，但本次没有可见 Tavily 结果；请先检查 Tavily 配置、"
+            "换更具体关键词，或只输出维度框架，不能编学校、价格、logo 或排名。"
+        )
 
     return {
         "knowledge_query": payload.knowledge_query or payload.topic,
@@ -139,10 +148,7 @@ def _public_source_context(
             ),
             "results": web_results,
         },
-        "review_note": (
-            "这些是本次生成可见的检索依据。需要排名、学校、logo、学费或认证时，"
-            "请先人工核对来源，再复制到平台发布。"
-        ),
+        "review_note": review_note,
     }
 
 
