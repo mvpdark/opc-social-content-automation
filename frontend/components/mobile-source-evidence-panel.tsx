@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ExternalLink, Loader2, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { GenerationKnowledgeSource, GenerationSourceContext } from "@/lib/generated-assets";
 import {
@@ -45,11 +45,28 @@ export function MobileSourceEvidencePanel({
   const missingRequiredWebResults = webRequired && !webResults.length;
   const visibleKnowledgeQuery = sourceContext?.knowledge_query || fallbackKnowledgeQuery?.trim() || "";
   const [openEvidenceSection, setOpenEvidenceSection] = useState<MobileEvidenceSection>(null);
+  const knowledgeListRef = useRef<HTMLDivElement | null>(null);
+  const webListRef = useRef<HTMLDivElement | null>(null);
   const webEvidenceCountLabel = webResults.length ? `${webResults.length} 条` : webRequired ? "未返回" : "未启用";
 
   useEffect(() => {
     setOpenEvidenceSection(null);
   }, [sourceContext, visibleKnowledgeQuery]);
+
+  useEffect(() => {
+    if (!openEvidenceSection) {
+      return;
+    }
+    const target =
+      openEvidenceSection === "knowledge" ? knowledgeListRef.current : webListRef.current;
+    if (!target) {
+      return;
+    }
+    const frame = window.requestAnimationFrame(() => {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [openEvidenceSection]);
 
   return (
     <div
@@ -145,7 +162,12 @@ export function MobileSourceEvidencePanel({
         </div>
       </div>
       {openEvidenceSection === "knowledge" ? (
-        <div className="mt-3 space-y-2" data-testid="mobile-source-knowledge-list" id="mobile-source-knowledge-list">
+        <div
+          className="mt-3 scroll-mt-24 space-y-2"
+          data-testid="mobile-source-knowledge-list"
+          id="mobile-source-knowledge-list"
+          ref={knowledgeListRef}
+        >
           {knowledgeItems.length ? (
             knowledgeItems.slice(0, 3).map((item, index) => {
               const knowledgeItem = mobileSourceKnowledgeItemToKnowledgeItem(item);
@@ -173,7 +195,12 @@ export function MobileSourceEvidencePanel({
         </div>
       ) : null}
       {openEvidenceSection === "web" ? (
-        <div className="mt-3 space-y-2" data-testid="mobile-source-web-list" id="mobile-source-web-list">
+        <div
+          className="mt-3 scroll-mt-24 space-y-2"
+          data-testid="mobile-source-web-list"
+          id="mobile-source-web-list"
+          ref={webListRef}
+        >
           {webSearch?.query ? (
             <p className="break-words rounded-[16px] bg-white/70 px-3 py-2 text-[11px] font-medium leading-5 text-muted">
               Tavily 查询：{webSearch.query}
