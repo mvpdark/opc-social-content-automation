@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ExternalLink, Loader2, Search } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { GenerationKnowledgeSource, GenerationSourceContext } from "@/lib/generated-assets";
 import {
@@ -46,6 +46,10 @@ export function MobileSourceEvidencePanel({
   const visibleKnowledgeQuery = sourceContext?.knowledge_query || fallbackKnowledgeQuery?.trim() || "";
   const [openEvidenceSection, setOpenEvidenceSection] = useState<MobileEvidenceSection>(null);
   const webEvidenceCountLabel = webResults.length ? `${webResults.length} 条` : webRequired ? "未返回" : "未启用";
+
+  useEffect(() => {
+    setOpenEvidenceSection(null);
+  }, [sourceContext, visibleKnowledgeQuery]);
 
   return (
     <div

@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ExternalLink, Loader2, Search } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import type { GenerationKnowledgeSource, GenerationSourceContext } from "@/lib/generated-assets";
 import {
@@ -81,6 +81,10 @@ export function GenerationSourceEvidenceCard({
   const visibleKnowledgeQuery = sourceContext?.knowledge_query || fallbackKnowledgeQuery?.trim() || "";
   const [openEvidenceSection, setOpenEvidenceSection] = useState<EvidenceSection>(null);
   const webEvidenceCountLabel = webResults.length ? `${webResults.length} 条` : webRequired ? "未返回" : "未启用";
+
+  useEffect(() => {
+    setOpenEvidenceSection(null);
+  }, [sourceContext, visibleKnowledgeQuery]);
 
   return (
     <div className="mt-4 rounded-md border border-line bg-paper/70 p-3" data-testid="generation-source-evidence">
