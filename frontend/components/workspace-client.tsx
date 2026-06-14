@@ -66,6 +66,7 @@ import {
 import {
   fetchKnowledgeItems,
   knowledgeCategoryLabel,
+  knowledgeItemContent,
   knowledgeItemExcerpt,
   knowledgeItemTitle,
   type KnowledgeItem
@@ -1955,6 +1956,9 @@ function KnowledgeView() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("正在读取知识库...");
+  const [selectedItem, setSelectedItem] = useState<KnowledgeItem | null>(null);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const [portalReady, setPortalReady] = useState(false);
 
   async function loadKnowledge(nextQuery = query) {
     const normalizedQuery = nextQuery.trim();
@@ -1987,9 +1991,30 @@ function KnowledgeView() {
     void loadKnowledge("");
   }, []);
 
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
+
+  useEffect(() => {
+    setCopyState("idle");
+  }, [selectedItem?.id]);
+
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void loadKnowledge(query);
+  }
+
+  function openKnowledgeItem(item: KnowledgeItem) {
+    setSelectedItem(item);
+  }
+
+  async function copyKnowledgeItem(item: KnowledgeItem) {
+    try {
+      await copyText(`${knowledgeItemTitle(item)}\n\n${knowledgeItemContent(item)}`);
+      setCopyState("copied");
+    } catch (_error) {
+      setCopyState("failed");
+    }
   }
 
   return (
@@ -2040,7 +2065,21 @@ function KnowledgeView() {
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2" data-testid="knowledge-list">
           {items.map((item) => (
-            <article className={`${subtleCardClass} overflow-hidden p-4`} data-testid="knowledge-item" key={item.id}>
+            <article
+              aria-label={`查看知识条目：${knowledgeItemTitle(item)}`}
+              className={`${subtleCardClass} cursor-pointer overflow-hidden p-4 transition hover:border-steel/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss/30`}
+              data-testid="knowledge-item"
+              key={item.id}
+              onClick={() => openKnowledgeItem(item)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  openKnowledgeItem(item);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-moss">#{item.id}</p>
@@ -2048,10 +2087,10 @@ function KnowledgeView() {
                 </div>
                 <Pill>{knowledgeCategoryLabel(item.category)}</Pill>
               </div>
-              <p className="mt-3 line-clamp-3 break-words text-xs leading-5 text-muted">{knowledgeItemExcerpt(item, 128)}</p>
+              <p className="mt-3 line-clamp-4 break-words text-xs leading-5 text-muted">{knowledgeItemExcerpt(item, 220)}</p>
               <div className="mt-3 flex items-center justify-between text-[11px] font-medium text-muted">
                 <span>{item.match_type === "recent" ? "最近入库" : "检索结果"}</span>
-                {typeof item.score === "number" ? <span>匹配 {Math.round(item.score * 100)}%</span> : null}
+                <span>{typeof item.score === "number" ? `匹配 ${Math.round(item.score * 100)}%` : "点击看全文"}</span>
               </div>
             </article>
           ))}
@@ -2063,6 +2102,68 @@ function KnowledgeView() {
           </div>
         ) : null}
       </Panel>
+
+      {selectedItem && portalReady
+        ? createPortal(
+            <div
+              aria-modal="true"
+              className="fixed inset-0 z-[80] flex items-center justify-center bg-ink/40 p-4 backdrop-blur-md"
+              data-testid="pc-knowledge-detail-modal"
+              onClick={() => setSelectedItem(null)}
+              role="dialog"
+            >
+              <section
+                aria-label="知识条目详情"
+                className="flex max-h-[86vh] w-full max-w-3xl flex-col overflow-hidden rounded-[24px] border border-white/50 bg-paper shadow-2xl"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-semibold text-moss">#{selectedItem.id}</span>
+                      <Pill>{knowledgeCategoryLabel(selectedItem.category)}</Pill>
+                    </div>
+                    <h3 className="mt-2 break-words text-lg font-semibold leading-7 text-ink">
+                      {knowledgeItemTitle(selectedItem)}
+                    </h3>
+                  </div>
+                  <button
+                    aria-label="关闭知识条目详情"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-mist text-muted"
+                    data-testid="pc-knowledge-detail-close"
+                    onClick={() => setSelectedItem(null)}
+                    type="button"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+                  <p
+                    className="whitespace-pre-wrap break-words text-sm leading-7 text-ink/82"
+                    data-testid="pc-knowledge-detail-content"
+                  >
+                    {knowledgeItemContent(selectedItem)}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 border-t border-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs leading-5 text-muted">
+                    这是已入库知识内容；涉及学校、价格、排名或认证时，发布前仍需回到来源核对。
+                  </p>
+                  <button
+                    className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-paper"
+                    data-testid="pc-knowledge-detail-copy"
+                    onClick={() => void copyKnowledgeItem(selectedItem)}
+                    type="button"
+                  >
+                    <Clipboard className="h-4 w-4" />
+                    {copyState === "copied" ? "已复制" : copyState === "failed" ? "复制失败，请手选" : "复制知识条目"}
+                  </button>
+                </div>
+              </section>
+            </div>,
+            document.body
+          )
+        : null}
 
       <div className="space-y-4">
         <Panel helper="系统默认不跳过的项目规则。" title="入库规则">
