@@ -22,6 +22,10 @@ LIVE_SEARCH_FACT_TERMS = (
     "来源",
     "核验",
     "官方",
+    "项目页",
+    "费用页",
+    "学费表",
+    "收费",
     "政策",
     "价格",
     "费用",
@@ -59,7 +63,7 @@ LIVE_SEARCH_SCOPE_TERMS = (
 )
 
 LOGO_QUERY_TERMS = ("logo", "校徽", "标志")
-PRICE_QUERY_TERMS = ("价格", "费用", "学费", "预算")
+PRICE_QUERY_TERMS = ("价格", "费用", "学费", "预算", "费用页", "学费表", "收费")
 
 
 @dataclass(frozen=True)

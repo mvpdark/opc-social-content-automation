@@ -27,6 +27,8 @@ def test_topic_needs_live_web_search_for_ranking_topic() -> None:
     assert topic_needs_live_web_search("海外博士价格怎么对比", ["海外博士"]) is True
     assert topic_needs_live_web_search("博士项目官方来源怎么查", ["来源核验"]) is True
     assert topic_needs_live_web_search("海外博士来源核验清单", ["官网核验"]) is True
+    assert topic_needs_live_web_search("博士项目费用页怎么核验", ["海外博士"]) is True
+    assert topic_needs_live_web_search("学校官网学费表怎么查", ["博士项目"]) is True
 
 
 def test_build_tavily_query_expands_water_phd_topic() -> None:
@@ -41,6 +43,7 @@ def test_build_tavily_query_expands_water_phd_topic() -> None:
 def test_build_tavily_query_preserves_logo_and_price_intent() -> None:
     logo_query = build_tavily_query("水博项目校徽怎么找", "xiaohongshu", ["水博"])
     price_query = build_tavily_query("海外博士价格怎么对比", "xiaohongshu", ["海外博士"])
+    tuition_page_query = build_tavily_query("学校官网学费表怎么查", "xiaohongshu", ["博士项目"])
 
     assert "official logo" in logo_query
     assert "school emblem" in logo_query
@@ -48,6 +51,8 @@ def test_build_tavily_query_preserves_logo_and_price_intent() -> None:
     assert "total cost" in price_query
     assert "tuition fees" in price_query
     assert "价格" in price_query
+    assert "tuition fees" in tuition_page_query
+    assert "学费" in tuition_page_query
 
 
 def test_build_tavily_query_keeps_budget_overseas_doctorate_general() -> None:

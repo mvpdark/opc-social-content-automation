@@ -194,6 +194,12 @@ def test_water_list_topic_accepts_verified_checklist_structure() -> None:
             "海外博士来源核验清单要按官网 URL、官方项目页、费用页、认证政策和待复核字段逐项标注。",
             "来源核验",
         ),
+        (
+            "学校官网学费表怎么查",
+            "先按 12-9 个月、9-6 个月安排申请时间线。",
+            "学校官网学费表要按官方项目页、费用页、收费标准、年份口径和待复核字段做来源核验。",
+            "来源核验",
+        ),
     ],
 )
 def test_topic_intent_relevance_rejects_drift_and_accepts_matching_draft(
@@ -252,6 +258,11 @@ def test_topic_intent_relevance_rejects_drift_and_accepts_matching_draft(
         (
             "海外博士来源核验清单",
             ["官网核验", "项目来源"],
+            "来源核验",
+        ),
+        (
+            "学校官网学费表怎么查",
+            ["博士项目", "费用页", "收费标准"],
             "来源核验",
         ),
         (
