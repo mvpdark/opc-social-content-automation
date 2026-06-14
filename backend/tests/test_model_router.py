@@ -184,6 +184,8 @@ def test_codex_test_draft_provider_handles_missing_required_web_sources(
     assert "没有可见 Tavily 来源" in result
     assert "核验框架" in result
     assert "学校/项目名、价格、logo/校徽" in result
+    assert "参考上下文：缺可见 Tavily 来源" in result
+    assert "global water resources PhD programs official logo tuition" in result
     assert "研究方向、目标导师和时间节点" not in result
 
 

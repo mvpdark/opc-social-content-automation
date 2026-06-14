@@ -311,13 +311,23 @@ def _test_draft(payload: dict[str, object]) -> str:
                 for item in raw_results
                 if isinstance(item, dict) and item.get("title")
             ][:3]
-    source_titles = [*context_titles, *web_search_titles]
-    source_line = "、".join(source_titles) if source_titles else "暂无知识库引用"
     tag_line = " ".join(f"#{tag}" for tag in tags) if tags else "#硕升博 #博士申请"
     is_xiaohongshu = platform == "xiaohongshu"
     is_water_ranking = is_water_ranking_topic(topic, tags)
     topic_intent = first_matching_topic_intent(topic, tags)
     missing_required_web_sources = _missing_required_web_sources(web_search_context)
+    source_titles = [*context_titles, *web_search_titles]
+    if source_titles:
+        source_line = "、".join(source_titles)
+    elif missing_required_web_sources:
+        source_query = (
+            str(web_search_context.get("query")).strip()
+            if isinstance(web_search_context, dict) and web_search_context.get("query")
+            else ""
+        )
+        source_line = f"缺可见 Tavily 来源（查询：{source_query}）" if source_query else "缺可见 Tavily 来源"
+    else:
+        source_line = "暂无知识库引用"
     if is_xiaohongshu and is_water_ranking:
         body_lines = [
             f"👉💧姐妹们，想看“{topic}”，先别急着找一张“万能榜单”哈！！[哇R]",
