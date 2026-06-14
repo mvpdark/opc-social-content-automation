@@ -836,6 +836,9 @@ def validate_content_production_contract() -> int:
     tags_text = (ROOT / "frontend" / "lib" / "tags.ts").read_text(
         encoding="utf-8"
     )
+    generation_input_signature_text = (
+        ROOT / "frontend" / "lib" / "generation-input-signature.ts"
+    ).read_text(encoding="utf-8")
     topic_presets_text = (ROOT / "frontend" / "lib" / "topic-presets.ts").read_text(
         encoding="utf-8"
     )
@@ -928,6 +931,10 @@ def validate_content_production_contract() -> int:
         "content.platform === selectedPlatform",
         "tagsMatchText(content.tags, tagsText)",
         "sourceContextMatchesKnowledgeQuery(content.source_context, knowledgeQuery)",
+        "generatedContentInputSignatureMatches(",
+        "lastContentInputSignature",
+        "currentGenerationInputSignature",
+        "setLastContentInputSignature({ contentId: data.id, signature: requestSignature });",
         "contentMatchesCurrentInputs(lastContent)",
         "contentMatchesCurrentInputs(latestContent)",
         "const exportContentMatchesCurrentInputs = Boolean(currentExportContent);",
@@ -1276,6 +1283,10 @@ def validate_content_production_contract() -> int:
         "generatedContent.platform === platform",
         "tagsMatchText(generatedContent.tags, tagsText)",
         "sourceContextMatchesKnowledgeQuery(generatedContent.source_context, generationKnowledgeQuery)",
+        "generatedContentInputSignatureMatches(",
+        "generatedContentInputSignature",
+        "currentMobileGenerationInputSignature",
+        "setGeneratedContentInputSignature({ contentId: data.id, signature: requestSignature });",
         "parseTagText(tagsText)",
         "const heroProgressPercent = busy",
         "generatedContentMatchesCurrentInputs\n      ? 100",
@@ -1536,6 +1547,22 @@ def validate_content_production_contract() -> int:
         total += 1
         if snippet not in tags_text:
             raise SystemExit(f"Missing tag format helper contract: {snippet}")
+
+    generation_input_signature_contract_snippets = [
+        "export type GenerationInputSignature",
+        "export type GeneratedContentInputSignature",
+        "export function buildGenerationInputSignature",
+        "tags: parseTagText(tagsText)",
+        "export function generationInputSignaturesMatch",
+        "left.targetAudience === right.targetAudience",
+        "left.tone === right.tone",
+        "export function generatedContentInputSignatureMatches",
+        "record.contentId !== contentId",
+    ]
+    for snippet in generation_input_signature_contract_snippets:
+        total += 1
+        if snippet not in generation_input_signature_text:
+            raise SystemExit(f"Missing generation input signature contract: {snippet}")
 
     generated_asset_contract_snippets = [
         "export type GeneratedContent",

@@ -28,6 +28,11 @@ import {
   type GeneratedImageAsset,
   type GenerationSourceContext
 } from "@/lib/generated-assets";
+import {
+  buildGenerationInputSignature,
+  generatedContentInputSignatureMatches,
+  type GeneratedContentInputSignature
+} from "@/lib/generation-input-signature";
 import { sanitizeServiceErrorMessage } from "@/lib/service-error-copy";
 import { formatTagLine, parseTagText, tagsMatchText } from "@/lib/tags";
 import {
@@ -120,6 +125,8 @@ export function CreateScreen({
     pickGenerationTopicPresetBatch()
   );
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
+  const [generatedContentInputSignature, setGeneratedContentInputSignature] =
+    useState<GeneratedContentInputSignature | null>(null);
   const [generatedCover, setGeneratedCover] = useState<GeneratedImageAsset | null>(null);
   const [sourceContext, setSourceContext] = useState<GenerationSourceContext | null>(null);
   const [sourcePreviewBusy, setSourcePreviewBusy] = useState(false);
@@ -141,12 +148,25 @@ export function CreateScreen({
   const selectedProject = findEnabledMobileCreationProject(selectedProjectId);
   const selectedTopicPreset = findGenerationTopicPresetByTopic(topic);
   const generationKnowledgeQuery = selectedTopicPreset?.knowledgeQuery ?? topic;
+  const currentMobileGenerationInputSignature = buildGenerationInputSignature({
+    knowledgeQuery: generationKnowledgeQuery,
+    platform,
+    tagsText,
+    targetAudience,
+    tone: contentMode === "xiaohongshu" ? xhsMobileDraftTone : shortPostDraftTone,
+    topic
+  });
   const generatedContentMatchesCurrentInputs = Boolean(
     generatedContent &&
       generatedContent.title === topic.trim() &&
       generatedContent.platform === platform &&
       tagsMatchText(generatedContent.tags, tagsText) &&
-      sourceContextMatchesKnowledgeQuery(generatedContent.source_context, generationKnowledgeQuery)
+      sourceContextMatchesKnowledgeQuery(generatedContent.source_context, generationKnowledgeQuery) &&
+      generatedContentInputSignatureMatches(
+        generatedContent.id,
+        generatedContentInputSignature,
+        currentMobileGenerationInputSignature
+      )
   );
   const matchingMobileSourceContext = sourceContextMatchesKnowledgeQuery(sourceContext, generationKnowledgeQuery)
     ? sourceContext
@@ -921,16 +941,26 @@ export function CreateScreen({
     clearStoredMobileCover();
     startProgress("撰稿服务生成中");
     try {
+      const requestPayload = buildMobileGenerationRequestPayload();
+      const requestSignature = buildGenerationInputSignature({
+        knowledgeQuery: requestPayload.knowledge_query,
+        platform: requestPayload.platform,
+        tagsText,
+        targetAudience: requestPayload.target_audience,
+        tone: requestPayload.tone,
+        topic: requestPayload.topic
+      });
       const response = await fetch(`${apiBase}/content/generate`, {
         method: "POST",
         headers: authHeaders(credentials),
-        body: JSON.stringify(buildMobileGenerationRequestPayload())
+        body: JSON.stringify(requestPayload)
       });
       if (!response.ok) {
         throw new Error(await readApiError(response, "图文草稿生成失败。"));
       }
       const data = (await response.json()) as GeneratedContent;
       setGeneratedContent(data);
+      setGeneratedContentInputSignature({ contentId: data.id, signature: requestSignature });
       setSourceContext(data.source_context ?? null);
       setSourcePreviewError(null);
       setDraftPreview(draftStateFromContent(data));
@@ -1089,7 +1119,7 @@ export function CreateScreen({
         <div className="relative">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-xs font-black text-moss">一键生产</div>
+              <div className="text-xs font-black text-moss">一键生成</div>
               <h2 className="mt-1 text-[25px] font-black leading-8">撰稿 + 封面图</h2>
             </div>
             <div className="flex h-11 w-11 items-center justify-center rounded-[18px] border border-white/[0.84] bg-[rgba(255,253,247,0.78)] text-[#ff2442] shadow-[inset_0_1px_0_rgba(255,255,255,0.86)] backdrop-blur-sm">

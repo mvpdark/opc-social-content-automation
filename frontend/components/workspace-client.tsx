@@ -59,6 +59,11 @@ import {
   type GenerationSourceContext
 } from "@/lib/generated-assets";
 import {
+  buildGenerationInputSignature,
+  generatedContentInputSignatureMatches,
+  type GeneratedContentInputSignature
+} from "@/lib/generation-input-signature";
+import {
   fetchKnowledgeItems,
   knowledgeCategoryLabel,
   knowledgeItemExcerpt,
@@ -2488,7 +2493,7 @@ function CreationProjectGateway({
             <div className="rounded-[28px] border border-line/70 bg-paper/58 p-4 shadow-[inset_0_1px_0_rgb(var(--glass-highlight)/0.46)]">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-[11px] font-black text-moss">一键生产</div>
+                  <div className="text-[11px] font-black text-moss">一键生成</div>
                   <div className="mt-1 text-lg font-black leading-6 text-ink">
                     撰稿 + 封面图
                   </div>
@@ -2663,6 +2668,8 @@ function GenerationLauncher({
   const [busyAction, setBusyAction] = useState<"draft" | null>(null);
   const [statusText, setStatusText] = useState("填写选题后，点击“一键生成图文+封面”。");
   const [lastContent, setLastContent] = useState<GeneratedContent | null>(null);
+  const [lastContentInputSignature, setLastContentInputSignature] =
+    useState<GeneratedContentInputSignature | null>(null);
   const [needsProviderSettings, setNeedsProviderSettings] = useState(false);
   const [providerStatuses, setProviderStatuses] = useState<ProviderStatusItem[]>([]);
   const [providerStatusError, setProviderStatusError] = useState<string | null>(null);
@@ -2675,6 +2682,14 @@ function GenerationLauncher({
   const selectedPlatform: PlatformId = platform === "douyin" ? "douyin" : "xiaohongshu";
   const selectedTopicPreset = findGenerationTopicPresetByTopic(topic);
   const hasTopic = topic.trim().length > 0;
+  const currentGenerationInputSignature = buildGenerationInputSignature({
+    knowledgeQuery,
+    platform: selectedPlatform,
+    tagsText,
+    targetAudience,
+    tone,
+    topic
+  });
   const coverDirectionPreviewLabel = selectedTopicPreset?.desktopLabel ?? (hasTopic ? "自定义" : "待选择");
   const coverDirectionPreview = selectedTopicPreset?.coverDirection ?? (
     hasTopic
@@ -2996,7 +3011,12 @@ function GenerationLauncher({
         content.title === topic.trim() &&
         content.platform === selectedPlatform &&
         tagsMatchText(content.tags, tagsText) &&
-        sourceContextMatchesKnowledgeQuery(content.source_context, knowledgeQuery)
+        sourceContextMatchesKnowledgeQuery(content.source_context, knowledgeQuery) &&
+        generatedContentInputSignatureMatches(
+          content.id,
+          lastContentInputSignature,
+          currentGenerationInputSignature
+        )
     );
   }
 
@@ -3054,10 +3074,19 @@ function GenerationLauncher({
     setNeedsProviderSettings(false);
     setStatusText("正在一键生成：先撰稿，再改写，最后生成封面图。");
     try {
+      const requestPayload = buildGenerationRequestPayload();
+      const requestSignature = buildGenerationInputSignature({
+        knowledgeQuery: requestPayload.knowledge_query,
+        platform: requestPayload.platform,
+        tagsText,
+        targetAudience: requestPayload.target_audience,
+        tone: requestPayload.tone,
+        topic: requestPayload.topic
+      });
       const response = await fetch(`${API_BASE}/content/generate`, {
         method: "POST",
         headers: authHeaders(),
-        body: JSON.stringify(buildGenerationRequestPayload())
+        body: JSON.stringify(requestPayload)
       });
       if (!response.ok) {
         throw new Error(await readApiError(response, "图文草稿生成失败。"));
@@ -3066,6 +3095,7 @@ function GenerationLauncher({
       setSourceContext(data.source_context ?? null);
       setSourcePreviewError(null);
       setLastContent(data);
+      setLastContentInputSignature({ contentId: data.id, signature: requestSignature });
       onGeneratedContent(data);
       setNeedsProviderSettings(false);
       let finalContent = data;
@@ -3094,6 +3124,10 @@ function GenerationLauncher({
           finalContent = rewrittenContent;
           setSourceContext(rewrittenContent.source_context ?? data.source_context ?? null);
           setLastContent(rewrittenContent);
+          setLastContentInputSignature({
+            contentId: rewrittenContent.id,
+            signature: requestSignature
+          });
           onGeneratedContent(rewrittenContent);
           setStatusText("文案已完成口吻润色，正在生成封面图。");
         } catch (rewriteError) {
