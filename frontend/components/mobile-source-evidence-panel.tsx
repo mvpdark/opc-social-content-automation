@@ -10,6 +10,7 @@ import {
   knowledgeItemTitle,
   type KnowledgeItem
 } from "@/lib/knowledge-api";
+import { scrollElementIntoView } from "@/lib/scroll-into-view";
 
 function mobileSourceKnowledgeItemToKnowledgeItem(item: GenerationKnowledgeSource): KnowledgeItem {
   return {
@@ -63,7 +64,7 @@ export function MobileSourceEvidencePanel({
       return;
     }
     const frame = window.requestAnimationFrame(() => {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      scrollElementIntoView(target);
     });
     return () => window.cancelAnimationFrame(frame);
   }, [openEvidenceSection]);

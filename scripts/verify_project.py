@@ -839,6 +839,9 @@ def validate_content_production_contract() -> int:
     generation_input_signature_text = (
         ROOT / "frontend" / "lib" / "generation-input-signature.ts"
     ).read_text(encoding="utf-8")
+    scroll_into_view_text = (
+        ROOT / "frontend" / "lib" / "scroll-into-view.ts"
+    ).read_text(encoding="utf-8")
     topic_presets_text = (ROOT / "frontend" / "lib" / "topic-presets.ts").read_text(
         encoding="utf-8"
     )
@@ -1346,7 +1349,8 @@ def validate_content_production_contract() -> int:
                 "webResults.slice(0, 4).map((item, index)",
                 'key={`${item.url}-${item.title}-${index}`}',
                 "useRef<HTMLDivElement | null>(null)",
-                'target.scrollIntoView({ behavior: "smooth", block: "start" });',
+                'import { scrollElementIntoView } from "@/lib/scroll-into-view";',
+                "scrollElementIntoView(target);",
                 "ref={knowledgeListRef}",
                 "ref={webListRef}",
                 "scroll-mt-24",
@@ -1364,7 +1368,8 @@ def validate_content_production_contract() -> int:
                 "webResults.slice(0, 3).map((item, index)",
                 'key={`${item.url}-${item.title}-${index}`}',
                 "useRef<HTMLDivElement | null>(null)",
-                'target.scrollIntoView({ behavior: "smooth", block: "start" });',
+                'import { scrollElementIntoView } from "@/lib/scroll-into-view";',
+                "scrollElementIntoView(target);",
                 "ref={knowledgeListRef}",
                 "ref={webListRef}",
                 "scroll-mt-24",
@@ -1573,6 +1578,18 @@ def validate_content_production_contract() -> int:
         total += 1
         if snippet not in generation_input_signature_text:
             raise SystemExit(f"Missing generation input signature contract: {snippet}")
+
+    scroll_into_view_contract_snippets = [
+        "export function scrollElementIntoView",
+        "target: Element",
+        '"(prefers-reduced-motion: reduce)"',
+        'behavior: prefersReducedMotion ? "auto" : "smooth"',
+        "target.scrollIntoView({",
+    ]
+    for snippet in scroll_into_view_contract_snippets:
+        total += 1
+        if snippet not in scroll_into_view_text:
+            raise SystemExit(f"Missing scroll into view helper contract: {snippet}")
 
     generated_asset_contract_snippets = [
         "export type GeneratedContent",

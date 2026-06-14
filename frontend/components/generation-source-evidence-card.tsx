@@ -10,6 +10,7 @@ import {
   knowledgeItemTitle,
   type KnowledgeItem
 } from "@/lib/knowledge-api";
+import { scrollElementIntoView } from "@/lib/scroll-into-view";
 
 const secondaryButtonClass =
   "glass-control flex items-center justify-center gap-2 rounded-md border text-sm font-medium text-ink";
@@ -98,7 +99,7 @@ export function GenerationSourceEvidenceCard({
       return;
     }
     const frame = window.requestAnimationFrame(() => {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      scrollElementIntoView(target);
     });
     return () => window.cancelAnimationFrame(frame);
   }, [openEvidenceSection]);
