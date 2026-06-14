@@ -288,6 +288,13 @@ function shuffleTopicPresets(presets: GenerationTopicPreset[]) {
   return shuffled;
 }
 
+function freshTopicPresetPool(presets: GenerationTopicPreset[], previousKeys: string[]) {
+  const previousKeySet = new Set(previousKeys);
+  const freshPresets = presets.filter((preset) => !previousKeySet.has(preset.key));
+  const repeatedPresets = presets.filter((preset) => previousKeySet.has(preset.key));
+  return [...shuffleTopicPresets(freshPresets), ...shuffleTopicPresets(repeatedPresets)];
+}
+
 export function pickGenerationTopicPresetBatch({
   currentTopic = "",
   previousKeys = [],
@@ -297,30 +304,21 @@ export function pickGenerationTopicPresetBatch({
   previousKeys?: string[];
   size?: number;
 } = {}) {
-  const batchSize = Math.min(size, generationTopicPresets.length);
-  const pinnedPreset =
-    generationTopicPresets.find((preset) => preset.topic === currentTopic.trim()) ?? null;
-  const previousSignature = previousKeys.join("|");
-
-  for (let attempt = 0; attempt < 6; attempt += 1) {
-    const pool = shuffleTopicPresets(
-      generationTopicPresets.filter((preset) => preset.key !== pinnedPreset?.key)
-    );
-    const picked = pinnedPreset
-      ? [pinnedPreset, ...pool.slice(0, batchSize - 1)]
-      : pool.slice(0, batchSize);
-    if (picked.map((preset) => preset.key).join("|") !== previousSignature) {
-      return picked;
-    }
+  const batchSize = Math.max(0, Math.min(size, generationTopicPresets.length));
+  if (batchSize === 0) {
+    return [];
   }
 
-  const fallback = pinnedPreset
-    ? [
-        pinnedPreset,
-        ...generationTopicPresets.filter((preset) => preset.key !== pinnedPreset.key)
-      ]
-    : generationTopicPresets;
-  return fallback.slice(0, batchSize);
+  const pinnedPreset =
+    generationTopicPresets.find((preset) => preset.topic === currentTopic.trim()) ?? null;
+  const pool = freshTopicPresetPool(
+    generationTopicPresets.filter((preset) => preset.key !== pinnedPreset?.key),
+    previousKeys
+  );
+
+  return pinnedPreset
+    ? [pinnedPreset, ...pool.slice(0, batchSize - 1)]
+    : pool.slice(0, batchSize);
 }
 
 export function findGenerationTopicPresetByTopic(topic: string) {

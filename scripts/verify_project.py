@@ -833,6 +833,7 @@ def validate_content_production_contract() -> int:
         "TOPIC_PRESET_ROTATION_SIZE",
         "TOPIC_PRESET_REFRESH_MS",
         "pickGenerationTopicPresetBatch",
+        "freshTopicPresetPool",
         'key: "ranking-water-global"',
         'topic: "全球水博排名必看"',
         'knowledgeQuery: "全球 水博 博士 项目 排名 认证 预算 在职"',
