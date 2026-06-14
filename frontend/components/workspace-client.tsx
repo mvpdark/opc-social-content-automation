@@ -2675,6 +2675,12 @@ function GenerationLauncher({
   const selectedPlatform: PlatformId = platform === "douyin" ? "douyin" : "xiaohongshu";
   const selectedTopicPreset = findGenerationTopicPresetByTopic(topic);
   const hasTopic = topic.trim().length > 0;
+  const coverDirectionPreviewLabel = selectedTopicPreset?.desktopLabel ?? (hasTopic ? "自定义" : "待选择");
+  const coverDirectionPreview = selectedTopicPreset?.coverDirection ?? (
+    hasTopic
+      ? "自定义选题会使用当前平台基础封面风格；生成前请在预览里确认标题、封面方向和标签是否一致。"
+      : "选择推荐选题后，会在这里预览封面方向；自定义选题也会保留人工确认。"
+  );
   const draftProviderStatus = providerStatuses.find((item) => item.name === "Draft generation");
   const draftProviderMissing = Boolean(providerStatuses.length && !draftProviderStatus?.configured);
   const draftProviderCheckFailed = Boolean(
@@ -2901,6 +2907,7 @@ function GenerationLauncher({
   function updateTopicAndAutoKnowledgeQuery(nextTopic: string) {
     const previousTopic = topic.trim();
     const nextTopicText = nextTopic.trim();
+    const nextTopicPreset = findGenerationTopicPresetByTopic(nextTopicText);
     setTopic(nextTopic);
     setKnowledgeQuery((currentQuery) => {
       const normalizedQuery = currentQuery.trim();
@@ -2909,7 +2916,11 @@ function GenerationLauncher({
         normalizedQuery === previousTopic ||
         normalizedQuery === defaultGenerationKnowledgeQuery ||
         isKnownGenerationTopicKnowledgeQuery(normalizedQuery);
-      return shouldSyncQuery ? nextTopicText : currentQuery;
+      return nextTopicPreset
+        ? nextTopicPreset.knowledgeQuery
+        : shouldSyncQuery
+          ? nextTopicText
+          : currentQuery;
     });
     setTargetAudience((currentAudience) => {
       const normalizedAudience = currentAudience.trim();
@@ -2918,9 +2929,11 @@ function GenerationLauncher({
         normalizedAudience === defaultGenerationTargetAudience ||
         normalizedAudience === buildCustomTopicAudience(previousTopic) ||
         isKnownGenerationTopicAudience(normalizedAudience);
-      return shouldSyncAudience
-        ? buildCustomTopicAudience(nextTopicText) || defaultGenerationTargetAudience
-        : currentAudience;
+      return nextTopicPreset
+        ? nextTopicPreset.audience
+        : shouldSyncAudience
+          ? buildCustomTopicAudience(nextTopicText) || defaultGenerationTargetAudience
+          : currentAudience;
     });
     setTagsText((currentTags) => {
       const normalizedTags = currentTags.trim();
@@ -2929,11 +2942,16 @@ function GenerationLauncher({
         normalizedTags === previousTopic ||
         normalizedTags === defaultGenerationTagsText ||
         isKnownGenerationTopicTags(normalizedTags);
-      return shouldSyncTags
-        ? buildCustomTopicTags(nextTopicText) || defaultGenerationTagsText
-        : currentTags;
+      return nextTopicPreset
+        ? nextTopicPreset.tags
+        : shouldSyncTags
+          ? buildCustomTopicTags(nextTopicText) || defaultGenerationTagsText
+          : currentTags;
     });
     clearSourceEvidence();
+    if (nextTopicPreset) {
+      setStatusText(`已识别推荐选题：${nextTopicPreset.topic}`);
+    }
   }
 
   function applyTopicPreset(preset: GenerationTopicPreset) {
@@ -3351,6 +3369,21 @@ function GenerationLauncher({
                 value={targetAudience}
               />
             </label>
+            <div
+              className="md:col-span-2 rounded-md border border-moss/25 bg-moss/8 px-3 py-2.5"
+              data-testid="content-cover-direction-preview"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-medium text-muted">封面方向</span>
+                <span
+                  className="shrink-0 rounded-full bg-paper/70 px-2 py-0.5 text-[10px] font-semibold text-moss"
+                  data-testid="content-cover-direction-type"
+                >
+                  {coverDirectionPreviewLabel}
+                </span>
+              </div>
+              <p className="mt-1 text-xs leading-5 text-ink">{coverDirectionPreview}</p>
+            </div>
             <div className="md:col-span-2">
               <span className="text-xs font-medium text-muted">撰稿风格</span>
               <div className="mt-2 grid grid-cols-2 gap-2 lg:grid-cols-4">
