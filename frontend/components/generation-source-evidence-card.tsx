@@ -14,6 +14,8 @@ import { scrollElementIntoView } from "@/lib/scroll-into-view";
 
 const secondaryButtonClass =
   "glass-control flex items-center justify-center gap-2 rounded-md border text-sm font-medium text-ink";
+const evidenceExcerptClass =
+  "mt-2 max-h-36 overflow-y-auto whitespace-pre-wrap break-words pr-1 text-[11px] leading-5 text-muted";
 
 const pillTone = {
   neutral: "border-line bg-mist text-muted",
@@ -200,8 +202,8 @@ export function GenerationSourceEvidenceCard({
                     </h4>
                     <SourcePill>{knowledgeCategoryLabel(knowledgeItem.category)}</SourcePill>
                   </div>
-                  <p className="mt-2 line-clamp-3 text-[11px] leading-5 text-muted">
-                    {knowledgeItemExcerpt(knowledgeItem, 150)}
+                  <p className={evidenceExcerptClass}>
+                    {knowledgeItemExcerpt(knowledgeItem, 320)}
                   </p>
                 </article>
               );
@@ -246,7 +248,7 @@ export function GenerationSourceEvidenceCard({
                   <ExternalLink className="mt-1 h-3.5 w-3.5 shrink-0 text-muted" />
                 </div>
                 <p className="mt-1 truncate text-[11px] text-steel">{item.url}</p>
-                <p className="mt-2 line-clamp-3 text-[11px] leading-5 text-muted">{item.content}</p>
+                <p className={evidenceExcerptClass}>{item.content}</p>
               </a>
             ))
           ) : (

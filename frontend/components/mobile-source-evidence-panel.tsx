@@ -12,6 +12,9 @@ import {
 } from "@/lib/knowledge-api";
 import { scrollElementIntoView } from "@/lib/scroll-into-view";
 
+const mobileEvidenceExcerptClass =
+  "mt-1 max-h-28 overflow-y-auto whitespace-pre-wrap break-words pr-1 text-[11px] font-medium leading-5 text-muted";
+
 function mobileSourceKnowledgeItemToKnowledgeItem(item: GenerationKnowledgeSource): KnowledgeItem {
   return {
     category: item.category ?? null,
@@ -182,8 +185,8 @@ export function MobileSourceEvidencePanel({
                       {knowledgeCategoryLabel(knowledgeItem.category)}
                     </span>
                   </div>
-                  <p className="mt-1 line-clamp-3 text-[11px] font-medium leading-5 text-muted">
-                    {knowledgeItemExcerpt(knowledgeItem, 120)}
+                  <p className={mobileEvidenceExcerptClass}>
+                    {knowledgeItemExcerpt(knowledgeItem, 240)}
                   </p>
                 </article>
               );
@@ -228,7 +231,7 @@ export function MobileSourceEvidencePanel({
                   <ExternalLink className="mt-1 h-3.5 w-3.5 shrink-0 text-muted" />
                 </div>
                 <p className="mt-1 truncate text-[10px] font-medium text-moss">{item.url}</p>
-                <p className="mt-1 line-clamp-3 text-[11px] font-medium leading-5 text-muted">{item.content}</p>
+                <p className={mobileEvidenceExcerptClass}>{item.content}</p>
               </a>
             ))
           ) : (
