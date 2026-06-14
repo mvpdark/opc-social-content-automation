@@ -98,12 +98,23 @@ def test_image_prompt_payload_includes_visual_direction(
 ) -> None:
     content = make_content(status="approved")
     content.source_context = {
+        "knowledge_items": [
+            {
+                "title": "水博榜结构参考",
+                "category": "xiaohongshu-case",
+                "content": "认证、预算、毕业难度和在职适配。" * 80,
+            }
+        ],
         "web_search": {
             "required": True,
+            "provider": "tavily",
+            "query": "global water resources PhD programs official sources",
+            "answer": "Official pages should be reviewed before naming schools.",
             "results": [
                 {
                     "title": "Official program page",
                     "url": "https://example.edu/program",
+                    "content": "Official source snippet." * 80,
                 }
             ],
         },
@@ -134,7 +145,14 @@ def test_image_prompt_payload_includes_visual_direction(
     assert isinstance(captured["visual_direction"], dict)
     assert captured["visual_direction"]["id"]
     assert "instructions" in captured["visual_direction"]
-    assert captured["source_context"] == content.source_context
+    source_context = captured["source_context"]
+    assert isinstance(source_context, dict)
+    assert source_context["review_note"] == "请先人工核对来源。"
+    assert source_context["knowledge_items"][0]["title"] == "水博榜结构参考"
+    assert len(source_context["knowledge_items"][0]["content"]) <= 363
+    assert source_context["web_search"]["provider"] == "tavily"
+    assert source_context["web_search"]["results"][0]["url"] == "https://example.edu/program"
+    assert len(source_context["web_search"]["results"][0]["content"]) <= 363
 
 
 def test_draft_image_generation_downloads_remote_cover_before_saving(

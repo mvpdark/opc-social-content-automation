@@ -24,6 +24,7 @@ from app.services.model_router import (
 IMAGE_GENERATABLE_STATUSES = {"draft", "rewritten", "review_pending", "approved"}
 REMOTE_IMAGE_DOWNLOAD_TIMEOUT_SECONDS = 30.0
 REMOTE_IMAGE_MAX_BYTES = 32 * 1024 * 1024
+IMAGE_SOURCE_CONTEXT_EXCERPT_LENGTH = 360
 IMAGE_MEDIA_TYPE_EXTENSIONS = {
     "image/gif": ".gif",
     "image/jpeg": ".jpg",
@@ -284,6 +285,62 @@ def get_content_for_image(db: Session, content_id: int) -> Content:
     return content
 
 
+def _image_source_excerpt(
+    value: object,
+    max_length: int = IMAGE_SOURCE_CONTEXT_EXCERPT_LENGTH,
+) -> str:
+    text = " ".join(str(value or "").split())
+    if len(text) <= max_length:
+        return text
+    return f"{text[:max_length].rstrip()}..."
+
+
+def _image_source_context(source_context: object) -> dict[str, object] | None:
+    if not isinstance(source_context, dict):
+        return None
+
+    knowledge_items = []
+    for raw_item in source_context.get("knowledge_items") or []:
+        if not isinstance(raw_item, dict):
+            continue
+        knowledge_items.append(
+            {
+                "title": _image_source_excerpt(raw_item.get("title"), 140),
+                "category": raw_item.get("category"),
+                "content": _image_source_excerpt(raw_item.get("content")),
+            }
+        )
+
+    web_search = source_context.get("web_search")
+    compact_web_search = None
+    if isinstance(web_search, dict):
+        web_results = []
+        for raw_result in web_search.get("results") or []:
+            if not isinstance(raw_result, dict):
+                continue
+            web_results.append(
+                {
+                    "title": _image_source_excerpt(raw_result.get("title"), 140),
+                    "url": _image_source_excerpt(raw_result.get("url"), 500),
+                    "content": _image_source_excerpt(raw_result.get("content")),
+                }
+            )
+        compact_web_search = {
+            "required": bool(web_search.get("required")),
+            "provider": web_search.get("provider"),
+            "query": _image_source_excerpt(web_search.get("query"), 240),
+            "answer": _image_source_excerpt(web_search.get("answer"), 500),
+            "results": web_results[:5],
+        }
+
+    compact_context = {
+        "review_note": _image_source_excerpt(source_context.get("review_note"), 500),
+        "knowledge_items": knowledge_items[:5],
+        "web_search": compact_web_search,
+    }
+    return compact_context
+
+
 def _next_visual_variant_index(db: Session, content_id: int) -> int:
     if not hasattr(db, "scalars"):
         return 0
@@ -336,9 +393,7 @@ def build_image_prompt_package(
             "title": content.title,
             "body": content.body,
             "tags": content.tags or [],
-            "source_context": content.source_context
-            if isinstance(content.source_context, dict)
-            else None,
+            "source_context": _image_source_context(content.source_context),
             "content_status": content.status,
             "template": template,
             "aspect_ratio": payload.aspect_ratio,
