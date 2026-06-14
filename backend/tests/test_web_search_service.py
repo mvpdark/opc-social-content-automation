@@ -25,6 +25,8 @@ def test_topic_needs_live_web_search_for_ranking_topic() -> None:
     assert topic_needs_live_web_search("海外博士哪个项目适合在职", ["海外博士"]) is True
     assert topic_needs_live_web_search("水博项目校徽怎么找", ["水博"]) is True
     assert topic_needs_live_web_search("海外博士价格怎么对比", ["海外博士"]) is True
+    assert topic_needs_live_web_search("博士项目官方来源怎么查", ["来源核验"]) is True
+    assert topic_needs_live_web_search("海外博士来源核验清单", ["官网核验"]) is True
 
 
 def test_build_tavily_query_expands_water_phd_topic() -> None:

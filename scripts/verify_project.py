@@ -199,11 +199,17 @@ def validate_safety_gates() -> int:
         "backend/app/services/topic_intent.py": [
             'key="source_check"',
             "来源核验",
+            '"来源"',
+            '"核验"',
+            '"官方"',
             "价格/校徽/认证字段",
         ],
         "backend/app/services/web_search_service.py": [
             '"校徽"',
             '"价格"',
+            '"来源"',
+            '"核验"',
+            '"官方"',
             "official logo school emblem",
             "tuition fees total cost",
             '"include_answer": True',
