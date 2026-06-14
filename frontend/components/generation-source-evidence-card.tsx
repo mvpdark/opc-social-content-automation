@@ -58,12 +58,14 @@ function sourceContextStats(sourceContext: GenerationSourceContext | null) {
 export function GenerationSourceEvidenceCard({
   disabled = false,
   error,
+  fallbackKnowledgeQuery,
   onPreview,
   previewBusy,
   sourceContext
 }: {
   disabled?: boolean;
   error?: string | null;
+  fallbackKnowledgeQuery?: string;
   onPreview?: () => void;
   previewBusy?: boolean;
   sourceContext: GenerationSourceContext | null;
@@ -74,6 +76,7 @@ export function GenerationSourceEvidenceCard({
   const webResults = webSearch?.results ?? [];
   const knowledgeItems = sourceContext?.knowledge_items ?? [];
   const missingRequiredWebResults = webRequired && !webResults.length;
+  const visibleKnowledgeQuery = sourceContext?.knowledge_query || fallbackKnowledgeQuery?.trim() || "";
 
   return (
     <div className="mt-4 rounded-md border border-line bg-paper/70 p-3" data-testid="generation-source-evidence">
@@ -88,9 +91,9 @@ export function GenerationSourceEvidenceCard({
           {missingRequiredWebResults ? "缺联网" : hasEvidence ? `${knowledgeCount + webCount} 条` : "待查看"}
         </SourcePill>
       </div>
-      {sourceContext?.knowledge_query ? (
+      {visibleKnowledgeQuery ? (
         <div className="mt-3 rounded-md bg-mist/70 px-3 py-2 text-[11px] leading-5 text-muted">
-          检索词：{sourceContext.knowledge_query}
+          检索词：{visibleKnowledgeQuery}
         </div>
       ) : null}
       {onPreview ? (

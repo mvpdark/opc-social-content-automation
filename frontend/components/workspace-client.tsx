@@ -3290,6 +3290,7 @@ function GenerationLauncher({
             <GenerationSourceEvidenceCard
               disabled={!hasTopic || busyAction !== null}
               error={sourcePreviewError}
+              fallbackKnowledgeQuery={knowledgeQuery}
               onPreview={previewSourceContext}
               previewBusy={sourcePreviewBusy}
               sourceContext={visibleSourceContext}

@@ -1079,6 +1079,23 @@ def validate_content_production_contract() -> int:
 
     mobile_source_evidence_query_contracts = [
         (
+            source_evidence_text,
+            [
+                "fallbackKnowledgeQuery?: string;",
+                'const visibleKnowledgeQuery = sourceContext?.knowledge_query || fallbackKnowledgeQuery?.trim() || "";',
+                "检索词：{visibleKnowledgeQuery}",
+            ],
+            "PC source evidence fallback query",
+        ),
+        (
+            workspace_text,
+            [
+                "fallbackKnowledgeQuery={knowledgeQuery}",
+                'const [knowledgeQuery, setKnowledgeQuery] = useState("硕升博 高赞图文 写作参考");',
+            ],
+            "PC create source evidence query wiring",
+        ),
+        (
             mobile_source_evidence_text,
             [
                 "fallbackKnowledgeQuery?: string;",
