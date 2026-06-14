@@ -906,6 +906,8 @@ def validate_content_production_contract() -> int:
         "const exportContentMatchesCurrentInputs = Boolean(",
         "exportContent.title === topic.trim()",
         "exportContent.platform === selectedPlatform",
+        "tagsMatchText(exportContent.tags, tagsText)",
+        "parseTagText(tagsText)",
         'data-testid="topic-preset-list"',
         'data-testid="topic-preset-refresh"',
         'data-testid={`topic-preset-${preset.key}`}',
@@ -1230,6 +1232,8 @@ def validate_content_production_contract() -> int:
         "const generatedContentMatchesCurrentInputs = Boolean(",
         "generatedContent.title === topic.trim()",
         "generatedContent.platform === platform",
+        "tagsMatchText(generatedContent.tags, tagsText)",
+        "parseTagText(tagsText)",
         'data-testid="mobile-topic-preset-list"',
         'data-testid="mobile-topic-preset-refresh"',
         'data-testid={`mobile-topic-preset-${preset.key}`}',
@@ -1448,6 +1452,8 @@ def validate_content_production_contract() -> int:
 
     tag_contract_snippets = [
         "export function normalizeTags",
+        "export function parseTagText",
+        "export function tagsMatchText",
         "export function formatTags",
         "export function formatTagLine",
         "tag.trim().replace(/^#+/, \"\")",

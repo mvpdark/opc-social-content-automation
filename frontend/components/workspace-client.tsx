@@ -99,7 +99,7 @@ import {
   generatedContentStatusLabel,
   generatedImageStatusLabel
 } from "@/lib/status-labels";
-import { formatTagLine } from "@/lib/tags";
+import { formatTagLine, parseTagText, tagsMatchText } from "@/lib/tags";
 import {
   TOPIC_PRESET_REFRESH_MS,
   buildCustomTopicAudience,
@@ -2614,7 +2614,8 @@ function GenerationLauncher({
   const exportContentMatchesCurrentInputs = Boolean(
     exportContent &&
       exportContent.title === topic.trim() &&
-      exportContent.platform === selectedPlatform
+      exportContent.platform === selectedPlatform &&
+      tagsMatchText(exportContent.tags, tagsText)
   );
   const matchingSourceContext = sourceContextMatchesKnowledgeQuery(sourceContext, knowledgeQuery)
     ? sourceContext
@@ -2873,10 +2874,7 @@ function GenerationLauncher({
       tone: buildGenerationTone(tone, platform, styleOptions),
       target_audience: targetAudience.trim() || undefined,
       knowledge_limit: 5,
-      tags: tagsText
-        .split(/[,，]/)
-        .map((tag) => tag.trim())
-        .filter(Boolean)
+      tags: parseTagText(tagsText)
     };
   }
 

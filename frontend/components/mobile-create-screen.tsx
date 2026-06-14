@@ -29,7 +29,7 @@ import {
   type GenerationSourceContext
 } from "@/lib/generated-assets";
 import { sanitizeServiceErrorMessage } from "@/lib/service-error-copy";
-import { formatTagLine } from "@/lib/tags";
+import { formatTagLine, parseTagText, tagsMatchText } from "@/lib/tags";
 import {
   buildEditableDraftCopy,
   clearStoredMobileContent,
@@ -144,7 +144,8 @@ export function CreateScreen({
   const generatedContentMatchesCurrentInputs = Boolean(
     generatedContent &&
       generatedContent.title === topic.trim() &&
-      generatedContent.platform === platform
+      generatedContent.platform === platform &&
+      tagsMatchText(generatedContent.tags, tagsText)
   );
   const matchingMobileSourceContext = sourceContextMatchesKnowledgeQuery(sourceContext, generationKnowledgeQuery)
     ? sourceContext
@@ -848,10 +849,7 @@ export function CreateScreen({
       tone: contentMode === "xiaohongshu" ? xhsMobileDraftTone : shortPostDraftTone,
       target_audience: targetAudience.trim() || undefined,
       knowledge_limit: 5,
-      tags: tagsText
-        .split(/[,，]/)
-        .map((tag) => tag.trim())
-        .filter(Boolean)
+      tags: parseTagText(tagsText)
     };
   }
 
