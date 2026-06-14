@@ -31,6 +31,10 @@ LIVE_SEARCH_LIST_TERMS = (
     "榜单",
     "清单",
     "名单",
+    "哪些",
+    "有哪些",
+    "哪几所",
+    "哪几个",
 )
 
 LIVE_SEARCH_SCOPE_TERMS = (
