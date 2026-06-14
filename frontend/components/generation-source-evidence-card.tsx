@@ -1,7 +1,7 @@
 "use client";
 
-import { ExternalLink, Loader2, Search } from "lucide-react";
-import type { ReactNode } from "react";
+import { ChevronDown, ExternalLink, Loader2, Search } from "lucide-react";
+import { useState, type ReactNode } from "react";
 
 import type { GenerationKnowledgeSource, GenerationSourceContext } from "@/lib/generated-assets";
 import {
@@ -55,6 +55,8 @@ function sourceContextStats(sourceContext: GenerationSourceContext | null) {
   };
 }
 
+type EvidenceSection = "knowledge" | "web" | null;
+
 export function GenerationSourceEvidenceCard({
   disabled = false,
   error,
@@ -77,6 +79,8 @@ export function GenerationSourceEvidenceCard({
   const knowledgeItems = sourceContext?.knowledge_items ?? [];
   const missingRequiredWebResults = webRequired && !webResults.length;
   const visibleKnowledgeQuery = sourceContext?.knowledge_query || fallbackKnowledgeQuery?.trim() || "";
+  const [openEvidenceSection, setOpenEvidenceSection] = useState<EvidenceSection>(null);
+  const webEvidenceCountLabel = webResults.length ? `${webResults.length} 条` : webRequired ? "未返回" : "未启用";
 
   return (
     <div className="mt-4 rounded-md border border-line bg-paper/70 p-3" data-testid="generation-source-evidence">
@@ -84,7 +88,7 @@ export function GenerationSourceEvidenceCard({
         <div>
           <div className="text-xs font-semibold text-ink">检索依据</div>
           <p className="mt-1 text-xs leading-5 text-muted">
-            人工确认前先看这里：知识库和联网来源会直接展示，不再只给一个空确认。
+            人工确认前先看这里：点击知识库引用或联网搜索展开核对。
           </p>
         </div>
         <SourcePill tone={missingRequiredWebResults ? "amber" : hasEvidence ? "green" : "neutral"}>
@@ -109,35 +113,81 @@ export function GenerationSourceEvidenceCard({
         </button>
       ) : null}
       {error ? <p className="mt-2 text-xs leading-5 text-coral">{error}</p> : null}
-      {knowledgeItems.length ? (
-        <div className="mt-3 space-y-2">
-          <div className="text-[11px] font-semibold text-muted">知识库引用</div>
-          {knowledgeItems.slice(0, 4).map((item, index) => {
-            const knowledgeItem = sourceKnowledgeItemToKnowledgeItem(item);
-            return (
-              <article className="rounded-md border border-line bg-mist/55 p-3" key={`${item.id}-${index}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <h4 className="line-clamp-2 text-xs font-semibold leading-5 text-ink">
-                    {knowledgeItemTitle(knowledgeItem)}
-                  </h4>
-                  <SourcePill>{knowledgeCategoryLabel(knowledgeItem.category)}</SourcePill>
-                </div>
-                <p className="mt-2 line-clamp-3 text-[11px] leading-5 text-muted">
-                  {knowledgeItemExcerpt(knowledgeItem, 150)}
-                </p>
-              </article>
-            );
-          })}
+      <div className="mt-3 rounded-md border border-line bg-mist/45 p-1.5" data-testid="source-evidence-switcher">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <button
+            aria-controls="source-knowledge-list"
+            aria-expanded={openEvidenceSection === "knowledge"}
+            className={[
+              "flex min-h-12 items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition",
+              openEvidenceSection === "knowledge" ? "bg-paper text-ink shadow-sm" : "bg-paper/60 text-muted hover:bg-paper"
+            ].join(" ")}
+            data-testid="source-knowledge-toggle"
+            onClick={() => setOpenEvidenceSection(openEvidenceSection === "knowledge" ? null : "knowledge")}
+            type="button"
+          >
+            <span>
+              <span className="block text-xs font-semibold">知识库引用</span>
+              <span className="mt-0.5 block text-[11px] text-moss">{knowledgeItems.length} 条</span>
+            </span>
+            <ChevronDown
+              className={[
+                "h-4 w-4 shrink-0 transition-transform",
+                openEvidenceSection === "knowledge" ? "rotate-180" : ""
+              ].join(" ")}
+            />
+          </button>
+          <button
+            aria-controls="source-web-list"
+            aria-expanded={openEvidenceSection === "web"}
+            className={[
+              "flex min-h-12 items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition",
+              openEvidenceSection === "web" ? "bg-paper text-ink shadow-sm" : "bg-paper/60 text-muted hover:bg-paper"
+            ].join(" ")}
+            data-testid="source-web-toggle"
+            onClick={() => setOpenEvidenceSection(openEvidenceSection === "web" ? null : "web")}
+            type="button"
+          >
+            <span>
+              <span className="block text-xs font-semibold">联网搜索</span>
+              <span className="mt-0.5 block text-[11px] text-moss">{webEvidenceCountLabel}</span>
+            </span>
+            <ChevronDown
+              className={["h-4 w-4 shrink-0 transition-transform", openEvidenceSection === "web" ? "rotate-180" : ""].join(
+                " "
+              )}
+            />
+          </button>
+        </div>
+      </div>
+      {openEvidenceSection === "knowledge" ? (
+        <div className="mt-3 space-y-2" data-testid="source-knowledge-list" id="source-knowledge-list">
+          {knowledgeItems.length ? (
+            knowledgeItems.slice(0, 4).map((item, index) => {
+              const knowledgeItem = sourceKnowledgeItemToKnowledgeItem(item);
+              return (
+                <article className="rounded-md border border-line bg-mist/55 p-3" key={`${item.id}-${index}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="line-clamp-2 text-xs font-semibold leading-5 text-ink">
+                      {knowledgeItemTitle(knowledgeItem)}
+                    </h4>
+                    <SourcePill>{knowledgeCategoryLabel(knowledgeItem.category)}</SourcePill>
+                  </div>
+                  <p className="mt-2 line-clamp-3 text-[11px] leading-5 text-muted">
+                    {knowledgeItemExcerpt(knowledgeItem, 150)}
+                  </p>
+                </article>
+              );
+            })
+          ) : (
+            <p className="rounded-md border border-line bg-mist/55 px-3 py-2 text-[11px] leading-5 text-muted">
+              暂无知识库引用，请先点击“查看检索依据”。
+            </p>
+          )}
         </div>
       ) : null}
-      {webRequired ? (
-        <div className="mt-3 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <div className="text-[11px] font-semibold text-muted">联网来源</div>
-            <SourcePill tone={webResults.length ? "green" : "amber"}>
-              {webResults.length ? `${webResults.length} 条` : "未返回"}
-            </SourcePill>
-          </div>
+      {openEvidenceSection === "web" ? (
+        <div className="mt-3 space-y-2" data-testid="source-web-list" id="source-web-list">
           {webSearch?.query ? (
             <p className="break-words rounded-md bg-mist/70 px-3 py-2 text-[11px] leading-5 text-muted">
               Tavily 查询：{webSearch.query}
@@ -169,7 +219,9 @@ export function GenerationSourceEvidenceCard({
             ))
           ) : (
             <p className="rounded-md border border-amber/40 bg-amber/10 px-3 py-2 text-[11px] leading-5 text-[#8a6110]">
-              这个选题需要实时资料，但本次还没有可见联网来源；请先换关键词、检查 Tavily，或只写核验框架，不要直接写学校、价格、logo 或排名结论。
+              {webRequired
+                ? "这个选题需要实时资料，但本次还没有可见联网搜索结果；请先换关键词、检查 Tavily，或只写核验框架，不要直接写学校、价格、logo 或排名结论。"
+                : "当前选题未触发联网搜索；如涉及学校、价格、logo、排名或市场信息，请先重新查看依据。"}
             </p>
           )}
         </div>

@@ -1291,6 +1291,13 @@ def validate_content_production_contract() -> int:
 
     mobile_source_evidence_contract_snippets = [
         'data-testid="mobile-source-evidence"',
+        'data-testid="mobile-source-evidence-switcher"',
+        'data-testid="mobile-source-knowledge-toggle"',
+        'data-testid="mobile-source-web-toggle"',
+        'data-testid="mobile-source-knowledge-list"',
+        'data-testid="mobile-source-web-list"',
+        "type MobileEvidenceSection = \"knowledge\" | \"web\" | null;",
+        "点击下方来源类型展开核对",
         "Tavily 查询：{webSearch.query}",
         "Tavily 摘要：",
         "摘要仅作线索，发布前请点开下方 URL 核对原文。",
@@ -1306,6 +1313,13 @@ def validate_content_production_contract() -> int:
         (
             source_evidence_text,
             [
+                'data-testid="source-evidence-switcher"',
+                'data-testid="source-knowledge-toggle"',
+                'data-testid="source-web-toggle"',
+                'data-testid="source-knowledge-list"',
+                'data-testid="source-web-list"',
+                "type EvidenceSection = \"knowledge\" | \"web\" | null;",
+                "点击知识库引用或联网搜索展开核对",
                 "knowledgeItems.slice(0, 4).map((item, index)",
                 'key={`${item.id}-${index}`}',
                 "webResults.slice(0, 4).map((item, index)",

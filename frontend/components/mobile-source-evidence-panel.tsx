@@ -1,6 +1,7 @@
 "use client";
 
-import { ExternalLink, Loader2, Search } from "lucide-react";
+import { ChevronDown, ExternalLink, Loader2, Search } from "lucide-react";
+import { useState } from "react";
 
 import type { GenerationKnowledgeSource, GenerationSourceContext } from "@/lib/generated-assets";
 import {
@@ -20,6 +21,8 @@ function mobileSourceKnowledgeItemToKnowledgeItem(item: GenerationKnowledgeSourc
     title: item.title
   };
 }
+
+type MobileEvidenceSection = "knowledge" | "web" | null;
 
 export function MobileSourceEvidencePanel({
   error,
@@ -41,6 +44,8 @@ export function MobileSourceEvidencePanel({
   const hasEvidence = knowledgeItems.length + webResults.length > 0;
   const missingRequiredWebResults = webRequired && !webResults.length;
   const visibleKnowledgeQuery = sourceContext?.knowledge_query || fallbackKnowledgeQuery?.trim() || "";
+  const [openEvidenceSection, setOpenEvidenceSection] = useState<MobileEvidenceSection>(null);
+  const webEvidenceCountLabel = webResults.length ? `${webResults.length} 条` : webRequired ? "未返回" : "未启用";
 
   return (
     <div
@@ -52,7 +57,7 @@ export function MobileSourceEvidencePanel({
         <div>
           <div className="text-xs font-black text-ink">检索依据</div>
           <p className="mt-1 text-[11px] font-medium leading-5 text-muted">
-            生成前后都能看引用来源，确认后再复制发布。
+            点击下方来源类型展开核对，确认后再复制发布。
           </p>
         </div>
         <span
@@ -84,37 +89,87 @@ export function MobileSourceEvidencePanel({
         {previewBusy ? "正在检索" : hasEvidence ? "重新查看依据" : "查看检索依据"}
       </button>
       {error ? <p className="mt-2 text-[11px] font-medium leading-5 text-[#c92a3f]">{error}</p> : null}
-      {knowledgeItems.length ? (
-        <div className="mt-3 space-y-2">
-          <div className="text-[11px] font-black text-muted">知识库引用</div>
-          {knowledgeItems.slice(0, 3).map((item, index) => {
-            const knowledgeItem = mobileSourceKnowledgeItemToKnowledgeItem(item);
-            return (
-              <article className="rounded-[18px] border border-white/[0.86] bg-white/70 px-3 py-2" key={`${item.id}-${index}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <h4 className="line-clamp-2 text-xs font-black leading-5 text-ink">
-                    {knowledgeItemTitle(knowledgeItem)}
-                  </h4>
-                  <span className="shrink-0 rounded-full bg-[#e7f2ea] px-2 py-0.5 text-[10px] font-black text-moss">
-                    {knowledgeCategoryLabel(knowledgeItem.category)}
-                  </span>
-                </div>
-                <p className="mt-1 line-clamp-3 text-[11px] font-medium leading-5 text-muted">
-                  {knowledgeItemExcerpt(knowledgeItem, 120)}
-                </p>
-              </article>
-            );
-          })}
+      <div
+        className="mt-3 rounded-[20px] border border-white/[0.86] bg-white/60 p-1.5"
+        data-testid="mobile-source-evidence-switcher"
+      >
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            aria-controls="mobile-source-knowledge-list"
+            aria-expanded={openEvidenceSection === "knowledge"}
+            className={[
+              "flex min-h-11 touch-manipulation items-center justify-between gap-2 rounded-[16px] px-3 py-2 text-left active:scale-[0.99]",
+              openEvidenceSection === "knowledge" ? "bg-[#e7f2ea] text-ink" : "bg-white/70 text-muted"
+            ].join(" ")}
+            data-testid="mobile-source-knowledge-toggle"
+            onClick={() => setOpenEvidenceSection(openEvidenceSection === "knowledge" ? null : "knowledge")}
+            type="button"
+          >
+            <span>
+              <span className="block text-[11px] font-black">知识库引用</span>
+              <span className="mt-0.5 block text-[10px] font-black text-moss">{knowledgeItems.length} 条</span>
+            </span>
+            <ChevronDown
+              className={[
+                "h-3.5 w-3.5 shrink-0 transition-transform",
+                openEvidenceSection === "knowledge" ? "rotate-180" : ""
+              ].join(" ")}
+            />
+          </button>
+          <button
+            aria-controls="mobile-source-web-list"
+            aria-expanded={openEvidenceSection === "web"}
+            className={[
+              "flex min-h-11 touch-manipulation items-center justify-between gap-2 rounded-[16px] px-3 py-2 text-left active:scale-[0.99]",
+              openEvidenceSection === "web" ? "bg-[#e7f2ea] text-ink" : "bg-white/70 text-muted"
+            ].join(" ")}
+            data-testid="mobile-source-web-toggle"
+            onClick={() => setOpenEvidenceSection(openEvidenceSection === "web" ? null : "web")}
+            type="button"
+          >
+            <span>
+              <span className="block text-[11px] font-black">联网搜索</span>
+              <span className="mt-0.5 block text-[10px] font-black text-moss">{webEvidenceCountLabel}</span>
+            </span>
+            <ChevronDown
+              className={[
+                "h-3.5 w-3.5 shrink-0 transition-transform",
+                openEvidenceSection === "web" ? "rotate-180" : ""
+              ].join(" ")}
+            />
+          </button>
+        </div>
+      </div>
+      {openEvidenceSection === "knowledge" ? (
+        <div className="mt-3 space-y-2" data-testid="mobile-source-knowledge-list" id="mobile-source-knowledge-list">
+          {knowledgeItems.length ? (
+            knowledgeItems.slice(0, 3).map((item, index) => {
+              const knowledgeItem = mobileSourceKnowledgeItemToKnowledgeItem(item);
+              return (
+                <article className="rounded-[18px] border border-white/[0.86] bg-white/70 px-3 py-2" key={`${item.id}-${index}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="line-clamp-2 text-xs font-black leading-5 text-ink">
+                      {knowledgeItemTitle(knowledgeItem)}
+                    </h4>
+                    <span className="shrink-0 rounded-full bg-[#e7f2ea] px-2 py-0.5 text-[10px] font-black text-moss">
+                      {knowledgeCategoryLabel(knowledgeItem.category)}
+                    </span>
+                  </div>
+                  <p className="mt-1 line-clamp-3 text-[11px] font-medium leading-5 text-muted">
+                    {knowledgeItemExcerpt(knowledgeItem, 120)}
+                  </p>
+                </article>
+              );
+            })
+          ) : (
+            <p className="rounded-[18px] border border-white/[0.86] bg-white/70 px-3 py-2 text-[11px] font-medium leading-5 text-muted">
+              暂无知识库引用，请先点击“查看检索依据”。
+            </p>
+          )}
         </div>
       ) : null}
-      {webRequired ? (
-        <div className="mt-3 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <div className="text-[11px] font-black text-muted">联网来源</div>
-            <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black text-muted">
-              {webResults.length ? `${webResults.length} 条` : "未返回"}
-            </span>
-          </div>
+      {openEvidenceSection === "web" ? (
+        <div className="mt-3 space-y-2" data-testid="mobile-source-web-list" id="mobile-source-web-list">
           {webSearch?.query ? (
             <p className="break-words rounded-[16px] bg-white/70 px-3 py-2 text-[11px] font-medium leading-5 text-muted">
               Tavily 查询：{webSearch.query}
@@ -146,7 +201,9 @@ export function MobileSourceEvidencePanel({
             ))
           ) : (
             <p className="rounded-[18px] border border-[#f3dca3] bg-[#fff8e6] px-3 py-2 text-[11px] font-medium leading-5 text-[#8a6110]">
-              这个选题需要实时资料，但本次还没拿到可见联网来源；请换关键词、检查 Tavily，或只写核验框架，不要直接写学校、价格、logo 或排名结论。
+              {webRequired
+                ? "这个选题需要实时资料，但本次还没拿到可见联网搜索结果；请换关键词、检查 Tavily，或只写核验框架，不要直接写学校、价格、logo 或排名结论。"
+                : "当前选题未触发联网搜索；如涉及学校、价格、logo、排名或市场信息，请先重新查看依据。"}
             </p>
           )}
         </div>
