@@ -139,6 +139,12 @@ export function GenerationSourceEvidenceCard({
               Tavily 查询：{webSearch.query}
             </p>
           ) : null}
+          {webSearch?.answer ? (
+            <p className="rounded-md border border-line bg-paper px-3 py-2 text-[11px] leading-5 text-ink">
+              <span className="font-semibold text-moss">Tavily 摘要：</span>
+              {webSearch.answer}
+            </p>
+          ) : null}
           {webResults.length ? (
             webResults.slice(0, 4).map((item, index) => (
               <a

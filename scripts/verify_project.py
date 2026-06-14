@@ -1053,6 +1053,7 @@ def validate_content_production_contract() -> int:
     mobile_source_evidence_contract_snippets = [
         'data-testid="mobile-source-evidence"',
         "Tavily 查询：{webSearch.query}",
+        "Tavily 摘要：",
         "sourceContext?.review_note",
         "{sourceContext.review_note}",
     ]
@@ -1069,6 +1070,8 @@ def validate_content_production_contract() -> int:
                 'key={`${item.id}-${index}`}',
                 "webResults.slice(0, 4).map((item, index)",
                 'key={`${item.url}-${item.title}-${index}`}',
+                "webSearch?.answer",
+                "Tavily 摘要：",
             ],
             "PC source evidence stable keys",
         ),
@@ -1079,6 +1082,8 @@ def validate_content_production_contract() -> int:
                 'key={`${item.id}-${index}`}',
                 "webResults.slice(0, 3).map((item, index)",
                 'key={`${item.url}-${item.title}-${index}`}',
+                "webSearch?.answer",
+                "Tavily 摘要：",
             ],
             "mobile source evidence stable keys",
         ),

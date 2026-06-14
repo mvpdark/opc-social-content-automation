@@ -112,6 +112,12 @@ export function MobileSourceEvidencePanel({
               Tavily 查询：{webSearch.query}
             </p>
           ) : null}
+          {webSearch?.answer ? (
+            <p className="rounded-[16px] border border-white/[0.86] bg-white/80 px-3 py-2 text-[11px] font-medium leading-5 text-ink">
+              <span className="font-black text-moss">Tavily 摘要：</span>
+              {webSearch.answer}
+            </p>
+          ) : null}
           {webResults.length ? (
             webResults.slice(0, 3).map((item, index) => (
               <a
