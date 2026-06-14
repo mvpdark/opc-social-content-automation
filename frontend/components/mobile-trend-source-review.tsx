@@ -186,8 +186,18 @@ export function TrendSourceCard({
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
   const startRef = useRef<{ x: number; y: number; pointerId: number } | null>(null);
+  const movedRef = useRef(false);
   const suppressClickRef = useRef(false);
+  const suppressClickTimerRef = useRef<number | null>(null);
   const swipeThreshold = 86;
+
+  useEffect(() => {
+    return () => {
+      if (suppressClickTimerRef.current) {
+        window.clearTimeout(suppressClickTimerRef.current);
+      }
+    };
+  }, []);
 
   function clampDrag(value: number) {
     return Math.max(-116, Math.min(116, value));
@@ -198,7 +208,22 @@ export function TrendSourceCard({
       return false;
     }
     suppressClickRef.current = false;
+    if (suppressClickTimerRef.current) {
+      window.clearTimeout(suppressClickTimerRef.current);
+      suppressClickTimerRef.current = null;
+    }
     return true;
+  }
+
+  function armSuppressNextClick() {
+    suppressClickRef.current = true;
+    if (suppressClickTimerRef.current) {
+      window.clearTimeout(suppressClickTimerRef.current);
+    }
+    suppressClickTimerRef.current = window.setTimeout(() => {
+      suppressClickRef.current = false;
+      suppressClickTimerRef.current = null;
+    }, 450);
   }
 
   function handlePointerDown(event: PointerEvent<HTMLElement>) {
@@ -208,6 +233,7 @@ export function TrendSourceCard({
     if ((event.target as HTMLElement).closest("[data-swipe-ignore='true']")) {
       return;
     }
+    movedRef.current = false;
     startRef.current = { x: event.clientX, y: event.clientY, pointerId: event.pointerId };
     setDragging(true);
     event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -227,7 +253,7 @@ export function TrendSourceCard({
       return;
     }
     if (Math.abs(deltaX) > 8) {
-      suppressClickRef.current = true;
+      movedRef.current = true;
       setDragX(clampDrag(deltaX));
     }
   }
@@ -246,16 +272,19 @@ export function TrendSourceCard({
     }
     const finalDrag = clampDrag(event.clientX - start.x);
     if (finalDrag >= swipeThreshold) {
-      suppressClickRef.current = true;
+      armSuppressNextClick();
       resetSwipe();
       onConfirmSwipe();
       return;
     }
     if (finalDrag <= -swipeThreshold) {
-      suppressClickRef.current = true;
+      armSuppressNextClick();
       resetSwipe();
       onDeleteSwipe();
       return;
+    }
+    if (movedRef.current) {
+      armSuppressNextClick();
     }
     resetSwipe();
   }
@@ -324,55 +353,55 @@ export function TrendSourceCard({
             }}
             type="button"
           >
-          <div className="flex min-w-0 items-center gap-2">
-            <span
-              className={[
-                "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[11px] font-black text-white",
-                item.platform === "douyin" ? "bg-[#101010]" : "bg-[#ff2442]"
-              ].join(" ")}
-            >
-              {knownPlatform ? <PlatformIcon platform={knownPlatform} size="sm" /> : null}
-              {platformLabel}
-            </span>
-            {reviewed ? (
-              <span className="shrink-0 rounded-full bg-[#e7f2ea] px-2 py-0.5 text-[10px] font-black text-moss">
-                已确认
+            <div className="flex min-w-0 items-center gap-2">
+              <span
+                className={[
+                  "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[11px] font-black text-white",
+                  item.platform === "douyin" ? "bg-[#101010]" : "bg-[#ff2442]"
+                ].join(" ")}
+              >
+                {knownPlatform ? <PlatformIcon platform={knownPlatform} size="sm" /> : null}
+                {platformLabel}
               </span>
-            ) : null}
-          </div>
-          <h3 className="mt-1.5 line-clamp-2 text-[14px] font-black leading-5 text-ink">{item.title}</h3>
-          <div className="mt-1 truncate text-xs font-semibold leading-5 text-muted">
-            {author} · {date}
-          </div>
-          <div className="mt-0.5 truncate text-xs font-black text-ink/[0.70]">{metrics}</div>
-          <span className="sr-only">{mobileTrendExcerpt(item)}</span>
+              {reviewed ? (
+                <span className="shrink-0 rounded-full bg-[#e7f2ea] px-2 py-0.5 text-[10px] font-black text-moss">
+                  已确认
+                </span>
+              ) : null}
+            </div>
+            <h3 className="mt-1.5 line-clamp-2 text-[14px] font-black leading-5 text-ink">{item.title}</h3>
+            <div className="mt-1 truncate text-xs font-semibold leading-5 text-muted">
+              {author} · {date}
+            </div>
+            <div className="mt-0.5 truncate text-xs font-black text-ink/[0.70]">{metrics}</div>
+            <span className="sr-only">{mobileTrendExcerpt(item)}</span>
           </button>
 
           <div className="flex w-12 shrink-0 flex-col items-center gap-1">
-          <button
-            className={[
-              "flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border text-[11px] font-black active:scale-[0.98]",
-              selected
-                ? "border-[#23854f] bg-[#23854f] text-white"
-                : "border-transparent bg-[#ecebe2] text-[#9ca28f]"
-            ].join(" ")}
-            data-swipe-ignore="true"
-            onClick={onToggle}
-            type="button"
-          >
-            <CheckCircle2 className="h-5 w-5" />
-          </button>
-          <span className="text-xs font-black text-muted">{selected ? "已选" : "选择"}</span>
-          <button
-            aria-label="打开来源链接"
-            className="mt-1 flex h-7 w-7 touch-manipulation items-center justify-center rounded-full border border-[#d6e8df] bg-white/[0.72] text-muted active:scale-[0.98] disabled:opacity-40"
-            data-swipe-ignore="true"
-            disabled={!item.url}
-            onClick={onOpenUrl}
-            type="button"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </button>
+            <button
+              className={[
+                "flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border text-[11px] font-black active:scale-[0.98]",
+                selected
+                  ? "border-[#23854f] bg-[#23854f] text-white"
+                  : "border-transparent bg-[#ecebe2] text-[#9ca28f]"
+              ].join(" ")}
+              data-swipe-ignore="true"
+              onClick={onToggle}
+              type="button"
+            >
+              <CheckCircle2 className="h-5 w-5" />
+            </button>
+            <span className="text-xs font-black text-muted">{selected ? "已选" : "选择"}</span>
+            <button
+              aria-label="打开来源链接"
+              className="mt-1 flex h-7 w-7 touch-manipulation items-center justify-center rounded-full border border-[#d6e8df] bg-white/[0.72] text-muted active:scale-[0.98] disabled:opacity-40"
+              data-swipe-ignore="true"
+              disabled={!item.url}
+              onClick={onOpenUrl}
+              type="button"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
       </div>
