@@ -427,6 +427,8 @@ export function TrendSourceReviewSheet({
   const knownPlatform = item.platform === "xiaohongshu" || item.platform === "douyin" ? item.platform : null;
   const tags = item.tags?.filter((tag) => tag.trim()) ?? [];
   const coverUrl = mobileTrendCoverUrl(item);
+  const publishedAt = item.publish_time ? formatMobileTrendDate(item.publish_time) : "未记录";
+  const collectedAt = formatMobileTrendDate(item.created_at);
 
   return (
     <MobileOverlayPortal>
@@ -479,8 +481,9 @@ export function TrendSourceReviewSheet({
                   <span className="block break-words text-sm text-ink">{mobileTrendAuthor(item)}</span>
                 </div>
                 <div className="min-w-0 rounded-[18px] bg-white/[0.72] px-3 py-2">
-                  采集时间<br />
-                  <span className="block text-sm text-ink">{formatMobileTrendDate(item.created_at)}</span>
+                  发布时间<br />
+                  <span className="block text-sm text-ink">{publishedAt}</span>
+                  <span className="mt-0.5 block truncate text-[11px] text-muted">采集 {collectedAt}</span>
                 </div>
               </div>
               <div className="mt-3 grid grid-cols-4 gap-1.5">
