@@ -28,18 +28,67 @@ def raw_visible_items_script() -> str:
     }
     return values.join(' ');
   };
-  const coverUrl = (root) => {
-    const images = Array.from(root.querySelectorAll('img')).map((image) => {
-      const rect = image.getBoundingClientRect();
-      const url = image.currentSrc || image.src || image.getAttribute('data-src') || image.getAttribute('data-original') || '';
-      const marker = `${image.className || ''} ${image.alt || ''}`.toLowerCase();
-      return { url, area: rect.width * rect.height, marker };
-    }).filter((item) => {
-      if (!item.url || item.url.startsWith('data:')) return false;
-      if (item.area < 2500) return false;
-      return !/avatar|user|icon|logo/.test(item.marker);
-    }).sort((left, right) => right.area - left.area);
-    return images[0]?.url || '';
+  const urlFromSrcset = (srcset) => {
+    const candidates = String(srcset || '')
+      .split(',')
+      .map((part) => part.trim().split(/\\s+/)[0])
+      .filter(Boolean);
+    return candidates[candidates.length - 1] || '';
+  };
+  const cssImageUrl = (value) => {
+    const match = String(value || '').match(/url\\((['"]?)(.*?)\\1\\)/);
+    return match ? match[2] : '';
+  };
+  const imageUrl = (image) => (
+    image.currentSrc ||
+    image.src ||
+    image.getAttribute('data-src') ||
+    image.getAttribute('data-original') ||
+    image.getAttribute('data-original-src') ||
+    image.getAttribute('data-lazy') ||
+    image.getAttribute('data-lazy-src') ||
+    image.getAttribute('data-url') ||
+    urlFromSrcset(image.getAttribute('srcset')) ||
+    urlFromSrcset(image.getAttribute('data-srcset')) ||
+    ''
+  );
+  const candidateRoots = (root, linkNode) => {
+    const roots = [];
+    const push = (node) => {
+      if (node && !roots.includes(node)) roots.push(node);
+    };
+    push(root);
+    push(linkNode);
+    push(linkNode?.closest('article, section, [class*="note"], [class*="card"], [class*="feed"], [class*="item"]'));
+    push(root.closest?.('article, section, [class*="note"], [class*="card"], [class*="feed"], [class*="item"]'));
+    push(root.parentElement);
+    return roots;
+  };
+  const coverUrl = (root, linkNode) => {
+    const images = [];
+    for (const candidateRoot of candidateRoots(root, linkNode)) {
+      const rootRect = candidateRoot.getBoundingClientRect();
+      const backgroundUrl = cssImageUrl(getComputedStyle(candidateRoot).backgroundImage);
+      if (backgroundUrl) {
+        images.push({
+          url: backgroundUrl,
+          area: rootRect.width * rootRect.height,
+          marker: String(candidateRoot.className || '').toLowerCase()
+        });
+      }
+      for (const image of Array.from(candidateRoot.querySelectorAll('img, picture source')).slice(0, 12)) {
+        const owner = image.tagName === 'SOURCE' ? image.closest('picture') || image : image;
+        const rect = owner.getBoundingClientRect();
+        const url = image.tagName === 'SOURCE' ? urlFromSrcset(image.getAttribute('srcset')) : imageUrl(image);
+        const marker = `${image.className || ''} ${image.alt || ''}`.toLowerCase();
+        images.push({ url, area: rect.width * rect.height, marker });
+      }
+    }
+    return images.filter((item) => {
+      if (!item.url || item.url.startsWith('data:') || item.url.startsWith('blob:')) return false;
+      if (item.area < 1600) return false;
+      return !/avatar|user|icon|logo|sprite|emoji/.test(item.marker);
+    }).sort((left, right) => right.area - left.area)[0]?.url || '';
   };
   const selectors = [
     'a[href*="/explore/"]',
@@ -102,7 +151,7 @@ def raw_visible_items_script() -> str:
         '[title*="转"]',
         '[title*="分享"]'
       ]),
-      coverUrl: coverUrl(node)
+      coverUrl: coverUrl(node, linkNode)
     });
     if (items.length >= 240) break;
   }
@@ -150,20 +199,57 @@ def detail_visible_item_script() -> str:
     }
     return values.join(' ');
   };
+  const urlFromSrcset = (srcset) => {
+    const candidates = String(srcset || '')
+      .split(',')
+      .map((part) => part.trim().split(/\\s+/)[0])
+      .filter(Boolean);
+    return candidates[candidates.length - 1] || '';
+  };
+  const cssImageUrl = (value) => {
+    const match = String(value || '').match(/url\\((['"]?)(.*?)\\1\\)/);
+    return match ? match[2] : '';
+  };
+  const imageUrl = (image) => (
+    image.currentSrc ||
+    image.src ||
+    image.getAttribute('data-src') ||
+    image.getAttribute('data-original') ||
+    image.getAttribute('data-original-src') ||
+    image.getAttribute('data-lazy') ||
+    image.getAttribute('data-lazy-src') ||
+    image.getAttribute('data-url') ||
+    urlFromSrcset(image.getAttribute('srcset')) ||
+    urlFromSrcset(image.getAttribute('data-srcset')) ||
+    ''
+  );
   const coverUrl = () => {
     const metaImage = meta('meta[property="og:image"]') || meta('meta[name="og:image"]');
     if (metaImage) return metaImage;
-    const images = Array.from(document.querySelectorAll('img')).map((image) => {
-      const rect = image.getBoundingClientRect();
-      const url = image.currentSrc || image.src || image.getAttribute('data-src') || image.getAttribute('data-original') || '';
+    const images = [];
+    for (const element of Array.from(document.querySelectorAll('main, article, section, [class*="note"], [class*="content"], [class*="media"]')).slice(0, 40)) {
+      const rect = element.getBoundingClientRect();
+      const backgroundUrl = cssImageUrl(getComputedStyle(element).backgroundImage);
+      if (backgroundUrl) {
+        images.push({
+          url: backgroundUrl,
+          area: rect.width * rect.height,
+          marker: String(element.className || '').toLowerCase()
+        });
+      }
+    }
+    for (const image of Array.from(document.querySelectorAll('img, picture source')).slice(0, 80)) {
+      const owner = image.tagName === 'SOURCE' ? image.closest('picture') || image : image;
+      const rect = owner.getBoundingClientRect();
+      const url = image.tagName === 'SOURCE' ? urlFromSrcset(image.getAttribute('srcset')) : imageUrl(image);
       const marker = `${image.className || ''} ${image.alt || ''}`.toLowerCase();
-      return { url, area: rect.width * rect.height, marker };
-    }).filter((item) => {
-      if (!item.url || item.url.startsWith('data:')) return false;
-      if (item.area < 2500) return false;
-      return !/avatar|user|icon|logo/.test(item.marker);
-    }).sort((left, right) => right.area - left.area);
-    return images[0]?.url || '';
+      images.push({ url, area: rect.width * rect.height, marker });
+    }
+    return images.filter((item) => {
+      if (!item.url || item.url.startsWith('data:') || item.url.startsWith('blob:')) return false;
+      if (item.area < 1600) return false;
+      return !/avatar|user|icon|logo|sprite|emoji/.test(item.marker);
+    }).sort((left, right) => right.area - left.area)[0]?.url || '';
   };
   return {
     title: meta('meta[property="og:title"]') || firstText(['h1', '[class*="title"]']) || document.title,
