@@ -1,8 +1,12 @@
 import pytest
 from fastapi import HTTPException
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
+from app.db.base import Base
 from app.models.trend_collection_job import TrendCollectionJob
 from app.models.trend_content import TrendContent
+from app.models.user import User
 from app.schemas.trend import TrendCollectionJobCreate
 from app.schemas.trend import TrendLinkImportRequest
 from app.schemas.trend import TrendKnowledgeDigestRequest
@@ -11,6 +15,7 @@ from app.services.trend_service import (
     build_platform_search_target,
     build_safety_profile,
     collection_job_has_pending_auto_start,
+    create_trend_knowledge_digest,
     ensure_trend_sources_reviewed,
     mark_collection_job_for_auto_start,
     render_trend_knowledge_digest,
@@ -219,6 +224,58 @@ def test_render_trend_knowledge_digest_includes_sources() -> None:
     assert "博士申请时间线" in content
     assert "视频转写摘要" in content
     assert "发布前都必须人工复核" in content
+
+
+def test_create_trend_digest_uses_reviewed_ids_over_keyword_filter() -> None:
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as db:
+        user = User(id=1, phone="13800000000", password_hash="hash", role="promoter")
+        ranking_item = TrendContent(
+            id=1,
+            platform="xiaohongshu",
+            title="水博排名榜",
+            content="榜单围绕学校池、认证、预算和在职适配排序。",
+            author="OPC sample",
+            url="https://www.xiaohongshu.com/explore/ranking",
+            tags=["水博", "排名"],
+            likes=50,
+            favorites=30,
+            comments=8,
+            shares=4,
+        )
+        mentor_item = TrendContent(
+            id=2,
+            platform="xiaohongshu",
+            title="导师匹配时间线",
+            content="导师匹配、套磁节奏和研究方向准备。",
+            author="OPC sample",
+            url="https://www.xiaohongshu.com/explore/mentor",
+            tags=["导师"],
+            likes=10,
+            favorites=5,
+            comments=2,
+            shares=1,
+        )
+        db.add_all([user, ranking_item, mentor_item])
+        db.commit()
+
+        digest = create_trend_knowledge_digest(
+            db,
+            TrendKnowledgeDigestRequest(
+                platform="xiaohongshu",
+                keyword="导师匹配",
+                trend_ids=[1],
+                source_reviewed=True,
+            ),
+            user,
+        )
+
+    assert digest.source_trend_ids == [1]
+    assert digest.item_count == 1
+    assert "水博排名榜" in digest.content
+    assert "导师匹配时间线" not in digest.content
 
 
 def test_ensure_trend_sources_reviewed_rejects_unreviewed_sources() -> None:

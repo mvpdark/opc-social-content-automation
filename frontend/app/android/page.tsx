@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode, type TouchEvent } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowLeft,
   Bell,
@@ -35,6 +36,13 @@ import {
 import { PlatformIcon, PlatformLabel } from "@/components/platform-icon";
 import { MobileSourceEvidencePanel } from "@/components/mobile-source-evidence-panel";
 import { ReviewScreen, fetchMobileReviewContents } from "@/components/mobile-review-screen";
+import {
+  TrendSourceCard,
+  TrendSourceReviewSheet,
+  mobilePlatformText,
+  sanitizeMobileTrendItems,
+  type MobileTrendContent
+} from "@/components/mobile-trend-source-review";
 import { getApiBase, isLocalOrPrivateHostname } from "@/lib/api-base";
 import { resolveAssetUrl } from "@/lib/asset-url";
 import { copyText, tryCopyText } from "@/lib/clipboard";
@@ -1355,7 +1363,12 @@ function CollectScreen({
   const [activeCollectionJobId, setActiveCollectionJobId] = useState<number | null>(null);
   const [scheduleMessage, setScheduleMessage] = useState("定时采集未启用。");
   const [diagnosticItems, setDiagnosticItems] = useState<CollectionJobDiagnosticItem[]>([]);
-  const [sourceReviewed, setSourceReviewed] = useState(false);
+  const [trendItems, setTrendItems] = useState<MobileTrendContent[]>([]);
+  const [selectedTrendIds, setSelectedTrendIds] = useState<number[]>([]);
+  const [reviewedTrendIds, setReviewedTrendIds] = useState<number[]>([]);
+  const [selectedTrendItem, setSelectedTrendItem] = useState<MobileTrendContent | null>(null);
+  const [trendListLoading, setTrendListLoading] = useState(false);
+  const [trendListStatus, setTrendListStatus] = useState("正在读取采集素材...");
   const [linkText, setLinkText] = useState("");
   const [linkResult, setLinkResult] = useState<LinkImportTarget | null>(null);
   const [selectedReference, setSelectedReference] = useState(sampleReferences[0].title);
@@ -1364,6 +1377,11 @@ function CollectScreen({
   const scheduleRunningRef = useRef(false);
   const collectedMetricValue =
     diagnosticItems.find((item) => item.label === "已采集")?.value ?? "0";
+  const selectedTrendIdSet = new Set(selectedTrendIds);
+  const reviewedTrendIdSet = new Set(reviewedTrendIds);
+  const reviewedSelectedCount = selectedTrendIds.filter((id) => reviewedTrendIdSet.has(id)).length;
+  const sourceReviewed =
+    selectedTrendIds.length > 0 && reviewedSelectedCount === selectedTrendIds.length;
 
   useEffect(() => {
     try {
@@ -1514,6 +1532,9 @@ function CollectScreen({
         if (!isActiveCollectionJob(job)) {
           setActiveCollectionJobId(null);
           onAction(message);
+          if (job.status === "completed") {
+            void loadTrendItems(true);
+          }
           return;
         }
         timer = window.setTimeout(pollCollectionJob, 3000);
@@ -1536,6 +1557,21 @@ function CollectScreen({
       }
     };
   }, [activeCollectionJobId, credentials.workspaceToken, onAction]);
+
+  useEffect(() => {
+    void loadTrendItems(false);
+  }, [credentials.workspaceToken, maxItems, platform]);
+
+  useEffect(() => {
+    const validIds = new Set(trendItems.map((item) => item.id));
+    setSelectedTrendIds((currentIds) => currentIds.filter((id) => validIds.has(id)));
+    setReviewedTrendIds((currentIds) => currentIds.filter((id) => validIds.has(id)));
+  }, [trendItems]);
+
+  useEffect(() => {
+    setSelectedTrendIds([]);
+    setReviewedTrendIds([]);
+  }, [platform, query]);
 
   function formatScheduleTime(value: string | null) {
     if (!value) {
@@ -1575,6 +1611,42 @@ function CollectScreen({
       throw new Error(await readApiError(response, "采集状态刷新失败。"));
     }
     return (await response.json()) as MobileCollectionJob;
+  }
+
+  async function loadTrendItems(announce = false) {
+    const limit = Math.min(100, Math.max(20, maxItems));
+    const params = new URLSearchParams({
+      limit: String(limit),
+      platform
+    });
+    setTrendListLoading(true);
+    setTrendListStatus("正在读取采集素材...");
+    try {
+      const response = await fetch(`${API_BASE}/trends/list?${params.toString()}`, {
+        headers: authHeaders(credentials)
+      });
+      if (!response.ok) {
+        throw new Error(await readApiError(response, "采集素材读取失败。"));
+      }
+      const items = sanitizeMobileTrendItems(await response.json());
+      const nextStatus = items.length
+        ? `已显示最近 ${items.length} 条${mobilePlatformText(platform)}采集素材。`
+        : "还没有可确认的采集素材，先运行采集或导入链接。";
+      setTrendItems(items);
+      setTrendListStatus(nextStatus);
+      if (announce) {
+        onAction(nextStatus);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "采集素材读取失败。";
+      setTrendItems([]);
+      setTrendListStatus(message);
+      if (announce) {
+        onAction(message);
+      }
+    } finally {
+      setTrendListLoading(false);
+    }
   }
 
   function saveSchedule() {
@@ -1702,14 +1774,69 @@ function CollectScreen({
     }
   }
 
+  function toggleTrendSelection(itemId: number) {
+    setSelectedTrendIds((currentIds) =>
+      currentIds.includes(itemId)
+        ? currentIds.filter((id) => id !== itemId)
+        : [...currentIds, itemId]
+    );
+  }
+
+  function selectVisibleTrendItems() {
+    if (!trendItems.length) {
+      onAction("当前没有可选素材，请先运行采集。");
+      return;
+    }
+    setSelectedTrendIds(trendItems.map((item) => item.id));
+    onAction(`已选中 ${trendItems.length} 条采集素材，请继续人工确认。`);
+  }
+
+  function clearTrendSelection() {
+    setSelectedTrendIds([]);
+    onAction("已清空已选采集素材。");
+  }
+
+  function confirmSelectedTrendSources() {
+    if (!selectedTrendIds.length) {
+      onAction("先选择至少一条采集素材，再确认来源。");
+      return;
+    }
+    setReviewedTrendIds((currentIds) => Array.from(new Set([...currentIds, ...selectedTrendIds])));
+    onAction(`已人工确认 ${selectedTrendIds.length} 条采集来源。`);
+  }
+
+  function confirmSingleTrendSource(item: MobileTrendContent) {
+    setSelectedTrendIds((currentIds) =>
+      currentIds.includes(item.id) ? currentIds : [...currentIds, item.id]
+    );
+    setReviewedTrendIds((currentIds) =>
+      currentIds.includes(item.id) ? currentIds : [...currentIds, item.id]
+    );
+    setSelectedTrendItem(null);
+    onAction(`已确认来源：${item.title}`);
+  }
+
+  function openTrendSourceUrl(item: MobileTrendContent) {
+    if (!item.url) {
+      onAction("这条素材没有来源链接。");
+      return;
+    }
+    window.open(item.url, "_blank", "noopener,noreferrer");
+    onAction("已打开采集来源链接。");
+  }
+
   async function saveKnowledgeDigest() {
     const keyword = query.trim();
     if (!keyword) {
       onAction("先填关键词，再保存知识摘要。");
       return;
     }
+    if (!selectedTrendIds.length) {
+      onAction("先在“采集结果确认”里选择至少一条素材。");
+      return;
+    }
     if (!sourceReviewed) {
-      onAction("先勾选“来源已人工确认”，再保存知识摘要。");
+      onAction("先确认已选采集来源，再保存知识摘要。");
       return;
     }
 
@@ -1722,7 +1849,8 @@ function CollectScreen({
         body: JSON.stringify({
           platform,
           keyword,
-          limit: maxItems,
+          trend_ids: selectedTrendIds,
+          limit: Math.min(100, selectedTrendIds.length),
           category: "trend-insight",
           source_reviewed: true
         })
@@ -1926,31 +2054,97 @@ function CollectScreen({
           <ExternalLink className="h-4 w-4" />
           手动打开搜索页
         </button>
-        <label className="mt-3 flex items-start gap-3 rounded-[24px] border border-white/[0.84] bg-[rgba(255,253,247,0.86)] px-4 py-3 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.84)]">
-          <input
-            checked={sourceReviewed}
-            className="mt-1 h-4 w-4"
-            data-testid="mobile-source-reviewed"
-            onChange={(event) => setSourceReviewed(event.target.checked)}
-            type="checkbox"
-          />
-          <span>
-            <span className="block font-semibold">来源已人工确认</span>
-            <span className="mt-1 block text-xs leading-5 text-muted">
-              保存知识摘要前需要确认来源真实公开、可引用。
+      </MobilePanel>
+
+      <MobilePanel
+        action={`${reviewedSelectedCount}/${selectedTrendIds.length || trendItems.length}`}
+        title="采集结果确认"
+      >
+        <div className="rounded-[22px] border border-white/[0.84] bg-[rgba(255,253,247,0.86)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.84)]">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-black text-ink">先看来源，再入知识库</p>
+              <p className="mt-1 text-xs font-semibold leading-5 text-muted" data-testid="mobile-trend-list-status">
+                {trendListStatus}
+              </p>
+            </div>
+            <span
+              className={[
+                "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-black",
+                sourceReviewed ? "bg-[#e7f2ea] text-moss" : "bg-[#fff6e3] text-[#8a5d16]"
+              ].join(" ")}
+              data-testid="mobile-source-reviewed"
+            >
+              {sourceReviewed ? "已确认" : "待确认"}
             </span>
-          </span>
-        </label>
-        <button
-          className="mt-3 flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-full border border-white/[0.84] bg-[rgba(255,253,247,0.88)] text-sm font-semibold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.86)] active:scale-[0.99] disabled:opacity-60"
-          data-testid="mobile-save-digest"
-          disabled={busyAction === "digest"}
-          onClick={saveKnowledgeDigest}
-          type="button"
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              className="flex h-10 touch-manipulation items-center justify-center gap-2 rounded-full border border-white/[0.84] bg-white/[0.78] text-xs font-black text-ink active:scale-[0.99] disabled:opacity-60"
+              disabled={trendListLoading}
+              onClick={() => void loadTrendItems(true)}
+              type="button"
+            >
+              {trendListLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+              刷新素材
+            </button>
+            <button
+              className="flex h-10 touch-manipulation items-center justify-center rounded-full border border-white/[0.84] bg-white/[0.78] text-xs font-black text-ink active:scale-[0.99]"
+              onClick={selectedTrendIds.length === trendItems.length && trendItems.length > 0 ? clearTrendSelection : selectVisibleTrendItems}
+              type="button"
+            >
+              {selectedTrendIds.length === trendItems.length && trendItems.length > 0 ? "清空选择" : "全选可见"}
+            </button>
+          </div>
+        </div>
+
+        <div
+          className="mt-3 max-h-[430px] space-y-2 overflow-y-auto pr-1"
+          data-testid="mobile-trend-source-list"
         >
-          {busyAction === "digest" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          {busyAction === "digest" ? "保存中" : "保存知识摘要"}
-        </button>
+          {trendItems.length ? (
+            trendItems.map((item) => (
+              <TrendSourceCard
+                item={item}
+                key={`mobile-trend-source-${item.id}`}
+                onOpen={() => {
+                  setSelectedTrendItem(item);
+                  onAction("已打开采集素材详情。");
+                }}
+                onOpenUrl={() => openTrendSourceUrl(item)}
+                onToggle={() => toggleTrendSelection(item.id)}
+                reviewed={reviewedTrendIdSet.has(item.id)}
+                selected={selectedTrendIdSet.has(item.id)}
+              />
+            ))
+          ) : (
+            <div className="rounded-[22px] border border-dashed border-[#d6e8df] bg-white/[0.54] px-4 py-5 text-center text-xs font-semibold leading-5 text-muted">
+              {trendListLoading ? "正在读取采集素材..." : "暂无可确认素材，点击立即运行或刷新素材。"}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button
+            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full border border-[#d6e8df] bg-white/[0.82] text-sm font-black text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.86)] active:scale-[0.99] disabled:opacity-60"
+            disabled={!selectedTrendIds.length}
+            onClick={confirmSelectedTrendSources}
+            type="button"
+          >
+            <ShieldCheck className="h-4 w-4" />
+            确认所选
+          </button>
+          <button
+            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full bg-[#23854f] text-sm font-black text-white shadow-[0_12px_26px_rgba(35,133,79,0.18)] active:scale-[0.99] disabled:opacity-60"
+            data-testid="mobile-save-digest"
+            disabled={busyAction === "digest" || !sourceReviewed}
+            onClick={saveKnowledgeDigest}
+            type="button"
+          >
+            {busyAction === "digest" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {busyAction === "digest" ? "保存中" : "保存摘要"}
+          </button>
+        </div>
       </MobilePanel>
 
       <MobilePanel title="手动采集">
@@ -2040,6 +2234,19 @@ function CollectScreen({
             setReferencePreview(null);
             onAction("已关闭参考预览。");
           }}
+        />
+      ) : null}
+      {selectedTrendItem ? (
+        <TrendSourceReviewSheet
+          item={selectedTrendItem}
+          onClose={() => {
+            setSelectedTrendItem(null);
+            onAction("已关闭采集素材详情。");
+          }}
+          onConfirm={() => confirmSingleTrendSource(selectedTrendItem)}
+          onOpenUrl={() => openTrendSourceUrl(selectedTrendItem)}
+          reviewed={reviewedTrendIdSet.has(selectedTrendItem.id)}
+          selected={selectedTrendIdSet.has(selectedTrendItem.id)}
         />
       ) : null}
     </div>
@@ -3690,6 +3897,20 @@ function MobilePanel({ action, children, title }: { action?: ReactNode; children
   );
 }
 
+function MobileOverlayPortal({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(children, document.body);
+}
+
 function Metric({
   label,
   onClick,
@@ -3817,13 +4038,14 @@ function ReferencePreviewSheet({
   reference: (typeof sampleReferences)[number];
 }) {
   return (
-    <div
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex justify-center bg-white"
-      data-testid="reference-preview"
-      role="dialog"
-    >
-      <div className="flex h-[100dvh] w-full max-w-[430px] flex-col bg-[#f6fbf6] text-ink">
+    <MobileOverlayPortal>
+      <div
+        aria-modal="true"
+        className="fixed inset-0 z-[80] flex justify-center bg-white"
+        data-testid="reference-preview"
+        role="dialog"
+      >
+        <div className="flex h-[100dvh] w-full max-w-[430px] flex-col bg-[#f6fbf6] text-ink">
         <header className="shrink-0 border-b border-[#d6e8df] bg-white px-4 pb-3 pt-3">
           <div className="flex items-center justify-between gap-3">
             <button
@@ -3904,8 +4126,9 @@ function ReferencePreviewSheet({
             </div>
           </article>
         </section>
+        </div>
       </div>
-    </div>
+    </MobileOverlayPortal>
   );
 }
 

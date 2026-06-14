@@ -329,17 +329,17 @@ def create_trend_asset(
 
 
 def _trend_filter_statement(payload: TrendKnowledgeDigestRequest):
-    statement = select(TrendContent).order_by(desc(TrendContent.created_at)).limit(payload.limit)
+    statement = select(TrendContent).order_by(desc(TrendContent.created_at))
     if payload.trend_ids:
         statement = statement.where(TrendContent.id.in_(payload.trend_ids))
-    if payload.platform:
-        statement = statement.where(TrendContent.platform == payload.platform)
-    if payload.keyword:
+    elif payload.keyword:
         pattern = f"%{payload.keyword}%"
         statement = statement.where(
             TrendContent.title.ilike(pattern) | TrendContent.content.ilike(pattern)
         )
-    return statement
+    if payload.platform:
+        statement = statement.where(TrendContent.platform == payload.platform)
+    return statement.limit(payload.limit)
 
 
 def render_trend_knowledge_digest(
