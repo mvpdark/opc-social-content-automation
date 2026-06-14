@@ -68,9 +68,10 @@ For Xiaohongshu:
   matching or research-plan advice.
 - When a topic matches multiple categories, follow the strongest task word:
   ranking/list terms stay ranking/list; timing terms such as `什么时候` and
-  `时间线` stay timeline even if the topic also says `导师`; `咨询`, `私域`,
-  `含金量`, and `怎么回答` stay conversion or value-objection posts even if the
-  tags mention screening or projects.
+  `时间线` stay timeline even if the topic also says `导师`; `咨询`, `私域`, and
+  `怎么回答` stay conversion or value-objection posts even if the tags mention
+  screening or projects. `含金量` stays conversion unless the topic itself also
+  asks for `排名`, `排行`, `榜`, or `榜单`.
 - If the topic contains `路线`, `怎么选`, `选择`, or `路径`, write a route or
   decision post: compare route buckets, fit criteria, decision order, and who
   should avoid each route. Do not drift into a generic timeline-only draft.

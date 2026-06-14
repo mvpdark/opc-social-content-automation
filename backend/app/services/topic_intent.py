@@ -251,6 +251,15 @@ TOPIC_INTENT_RULES = (
 )
 
 STRONG_TOPIC_TERMS_BY_RULE = {
+    "list_filter": (
+        "排名",
+        "排行",
+        "排行榜",
+        "榜",
+        "榜单",
+        "避坑榜",
+        "清单怎么看",
+    ),
     "timeline": (
         "时间线",
         "时间节点",
