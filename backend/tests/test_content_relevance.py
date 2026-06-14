@@ -299,3 +299,27 @@ def test_generation_topic_presets_align_with_backend_intents() -> None:
 
         assert rule is not None, preset["key"]
         assert rule.label in compatible_labels[preset["desktopLabel"]], preset["key"]
+
+
+def test_generation_topic_presets_keep_broad_recommendation_pool() -> None:
+    presets = load_generation_topic_presets()
+    labels = [preset["desktopLabel"] for preset in presets]
+    expected_minimums = {
+        "榜单型": 4,
+        "路线型": 4,
+        "导师型": 4,
+        "时间型": 4,
+        "转化型": 4,
+        "来源型": 1,
+    }
+
+    assert len(presets) >= 20
+    for label, minimum in expected_minimums.items():
+        assert labels.count(label) >= minimum, label
+
+    for preset in presets:
+        assert preset["topic"].strip(), preset["key"]
+        assert preset["tags"].strip(), preset["key"]
+        assert len(split_topic_tags(preset["tags"])) >= 3, preset["key"]
+        assert preset["knowledgeQuery"].strip(), preset["key"]
+        assert preset["coverDirection"].strip(), preset["key"]
