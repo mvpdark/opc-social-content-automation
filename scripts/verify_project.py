@@ -194,6 +194,11 @@ def validate_safety_gates() -> int:
             "load_platform_style_reference",
             "确认服务尚未配置。",
         ],
+        "backend/app/services/web_search_service.py": [
+            '"校徽"',
+            '"价格"',
+            '"include_answer": True',
+        ],
         "prompts/image_generation.md": [
             "primary cover headline must copy the content title verbatim",
             "High-attraction Xiaohongshu cover formula",

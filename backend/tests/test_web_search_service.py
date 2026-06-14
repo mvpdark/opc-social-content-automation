@@ -23,6 +23,8 @@ def test_topic_needs_live_web_search_for_ranking_topic() -> None:
     assert topic_needs_live_web_search("海外博士哪些项目适合在职", ["海外博士"]) is True
     assert topic_needs_live_web_search("水博哪个学校好", ["水博"]) is True
     assert topic_needs_live_web_search("海外博士哪个项目适合在职", ["海外博士"]) is True
+    assert topic_needs_live_web_search("水博项目校徽怎么找", ["水博"]) is True
+    assert topic_needs_live_web_search("海外博士价格怎么对比", ["海外博士"]) is True
 
 
 def test_build_tavily_query_expands_water_phd_topic() -> None:
@@ -64,6 +66,7 @@ def test_tavily_search_posts_to_api_and_parses_results(monkeypatch: pytest.Monke
             200,
             request=httpx.Request("POST", url),
             json={
+                "answer": "Official sources should be checked before using a ranking summary.",
                 "results": [
                     {
                         "title": "World university water resources program",
@@ -85,12 +88,13 @@ def test_tavily_search_posts_to_api_and_parses_results(monkeypatch: pytest.Monke
 
     assert context is not None
     assert context.provider == "tavily"
+    assert context.answer == "Official sources should be checked before using a ranking summary."
     assert context.results[0].title == "World university water resources program"
     assert context.results[0].url == "https://example.edu/water-phd"
     assert requests[0]["url"] == "https://api.tavily.test/search"
     payload = requests[0]["json"]
     assert isinstance(payload, dict)
-    assert payload["include_answer"] is False
+    assert payload["include_answer"] is True
     assert payload["include_raw_content"] is False
     assert payload["max_results"] == 3
 
