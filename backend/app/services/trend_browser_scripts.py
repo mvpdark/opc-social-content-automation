@@ -226,10 +226,17 @@ def detail_visible_item_script() -> str:
     return firstValue(
       value.urlDefault,
       value.urlPre,
+      value.url_default,
+      value.url_pre,
       value.url,
       value.src,
       value.original,
-      value.masterUrl
+      value.masterUrl,
+      value.master_url,
+      value.urlSizeLarge,
+      value.url_size_large,
+      value.urlSizeMedium,
+      value.url_size_medium
     );
   };
   const noteFromStateObject = (value) => {
@@ -238,20 +245,46 @@ def detail_visible_item_script() -> str:
     const interact = value.interactInfo || value.interact || value.interaction || {};
     const title = firstValue(value.title, value.displayTitle, value.noteTitle);
     const content = usefulContent(
-      firstValue(value.desc, value.content, value.noteContent, value.description, value.summary),
+      firstValue(value.desc, value.noteDesc, value.content, value.noteContent, value.description, value.summary),
       title
     );
     const coverUrl = imageFromState(
-      value.imageList || value.images || value.cover || value.coverUrl || value.mediaList
+      value.imageList || value.images || value.image_list || value.cover || value.coverUrl || value.mediaList
     );
-    const author = firstValue(user.nickname, user.name, user.userName, value.nickname, value.authorName);
-    const likesText = countText('赞', firstValue(interact.likedCount, interact.likeCount, value.likedCount, value.likes));
+    const author = firstValue(
+      user.nickname,
+      user.nickName,
+      user.name,
+      user.userName,
+      user.user_name,
+      value.nickname,
+      value.nickName,
+      value.authorName
+    );
+    const likesText = countText(
+      '赞',
+      firstValue(interact.likedCount, interact.likeCount, interact.liked_count, interact.like_count, value.likedCount, value.likeCount, value.likes)
+    );
     const favoritesText = countText(
       '收藏',
-      firstValue(interact.collectedCount, interact.collectCount, value.collectedCount, value.favorites)
+      firstValue(
+        interact.collectedCount,
+        interact.collectCount,
+        interact.collected_count,
+        interact.collect_count,
+        value.collectedCount,
+        value.collectCount,
+        value.favorites
+      )
     );
-    const commentsText = countText('评论', firstValue(interact.commentCount, value.commentCount, value.comments));
-    const sharesText = countText('分享', firstValue(interact.shareCount, value.shareCount, value.shares));
+    const commentsText = countText(
+      '评论',
+      firstValue(interact.commentCount, interact.comment_count, value.commentCount, value.comments)
+    );
+    const sharesText = countText(
+      '分享',
+      firstValue(interact.shareCount, interact.share_count, value.shareCount, value.shares)
+    );
     if (!title && !content && !coverUrl && !author) return null;
     return { title, content, author, likesText, favoritesText, commentsText, sharesText, coverUrl };
   };
@@ -269,6 +302,29 @@ def detail_visible_item_script() -> str:
       if (/html|style|svg/i.test(key)) continue;
       collectStateNotes(value[key], notes, depth + 1, seen);
     }
+  };
+  const bestStateNote = (notes) => notes
+    .filter((note) => note.content || note.title || note.coverUrl)
+    .sort((left, right) => {
+      const leftScore = (left.content?.length || 0) * 3 + (left.coverUrl ? 80 : 0) + (left.likesText ? 30 : 0);
+      const rightScore = (right.content?.length || 0) * 3 + (right.coverUrl ? 80 : 0) + (right.likesText ? 30 : 0);
+      return rightScore - leftScore;
+    })[0] || null;
+  const runtimeStateNotes = () => {
+    const notes = [];
+    const knownStateNames = ['__INITIAL_STATE__', '__INITIAL_SSR_STATE__', '__NEXT_DATA__', '__NUXT__'];
+    for (const name of knownStateNames) {
+      try {
+        collectStateNotes(window[name], notes);
+      } catch (_error) {}
+    }
+    for (const key of Object.keys(window).slice(0, 300)) {
+      if (!/(INITIAL|STATE|STORE|NOTE|NUXT|NEXT|XHS|REDUX)/i.test(key)) continue;
+      try {
+        collectStateNotes(window[key], notes);
+      } catch (_error) {}
+    }
+    return bestStateNote(notes);
   };
   const parsedStateNotes = () => {
     const notes = [];
@@ -297,13 +353,7 @@ def detail_visible_item_script() -> str:
         } catch (_error) {}
       }
     }
-    return notes
-      .filter((note) => note.content || note.title || note.coverUrl)
-      .sort((left, right) => {
-        const leftScore = (left.content?.length || 0) * 3 + (left.coverUrl ? 80 : 0) + (left.likesText ? 30 : 0);
-        const rightScore = (right.content?.length || 0) * 3 + (right.coverUrl ? 80 : 0) + (right.likesText ? 30 : 0);
-        return rightScore - leftScore;
-      })[0] || null;
+    return bestStateNote(notes);
   };
   const urlFromSrcset = (srcset) => {
     const candidates = String(srcset || '')
@@ -357,7 +407,7 @@ def detail_visible_item_script() -> str:
       return !/avatar|user|icon|logo|sprite|emoji/.test(item.marker);
     }).sort((left, right) => right.area - left.area)[0]?.url || '';
   };
-  const stateNote = parsedStateNotes();
+  const stateNote = runtimeStateNotes() || parsedStateNotes();
   const visibleTitle = meta('meta[property="og:title"]') || firstText(['h1', '[class*="title"]']) || document.title;
   const visibleContent = longestText([
       '[class*="desc"]',

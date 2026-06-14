@@ -780,6 +780,9 @@ def validate_content_production_contract() -> int:
     image_service_text = (
         ROOT / "backend" / "app" / "services" / "image_service.py"
     ).read_text(encoding="utf-8")
+    trend_browser_scripts_text = (
+        ROOT / "backend" / "app" / "services" / "trend_browser_scripts.py"
+    ).read_text(encoding="utf-8")
     model_router_text = (
         ROOT / "backend" / "app" / "services" / "model_router.py"
     ).read_text(encoding="utf-8")
@@ -1076,6 +1079,25 @@ def validate_content_production_contract() -> int:
         total += 1
         if snippet not in mobile_trend_source_review_text:
             raise SystemExit(f"Missing mobile trend source body visibility contract: {snippet}")
+
+    trend_detail_runtime_state_contract_snippets = [
+        "const runtimeStateNotes = () => {",
+        "__INITIAL_STATE__",
+        "__INITIAL_SSR_STATE__",
+        "__NEXT_DATA__",
+        "__NUXT__",
+        "value.noteDesc",
+        "value.image_list",
+        "interact.liked_count",
+        "interact.collected_count",
+        "interact.comment_count",
+        "interact.share_count",
+        "runtimeStateNotes() || parsedStateNotes()",
+    ]
+    for snippet in trend_detail_runtime_state_contract_snippets:
+        total += 1
+        if snippet not in trend_browser_scripts_text:
+            raise SystemExit(f"Missing trend detail runtime-state contract: {snippet}")
 
     mobile_source_evidence_query_contracts = [
         (

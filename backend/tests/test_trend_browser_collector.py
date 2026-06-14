@@ -15,6 +15,7 @@ from app.services.trend_browser_collector import (
     extract_candidate_assets,
     normalize_visible_text,
 )
+from app.services.trend_browser_scripts import detail_visible_item_script
 
 
 def test_normalize_visible_text_collapses_whitespace() -> None:
@@ -395,3 +396,49 @@ def test_merge_detail_asset_keeps_card_data_when_detail_is_blocked() -> None:
     )
 
     assert merged == asset
+
+
+def test_merge_detail_asset_uses_detail_body_author_metrics_and_cover() -> None:
+    asset = CollectedTrendAsset(
+        platform="xiaohongshu",
+        title="学位顶端的博士，含金量还在吗",
+        content="学位顶端的博士，含金量还在吗 QM启明 06-05 2",
+        url="https://www.xiaohongshu.com/explore/6a212f18000000000123",
+        tags=["博士含金量"],
+    )
+
+    merged = _merge_detail_asset(
+        asset,
+        {
+            "title": "学位顶端的博士，含金量还在吗 - 小红书",
+            "content": "正文第一段讲学位含金量的判断维度，第二段提醒先核对项目认证、预算和毕业要求。#博士含金量",
+            "author": "QM启明",
+            "likesText": "赞 2",
+            "favoritesText": "收藏 7",
+            "commentsText": "评论 3",
+            "sharesText": "分享 1",
+            "coverUrl": "https://sns-img-qc.xhscdn.com/detail-cover.jpg",
+        },
+        keyword="博士含金量",
+    )
+
+    assert merged.title == "学位顶端的博士，含金量还在吗"
+    assert merged.content.startswith("正文第一段讲学位含金量")
+    assert merged.author == "QM启明"
+    assert merged.likes == 2
+    assert merged.favorites == 7
+    assert merged.comments == 3
+    assert merged.shares == 1
+    assert merged.cover_url == "https://sns-img-qc.xhscdn.com/detail-cover.jpg"
+    assert "博士含金量" in merged.tags
+
+
+def test_detail_visible_item_script_reads_runtime_state_aliases() -> None:
+    script = detail_visible_item_script()
+
+    assert "runtimeStateNotes()" in script
+    assert "__INITIAL_STATE__" in script
+    assert "value.noteDesc" in script
+    assert "interact.liked_count" in script
+    assert "interact.collected_count" in script
+    assert "value.url_default" in script
