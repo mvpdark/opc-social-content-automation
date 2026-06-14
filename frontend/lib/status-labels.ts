@@ -11,7 +11,7 @@ export function collectionJobStatusLabel(status: string) {
     case "running":
       return "采集中";
     default:
-      return "等待确认";
+      return "待确认";
   }
 }
 

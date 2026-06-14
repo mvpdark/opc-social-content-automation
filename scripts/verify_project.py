@@ -1000,7 +1000,7 @@ def validate_content_production_contract() -> int:
         "export function generatedContentStatusLabel",
         "export function generatedImageStatusLabel",
         'case "needs_operator_review"',
-        "return \"等待确认\"",
+        "return \"待确认\"",
     ]
     for snippet in status_label_contract_snippets:
         total += 1
@@ -1871,6 +1871,7 @@ def validate_content_production_contract() -> int:
         "OPC 演示封面",
         "当前是演示草稿",
         "演示草稿不可",
+        "等待确认",
         "当前运营 lane",
         "压力测试",
         "Search target could not be prepared",
@@ -1896,6 +1897,7 @@ def validate_content_production_contract() -> int:
             or snippet in workspace_service_text
             or snippet in dashboard_data_text
             or snippet in app_shell_text
+            or snippet in status_labels_text
             or snippet in service_error_text
             or snippet in api_deps_text
         ):
