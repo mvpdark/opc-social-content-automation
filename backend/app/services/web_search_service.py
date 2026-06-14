@@ -35,6 +35,11 @@ LIVE_SEARCH_LIST_TERMS = (
     "有哪些",
     "哪几所",
     "哪几个",
+    "哪个学校",
+    "哪所学校",
+    "哪个院校",
+    "哪所院校",
+    "哪个项目",
 )
 
 LIVE_SEARCH_SCOPE_TERMS = (

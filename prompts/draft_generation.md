@@ -26,8 +26,9 @@ For Xiaohongshu:
   structure and must not pivot into generic application advice such as research
   direction, supervisor matching, or timeline planning unless those are
   secondary comparison criteria.
-- If the topic asks `哪些学校`, `有哪些学校`, `哪几所学校`, `哪些项目`, or
-  `有哪些项目`, treat it as a school/project list task: use only verified
+- If the topic asks `哪些学校`, `有哪些学校`, `哪几所学校`, `哪个学校`,
+  `哪所学校`, `哪些项目`, `有哪些项目`, or `哪个项目`, treat it as a
+  school/project list task: use only verified
   knowledge or `web_search_context` for names, and if sources are missing,
   provide verification dimensions instead of inventing school or project names.
 - Keep the body practical and specific.

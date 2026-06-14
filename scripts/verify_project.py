@@ -1242,7 +1242,7 @@ def validate_content_production_contract() -> int:
         ),
         (
             draft_prompt_text,
-            ["哪些学校", "有哪些项目", "provide verification dimensions instead of inventing"],
+            ["哪些学校", "哪个学校", "有哪些项目", "哪个项目", "provide verification dimensions instead of inventing"],
             "draft prompt school/project list source guard",
         ),
         (

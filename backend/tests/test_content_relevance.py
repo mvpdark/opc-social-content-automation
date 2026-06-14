@@ -56,10 +56,11 @@ def test_water_ranking_topic_detects_ranking_terms_from_tags() -> None:
     assert "水博榜单/排名" in issue
 
 
-def test_water_school_list_topic_rejects_mentor_drift() -> None:
+@pytest.mark.parametrize("topic", ["水博有哪些学校", "水博哪个学校好"])
+def test_water_school_list_topic_rejects_mentor_drift(topic: str) -> None:
     payload = ContentGenerateRequest(
         platform="xiaohongshu",
-        topic="水博有哪些学校",
+        topic=topic,
         tags=["水博", "博士项目"],
     )
 
