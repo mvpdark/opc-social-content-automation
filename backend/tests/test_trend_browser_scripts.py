@@ -14,3 +14,14 @@ def test_browser_cover_scripts_keep_lazy_srcset_and_background_fallbacks() -> No
         assert "backgroundImage" in script
         assert "blob:" in script
         assert "emoji" in script
+
+
+def test_detail_script_extracts_xhs_state_body_and_metrics() -> None:
+    script = detail_visible_item_script()
+
+    assert "__INITIAL_STATE__" in script
+    assert "noteDetailMap" in script
+    assert "interactInfo" in script
+    assert "value.desc" in script
+    assert "likedCount" in script
+    assert "collectedCount" in script

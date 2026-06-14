@@ -10,7 +10,11 @@ from app.models.user import User
 from app.schemas.trend import TrendCollectionJobCreate
 from app.schemas.trend import TrendLinkImportRequest
 from app.schemas.trend import TrendKnowledgeDigestRequest
-from app.services.trend_browser_collector import extract_candidate_assets
+from app.services.trend_browser_collector import (
+    CollectedTrendAsset,
+    _merge_detail_asset,
+    extract_candidate_assets,
+)
 from app.services.trend_service import (
     build_xhs_link_import_target,
     build_platform_search_target,
@@ -79,6 +83,79 @@ def test_extract_candidate_assets_infers_compact_xhs_author_and_likes() -> None:
     assert len(assets) == 1
     assert assets[0].author == "QM启明-海外博士"
     assert assets[0].likes == 2
+
+
+def test_extract_candidate_assets_infers_author_when_like_label_has_no_number() -> None:
+    assets = extract_candidate_assets(
+        [
+            {
+                "text": "中南大学26年博士缺额，紧急补录！ 万事硕博留学 1天前 赞",
+                "url": "https://www.xiaohongshu.com/explore/abc123",
+            }
+        ],
+        platform="xiaohongshu",
+        keyword="博士",
+        max_items=5,
+    )
+
+    assert len(assets) == 1
+    assert assets[0].author == "万事硕博留学"
+    assert assets[0].likes == 0
+
+
+def test_merge_detail_asset_prefers_real_detail_body_and_metrics() -> None:
+    asset = CollectedTrendAsset(
+        platform="xiaohongshu",
+        title="水博榜单",
+        content="水博榜单 瑶瑶硕博留学 2天前 赞",
+        url="https://www.xiaohongshu.com/explore/abc123",
+        tags=["水博"],
+    )
+
+    merged = _merge_detail_asset(
+        asset,
+        {
+            "title": "水博榜单",
+            "content": "这篇正文讲了预算、认证、在职适配和择校核验步骤，适合准备硕升博的人逐条复核。",
+            "author": "瑶瑶硕博留学",
+            "likesText": "赞 1.2万",
+            "favoritesText": "收藏 980",
+            "commentsText": "评论 34",
+            "sharesText": "分享 5",
+            "coverUrl": "https://sns-img-qc.xhscdn.com/cover.jpg",
+        },
+        "水博",
+    )
+
+    assert "预算、认证、在职适配" in merged.content
+    assert merged.author == "瑶瑶硕博留学"
+    assert merged.likes == 12_000
+    assert merged.favorites == 980
+    assert merged.comments == 34
+    assert merged.shares == 5
+    assert merged.cover_url == "https://sns-img-qc.xhscdn.com/cover.jpg"
+
+
+def test_merge_detail_asset_does_not_treat_compact_metadata_as_body() -> None:
+    asset = CollectedTrendAsset(
+        platform="xiaohongshu",
+        title="偏爱海外硕士回国申博的985院校",
+        content="偏爱海外硕士回国申博的985院校 安安博士 2天前 赞",
+        url="https://www.xiaohongshu.com/explore/abc123",
+        tags=["申博"],
+    )
+
+    merged = _merge_detail_asset(
+        asset,
+        {
+            "title": "偏爱海外硕士回国申博的985院校",
+            "content": "偏爱海外硕士回国申博的985院校 安安博士 2天前 赞",
+            "author": "安安博士",
+        },
+        "申博",
+    )
+
+    assert merged.content == asset.content
 
 
 def test_build_xhs_link_import_target_extracts_supported_links() -> None:

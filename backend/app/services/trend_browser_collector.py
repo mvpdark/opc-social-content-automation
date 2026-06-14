@@ -39,6 +39,12 @@ COMPACT_XHS_METADATA_RE = re.compile(
     r"(?P<date>\d{4}-\d{2}-\d{2}|\d{2}-\d{2}|\d+\s*天前|昨天|前天|刚刚)"
     r"\s*(?P<likes>\d+(?:\.\d+)?\s*(?:万|w|W|k|K|千)?)?$"
 )
+COMPACT_XHS_METADATA_ONLY_RE = re.compile(
+    r"(?P<author>.{2,60}?)\s+"
+    r"(?P<date>\d{4}-\d{2}-\d{2}|\d{2}-\d{2}|\d+\s*天前|昨天|前天|刚刚)"
+    r"\s*(?P<likes>\d+(?:\.\d+)?\s*(?:万|w|W|k|K|千)?)?"
+    r"\s*(?:赞|点赞|藏|收藏|评|评论|转发|分享)?$"
+)
 VIDEO_MARKERS = ("视频", "播放", "直播", "video-card", "video_note", "shorts")
 VIDEO_COLLECTION_DISABLED_DETAIL = (
     "视频采集暂未启用；需要先补齐转写、版权和人工复核流程。"
@@ -86,6 +92,13 @@ AUTHOR_NOISE_MARKERS = (
     "关注",
     "登录",
     "小红书",
+)
+GENERIC_DETAIL_CONTENT_MARKERS = (
+    "小红书，年轻人的多元生活方式平台",
+    "标记我的生活",
+    "当前笔记暂时无法浏览",
+    "登录后查看",
+    "安全限制",
 )
 
 BLOCKED_DETAIL_MARKERS = (
@@ -144,6 +157,16 @@ def _title_from_text(text: str, keyword: str) -> str:
     first = normalize_visible_text(lines[0])
     if len(first) < 4 and len(lines) > 1:
         first = normalize_visible_text(lines[1])
+    date_match = DATE_MARKER_RE.search(first)
+    if date_match:
+        before_date = first[: date_match.start()].strip()
+        if " " in before_date:
+            possible_title, possible_author = before_date.rsplit(" ", 1)
+            if possible_title.strip() and 2 <= len(possible_author.strip()) <= 60:
+                first = possible_title.strip()
+    compact_metadata = COMPACT_XHS_METADATA_ONLY_RE.search(first)
+    if compact_metadata and compact_metadata.start() > 0:
+        first = first[: compact_metadata.start()].strip() or first
     first = COMPACT_CARD_DATE_RE.sub("", first).strip() or first
     repeated_title = _split_repeated_compact_title(first)
     if repeated_title:
@@ -260,12 +283,39 @@ def _compact_xhs_metadata(text: str, title: str) -> tuple[str | None, datetime |
             rest = rest[len(normalized_title) :].strip()
     match = COMPACT_XHS_METADATA_RE.search(rest)
     if not match:
+        match = COMPACT_XHS_METADATA_ONLY_RE.search(rest)
+    if not match:
         return None, publish_time, likes_after_date
     return (
         _clean_author(match.group("author")),
         _parse_xhs_publish_time(match.group("date")),
         _metric_count(match.group("likes")),
     )
+
+
+def _clean_detail_content(value: object, title: str, fallback_content: str) -> str | None:
+    text = normalize_visible_text(value)
+    if len(text) < 12:
+        return None
+    normalized_title = normalize_visible_text(title)
+    if normalized_title and text == normalized_title:
+        return None
+    if any(marker in text for marker in GENERIC_DETAIL_CONTENT_MARKERS):
+        return None
+
+    tail = text
+    for _ in range(2):
+        if normalized_title and tail.startswith(normalized_title):
+            tail = tail[len(normalized_title) :].strip()
+    if not tail:
+        return None
+    if COMPACT_XHS_METADATA_ONLY_RE.fullmatch(tail):
+        return None
+    if len(text) < 120 and DATE_MARKER_RE.search(tail) and _metric_count(tail):
+        return None
+    if text == normalize_visible_text(fallback_content) and len(text) < 120:
+        return None
+    return text[:3000]
 
 
 def _xhs_note_id_from_url(url: str | None) -> str | None:
@@ -389,12 +439,13 @@ def _merge_detail_asset(
         return asset
     author = _clean_author(detail.get("author"))
     cover_url = _clean_cover_url(detail.get("coverUrl"))
+    clean_content = _clean_detail_content(content, title or asset.title, asset.content)
 
     merged_text = " ".join(part for part in (title, content, asset.content) if part)
     return replace(
         asset,
         title=(title[:255] if len(title) >= 4 else asset.title),
-        content=(content[:3000] if len(content) >= 10 else asset.content),
+        content=clean_content or asset.content,
         tags=_tags_from_text(merged_text, keyword) or asset.tags,
         author=author or asset.author,
         likes=_metric_from_raw(detail, "likes") or asset.likes,

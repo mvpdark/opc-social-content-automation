@@ -188,7 +188,8 @@ def test_extract_candidate_assets_accepts_compact_xhs_note_card() -> None:
 
     assert len(assets) == 1
     assert assets[0].url is not None
-    assert assets[0].title == "山大硕博连读申请要求 水水学姐"
+    assert assets[0].title == "山大硕博连读申请要求"
+    assert assets[0].author == "水水学姐"
     assert assets[0].tags == ["硕升博"]
     assert assets[0].likes == 165
     assert assets[0].publish_time is not None

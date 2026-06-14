@@ -14,6 +14,8 @@ import { resolveAssetUrl } from "@/lib/asset-url";
 
 const COMPACT_XHS_METADATA_RE =
   /(.{2,60}?)\s+(\d{4}-\d{2}-\d{2}|\d{2}-\d{2}|\d+\s*天前|昨天|前天|刚刚)\s*(\d+(?:\.\d+)?\s*(?:万|w|W|k|K|千)?)?$/;
+const COMPACT_XHS_METADATA_ONLY_RE =
+  /(.{2,60}?)\s+(\d{4}-\d{2}-\d{2}|\d{2}-\d{2}|\d+\s*天前|昨天|前天|刚刚)\s*(\d+(?:\.\d+)?\s*(?:万|w|W|k|K|千)?)?\s*(赞|点赞|藏|收藏|评|评论|转发|分享)?$/;
 
 export type MobileTrendContent = {
   id: number;
@@ -62,11 +64,25 @@ export function mobilePlatformText(platform: string) {
 }
 
 function mobileTrendExcerpt(item: MobileTrendContent, maxLength = 96) {
-  const text = item.content.replace(/\s+/g, " ").trim();
+  const text = mobileTrendBodyText(item);
   if (text.length <= maxLength) {
-    return text || "这条素材没有正文摘要。";
+    return text || "正文未采到，打开来源人工确认。";
   }
   return `${text.slice(0, maxLength)}...`;
+}
+
+function mobileTrendBodyText(item: MobileTrendContent) {
+  let text = item.content.replace(/\s+/g, " ").trim();
+  const title = item.title.replace(/\s+/g, " ").trim();
+  for (let index = 0; index < 2; index += 1) {
+    if (title && text.startsWith(title)) {
+      text = text.slice(title.length).trim();
+    }
+  }
+  if (!text || text === title || COMPACT_XHS_METADATA_ONLY_RE.test(text)) {
+    return "";
+  }
+  return text;
 }
 
 function formatMobileTrendDate(value: string | null) {
@@ -376,7 +392,9 @@ export function TrendSourceCard({
               {author} · {date}
             </div>
             <div className="mt-0.5 truncate text-xs font-black text-ink/[0.70]">{metrics}</div>
-            <span className="sr-only">{mobileTrendExcerpt(item)}</span>
+            <p className="mt-1 line-clamp-2 text-[12px] font-semibold leading-5 text-ink/[0.64]">
+              {mobileTrendExcerpt(item, 72)}
+            </p>
           </button>
 
           <div className="flex w-12 shrink-0 flex-col items-center gap-1">
@@ -431,6 +449,7 @@ export function TrendSourceReviewSheet({
   const coverUrl = mobileTrendCoverUrl(item);
   const publishedAt = item.publish_time ? formatMobileTrendDate(item.publish_time) : "未记录";
   const collectedAt = formatMobileTrendDate(item.created_at);
+  const bodyText = mobileTrendBodyText(item);
 
   return (
     <MobileOverlayPortal>
@@ -499,8 +518,11 @@ export function TrendSourceReviewSheet({
                   </div>
                 ))}
               </div>
-              <div className="mt-4 whitespace-pre-wrap break-words rounded-[22px] bg-white/[0.72] px-3.5 py-3 text-sm font-semibold leading-7 text-ink/[0.78]">
-                {item.content}
+              <div className="mt-4 rounded-[22px] bg-white/[0.72] px-3.5 py-3">
+                <div className="text-xs font-black text-ink/[0.52]">正文</div>
+                <div className="mt-1 whitespace-pre-wrap break-words text-sm font-semibold leading-7 text-ink/[0.78]">
+                  {bodyText || "正文未采到，请打开来源人工确认后再入库。"}
+                </div>
               </div>
               {item.video_transcript ? (
                 <div className="mt-3 whitespace-pre-wrap break-words rounded-[22px] bg-[#fff6e3]/[0.88] px-3.5 py-3 text-xs font-semibold leading-6 text-[#8a5d16]">
