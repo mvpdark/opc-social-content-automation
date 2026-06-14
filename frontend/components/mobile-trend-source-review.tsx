@@ -201,6 +201,7 @@ export function TrendSourceCard({
     ? formatMobileTrendDate(item.publish_time)
     : formatMobileTrendDate(item.created_at);
   const metrics = `赞 ${mobileTrendLikes(item)} · 藏 ${item.favorites} · 评 ${item.comments} · 转 ${item.shares}`;
+  const bodyText = mobileTrendBodyText(item);
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
   const startRef = useRef<{ x: number; y: number; pointerId: number } | null>(null);
@@ -335,7 +336,7 @@ export function TrendSourceCard({
       </div>
       <div
         className={[
-          "relative rounded-[24px] border bg-[rgba(255,253,247,0.88)] p-2.5 shadow-[0_10px_24px_rgba(31,58,49,0.06),inset_0_1px_0_rgba(255,255,255,0.90)]",
+          "relative rounded-[24px] border bg-[#fffdf7] p-2.5 shadow-[0_10px_24px_rgba(31,58,49,0.06),inset_0_1px_0_rgba(255,255,255,0.90)]",
           dragging ? "" : "transition-transform duration-200 ease-out",
           selected ? "border-[#23854f] ring-2 ring-[#23854f]/[0.12]" : "border-white/[0.86]"
         ].join(" ")}
@@ -392,9 +393,21 @@ export function TrendSourceCard({
               {author} · {date}
             </div>
             <div className="mt-0.5 truncate text-xs font-black text-ink/[0.70]">{metrics}</div>
-            <p className="mt-1 line-clamp-2 text-[12px] font-semibold leading-5 text-ink/[0.64]">
-              {mobileTrendExcerpt(item, 72)}
-            </p>
+            {bodyText ? (
+              <p
+                className="mt-1 line-clamp-2 text-[12px] font-semibold leading-5 text-ink/[0.64]"
+                data-testid={`mobile-trend-source-body-${item.id}`}
+              >
+                {mobileTrendExcerpt(item, 72)}
+              </p>
+            ) : (
+              <div
+                className="mt-1 inline-flex max-w-full items-center rounded-full bg-[#fff4d8] px-2 py-1 text-[11px] font-black leading-none text-[#8a5d16]"
+                data-testid={`mobile-trend-source-body-${item.id}`}
+              >
+                正文未采到，打开来源人工确认。
+              </div>
+            )}
           </button>
 
           <div className="flex w-12 shrink-0 flex-col items-center gap-1">
