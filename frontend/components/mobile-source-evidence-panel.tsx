@@ -79,10 +79,10 @@ export function MobileSourceEvidencePanel({
       {knowledgeItems.length ? (
         <div className="mt-3 space-y-2">
           <div className="text-[11px] font-black text-muted">知识库引用</div>
-          {knowledgeItems.slice(0, 3).map((item) => {
+          {knowledgeItems.slice(0, 3).map((item, index) => {
             const knowledgeItem = mobileSourceKnowledgeItemToKnowledgeItem(item);
             return (
-              <article className="rounded-[18px] border border-white/[0.86] bg-white/70 px-3 py-2" key={item.id}>
+              <article className="rounded-[18px] border border-white/[0.86] bg-white/70 px-3 py-2" key={`${item.id}-${index}`}>
                 <div className="flex items-start justify-between gap-2">
                   <h4 className="line-clamp-2 text-xs font-black leading-5 text-ink">
                     {knowledgeItemTitle(knowledgeItem)}
@@ -113,11 +113,11 @@ export function MobileSourceEvidencePanel({
             </p>
           ) : null}
           {webResults.length ? (
-            webResults.slice(0, 3).map((item) => (
+            webResults.slice(0, 3).map((item, index) => (
               <a
                 className="block rounded-[18px] border border-white/[0.86] bg-white/70 px-3 py-2"
                 href={item.url}
-                key={`${item.url}-${item.title}`}
+                key={`${item.url}-${item.title}-${index}`}
                 rel="noreferrer"
                 target="_blank"
               >

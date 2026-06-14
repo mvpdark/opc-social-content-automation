@@ -721,6 +721,9 @@ def validate_content_production_contract() -> int:
     app_shell_text = (ROOT / "frontend" / "components" / "app-shell.tsx").read_text(
         encoding="utf-8"
     )
+    source_evidence_text = (
+        ROOT / "frontend" / "components" / "generation-source-evidence-card.tsx"
+    ).read_text(encoding="utf-8")
     mobile_source_evidence_text = (
         ROOT / "frontend" / "components" / "mobile-source-evidence-panel.tsx"
     ).read_text(encoding="utf-8")
@@ -1057,6 +1060,34 @@ def validate_content_production_contract() -> int:
         total += 1
         if snippet not in mobile_source_evidence_text:
             raise SystemExit(f"Missing mobile source evidence contract: {snippet}")
+
+    source_evidence_key_contracts = [
+        (
+            source_evidence_text,
+            [
+                "knowledgeItems.slice(0, 4).map((item, index)",
+                'key={`${item.id}-${index}`}',
+                "webResults.slice(0, 4).map((item, index)",
+                'key={`${item.url}-${item.title}-${index}`}',
+            ],
+            "PC source evidence stable keys",
+        ),
+        (
+            mobile_source_evidence_text,
+            [
+                "knowledgeItems.slice(0, 3).map((item, index)",
+                'key={`${item.id}-${index}`}',
+                "webResults.slice(0, 3).map((item, index)",
+                'key={`${item.url}-${item.title}-${index}`}',
+            ],
+            "mobile source evidence stable keys",
+        ),
+    ]
+    for text, snippets, contract_name in source_evidence_key_contracts:
+        for snippet in snippets:
+            total += 1
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
 
     mobile_project_swipe_contract_snippets = [
         "projectSwipeStartRef",
