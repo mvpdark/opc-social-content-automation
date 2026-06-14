@@ -774,6 +774,9 @@ def validate_content_production_contract() -> int:
     mobile_collect_text = (
         ROOT / "frontend" / "components" / "mobile-collect-screen.tsx"
     ).read_text(encoding="utf-8")
+    mobile_trend_source_review_text = (
+        ROOT / "frontend" / "components" / "mobile-trend-source-review.tsx"
+    ).read_text(encoding="utf-8")
     image_service_text = (
         ROOT / "backend" / "app" / "services" / "image_service.py"
     ).read_text(encoding="utf-8")
@@ -1059,6 +1062,20 @@ def validate_content_production_contract() -> int:
             total += 1
             if snippet not in text:
                 raise SystemExit(f"Missing {contract_name} contract: {snippet}")
+
+    mobile_trend_source_body_contract_snippets = [
+        "function mobileTrendBodyText(item: MobileTrendContent)",
+        "COMPACT_XHS_METADATA_ONLY_RE",
+        "正文未采到，打开来源人工确认。",
+        "mobileTrendExcerpt(item, 72)",
+        "const bodyText = mobileTrendBodyText(item);",
+        '<div className="text-xs font-black text-ink/[0.52]">正文</div>',
+        "正文未采到，请打开来源人工确认后再入库。",
+    ]
+    for snippet in mobile_trend_source_body_contract_snippets:
+        total += 1
+        if snippet not in mobile_trend_source_review_text:
+            raise SystemExit(f"Missing mobile trend source body visibility contract: {snippet}")
 
     mobile_xhs_copy_contract_snippets = [
         "tryCopyText(draftText)",
