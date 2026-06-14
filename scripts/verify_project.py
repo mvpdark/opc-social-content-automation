@@ -197,6 +197,8 @@ def validate_safety_gates() -> int:
             "没有可见 Tavily 来源",
             'topic_intent.key == "source_check"',
             "它不是普通经验帖，而是来源核验帖",
+            'topic_intent.key == "list_filter"',
+            "榜单/筛选类内容最重要的是维度清楚",
         ],
         "backend/app/services/topic_intent.py": [
             'key="source_check"',
