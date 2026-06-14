@@ -54,15 +54,20 @@ def repair_utf8_mojibake(value: str) -> str:
 
 
 def replace_unrecoverable_garbled_text(value: str) -> str:
-    if "???" not in value:
+    has_question_garbled = "???" in value
+    has_replacement_garbled = "\ufffd" in value
+    if not has_question_garbled and not has_replacement_garbled:
         return value
 
     question_count = value.count("?")
+    replacement_count = value.count("\ufffd")
     visible_count = len(value.strip())
-    if visible_count and question_count / visible_count > 0.5:
+    garbled_count = question_count + replacement_count
+    if visible_count and garbled_count / visible_count > 0.5:
         return "原始中文已损坏，请重新采集或人工修复。"
 
-    return re.sub(r"\?{3,}", "【原始中文已损坏】", value)
+    normalized = re.sub(r"\?{3,}", "【原始中文已损坏】", value)
+    return re.sub(r"\ufffd{2,}", "【原始中文已损坏】", normalized)
 
 
 def normalize_knowledge_text(value: str) -> str:

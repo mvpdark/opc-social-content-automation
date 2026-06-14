@@ -152,3 +152,12 @@ def test_normalize_knowledge_text_hides_unrecoverable_question_mark_garbled_text
     assert normalize_knowledge_text(title) == "原始中文已损坏，请重新采集或人工修复。"
     assert "???" not in normalize_knowledge_text(content)
     assert "【原始中文已损坏】" in normalize_knowledge_text(content)
+
+
+def test_normalize_knowledge_text_hides_replacement_character_garbled_text() -> None:
+    title = "\ufffd" * 12
+    content = "水博榜单 " + ("\ufffd" * 3) + " 认证预算"
+
+    assert normalize_knowledge_text(title) == "原始中文已损坏，请重新采集或人工修复。"
+    assert "\ufffd" not in normalize_knowledge_text(content)
+    assert "【原始中文已损坏】" in normalize_knowledge_text(content)
