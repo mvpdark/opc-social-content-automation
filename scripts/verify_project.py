@@ -1241,6 +1241,11 @@ def validate_content_production_contract() -> int:
             "draft prompt particle style",
         ),
         (
+            draft_prompt_text,
+            ["哪些学校", "有哪些项目", "provide verification dimensions instead of inventing"],
+            "draft prompt school/project list source guard",
+        ),
+        (
             humanization_prompt_text,
             ["preserve more soft particles", "real creator or senior schoolmate"],
             "humanization prompt particle style",
