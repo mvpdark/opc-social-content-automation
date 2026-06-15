@@ -80,6 +80,15 @@ type CollectionScheduleStorage = {
   scheduleMessage: string;
 };
 
+type TrendReviewQueueStorage = {
+  dismissedTrendIds: number[];
+  platform: MobilePlatform;
+  query: string;
+  reviewedTrendIds: number[];
+};
+
+const TREND_REVIEW_QUEUE_STORAGE_KEY = "opc_mobile_trend_review_queue_v1";
+
 function mobileDiagnosticToneClass(tone: CollectionJobDiagnosticItem["tone"]) {
   switch (tone) {
     case "good":
@@ -91,6 +100,33 @@ function mobileDiagnosticToneClass(tone: CollectionJobDiagnosticItem["tone"]) {
     default:
       return "border-[#ded8cc] bg-[rgba(255,253,247,0.72)] text-ink";
   }
+}
+
+function normalizeTrendIdList(value: unknown) {
+  return Array.isArray(value)
+    ? value.filter((item): item is number => Number.isInteger(item) && item > 0)
+    : [];
+}
+
+function normalizeTrendReviewQueueStorage(
+  value: unknown,
+  fallbackContext: { platform: MobilePlatform; query: string }
+): TrendReviewQueueStorage | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const parsed = value as Partial<TrendReviewQueueStorage>;
+  const platform =
+    parsed.platform === "xiaohongshu" || parsed.platform === "douyin"
+      ? parsed.platform
+      : fallbackContext.platform;
+  const query = typeof parsed.query === "string" ? parsed.query : fallbackContext.query;
+  return {
+    dismissedTrendIds: normalizeTrendIdList(parsed.dismissedTrendIds),
+    platform,
+    query,
+    reviewedTrendIds: normalizeTrendIdList(parsed.reviewedTrendIds)
+  };
 }
 
 export function CollectScreen({
@@ -129,6 +165,9 @@ export function CollectScreen({
   const [referencePreview, setReferencePreview] = useState<SampleReference | null>(null);
   const [busyAction, setBusyAction] = useState<"digest" | "job" | "link" | "search" | null>(null);
   const scheduleRunningRef = useRef(false);
+  const trendItemsReadyRef = useRef(false);
+  const trendReviewQueueHydratedRef = useRef(false);
+  const skipNextTrendReviewQueueWriteRef = useRef(false);
   const collectedMetricValue =
     diagnosticItems.find((item) => item.label === "已采集")?.value ?? "0";
   const selectedTrendIdSet = new Set(selectedTrendIds);
@@ -197,6 +236,31 @@ export function CollectScreen({
   }, []);
 
   useEffect(() => {
+    skipNextTrendReviewQueueWriteRef.current = true;
+    try {
+      const stored = readMobileStorage(TREND_REVIEW_QUEUE_STORAGE_KEY);
+      const contextQuery = query.trim();
+      const parsed = stored
+        ? normalizeTrendReviewQueueStorage(JSON.parse(stored), {
+            platform,
+            query: contextQuery
+          })
+        : null;
+      setReviewedTrendIds(
+        parsed && parsed.platform === platform && parsed.query === contextQuery
+          ? parsed.reviewedTrendIds
+          : []
+      );
+      setDismissedTrendIds(parsed?.dismissedTrendIds ?? []);
+    } catch (_error) {
+      setReviewedTrendIds([]);
+      setDismissedTrendIds([]);
+    } finally {
+      trendReviewQueueHydratedRef.current = true;
+    }
+  }, [platform, query]);
+
+  useEffect(() => {
     const payload: CollectionScheduleStorage = {
       autoEnabled,
       intervalMinutes,
@@ -220,6 +284,23 @@ export function CollectScreen({
     query,
     scheduleMessage
   ]);
+
+  useEffect(() => {
+    if (!trendReviewQueueHydratedRef.current) {
+      return;
+    }
+    if (skipNextTrendReviewQueueWriteRef.current) {
+      skipNextTrendReviewQueueWriteRef.current = false;
+      return;
+    }
+    const payload: TrendReviewQueueStorage = {
+      dismissedTrendIds,
+      platform,
+      query: query.trim(),
+      reviewedTrendIds
+    };
+    writeMobileStorage(TREND_REVIEW_QUEUE_STORAGE_KEY, JSON.stringify(payload));
+  }, [dismissedTrendIds, platform, query, reviewedTrendIds]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -347,6 +428,9 @@ export function CollectScreen({
   }, [credentials.workspaceToken, maxItems, platform]);
 
   useEffect(() => {
+    if (!trendItemsReadyRef.current) {
+      return;
+    }
     const validIds = new Set(trendItems.map((item) => item.id));
     setSelectedTrendIds((currentIds) => currentIds.filter((id) => validIds.has(id)));
     setReviewedTrendIds((currentIds) => currentIds.filter((id) => validIds.has(id)));
@@ -358,8 +442,6 @@ export function CollectScreen({
 
   useEffect(() => {
     setSelectedTrendIds([]);
-    setReviewedTrendIds([]);
-    setDismissedTrendIds([]);
     setSelectedTrendItem(null);
   }, [platform, query]);
 
@@ -422,6 +504,7 @@ export function CollectScreen({
       const nextStatus = items.length
         ? `已显示最近 ${items.length} 条${mobilePlatformText(platform)}采集素材。`
         : "还没有可确认的采集素材，先运行采集或导入链接。";
+      trendItemsReadyRef.current = true;
       setTrendItems(items);
       setTrendListStatus(nextStatus);
       if (announce) {
@@ -429,6 +512,7 @@ export function CollectScreen({
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "采集素材读取失败。";
+      trendItemsReadyRef.current = false;
       setTrendItems([]);
       setTrendListStatus(message);
       if (announce) {
