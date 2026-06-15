@@ -2432,3 +2432,72 @@ Kept.
 ### Next candidate loop
 
 - Add focused tests for custom ranking/list topics or return to auth/session recovery and draft review lifecycle hardening.
+
+## Loop 34 - Contract-check custom source-evidence classifier keywords
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 33 added a shared lightweight classifier so custom fact-heavy topics are source-evidence gated on PC and mobile. The behavior is covered by E2E, but the keyword pool and `source-*` preset fallback were not protected by a fast project contract check, so a future edit could remove ranking/list/logo/fee triggers and only be caught by slower browser coverage.
+
+### Hypothesis
+
+If `scripts/verify_project.py` validates the custom source-evidence classifier keywords and representative keyword-match samples, then every Loop Engineering run will quickly catch regressions to ranking/list/current-fact gating before E2E starts.
+
+### Patch
+
+Files changed:
+
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a helper to extract non-exported TypeScript string arrays.
+- Added project-contract checks for `SOURCE_EVIDENCE_REQUIRED_KEYWORDS`.
+- Added representative keyword samples for custom ranking/list, Chinese ranking/list, official fee/logo, and a non-source route topic.
+
+### Verification
+
+Commands run:
+
+```bash
+python scripts/verify_project.py --keep-cache
+# passed
+# topic_presets_contract_checked=422
+
+npm run typecheck
+# passed
+
+npm run e2e
+# passed: 27 passed, 1 skipped
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 18/30
+- Correctness: 20/20
+- Test coverage: 18/20
+- Safety/security: 14/15
+- Maintainability: 10/10
+- UX polish: 2/5
+- Total: 82/100
+
+### Result
+
+Kept. This loop is small, but it turns the Loop 33 source-evidence classifier into a fast recurring contract so custom fact-heavy topics are less likely to silently drift back into unsourced generation.
+
+### Remaining risk
+
+- The contract is keyword-level and does not execute the TypeScript helper directly; E2E still covers runtime PC/mobile behavior.
+- The env-backed live login smoke remains skipped unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+
+### Next candidate loop
+
+- Continue auth/session recovery hardening, then add deeper semantic topic-intent checks for custom topics that do not contain obvious source keywords.

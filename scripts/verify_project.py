@@ -359,6 +359,13 @@ def _extract_ts_array(name: str, text: str) -> list[str]:
     return re.findall(r'"([^"]+)"', match.group(1))
 
 
+def _extract_ts_const_string_array(name: str, text: str) -> list[str]:
+    match = re.search(rf"(?:export\s+)?const {name}[^=]*=\s*\[(.*?)\];", text, re.S)
+    if not match:
+        raise SystemExit(f"Could not find frontend string array {name}")
+    return re.findall(r'"([^"]+)"', match.group(1))
+
+
 def _extract_topic_preset_objects(text: str) -> list[dict[str, str]]:
     match = re.search(
         r"export const generationTopicPresets[^=]*=\s*\[(.*?)\];",
@@ -475,6 +482,65 @@ def validate_topic_presets_contract() -> int:
     if len(presets) < 20:
         raise SystemExit("Generation topic preset pool is too small")
     total += 1
+
+    source_evidence_keywords = _extract_ts_const_string_array(
+        "SOURCE_EVIDENCE_REQUIRED_KEYWORDS",
+        topic_presets_text,
+    )
+    required_source_keywords = [
+        "官网",
+        "官方",
+        "来源",
+        "费用",
+        "学费",
+        "价格",
+        "排名",
+        "榜单",
+        "学校",
+        "项目清单",
+        "认证",
+        "logo",
+        "official",
+        "tuition",
+        "fees",
+        "ranking",
+        "program list",
+        "accreditation",
+    ]
+    missing_source_keywords = sorted(
+        keyword for keyword in required_source_keywords if keyword not in source_evidence_keywords
+    )
+    if missing_source_keywords:
+        raise SystemExit(
+            "Source-evidence custom topic classifier is missing keywords: "
+            + ", ".join(missing_source_keywords)
+        )
+    total += len(required_source_keywords)
+
+    for snippet in [
+        "export function generationTopicRequiresSourceEvidence",
+        'preset?.key.startsWith("source-")',
+        "SOURCE_EVIDENCE_REQUIRED_KEYWORDS.some",
+        "searchText.includes",
+    ]:
+        if snippet not in topic_presets_text:
+            raise SystemExit(f"Missing source-evidence classifier contract: {snippet}")
+        total += 1
+
+    keyword_contract_cases = [
+        ("global water PhD ranking list", True),
+        ("全球水博排名清单", True),
+        ("official tuition fees and logo verification", True),
+        ("how to choose domestic or overseas PhD route", False),
+    ]
+    for sample, expected_match in keyword_contract_cases:
+        actual_match = _contains_any(sample, tuple(source_evidence_keywords))
+        if actual_match != expected_match:
+            raise SystemExit(
+                f"Source-evidence keyword classifier sample {sample!r} expected "
+                f"{expected_match}, got {actual_match}"
+            )
+        total += 1
 
     total += _require_unique([preset.get("key", "") for preset in presets], "topic preset keys")
     total += _require_unique([preset.get("topic", "") for preset in presets], "topic preset topics")
