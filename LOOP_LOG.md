@@ -613,3 +613,71 @@ Kept.
 ### Next candidate loop
 
 - Add a deterministic unit/contract test for all topic preset categories mapping to topic/audience/tags/knowledge query without generic drift.
+
+## Loop 9 - Harden topic preset drift contract
+
+Date: 2026-06-16
+
+### Observation
+
+The mobile recommended-topic E2E now verifies one visible preset, but the full preset pool still needs a deterministic contract that prevents category drift across ranking, route, mentor, timing, source, and sales/marketing topics.
+
+### Hypothesis
+
+If the project self-check validates every recommended topic against category-specific intent anchors and forbidden cross-category terms, accidental drift such as a ranking topic becoming mentor matching or a timing topic becoming sales conversion will fail before CI or manual QA.
+
+### Patch
+
+Files changed:
+
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added category-specific intent anchors for all six topic preset categories.
+- Added drift-guard terms that are checked against visible topic/helper/tag fields.
+- Kept fact-sensitive boundaries for ranking and source topics intact.
+
+### Verification
+
+Commands run:
+
+```bash
+python scripts/verify_project.py --keep-cache
+# passed, topic_presets_contract_checked=396
+
+npm run typecheck
+# passed from frontend/
+
+npm run e2e
+# 10 passed, 1 skipped from frontend/
+
+npm run build
+# passed from frontend/
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 24/30
+- Correctness: 19/20
+- Test coverage: 18/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 3/5
+- Total: 89/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The drift contract is deterministic and conservative; it does not replace generated-draft fixture tests.
+- Generation success and recoverable failure still need controlled API fixtures before they can be safely covered end to end.
+
+### Next candidate loop
+
+- Add controlled generation API fixtures that verify title/body/cover/tags align with a selected ranking or route topic without calling real model, image, scraping, or publishing services.

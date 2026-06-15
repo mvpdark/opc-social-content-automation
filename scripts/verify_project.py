@@ -502,6 +502,42 @@ def validate_topic_presets_contract() -> int:
             ("核验", "待复核", "待确认", "未核实", "不写", "不展示"),
         ),
     }
+    category_intent_contract = {
+        "榜单型": {
+            "required": ("榜", "排名", "清单", "筛", "预算", "风险", "认证", "项目"),
+            "forbidden": ("导师匹配", "套磁邮件", "时间线", "私域SOP", "咨询转化"),
+        },
+        "路线型": {
+            "required": ("路线", "选择", "取舍", "路径", "国内", "海外", "先选"),
+            "forbidden": ("榜单", "导师匹配", "时间线", "私域SOP", "咨询转化"),
+        },
+        "导师型": {
+            "required": ("导师", "套磁", "研究方向", "论文", "适配"),
+            "forbidden": ("避坑榜", "预算榜单", "时间线", "私域SOP", "咨询转化"),
+        },
+        "时间型": {
+            "required": ("时间", "节点", "材料", "截止", "优先级", "一年", "什么时候"),
+            "forbidden": ("榜单", "排名", "导师匹配", "私域SOP", "咨询转化"),
+        },
+        "来源型": {
+            "required": ("来源", "核验", "官网", "校徽", "价格", "费用", "学费", "认证", "logo"),
+            "forbidden": ("导师匹配", "套磁邮件", "时间线", "私域SOP", "咨询转化"),
+        },
+        "转化型": {
+            "required": ("咨询", "转化", "私域", "线索", "话术", "价值", "异议"),
+            "forbidden": ("避坑榜", "预算榜单", "导师匹配", "时间线"),
+        },
+    }
+    intent_fields = (
+        "topic",
+        "audience",
+        "knowledgeQuery",
+        "tags",
+        "coverDirection",
+        "desktopHelper",
+        "mobileHelper",
+    )
+    drift_guard_fields = ("topic", "desktopHelper", "mobileHelper", "tags")
 
     for preset in presets:
         missing = sorted(field for field in required_fields if not preset.get(field, "").strip())
@@ -544,6 +580,21 @@ def validate_topic_presets_contract() -> int:
         )
         if not _contains_any(semantic_text, semantic_terms):
             raise SystemExit(f"Topic preset {preset['key']} lacks semantic terms for {label}")
+        intent_contract = category_intent_contract[label]
+        intent_text = " ".join(preset[field] for field in intent_fields)
+        if not _contains_any(intent_text, intent_contract["required"]):
+            raise SystemExit(
+                f"Topic preset {preset['key']} lacks intent anchors for {label}"
+            )
+        drift_guard_text = " ".join(preset[field] for field in drift_guard_fields)
+        drift_term = next(
+            (term for term in intent_contract["forbidden"] if term in drift_guard_text),
+            None,
+        )
+        if drift_term:
+            raise SystemExit(
+                f"Topic preset {preset['key']} contains cross-category drift term {drift_term}"
+            )
         tag_count = len(_split_topic_tags(preset["tags"]))
         if tag_count < 3:
             raise SystemExit(f"Topic preset {preset['key']} should have at least 3 tags")
@@ -555,7 +606,7 @@ def validate_topic_presets_contract() -> int:
                     f"Topic preset {preset['key']} lacks fact-sensitive boundary terms for {label}"
                 )
             total += 1
-        total += len(required_fields) + 3
+        total += len(required_fields) + 5
 
     return total
 
