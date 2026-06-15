@@ -444,7 +444,7 @@ def validate_topic_presets_contract() -> int:
         raise SystemExit("Topic preset tag splitter must support Chinese separators.")
     total += 1
 
-    if len(presets) < 16:
+    if len(presets) < 20:
         raise SystemExit("Generation topic preset pool is too small")
     total += 1
 
@@ -456,6 +456,22 @@ def validate_topic_presets_contract() -> int:
     if missing_labels:
         raise SystemExit("Missing topic preset categories: " + ", ".join(missing_labels))
     total += len(label_contract)
+
+    minimum_label_counts = {
+        "榜单型": 4,
+        "路线型": 4,
+        "导师型": 4,
+        "时间型": 4,
+        "来源型": 2,
+        "转化型": 4,
+    }
+    for label, minimum in minimum_label_counts.items():
+        actual_count = sum(1 for preset in presets if preset.get("desktopLabel") == label)
+        if actual_count < minimum:
+            raise SystemExit(
+                f"Topic preset category {label} must have at least {minimum} items, got {actual_count}"
+            )
+        total += 1
 
     for preset in presets:
         missing = sorted(field for field in required_fields if not preset.get(field, "").strip())
