@@ -83,6 +83,8 @@ export function GenerationSourceEvidenceCard({
   const [openEvidenceSection, setOpenEvidenceSection] = useState<EvidenceSection>(null);
   const knowledgeListRef = useRef<HTMLDivElement | null>(null);
   const webListRef = useRef<HTMLDivElement | null>(null);
+  const knowledgeOpen = openEvidenceSection === "knowledge";
+  const webOpen = openEvidenceSection === "web";
 
   useEffect(() => {
     setOpenEvidenceSection(null);
@@ -138,50 +140,58 @@ export function GenerationSourceEvidenceCard({
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <button
             aria-controls="source-knowledge-list"
-            aria-expanded={openEvidenceSection === "knowledge"}
+            aria-expanded={knowledgeOpen}
             className={[
                 "workspace-evidence-toggle flex min-h-12 items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition",
-              openEvidenceSection === "knowledge" ? "bg-paper text-ink shadow-sm" : "bg-paper/60 text-muted hover:bg-paper"
+              knowledgeOpen ? "bg-paper text-ink shadow-sm" : "bg-paper/60 text-muted hover:bg-paper"
             ].join(" ")}
             data-testid="source-knowledge-toggle"
-            onClick={() => setOpenEvidenceSection(openEvidenceSection === "knowledge" ? null : "knowledge")}
+            onClick={() => setOpenEvidenceSection(knowledgeOpen ? null : "knowledge")}
             type="button"
           >
             <span>
               <span className="block text-xs font-semibold">知识库引用</span>
-              <span className="mt-0.5 block text-[11px] text-moss">{knowledgeItems.length} 条</span>
+              <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-moss">
+                <span>{knowledgeItems.length} 条</span>
+                <span className="rounded-sm bg-paper/70 px-1.5 py-0.5 text-[10px] font-medium text-muted">
+                  {knowledgeOpen ? "已展开" : "点击展开"}
+                </span>
+              </span>
             </span>
             <ChevronDown
               className={[
                 "h-4 w-4 shrink-0 transition-transform",
-                openEvidenceSection === "knowledge" ? "rotate-180" : ""
+                knowledgeOpen ? "rotate-180" : ""
               ].join(" ")}
             />
           </button>
           <button
             aria-controls="source-web-list"
-            aria-expanded={openEvidenceSection === "web"}
+            aria-expanded={webOpen}
             className={[
                 "workspace-evidence-toggle flex min-h-12 items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition",
-              openEvidenceSection === "web" ? "bg-paper text-ink shadow-sm" : "bg-paper/60 text-muted hover:bg-paper"
+              webOpen ? "bg-paper text-ink shadow-sm" : "bg-paper/60 text-muted hover:bg-paper"
             ].join(" ")}
             data-testid="source-web-toggle"
-            onClick={() => setOpenEvidenceSection(openEvidenceSection === "web" ? null : "web")}
+            onClick={() => setOpenEvidenceSection(webOpen ? null : "web")}
             type="button"
           >
             <span>
               <span className="block text-xs font-semibold">联网搜索</span>
-              <span className="mt-0.5 block text-[11px] text-moss">{webEvidenceCountLabel}</span>
+              <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-moss">
+                <span>{webEvidenceCountLabel}</span>
+                <span className="rounded-sm bg-paper/70 px-1.5 py-0.5 text-[10px] font-medium text-muted">
+                  {webOpen ? "已展开" : "点击展开"}
+                </span>
+              </span>
             </span>
             <ChevronDown
-              className={["h-4 w-4 shrink-0 transition-transform", openEvidenceSection === "web" ? "rotate-180" : ""].join(
-                " "
-              )}
+              className={["h-4 w-4 shrink-0 transition-transform", webOpen ? "rotate-180" : ""].join(" ")}
             />
           </button>
         </div>
       </div>
-      {openEvidenceSection === "knowledge" ? (
+      {knowledgeOpen ? (
         <div
           className="mt-3 scroll-mt-24 space-y-2"
           data-testid="source-knowledge-list"
@@ -212,7 +222,7 @@ export function GenerationSourceEvidenceCard({
           )}
         </div>
       ) : null}
-      {openEvidenceSection === "web" ? (
+      {webOpen ? (
         <div
           className="mt-3 scroll-mt-24 space-y-2"
           data-testid="source-web-list"

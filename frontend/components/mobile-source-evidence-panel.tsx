@@ -59,6 +59,8 @@ export function MobileSourceEvidencePanel({
   const [openEvidenceSection, setOpenEvidenceSection] = useState<MobileEvidenceSection>(null);
   const knowledgeListRef = useRef<HTMLDivElement | null>(null);
   const webListRef = useRef<HTMLDivElement | null>(null);
+  const knowledgeOpen = openEvidenceSection === "knowledge";
+  const webOpen = openEvidenceSection === "web";
 
   useEffect(() => {
     setOpenEvidenceSection(null);
@@ -128,51 +130,61 @@ export function MobileSourceEvidencePanel({
         <div className="grid grid-cols-2 gap-1.5">
           <button
             aria-controls="mobile-source-knowledge-list"
-            aria-expanded={openEvidenceSection === "knowledge"}
+            aria-expanded={knowledgeOpen}
             className={[
               "flex min-h-11 touch-manipulation items-center justify-between gap-2 rounded-[16px] px-3 py-2 text-left active:scale-[0.99]",
-              openEvidenceSection === "knowledge" ? "bg-[#e7f2ea] text-ink" : "bg-white/70 text-muted"
+              knowledgeOpen ? "bg-[#e7f2ea] text-ink" : "bg-white/70 text-muted"
             ].join(" ")}
             data-testid="mobile-source-knowledge-toggle"
-            onClick={() => setOpenEvidenceSection(openEvidenceSection === "knowledge" ? null : "knowledge")}
+            onClick={() => setOpenEvidenceSection(knowledgeOpen ? null : "knowledge")}
             type="button"
           >
             <span>
               <span className="block text-[11px] font-black">知识库引用</span>
-              <span className="mt-0.5 block text-[10px] font-black text-moss">{knowledgeItems.length} 条</span>
+              <span className="mt-0.5 flex flex-wrap items-center gap-1 text-[10px] font-black text-moss">
+                <span>{knowledgeItems.length} 条</span>
+                <span className="rounded-full bg-white/70 px-1.5 py-0.5 text-[9px] text-muted">
+                  {knowledgeOpen ? "已展开" : "点击展开"}
+                </span>
+              </span>
             </span>
             <ChevronDown
               className={[
                 "h-3.5 w-3.5 shrink-0 transition-transform",
-                openEvidenceSection === "knowledge" ? "rotate-180" : ""
+                knowledgeOpen ? "rotate-180" : ""
               ].join(" ")}
             />
           </button>
           <button
             aria-controls="mobile-source-web-list"
-            aria-expanded={openEvidenceSection === "web"}
+            aria-expanded={webOpen}
             className={[
               "flex min-h-11 touch-manipulation items-center justify-between gap-2 rounded-[16px] px-3 py-2 text-left active:scale-[0.99]",
-              openEvidenceSection === "web" ? "bg-[#e7f2ea] text-ink" : "bg-white/70 text-muted"
+              webOpen ? "bg-[#e7f2ea] text-ink" : "bg-white/70 text-muted"
             ].join(" ")}
             data-testid="mobile-source-web-toggle"
-            onClick={() => setOpenEvidenceSection(openEvidenceSection === "web" ? null : "web")}
+            onClick={() => setOpenEvidenceSection(webOpen ? null : "web")}
             type="button"
           >
             <span>
               <span className="block text-[11px] font-black">联网搜索</span>
-              <span className="mt-0.5 block text-[10px] font-black text-moss">{webEvidenceCountLabel}</span>
+              <span className="mt-0.5 flex flex-wrap items-center gap-1 text-[10px] font-black text-moss">
+                <span>{webEvidenceCountLabel}</span>
+                <span className="rounded-full bg-white/70 px-1.5 py-0.5 text-[9px] text-muted">
+                  {webOpen ? "已展开" : "点击展开"}
+                </span>
+              </span>
             </span>
             <ChevronDown
               className={[
                 "h-3.5 w-3.5 shrink-0 transition-transform",
-                openEvidenceSection === "web" ? "rotate-180" : ""
+                webOpen ? "rotate-180" : ""
               ].join(" ")}
             />
           </button>
         </div>
       </div>
-      {openEvidenceSection === "knowledge" ? (
+      {knowledgeOpen ? (
         <div
           className="mt-3 scroll-mt-24 space-y-2"
           data-testid="mobile-source-knowledge-list"
@@ -205,7 +217,7 @@ export function MobileSourceEvidencePanel({
           )}
         </div>
       ) : null}
-      {openEvidenceSection === "web" ? (
+      {webOpen ? (
         <div
           className="mt-3 scroll-mt-24 space-y-2"
           data-testid="mobile-source-web-list"
