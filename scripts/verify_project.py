@@ -1498,9 +1498,13 @@ def validate_content_production_contract() -> int:
     custom_topic_e2e_contracts = [
         "buildCustomTopicAudience",
         "buildCustomTopicTags",
+        "mobile one-click generation keeps custom fact topic aligned through preview copy",
+        "E2E_MOBILE_CUSTOM_TOPIC_CONTENT_ID",
         "PC one-click generation keeps custom fact topic aligned through preview copy",
         "E2E_PC_CUSTOM_TOPIC_CONTENT_ID",
         "customSourceTopic",
+        "mobile-source-preview-button",
+        "mobile-draft-history-card-${E2E_MOBILE_CUSTOM_TOPIC_CONTENT_ID}",
         "content-cover-direction-type",
         "knowledge_query: customSourceTopic",
         "target_audience: expectedAudience",

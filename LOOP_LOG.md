@@ -2873,3 +2873,75 @@ Kept. PC one-click generation now has runtime E2E protection for successful cust
 ### Next candidate loop
 
 - Add mobile custom-topic success coverage, or continue draft completeness/checklist normalization.
+
+## Loop 40 - Mobile custom topic alignment E2E
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 39 protected the PC custom-topic success path, while mobile only had custom fact-sensitive coverage for the source-preview failure path. The mobile success path still needed runtime protection for custom topic syncing, source evidence, draft generation, cover generation, preview, copy, and no automated publishing.
+
+### Hypothesis
+
+If mobile E2E covers a successful custom fact-sensitive topic through preview copy, then regressions in mobile custom-topic auto-sync, source-evidence gating, generated draft matching, cover routing, or publishing safety will be caught before users see stale or recommendation-derived output for hand-entered topics.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a mobile E2E scenario for `official tuition fees and logo verification for overseas doctoral programs`.
+- Verified mobile custom topic auto-syncs target audience and tags via shared custom-topic helpers.
+- Verified source preview, draft generation, cover generation, draft history, preview, manual copy fallback, and preview-link copy controls keep the custom topic aligned.
+- Asserted content/source/image payloads use the custom topic/query/audience/tags and that no publishing/submission route is called.
+- Extended `scripts/verify_project.py` so the fast verifier protects both PC and mobile custom-topic success coverage.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile one-click generation keeps custom fact topic aligned" --project=chromium
+# passed: 1 passed
+
+python scripts\verify_project.py --keep-cache
+# passed
+# content_production_contract_checked=984
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 24/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 3/5
+- Total: 90/100
+
+### Result
+
+Kept. Mobile one-click generation now has runtime E2E protection for successful custom fact-sensitive topics, including source evidence, preview/copy, cover generation, and the no-automated-publishing boundary.
+
+### Remaining risk
+
+- The test uses a controlled fixture, so live model wording quality still relies on backend prompt/intention tests and future schema normalization.
+- A broader full E2E sweep is still useful before release, but this loop verified the changed path directly.
+
+### Next candidate loop
+
+- Continue draft completeness/checklist normalization, or add coverage for mobile custom-topic stale-draft invalidation after topic edits.
