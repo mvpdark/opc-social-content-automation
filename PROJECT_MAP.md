@@ -1,0 +1,68 @@
+# OPC Project Map
+
+Last updated: 2026-06-15
+
+## Runtime and Framework
+
+- Frontend: Next.js 15, React 19, TypeScript, Tailwind CSS.
+- Frontend package root: `frontend/`.
+- Backend: FastAPI, SQLAlchemy, Alembic, Python 3.11+.
+- Backend package root: `backend/`.
+- Browser automation: Python Playwright for collection; JS Playwright E2E specs are staged under `tests/e2e/`.
+
+## Package Managers
+
+- Frontend uses npm with `frontend/package-lock.json`.
+- Backend uses Python packaging from `backend/pyproject.toml`.
+- There is no root JavaScript package at the time of this map.
+
+## Main Routes
+
+- PC workspace: `frontend/app/page.tsx`, reached as `/?theme=mint`.
+- Mobile web workspace: `frontend/app/android/page.tsx`, reached as `/android?from=%2F%3Ftheme%3Dmint&tab=home`.
+- Public preview: `frontend/app/preview/[contentId]/page.tsx`.
+- Middleware redirects mobile user agents from `/` to `/android`.
+
+## Auth and Session
+
+- PC local account marker: `opc_pc_auth_v1` in browser localStorage.
+- Mobile local account marker: `opc_mobile_auth_v1` in browser localStorage.
+- PC login UI lives in `frontend/components/workspace-client.tsx`.
+- Mobile login UI lives in `frontend/app/android/page.tsx`.
+- Login calls the backend endpoint `/api/auth/mobile-login`.
+- Passwords should only be submitted to the login request and must not be persisted.
+
+## Data Storage
+
+- Backend models and database wiring live under `backend/app/`.
+- Alembic migrations live under `backend/alembic/versions/`.
+- Local setup may use SQLite planner-stage storage; Docker/self-hosted mode uses PostgreSQL with pgvector and Redis.
+
+## AI Generation Layer
+
+- Model calls route through `backend/app/services/model_router.py`.
+- Prompt templates live under `prompts/`.
+- Draft generation, image generation, review, and Tavily/web search support are separated by service modules.
+- Tavily/web search is research support only; the app must not invent current facts when sources are required.
+
+## Test Setup
+
+- Backend tests: `backend/tests/`, run with `python -m pytest backend/tests`.
+- Project contract checks: `python scripts/verify_project.py`.
+- Frontend verification: run from `frontend/` with `npm run typecheck` or `npm run verify`.
+- E2E smoke spec draft: `tests/e2e/opc.smoke.spec.ts`.
+- JS Playwright config/dependency is not yet configured in this repository.
+
+## Deployment and Build
+
+- Frontend build command: `npm run build` in `frontend/`.
+- Backend health and service startup are documented in `docs/RUNBOOK.md`.
+- Cloudflare tunnel notes are in `docs/CLOUDFLARE_OPC.md`.
+- CI runs backend project checks, backend tests, and frontend typecheck.
+
+## Known Risks and Missing Pieces
+
+- Root-level JS Playwright runner is not configured yet; `tests/e2e/opc.smoke.spec.ts` is staged as a contract until the runner is added.
+- The local Windows environment in this thread does not expose Bash, so `scripts/opc-loop-check.sh` is primarily for Unix/CI-style shells.
+- Mobile and PC login state rely on localStorage account markers; future auth work should keep explicit loading, expired-session, and network-error states.
+- Publishing and platform actions must remain behind human confirmation.

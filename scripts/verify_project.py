@@ -12,6 +12,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SKIP_DIRS = {".git", ".venv", "node_modules", ".next", ".next-build"}
 TEXT_HYGIENE_EXTENSIONS = {".md", ".py", ".ts", ".tsx"}
 TEXT_HYGIENE_ROOTS = [
+    ROOT / "AGENTS.md",
+    ROOT / "PROJECT_MAP.md",
+    ROOT / "LOOP_LOG.md",
     ROOT / "README.md",
     ROOT / "backend" / "app",
     ROOT / "docs",
@@ -55,6 +58,9 @@ def validate_json_configs() -> int:
 
 def validate_required_files() -> int:
     required = [
+        ROOT / "AGENTS.md",
+        ROOT / "PROJECT_MAP.md",
+        ROOT / "LOOP_LOG.md",
         ROOT / "README.md",
         ROOT / ".env.example",
         ROOT / "docker-compose.yml",
@@ -75,10 +81,20 @@ def validate_required_files() -> int:
         ROOT / "docs" / "CLOUDFLARE_OPC.md",
         ROOT / "docs" / "SECURITY_NOTES.md",
         ROOT / "docs" / "COMPETITOR_PLATFORM_RESEARCH.md",
+        ROOT / "docs" / "loop-engineering" / "README.md",
+        ROOT / "docs" / "loop-engineering" / "BACKLOG_SEEDS.md",
+        ROOT / "docs" / "loop-engineering" / "CODEX_MASTER_PROMPT.md",
+        ROOT / "docs" / "loop-engineering" / "EVAL_MATRIX.md",
+        ROOT / "docs" / "loop-engineering" / "LOOP_ENGINEERING_RUNBOOK.md",
+        ROOT / "docs" / "loop-engineering" / "LOOP_LOG_TEMPLATE.md",
+        ROOT / "docs" / "loop-engineering" / "PLAYWRIGHT_E2E_SPEC.md",
+        ROOT / "docs" / "loop-engineering" / "PRODUCT_ACCEPTANCE.md",
         ROOT / "infra" / "cloudflare" / "opc-tunnel.example.yml",
         ROOT / "scripts" / "open_collection_login_browser.py",
+        ROOT / "scripts" / "opc-loop-check.sh",
         ROOT / "scripts" / "run_trend_collection_job.py",
         ROOT / "scripts" / "smoke_public_image_text_search.py",
+        ROOT / "tests" / "e2e" / "opc.smoke.spec.ts",
         ROOT / "prompts" / "draft_generation.md",
         ROOT / "prompts" / "humanization.md",
         ROOT / "prompts" / "review.md",
