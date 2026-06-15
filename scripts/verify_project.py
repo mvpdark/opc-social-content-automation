@@ -611,18 +611,31 @@ def validate_frontend_design_contract() -> int:
     )
     middleware_text = (ROOT / "frontend" / "middleware.ts").read_text(encoding="utf-8")
 
-    workspace_new_window_links = re.findall(
-        r"<a\b(?:(?!</a>).)*target=\"_blank\"(?:(?!</a>).)*</a>",
-        workspace_text,
-        re.S,
-    )
-    if not workspace_new_window_links:
-        raise SystemExit("Missing workspace new-window link contract")
-    for link in workspace_new_window_links:
+    frontend_new_window_links: list[tuple[Path, int, str]] = []
+    for folder in [
+        ROOT / "frontend" / "app",
+        ROOT / "frontend" / "components",
+        ROOT / "frontend" / "lib",
+    ]:
+        for file in sorted(folder.rglob("*")):
+            if file.suffix not in {".ts", ".tsx"}:
+                continue
+            file_text = file.read_text(encoding="utf-8")
+            for match in re.finditer(
+                r"<a\b(?:(?!</a>).)*target=\"_blank\"(?:(?!</a>).)*</a>",
+                file_text,
+                re.S,
+            ):
+                line_number = file_text.count("\n", 0, match.start()) + 1
+                frontend_new_window_links.append((file, line_number, match.group(0)))
+    if not frontend_new_window_links:
+        raise SystemExit("Missing frontend new-window link contract")
+    for file, line_number, link in frontend_new_window_links:
         total += 1
         if 'rel="noopener noreferrer"' not in link:
             raise SystemExit(
-                "Workspace new-window links must use rel=\"noopener noreferrer\""
+                f"{file.relative_to(ROOT)}:{line_number} new-window links must use "
+                'rel="noopener noreferrer"'
             )
 
     workspace_external_link_contracts = [
