@@ -465,3 +465,77 @@ Kept.
 ### Next candidate loop
 
 - Add a focused post-login smoke for one creation-page control that does not call real AI/model services.
+
+## Loop 7 - Cover mobile create project controls without generation calls
+
+Date: 2026-06-15
+
+### Observation
+
+`PRODUCT_ACCEPTANCE.md` requires the Xiaohongshu workflow to let users enter material/topic context and keep publishing behind human confirmation. The E2E suite now covers mobile login, target tab restoration, and return safety, but it does not yet verify that the post-login Create tab exposes the project and topic controls without invoking real generation services.
+
+### Hypothesis
+
+If CI logs in through a mocked mobile success path, enters the enabled creation project, and asserts the topic controls plus manual-publish warning while blocking generation endpoints, regressions in the first post-login creation step will be caught without fake model/image outputs or automated publishing.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a post-login mobile Create tab smoke path with mocked successful login.
+- Entered the enabled "1.硕升博推广" project and verified topic, recommended topic, audience, tags, and generation button controls.
+- Verified the visible "不会自动发布" publishing-safety copy.
+- Added an E2E guard around source preview, content generation, and image generation endpoints and asserted none were called.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed from frontend/
+
+npm run e2e
+# 9 passed, 1 skipped from frontend/
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run build
+# passed from frontend/
+```
+
+Manual checks:
+
+- Confirmed `npx` is available for Playwright tooling.
+- Confirmed the test only enters and inspects the Create workflow; it does not call real AI/model/image services or fake outputs.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 25/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 4/5
+- Total: 91/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The test does not yet verify selecting a recommended topic changes audience/tags as intended.
+- Draft generation success and recoverable generation failure still need controlled API fixtures before they can be covered safely.
+
+### Next candidate loop
+
+- Add a focused topic-selection smoke that clicks a recommended topic and verifies topic/audience/tags stay aligned without calling generation services.

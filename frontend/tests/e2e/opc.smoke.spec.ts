@@ -39,6 +39,19 @@ async function mockSuccessfulLogin(page: Page, account: string) {
   });
 }
 
+async function trackGenerationServiceRequests(page: Page) {
+  const requests: string[] = [];
+  await page.route(/\/api\/(content\/generate|content\/source-preview|image\/generate)/, async (route) => {
+    requests.push(route.request().url());
+    await route.fulfill({
+      body: JSON.stringify({ detail: "E2E guard blocked generation service call." }),
+      contentType: "application/json",
+      status: 500
+    });
+  });
+  return requests;
+}
+
 function createLoginInput() {
   return {
     account: `e2e-${randomUUID()}`,
@@ -144,6 +157,34 @@ test.describe("OPC smoke coverage", () => {
     await page.getByRole("button", { name: "返回 PC 工作台" }).click();
 
     await expect(page).toHaveURL(`${BASE_ORIGIN}/`);
+  });
+
+  test("mobile create project exposes topic controls without generation calls", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const acceptedLogin = createLoginInput();
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await trackGenerationServiceRequests(page);
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=create`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+
+    await expect(page.getByTestId("mobile-tab-create")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("mobile-creation-project-gateway")).toBeVisible();
+    await page.getByTestId("mobile-creation-project-postgraduate-phd").click();
+
+    await expect(page.getByTestId("mobile-create-project-detail")).toBeVisible();
+    await expect(page.getByTestId("mobile-topic")).toHaveValue(/硕升博/);
+    await expect(page.getByTestId("mobile-topic-preset-list")).toBeVisible();
+    await expect(page.locator('[data-testid^="mobile-topic-preset-"]').first()).toBeVisible();
+    await expect(page.getByTestId("mobile-audience")).toHaveValue(/硕升博|博士/);
+    await expect(page.getByTestId("mobile-tags")).toHaveValue(/硕升博|博士/);
+    await expect(page.getByTestId("mobile-generate-draft")).toBeEnabled();
+    await expect(page.getByText("会先生成文案，再自动生成封面图；不会自动发布。")).toBeVisible();
+    await expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+    expect(generationRequests).toEqual([]);
   });
 
   test("login form accepts env-provided test credentials when available", async ({ page }) => {
