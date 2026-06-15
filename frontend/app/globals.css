@@ -648,6 +648,297 @@ li {
     rgb(var(--glass) / 0.6);
 }
 
+@media (min-width: 1280px) {
+  .theme-cyberpunk .pc-shell-grid {
+    grid-template-columns: 252px minmax(0, 1fr);
+  }
+}
+
+.theme-cyberpunk .pc-shell-content {
+  max-width: 1680px;
+  padding: 24px 28px 28px;
+}
+
+.theme-cyberpunk .pc-shell-sidebar {
+  border-color: rgb(var(--steel) / 0.28);
+  background:
+    linear-gradient(180deg, rgb(3 8 19 / 0.96), rgb(5 12 27 / 0.9)),
+    linear-gradient(90deg, rgb(var(--moss) / 0.08), transparent 38%);
+  box-shadow:
+    inset -1px 0 0 rgb(var(--steel) / 0.36),
+    18px 0 54px rgb(0 0 0 / 0.34);
+}
+
+.theme-cyberpunk .pc-shell-brand {
+  position: relative;
+  min-height: 84px;
+  border-color: rgb(var(--steel) / 0.28);
+  background:
+    linear-gradient(90deg, rgb(var(--moss) / 0.1), transparent 62%),
+    linear-gradient(180deg, rgb(var(--glass-highlight) / 0.06), transparent);
+}
+
+.theme-cyberpunk .pc-shell-brand::after {
+  position: absolute;
+  right: 14px;
+  bottom: -1px;
+  left: 14px;
+  height: 1px;
+  content: "";
+  background: linear-gradient(90deg, transparent, rgb(var(--moss) / 0.8), rgb(var(--steel) / 0.7), transparent);
+  box-shadow: 0 0 16px rgb(var(--steel) / 0.32);
+}
+
+.theme-cyberpunk .pc-shell-brand img {
+  border: 1px solid rgb(var(--moss) / 0.58);
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 1px rgb(var(--steel) / 0.18),
+    0 0 26px rgb(var(--moss) / 0.24);
+}
+
+.theme-cyberpunk .pc-shell-brand .text-base {
+  color: rgb(var(--moss));
+  text-shadow: 0 0 18px rgb(var(--moss) / 0.34);
+}
+
+.theme-cyberpunk .pc-shell-status-card,
+.theme-cyberpunk .pc-shell-safety-card,
+.theme-cyberpunk .pc-shell-theme-card,
+.theme-cyberpunk .pc-shell-local-card {
+  clip-path: polygon(0 10px, 10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+}
+
+.theme-cyberpunk .pc-shell-nav-link {
+  position: relative;
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 0 100%);
+}
+
+.theme-cyberpunk .pc-shell-nav-link[aria-current="page"] {
+  border-color: rgb(var(--moss) / 0.62);
+  background:
+    linear-gradient(90deg, rgb(var(--moss) / 0.22), rgb(var(--steel) / 0.08) 68%, transparent);
+  color: rgb(var(--moss));
+  box-shadow:
+    inset 3px 0 0 rgb(var(--moss)),
+    0 0 24px rgb(var(--moss) / 0.18);
+}
+
+.theme-cyberpunk .pc-shell-nav-link:not([aria-current="page"]):hover {
+  border-color: rgb(var(--steel) / 0.3);
+  background: rgb(var(--steel) / 0.07);
+}
+
+.theme-cyberpunk .pc-shell-topbar {
+  border-color: rgb(var(--steel) / 0.24);
+  background:
+    linear-gradient(90deg, rgb(var(--glass) / 0.96), rgb(4 9 20 / 0.84)),
+    linear-gradient(180deg, rgb(var(--glass-highlight) / 0.05), transparent);
+  box-shadow:
+    0 1px 0 rgb(var(--moss) / 0.2),
+    0 16px 54px rgb(0 0 0 / 0.28);
+}
+
+.theme-cyberpunk .pc-shell-tab-strip,
+.theme-cyberpunk .pc-shell-search-link,
+.theme-cyberpunk .pc-shell-action,
+.theme-cyberpunk .pc-shell-account,
+.theme-cyberpunk .pc-shell-primary-action {
+  clip-path: polygon(0 9px, 9px 0, calc(100% - 9px) 0, 100% 9px, 100% calc(100% - 9px), calc(100% - 9px) 100%, 9px 100%, 0 calc(100% - 9px));
+}
+
+.theme-cyberpunk .pc-shell-tab-link[aria-current="page"],
+.theme-cyberpunk .pc-shell-primary-action.glass-selected {
+  background:
+    linear-gradient(135deg, rgb(var(--moss) / 0.98), rgb(var(--steel) / 0.72));
+  color: rgb(2 8 15);
+  box-shadow:
+    0 0 0 1px rgb(var(--moss) / 0.48),
+    0 0 30px rgb(var(--moss) / 0.18);
+}
+
+.theme-cyberpunk .workspace-panel,
+.theme-cyberpunk .workspace-trend-console,
+.theme-cyberpunk .workspace-settings-overview,
+.theme-cyberpunk .workspace-subtle-card,
+.theme-cyberpunk .workspace-evidence-card,
+.theme-cyberpunk .glass-panel {
+  position: relative;
+  border-color: rgb(var(--steel) / 0.34);
+  border-radius: 0 !important;
+  clip-path: polygon(0 14px, 14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px));
+}
+
+.theme-cyberpunk .workspace-panel::before,
+.theme-cyberpunk .workspace-trend-console::before,
+.theme-cyberpunk .workspace-settings-overview::before,
+.theme-cyberpunk .glass-panel::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  content: "";
+  background:
+    linear-gradient(90deg, rgb(var(--moss) / 0.52), transparent 18%, transparent 82%, rgb(var(--steel) / 0.42)),
+    linear-gradient(180deg, rgb(var(--steel) / 0.24), transparent 18%, transparent 82%, rgb(var(--moss) / 0.16));
+  opacity: 0.34;
+}
+
+.theme-cyberpunk .workspace-panel > *,
+.theme-cyberpunk .workspace-trend-console > *,
+.theme-cyberpunk .workspace-settings-overview > *,
+.theme-cyberpunk .glass-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.theme-cyberpunk .workspace-panel-header {
+  border-color: rgb(var(--steel) / 0.28);
+  background:
+    linear-gradient(90deg, rgb(var(--moss) / 0.08), transparent 60%),
+    linear-gradient(180deg, rgb(var(--glass-highlight) / 0.07), transparent);
+}
+
+.theme-cyberpunk .workspace-panel-header h2,
+.theme-cyberpunk .workspace-panel-header .text-sm.font-semibold {
+  color: rgb(238 252 255);
+  text-shadow: 0 0 18px rgb(var(--steel) / 0.22);
+}
+
+.theme-cyberpunk .workspace-subtle-card,
+.theme-cyberpunk .workspace-health-card,
+.theme-cyberpunk .workspace-task-row,
+.theme-cyberpunk .workspace-metric-tile,
+.theme-cyberpunk .workspace-pipeline-chip,
+.theme-cyberpunk .workspace-evidence-card {
+  border-color: rgb(var(--steel) / 0.28);
+  background:
+    linear-gradient(135deg, rgb(var(--glass-highlight) / 0.07), transparent 40%),
+    linear-gradient(180deg, rgb(var(--glass) / 0.72), rgb(var(--glass) / 0.48));
+  box-shadow:
+    inset 0 1px 0 rgb(var(--glass-highlight) / 0.18),
+    0 0 22px rgb(var(--steel) / 0.04);
+}
+
+.theme-cyberpunk .workspace-button,
+.theme-cyberpunk :where(a, button).bg-ink,
+.theme-cyberpunk :where(a, button).bg-moss {
+  border: 1px solid rgb(var(--moss) / 0.52);
+  border-radius: 0;
+  clip-path: polygon(0 10px, 10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px));
+}
+
+.theme-cyberpunk .workspace-button-primary,
+.theme-cyberpunk :where(a, button).bg-ink,
+.theme-cyberpunk :where(a, button).bg-moss {
+  background:
+    linear-gradient(135deg, rgb(var(--moss) / 0.94), rgb(var(--steel) / 0.68)) !important;
+  color: rgb(2 8 15) !important;
+  box-shadow:
+    0 0 0 1px rgb(var(--moss) / 0.22),
+    0 0 30px rgb(var(--moss) / 0.18),
+    inset 0 1px 0 rgb(255 255 255 / 0.24);
+}
+
+.theme-cyberpunk .workspace-button-secondary {
+  border-color: rgb(var(--steel) / 0.38);
+  background:
+    linear-gradient(135deg, rgb(var(--steel) / 0.12), transparent 58%),
+    rgb(var(--glass) / 0.62);
+}
+
+.theme-cyberpunk .workspace-pill {
+  border-radius: 0;
+  clip-path: polygon(0 7px, 7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%);
+  text-transform: none;
+}
+
+.theme-cyberpunk .workspace-icon-box {
+  border: 1px solid currentColor;
+  border-radius: 0;
+  background: rgb(var(--glass) / 0.58);
+  box-shadow: 0 0 18px currentColor;
+  clip-path: polygon(0 8px, 8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+}
+
+.theme-cyberpunk :where(input, select, textarea),
+.theme-cyberpunk .workspace-form-control {
+  border-color: rgb(var(--steel) / 0.36);
+  border-radius: 0;
+  background:
+    linear-gradient(90deg, rgb(var(--steel) / 0.08), transparent 58%),
+    rgb(5 13 27 / 0.86) !important;
+  box-shadow: inset 0 0 0 1px rgb(var(--moss) / 0.04);
+}
+
+.theme-cyberpunk table {
+  background: rgb(3 10 21 / 0.66);
+}
+
+.theme-cyberpunk thead {
+  background:
+    linear-gradient(90deg, rgb(var(--moss) / 0.08), rgb(var(--steel) / 0.06));
+}
+
+.theme-cyberpunk tbody tr {
+  background: rgb(var(--glass) / 0.26);
+}
+
+.theme-cyberpunk tbody tr:hover {
+  background:
+    linear-gradient(90deg, rgb(var(--moss) / 0.1), rgb(var(--steel) / 0.04));
+}
+
+.theme-cyberpunk :where(th, td) {
+  border-color: rgb(var(--steel) / 0.18);
+}
+
+.theme-cyberpunk .workspace-evidence-switcher,
+.theme-cyberpunk .workspace-evidence-toggle {
+  border-color: rgb(var(--steel) / 0.26);
+  background: rgb(var(--glass) / 0.46);
+}
+
+.theme-cyberpunk .workspace-evidence-toggle[aria-expanded="true"] {
+  border: 1px solid rgb(var(--moss) / 0.5);
+  background:
+    linear-gradient(90deg, rgb(var(--moss) / 0.16), rgb(var(--steel) / 0.08));
+  color: rgb(var(--ink));
+}
+
+.theme-cyberpunk .border-coral\/30,
+.theme-cyberpunk .border-coral\/40,
+.theme-cyberpunk .border-coral\/45 {
+  border-color: rgb(var(--coral) / 0.62) !important;
+}
+
+.theme-cyberpunk .bg-coral\/10 {
+  background:
+    linear-gradient(90deg, rgb(var(--coral) / 0.18), rgb(var(--coral) / 0.06)) !important;
+  box-shadow: inset 3px 0 0 rgb(var(--coral) / 0.75);
+}
+
+.theme-cyberpunk .workspace-creation-gateway .glass-panel,
+.theme-cyberpunk .workspace-content-status,
+.theme-cyberpunk .workspace-cover-layout .workspace-panel,
+.theme-cyberpunk .workspace-delivery-layout .workspace-panel,
+.theme-cyberpunk .workspace-settings-layout .workspace-panel {
+  box-shadow:
+    inset 0 1px 0 rgb(var(--glass-highlight) / 0.2),
+    0 20px 70px rgb(0 0 0 / 0.34),
+    0 0 36px rgb(var(--steel) / 0.06);
+}
+
+.theme-cyberpunk .workspace-trend-results,
+.theme-cyberpunk .workspace-knowledge-layout,
+.theme-cyberpunk .workspace-content-grid,
+.theme-cyberpunk .workspace-delivery-grid {
+  position: relative;
+}
+
 .theme-brutalist .glass-panel,
 .theme-brutalist .glass-control,
 .theme-brutalist .glass-subtle {

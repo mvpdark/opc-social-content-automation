@@ -65,9 +65,9 @@ export function AppShell({
 
   return (
     <main className={`theme-${interfaceStyle} workspace-shell min-h-screen text-ink`}>
-      <div className="relative z-10 grid min-h-screen grid-cols-1 xl:grid-cols-[224px_minmax(0,1fr)]">
+      <div className="pc-shell-grid relative z-10 grid min-h-screen grid-cols-1 xl:grid-cols-[224px_minmax(0,1fr)]">
         <aside className="glass-sidebar pc-shell-sidebar border-b border-line xl:sticky xl:top-0 xl:flex xl:h-screen xl:flex-col xl:border-b-0 xl:border-r">
-          <div className="flex h-[76px] items-center border-b border-line px-5 py-4 xl:px-5">
+          <div className="pc-shell-brand flex h-[76px] items-center border-b border-line px-5 py-4 xl:px-5">
             <img
               alt=""
               className="h-10 w-10 rounded-md object-cover shadow-[0_10px_24px_rgb(var(--moss)/0.18)]"
@@ -79,7 +79,7 @@ export function AppShell({
             </div>
           </div>
           <div className="hidden px-3 pb-2 pt-3 xl:block">
-            <div className="glass-control rounded-md border px-3 py-3">
+            <div className="pc-shell-status-card glass-control rounded-md border px-3 py-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="text-xs text-muted">默认工作区</div>
@@ -101,7 +101,7 @@ export function AppShell({
                   href={tabHref(item.id)}
                   key={item.id}
                   className={[
-                    "mb-1 flex h-10 min-w-max items-center gap-3 rounded-md px-3 text-sm transition xl:w-full",
+                    "pc-shell-nav-link mb-1 flex h-10 min-w-max items-center gap-3 rounded-md px-3 text-sm transition xl:w-full",
                     active
                       ? "glass-selected"
                       : "text-muted hover:bg-mist/70 hover:text-ink"
@@ -114,7 +114,7 @@ export function AppShell({
             })}
           </nav>
           <div className="hidden space-y-3 border-t border-line p-3 xl:block">
-            <div className="glass-subtle rounded-md border p-3">
+            <div className="pc-shell-safety-card glass-subtle rounded-md border p-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-xs font-semibold text-ink">
                   <ShieldCheck className="h-4 w-4 text-moss" />
@@ -130,7 +130,7 @@ export function AppShell({
                 </p>
               ) : null}
             </div>
-            <div className="glass-subtle rounded-md border p-3">
+            <div className="pc-shell-theme-card glass-subtle rounded-md border p-3">
               <div className="flex items-center gap-2 text-xs font-medium text-muted">
                 <Palette className="h-4 w-4 text-steel" />
                 当前页推荐
@@ -164,7 +164,7 @@ export function AppShell({
                 )}
               </div>
             </div>
-            <div className="glass-subtle rounded-md border p-3">
+            <div className="pc-shell-local-card glass-subtle rounded-md border p-3">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div className="text-xs font-semibold text-ink">本地状态</div>
                 <span className="text-[11px] text-muted">实时入口</span>
@@ -197,7 +197,7 @@ export function AppShell({
               </div>
               <nav
                 aria-label="桌面快捷导航"
-                className="workspace-primary-nav hidden min-w-0 items-center justify-start gap-1 overflow-x-auto rounded-md border border-line/70 bg-paper/54 p-1 shadow-[inset_0_1px_0_rgb(var(--glass-highlight)/0.44)] xl:flex"
+                className="pc-shell-tab-strip workspace-primary-nav hidden min-w-0 items-center justify-start gap-1 overflow-x-auto rounded-md border border-line/70 bg-paper/54 p-1 shadow-[inset_0_1px_0_rgb(var(--glass-highlight)/0.44)] xl:flex"
               >
                 {navigation.map((item) => {
                   const active = item.id === activeTab;
@@ -205,7 +205,7 @@ export function AppShell({
                     <a
                       aria-current={active ? "page" : undefined}
                       className={[
-                        "inline-flex h-9 min-w-max shrink-0 items-center gap-2 rounded-md px-3.5 text-sm font-medium transition",
+                        "pc-shell-tab-link inline-flex h-9 min-w-max shrink-0 items-center gap-2 rounded-md px-3.5 text-sm font-medium transition",
                         active
                           ? "bg-moss text-white shadow-sm"
                           : "text-muted hover:bg-mist/80 hover:text-ink"
@@ -230,7 +230,7 @@ export function AppShell({
                 ) : null}
                 <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
                   <a
-                    className="glass-control hidden h-9 min-w-[190px] items-center gap-2 rounded-md border px-3 text-sm font-medium text-muted transition hover:text-ink 2xl:flex"
+                    className="pc-shell-search-link glass-control hidden h-9 min-w-[190px] items-center gap-2 rounded-md border px-3 text-sm font-medium text-muted transition hover:text-ink 2xl:flex"
                     href={tabHref("knowledge")}
                   >
                     <Search className="h-4 w-4 shrink-0" />
@@ -238,27 +238,27 @@ export function AppShell({
                   </a>
                   <a
                     aria-label="查看发布安全规则"
-                    className="glass-control hidden h-9 w-9 items-center justify-center rounded-md border text-muted transition hover:text-ink lg:flex"
+                    className="pc-shell-action glass-control hidden h-9 w-9 items-center justify-center rounded-md border text-muted transition hover:text-ink lg:flex"
                     href={tabHref("settings")}
                   >
                     <HelpCircle className="h-4 w-4" />
                   </a>
                   <a
                     aria-label="查看发布助手"
-                    className="glass-control hidden h-9 w-9 items-center justify-center rounded-md border text-muted transition hover:text-ink lg:flex"
+                    className="pc-shell-action glass-control hidden h-9 w-9 items-center justify-center rounded-md border text-muted transition hover:text-ink lg:flex"
                     href={tabHref("delivery")}
                   >
                     <Bell className="h-4 w-4" />
                   </a>
                   {accountLabel ? (
-                    <div className="glass-control flex h-9 max-w-[140px] items-center gap-2 rounded-md border px-3 text-xs font-medium text-muted 2xl:max-w-[180px]">
+                    <div className="pc-shell-account glass-control flex h-9 max-w-[140px] items-center gap-2 rounded-md border px-3 text-xs font-medium text-muted 2xl:max-w-[180px]">
                       <UserRound className="h-3.5 w-3.5 shrink-0 text-steel" />
                       <span className="truncate text-ink">{accountLabel}</span>
                     </div>
                   ) : null}
                   {onLogout ? (
                     <button
-                      className="glass-control flex h-9 shrink-0 items-center gap-2 rounded-md border px-3 text-sm font-medium text-muted transition hover:text-ink"
+                      className="pc-shell-action glass-control flex h-9 shrink-0 items-center gap-2 rounded-md border px-3 text-sm font-medium text-muted transition hover:text-ink"
                       onClick={onLogout}
                       type="button"
                     >
@@ -267,7 +267,7 @@ export function AppShell({
                     </button>
                   ) : null}
                   <a
-                    className="glass-control flex h-9 shrink-0 items-center gap-2 rounded-md border px-3 text-sm font-medium text-ink"
+                    className="pc-shell-action glass-control flex h-9 shrink-0 items-center gap-2 rounded-md border px-3 text-sm font-medium text-ink"
                     href={androidHref}
                   >
                     <Smartphone className="h-4 w-4" />
@@ -275,7 +275,7 @@ export function AppShell({
                   </a>
                   <a
                     className={[
-                      "flex h-9 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-medium",
+                      "pc-shell-primary-action flex h-9 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-medium",
                       activeTab === "content"
                         ? "glass-selected"
                         : "glass-control border text-ink"
@@ -287,7 +287,7 @@ export function AppShell({
                   </a>
                   <a
                     aria-label="打开设置"
-                    className="glass-control flex h-9 w-9 items-center justify-center rounded-md border text-muted"
+                    className="pc-shell-action glass-control flex h-9 w-9 items-center justify-center rounded-md border text-muted"
                     href={tabHref("settings")}
                   >
                     <Settings className="h-4 w-4" />
@@ -296,7 +296,7 @@ export function AppShell({
               </div>
             </div>
           </header>
-          <div className="pc-content-frame mx-auto max-w-[1560px] p-4 lg:p-6">{children}</div>
+          <div className="pc-content-frame pc-shell-content mx-auto max-w-[1560px] p-4 lg:p-6">{children}</div>
         </section>
       </div>
     </main>

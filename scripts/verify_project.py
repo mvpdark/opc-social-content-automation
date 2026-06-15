@@ -612,6 +612,13 @@ def validate_frontend_design_contract() -> int:
         "workspace-dashboard-hero",
         ".theme-cyberpunk .workspace-task-row::before",
         ".theme-cyberpunk .workspace-metric-tile::after",
+        "pc-shell-grid",
+        ".theme-cyberpunk .pc-shell-nav-link[aria-current=\"page\"]",
+        "workspace-panel-header",
+        ".theme-cyberpunk .workspace-panel::before",
+        "workspace-trend-console",
+        "workspace-evidence-toggle",
+        ".theme-cyberpunk .workspace-evidence-toggle[aria-expanded=\"true\"]",
         "深色石墨、HUD 网格和霓虹边缘",
     ]
     for snippet in cyberpunk_theme_contract_snippets:

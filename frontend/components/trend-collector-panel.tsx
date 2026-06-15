@@ -73,9 +73,9 @@ const inputClass =
 const inlineInputClass =
   "glass-control h-10 w-full rounded-md border px-3 text-sm text-ink outline-none";
 const secondaryButtonClass =
-  "glass-control flex h-10 items-center justify-center gap-2 rounded-md border text-sm font-medium text-ink disabled:cursor-not-allowed disabled:opacity-60";
+  "workspace-button workspace-button-secondary glass-control flex h-10 items-center justify-center gap-2 rounded-md border text-sm font-medium text-ink disabled:cursor-not-allowed disabled:opacity-60";
 const primaryButtonClass =
-  "flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-paper disabled:cursor-not-allowed disabled:opacity-60";
+  "workspace-button workspace-button-primary flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-paper disabled:cursor-not-allowed disabled:opacity-60";
 
 function buildLocalSearchTarget(platform: Platform, keyword: string): SearchTarget {
   const encodedKeyword = encodeURIComponent(keyword.trim());
@@ -644,8 +644,8 @@ export function TrendCollectorPanel({
   }
 
   return (
-    <section className="glass-panel overflow-hidden rounded-md border shadow-panel">
-      <div className="flex flex-col gap-2 border-b border-line/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+    <section className="workspace-panel workspace-trend-console glass-panel overflow-hidden rounded-md border shadow-panel">
+      <div className="workspace-panel-header flex flex-col gap-2 border-b border-line/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-sm font-semibold leading-5">平台研究采集</h2>
           <p className="mt-1 text-xs text-muted">
@@ -657,8 +657,8 @@ export function TrendCollectorPanel({
         </span>
       </div>
 
-      <div className="grid grid-cols-1 divide-y divide-line xl:grid-cols-[380px_minmax(0,1fr)] xl:divide-x xl:divide-y-0">
-        <div className="px-4 py-4">
+      <div className="workspace-panel-body grid grid-cols-1 divide-y divide-line xl:grid-cols-[380px_minmax(0,1fr)] xl:divide-x xl:divide-y-0">
+        <div className="workspace-trend-controls px-4 py-4">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="block">
               <span className="flex items-center justify-between gap-3">
@@ -894,7 +894,7 @@ export function TrendCollectorPanel({
           </div>
         </div>
 
-        <div className="px-4 py-4">
+        <div className="workspace-trend-status px-4 py-4">
           <div className="flex items-start gap-3">
             <div className="glass-subtle flex h-10 w-10 items-center justify-center rounded-md border text-steel">
               <Search className="h-5 w-5" />
@@ -988,7 +988,7 @@ export function TrendCollectorPanel({
           </div>
         </div>
       </div>
-      <div className="border-t border-line/70 px-4 py-4">
+      <div className="workspace-trend-results border-t border-line/70 px-4 py-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="flex items-center gap-3">

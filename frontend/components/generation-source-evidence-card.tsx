@@ -17,7 +17,7 @@ import {
 import { scrollElementIntoView } from "@/lib/scroll-into-view";
 
 const secondaryButtonClass =
-  "glass-control flex items-center justify-center gap-2 rounded-md border text-sm font-medium text-ink";
+  "workspace-button workspace-button-secondary glass-control flex items-center justify-center gap-2 rounded-md border text-sm font-medium text-ink";
 const evidenceExcerptClass =
   "mt-2 max-h-36 overflow-y-auto whitespace-pre-wrap break-words pr-1 text-[11px] leading-5 text-muted";
 
@@ -104,7 +104,7 @@ export function GenerationSourceEvidenceCard({
   }, [openEvidenceSection]);
 
   return (
-    <div className="mt-4 rounded-md border border-line bg-paper/70 p-3" data-testid="generation-source-evidence">
+    <div className="workspace-evidence-card mt-4 rounded-md border border-line bg-paper/70 p-3" data-testid="generation-source-evidence">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-xs font-semibold text-ink">检索依据</div>
@@ -134,13 +134,13 @@ export function GenerationSourceEvidenceCard({
         </button>
       ) : null}
       {error ? <p className="mt-2 text-xs leading-5 text-coral">{error}</p> : null}
-      <div className="mt-3 rounded-md border border-line bg-mist/45 p-1.5" data-testid="source-evidence-switcher">
+      <div className="workspace-evidence-switcher mt-3 rounded-md border border-line bg-mist/45 p-1.5" data-testid="source-evidence-switcher">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <button
             aria-controls="source-knowledge-list"
             aria-expanded={openEvidenceSection === "knowledge"}
             className={[
-              "flex min-h-12 items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition",
+                "workspace-evidence-toggle flex min-h-12 items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition",
               openEvidenceSection === "knowledge" ? "bg-paper text-ink shadow-sm" : "bg-paper/60 text-muted hover:bg-paper"
             ].join(" ")}
             data-testid="source-knowledge-toggle"
@@ -162,7 +162,7 @@ export function GenerationSourceEvidenceCard({
             aria-controls="source-web-list"
             aria-expanded={openEvidenceSection === "web"}
             className={[
-              "flex min-h-12 items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition",
+                "workspace-evidence-toggle flex min-h-12 items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition",
               openEvidenceSection === "web" ? "bg-paper text-ink shadow-sm" : "bg-paper/60 text-muted hover:bg-paper"
             ].join(" ")}
             data-testid="source-web-toggle"

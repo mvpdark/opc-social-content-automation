@@ -134,11 +134,11 @@ const iconToneClass = {
   red: "bg-coral/10 text-coral"
 } satisfies Record<string, string>;
 
-const subtleCardClass = "glass-subtle rounded-md border";
+const subtleCardClass = "workspace-subtle-card glass-subtle rounded-md border";
 const formControlClass =
-  "glass-control mt-2 w-full rounded-md border px-3 text-sm text-ink outline-none";
+  "workspace-form-control glass-control mt-2 w-full rounded-md border px-3 text-sm text-ink outline-none";
 const secondaryButtonClass =
-  "glass-control flex items-center justify-center gap-2 rounded-md border text-sm font-medium text-ink";
+  "workspace-button workspace-button-secondary glass-control flex items-center justify-center gap-2 rounded-md border text-sm font-medium text-ink";
 
 const dependencyTone = {
   missing: "red",
@@ -2068,7 +2068,7 @@ function KnowledgeView() {
   const visibleDetailItem = selectedItem ?? items[0] ?? null;
 
   return (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+    <div className="workspace-knowledge-layout grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
       <Panel helper="查看已经入库的采集摘要、写作素材和人工确认后的知识条目。" title="知识库">
         <form className="mb-4 grid gap-3 md:grid-cols-[1fr_auto_auto]" onSubmit={submitSearch}>
           <label className="min-w-0">
@@ -2560,8 +2560,8 @@ function ContentView({
   }
 
   return (
-    <div className="space-y-4">
-      <section className="glass-panel rounded-md border px-4 py-4">
+    <div className="workspace-content-layout space-y-4">
+      <section className="workspace-content-status glass-panel rounded-md border px-4 py-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="flex flex-wrap gap-2">
@@ -2597,7 +2597,7 @@ function ContentView({
           workspaceToken={workspaceToken}
         />
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
+      <div className="workspace-content-grid grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
         <DraftPanel
           content={previewContent}
           coverImageAsset={previewImageAsset}
@@ -2654,7 +2654,7 @@ function CreationProjectGateway({
   const gatewayWorkflowTones = ["blue", "green", "amber", "red"] as const;
 
   return (
-    <div className="space-y-6" data-testid="creation-project-gateway">
+    <div className="workspace-creation-gateway space-y-6" data-testid="creation-project-gateway">
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
         <button
           aria-label={`进入${liveProject.title}创作流程`}
@@ -4200,7 +4200,7 @@ function GeneratedPostExportCard({
 
 function CoverView({ contentHref }: { contentHref: string }) {
   return (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,0.9fr)_1fr]">
+    <div className="workspace-cover-layout grid grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,0.9fr)_1fr]">
       <Panel
         action={
           <a
@@ -4247,7 +4247,7 @@ function CoverView({ contentHref }: { contentHref: string }) {
 
 function DeliveryView() {
   return (
-    <div className="space-y-4">
+    <div className="workspace-delivery-layout space-y-4">
       <Panel helper="没有已确认内容时保持禁用；确认后再生成复制包和发布记录。" title="发布动作">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
           {promoterActions.map((action, index) => (
@@ -4275,7 +4275,7 @@ function DeliveryView() {
         </div>
       </Panel>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+      <section className="workspace-delivery-grid grid grid-cols-1 gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <Panel helper="运营队列里的待处理事项。" title="工作队列">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {queues.map((queue, index) => (
@@ -4559,9 +4559,9 @@ function SettingsView({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="workspace-settings-layout space-y-4">
       <section
-        className="glass-panel overflow-hidden rounded-md border"
+        className="workspace-settings-overview glass-panel overflow-hidden rounded-md border"
         data-testid="settings-console-overview"
       >
         <div className="grid gap-5 p-4 lg:grid-cols-[1fr_340px] lg:p-5">
@@ -4674,7 +4674,7 @@ function SettingsView({
             <div className="mt-4 grid grid-cols-1 gap-2">
               <button
                 aria-label={providerApplyLabel}
-                className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-paper disabled:cursor-not-allowed disabled:opacity-60"
+                className="workspace-button workspace-button-primary flex h-10 items-center justify-center gap-2 rounded-md bg-ink text-sm font-medium text-paper disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={!canApplyProviderKeys}
                 onClick={applyProviderKeys}
                 type="button"
@@ -5611,22 +5611,22 @@ function Panel({
   title: string;
 }) {
   return (
-    <section className={["glass-panel overflow-hidden rounded-md border", className].join(" ")}>
-      <div className="flex flex-col gap-3 border-b border-line/70 bg-paper/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+    <section className={["workspace-panel glass-panel overflow-hidden rounded-md border", className].join(" ")}>
+      <div className="workspace-panel-header flex flex-col gap-3 border-b border-line/70 bg-paper/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold leading-5">{title}</h2>
           {helper ? <p className="mt-1 text-xs text-muted">{helper}</p> : null}
         </div>
         {action}
       </div>
-      <div className="p-4 lg:p-5">{children}</div>
+      <div className="workspace-panel-body p-4 lg:p-5">{children}</div>
     </section>
   );
 }
 
 function IconBox({ children, tone = "green" }: { children: ReactNode; tone?: keyof typeof iconToneClass }) {
   return (
-    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${iconToneClass[tone]}`}>
+    <div className={`workspace-icon-box flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${iconToneClass[tone]}`}>
       {children}
     </div>
   );
@@ -5634,7 +5634,7 @@ function IconBox({ children, tone = "green" }: { children: ReactNode; tone?: key
 
 function Pill({ children, tone = "neutral" }: { children: ReactNode; tone?: keyof typeof pillTone }) {
   return (
-    <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium ${pillTone[tone]}`}>
+    <span className={`workspace-pill inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium ${pillTone[tone]}`}>
       {children}
     </span>
   );
