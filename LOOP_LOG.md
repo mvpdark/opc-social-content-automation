@@ -2072,3 +2072,74 @@ Kept.
 ### Next candidate loop
 
 - Add a `data-state` style test hook to generation progress components only if another progress-label flake appears; otherwise return to workflow coverage such as PC timing/source topic success paths.
+
+## Loop 29 - Cover PC timing-topic preview copy alignment
+
+Date: 2026-06-16
+
+### Observation
+
+PC one-click success coverage now protects sales, route, and mentor topic families, but timing/schedule topics were only represented by a desktop content-failure test. That left the successful PC preview/copy path for time-planning topics uncovered and could allow generic drift into route planning or mentor matching.
+
+### Hypothesis
+
+If the shared PC topic-alignment scenario runs with the `timeline-main` preset and a dedicated content id, then the desktop timing-topic success path will verify topic, audience, tags, knowledge query, cover direction, source evidence, preview copy, and no-publishing behavior just like the other major topic families.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added an isolated PC timing-topic generated content id.
+- Added a PC one-click timing-topic E2E case using the existing `timeline-main` preset and shared topic-alignment helper.
+- Verified the existing timing content-failure coverage remains separate from the new success path.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC one-click generation keeps selected timing topic aligned through preview copy" --project=chromium
+# 1 passed
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run e2e
+# 22 passed, 1 skipped
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 22/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 14/15
+- Maintainability: 9/10
+- UX polish: 3/5
+- Total: 88/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The env-backed live login smoke still skips unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+- PC source-style success coverage is still mostly represented by published-status and cover-failure paths; a future loop can add a direct source-topic success scenario.
+
+### Next candidate loop
+
+- Add PC source-topic success coverage through the shared topic-alignment helper, or return to production workflow hardening if source coverage is sufficient.
