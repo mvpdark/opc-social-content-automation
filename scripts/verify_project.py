@@ -151,8 +151,7 @@ def validate_safety_gates() -> int:
     checks = {
         "backend/app/api/v1/endpoints/workspace.py": [
             "只有人工批准后的内容可以记录为已发布。",
-            "ContentReview.review_type == \"human\"",
-            "ContentReview.status == \"approved\"",
+            "has_human_approved_review(db, content.id)",
             "只有人工确认通过的内容可以记录为已发布。",
             'content.status = "published"',
         ],
@@ -266,6 +265,10 @@ def validate_safety_gates() -> int:
         "backend/app/services/workspace_service.py": [
             "provider_status_items",
             "missing_key",
+            "def has_human_approved_review",
+            "ContentReview.review_type == \"human\"",
+            "ContentReview.status == \"approved\"",
+            "只有人工确认通过的内容可以导出。",
         ],
         "backend/app/services/content_service.py": [
             "这个选题需要实时来源",

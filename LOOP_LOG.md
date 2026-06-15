@@ -1570,3 +1570,74 @@ Kept.
 ### Next candidate loop
 
 - Add backend export-package lifecycle coverage so `/api/workspace/export` only exports content that has explicit human-review approval evidence, not merely an `approved` status field.
+
+## Loop 22 - Require human review evidence before export
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 21 required an explicit human approved review before creating publish records, but `/api/workspace/export` still allowed content through when its status was `approved` or `published`. Because export packages are publish-adjacent, an accidental status mutation could still bypass the intended human-review evidence requirement.
+
+### Hypothesis
+
+If export and publish-record creation share a single human-review evidence helper, then both publish-adjacent backend actions will consistently require an actual human approved review rather than trusting the content status field alone.
+
+### Patch
+
+Files changed:
+
+- `backend/app/services/workspace_service.py`
+- `backend/app/api/v1/endpoints/workspace.py`
+- `backend/tests/test_workspace_service.py`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added `has_human_approved_review` in the workspace service.
+- Reused that helper in the publish-record endpoint.
+- Added the same human-review evidence gate to export package loading.
+- Added API regression coverage blocking export for draft content, status-only approved content, changes-requested human review, model-only approval, and published content without human approval evidence.
+- Added API success coverage for approved and published content when a human approved review exists.
+- Updated the project safety verifier so the shared helper and export gate remain protected.
+
+### Verification
+
+Commands run:
+
+```bash
+backend/.venv/Scripts/python.exe -m pytest backend/tests/test_workspace_service.py
+# 16 passed, 1 warning
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+backend/.venv/Scripts/python.exe -m pytest backend/tests
+# 224 passed, 1 warning
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 28/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 3/5
+- Total: 95/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The env-backed live login smoke still skips unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+- The approved-content listing still returns status-based approved/published items; a future loop can decide whether that read-only listing should also filter by human-review evidence or simply show items with a warning.
+
+### Next candidate loop
+
+- Tighten `/api/workspace/approved-content` so read-only export candidates either require human-review evidence or clearly surface missing review evidence to the PC UI.

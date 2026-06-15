@@ -5,6 +5,7 @@ from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from app.models.content import Content
+from app.models.content_review import ContentReview
 from app.models.publish_record import PublishRecord
 from app.models.user import User
 from app.core.config import settings
@@ -21,6 +22,21 @@ from app.services.model_router import model_router
 
 
 EXPORTABLE_STATUSES = {"approved", "published"}
+
+
+def has_human_approved_review(db: Session, content_id: int) -> bool:
+    return (
+        db.scalar(
+            select(ContentReview.id)
+            .where(
+                ContentReview.content_id == content_id,
+                ContentReview.review_type == "human",
+                ContentReview.status == "approved",
+            )
+            .limit(1)
+        )
+        is not None
+    )
 
 
 def approved_content_items(db: Session, limit: int) -> list[Content]:
@@ -67,6 +83,17 @@ def _load_export_contents(db: Session, content_ids: list[int]) -> list[Content]:
             detail={
                 "message": "只有人工批准后的内容可以导出。",
                 "blocked_content_ids": blocked_ids,
+            },
+        )
+    unreviewed_ids = [
+        content.id for content in loaded if not has_human_approved_review(db, content.id)
+    ]
+    if unreviewed_ids:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "message": "只有人工确认通过的内容可以导出。",
+                "blocked_content_ids": unreviewed_ids,
             },
         )
     return loaded

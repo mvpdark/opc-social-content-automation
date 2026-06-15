@@ -77,6 +77,7 @@ def _seed_workspace_content(
     *,
     status: str,
     human_review_status: str | None = None,
+    human_review_type: str = "human",
 ) -> int:
     with testing_session() as db:
         content = Content(
@@ -92,7 +93,7 @@ def _seed_workspace_content(
             db.add(
                 ContentReview(
                     content_id=content.id,
-                    review_type="human",
+                    review_type=human_review_type,
                     status=human_review_status,
                     score=95 if human_review_status == "approved" else 60,
                     notes="API lifecycle test review.",
@@ -163,3 +164,58 @@ def test_publish_record_endpoint_accepts_human_approved_content_only() -> None:
         assert content.status == "published"
         assert record.content_id == content_id
         assert record.external_url == "https://example.com/manual-published"
+
+
+@pytest.mark.parametrize(
+    ("content_status", "human_review_status", "human_review_type"),
+    [
+        ("draft", "approved", "human"),
+        ("approved", None, "human"),
+        ("approved", "changes_requested", "human"),
+        ("approved", "approved", "model"),
+        ("published", None, "human"),
+    ],
+)
+def test_export_endpoint_rejects_content_without_human_approval_evidence(
+    content_status: str,
+    human_review_status: str | None,
+    human_review_type: str,
+) -> None:
+    client, testing_session = _workspace_api_client()
+    content_id = _seed_workspace_content(
+        testing_session,
+        status=content_status,
+        human_review_status=human_review_status,
+        human_review_type=human_review_type,
+    )
+
+    response = client.post(
+        "/api/workspace/export",
+        json={"content_ids": [content_id], "format": "json"},
+    )
+
+    assert response.status_code == 409
+
+
+@pytest.mark.parametrize("content_status", ["approved", "published"])
+def test_export_endpoint_accepts_only_human_approved_content(
+    content_status: str,
+) -> None:
+    client, testing_session = _workspace_api_client()
+    content_id = _seed_workspace_content(
+        testing_session,
+        status=content_status,
+        human_review_status="approved",
+    )
+
+    response = client.post(
+        "/api/workspace/export",
+        json={"content_ids": [content_id], "format": "json"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "ready"
+    assert payload["content_ids"] == [content_id]
+    assert payload["items"][0]["id"] == content_id
+    assert "人工确认发布边界" in payload["payload"]
