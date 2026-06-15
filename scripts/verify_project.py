@@ -611,6 +611,29 @@ def validate_frontend_design_contract() -> int:
     )
     middleware_text = (ROOT / "frontend" / "middleware.ts").read_text(encoding="utf-8")
 
+    workspace_new_window_links = re.findall(
+        r"<a\b(?:(?!</a>).)*target=\"_blank\"(?:(?!</a>).)*</a>",
+        workspace_text,
+        re.S,
+    )
+    if not workspace_new_window_links:
+        raise SystemExit("Missing workspace new-window link contract")
+    for link in workspace_new_window_links:
+        total += 1
+        if 'rel="noopener noreferrer"' not in link:
+            raise SystemExit(
+                "Workspace new-window links must use rel=\"noopener noreferrer\""
+            )
+
+    workspace_external_link_contracts = [
+        "aria-label={`打开${platformLabel}封面原图`}",
+        "aria-label={`查看外部能力来源：${candidate.title}`}",
+    ]
+    for snippet in workspace_external_link_contracts:
+        total += 1
+        if snippet not in workspace_text:
+            raise SystemExit(f"Missing workspace external link contract: {snippet}")
+
     tab_ids = _extract_ts_array("workspaceTabIds", data_text)
     style_ids = [
         style_id

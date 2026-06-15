@@ -4202,9 +4202,10 @@ function GeneratedPostExportCard({
                 未确认内容生成的封面会保持待确认状态。粘贴到{platformLabel}前，请确认标题、图中文字、封面暗示和正文一致。
               </div>
               <a
+                aria-label={`打开${platformLabel}封面原图`}
                 className="mt-3 inline-flex items-center gap-2 font-semibold text-steel"
                 href={imagePreviewUrl}
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 target="_blank"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
@@ -4969,9 +4970,10 @@ function ExternalSkillRadarPanel() {
                   {candidate.guardrail}
                 </p>
                 <a
+                  aria-label={`查看外部能力来源：${candidate.title}`}
                   className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-steel hover:text-ink"
                   href={candidate.href}
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   target="_blank"
                 >
                   查看来源
