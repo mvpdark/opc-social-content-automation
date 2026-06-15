@@ -1077,6 +1077,8 @@ def validate_content_production_contract() -> int:
         "preset.desktopLabel",
         "preset.desktopHelper",
         "buildTopicCoverStyleNotes(",
+        "generateCoverForContent(finalContent, requestPayload.topic)",
+        "async function generateCoverForContent(content: GeneratedContent, coverTopic = content.title)",
         "每 45 秒自动换一批，也可以直接修改为自定义选题",
     ]
     backend_contract_snippets = [
@@ -1471,6 +1473,7 @@ def validate_content_production_contract() -> int:
         "preset.mobileLabel",
         "preset.mobileHelper",
         "buildTopicCoverStyleNotes(",
+        "buildTopicCoverStyleNotes(baseCoverStyleNotes, requestPayload.topic)",
         "每 45 秒自动换一批，可自定义",
     ]
     for snippet in mobile_topic_recommendation_contract_snippets:

@@ -973,7 +973,7 @@ export function CreateScreen({
       const baseCoverStyleNotes = isDouyinPost
         ? "抖音图文封面，强标题、高对比、真实学习/申请材料场景，避免录取承诺。"
         : "小红书高吸引封面，按选题轮换路线矩阵、决策地图、学术蓝图、杂志页、黑板批注或手机信息拼贴；水博/在职博士类可用榜单矩阵，但学校和项目细节必须来自已核实知识库，避免录取承诺。";
-      const coverStyleNotes = buildTopicCoverStyleNotes(baseCoverStyleNotes, data.title);
+      const coverStyleNotes = buildTopicCoverStyleNotes(baseCoverStyleNotes, requestPayload.topic);
       const imageResponse = await fetch(`${apiBase}/image/generate`, {
         method: "POST",
         headers: authHeaders(credentials),

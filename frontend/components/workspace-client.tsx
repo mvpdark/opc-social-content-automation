@@ -3382,7 +3382,7 @@ function GenerationLauncher({
       }
 
       try {
-        await generateCoverForContent(finalContent);
+        await generateCoverForContent(finalContent, requestPayload.topic);
         const completionMessage = rewriteWarning
           ? `文案和封面图已生成，但${rewriteWarning}预览确认后即可复制文案。`
           : "文案和封面图已一键生成。预览确认后即可复制文案。";
@@ -3413,7 +3413,7 @@ function GenerationLauncher({
     }
   }
 
-  async function generateCoverForContent(content: GeneratedContent) {
+  async function generateCoverForContent(content: GeneratedContent, coverTopic = content.title) {
     const isDouyinPost = content.platform === "douyin";
     const refreshedStatuses = liveImageProviderReady ? null : await refreshProviderStatuses();
     const refreshedImageProviderReady =
@@ -3424,7 +3424,7 @@ function GenerationLauncher({
 
     const coverStyleNotes = buildTopicCoverStyleNotes(
       isDouyinPost ? douyinHighAttractionCoverStyle : xhsHighAttractionCoverStyle,
-      content.title
+      coverTopic
     );
 
     const response = await fetch(`${API_BASE}/image/generate`, {
