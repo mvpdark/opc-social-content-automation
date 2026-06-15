@@ -81,7 +81,7 @@ export const interfaceStyles: Array<{
   {
     id: "cyberpunk",
     label: "赛博朋克",
-    description: "深色霓虹、强科技感，适合趋势监控和实验模式。"
+    description: "深色石墨、HUD 网格和霓虹边缘，适合高科技工作站模式。"
   },
   {
     id: "editorial",

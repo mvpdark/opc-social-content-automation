@@ -546,6 +546,7 @@ def validate_topic_intent_runtime_contract() -> int:
 
 
 def validate_frontend_design_contract() -> int:
+    total = 0
     dashboard_data_file = ROOT / "frontend" / "lib" / "dashboard-data.ts"
     data_text = dashboard_data_file.read_text(encoding="utf-8")
     dashboard_consumers = []
@@ -597,6 +598,19 @@ def validate_frontend_design_contract() -> int:
         raise SystemExit(
             "Missing recommended theme templates: " + ", ".join(missing_template_styles)
         )
+
+    cyberpunk_theme_contract_snippets = [
+        ".theme-cyberpunk.workspace-shell",
+        "linear-gradient(120deg, transparent 0 48%, rgb(var(--moss) / 0.07) 49% 51%, transparent 52%)",
+        ".theme-cyberpunk .glass-selected",
+        "0 0 42px rgb(var(--steel) / 0.12)",
+        ".theme-cyberpunk :where(input, select, textarea):focus-visible",
+        "深色石墨、HUD 网格和霓虹边缘",
+    ]
+    for snippet in cyberpunk_theme_contract_snippets:
+        total += 1
+        if snippet not in f"{css_text}\n{data_text}":
+            raise SystemExit(f"Missing cyberpunk theme contract: {snippet}")
 
     for tab_id in tab_ids:
         if f'{{ id: "{tab_id}"' not in data_text:

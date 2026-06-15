@@ -95,24 +95,24 @@
 }
 
 .theme-cyberpunk {
-  --ink: 235 250 255;
-  --paper: 9 11 24;
-  --mist: 19 24 44;
-  --line: 69 94 130;
-  --muted: 154 191 214;
-  --moss: 63 255 184;
-  --coral: 255 92 173;
-  --steel: 72 190 255;
-  --amber: 255 214 102;
-  --glass: 11 17 36;
-  --glass-strong: 0.78;
-  --glass-panel: 0.66;
-  --glass-control: 0.58;
-  --glass-subtle: 0.46;
-  --glass-highlight: 105 228 255;
-  --selected-bg: 255 92 173;
-  --selected-text: 9 11 24;
-  --surface-grid: 72 190 255;
+  --ink: 232 250 255;
+  --paper: 5 8 18;
+  --mist: 13 22 39;
+  --line: 47 86 112;
+  --muted: 136 185 207;
+  --moss: 53 242 177;
+  --coral: 255 79 161;
+  --steel: 77 199 255;
+  --amber: 245 198 84;
+  --glass: 8 17 34;
+  --glass-strong: 0.82;
+  --glass-panel: 0.7;
+  --glass-control: 0.62;
+  --glass-subtle: 0.5;
+  --glass-highlight: 112 231 255;
+  --selected-bg: 53 242 177;
+  --selected-text: 5 8 18;
+  --surface-grid: 77 199 255;
 }
 
 .theme-editorial {
@@ -435,6 +435,100 @@ li {
 .theme-cyberpunk select {
   color: rgb(var(--ink));
   background-color: rgb(var(--glass) / 0.7) !important;
+}
+
+.theme-cyberpunk.workspace-shell {
+  background:
+    radial-gradient(circle at 16% 12%, rgb(var(--moss) / 0.18), transparent 26%),
+    radial-gradient(circle at 86% 8%, rgb(var(--steel) / 0.18), transparent 28%),
+    radial-gradient(circle at 72% 84%, rgb(var(--coral) / 0.09), transparent 32%),
+    linear-gradient(135deg, rgb(5 8 18), rgb(8 13 30) 52%, rgb(4 9 20));
+}
+
+.theme-cyberpunk.workspace-shell::before {
+  opacity: 0.9;
+  background-image:
+    linear-gradient(rgb(var(--steel) / 0.11) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--steel) / 0.08) 1px, transparent 1px),
+    linear-gradient(120deg, transparent 0 48%, rgb(var(--moss) / 0.07) 49% 51%, transparent 52%);
+  background-size: 42px 42px, 42px 42px, 180px 180px;
+  -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.78), transparent 82%);
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.78), transparent 82%);
+}
+
+.theme-cyberpunk.workspace-shell::after {
+  opacity: 0.28;
+  background-image:
+    linear-gradient(180deg, transparent 0 48%, rgb(var(--moss) / 0.2) 50%, transparent 52%),
+    radial-gradient(circle at 24% 22%, rgb(var(--steel) / 0.18) 0 1px, transparent 1px),
+    radial-gradient(circle at 76% 62%, rgb(var(--coral) / 0.14) 0 1px, transparent 1px);
+  background-size: 100% 9px, 18px 18px, 28px 28px;
+}
+
+.theme-cyberpunk .glass-sidebar,
+.theme-cyberpunk .glass-topbar,
+.theme-cyberpunk .glass-panel,
+.theme-cyberpunk .glass-control,
+.theme-cyberpunk .glass-subtle {
+  border-color: rgb(var(--steel) / 0.32);
+  box-shadow:
+    inset 0 1px 0 rgb(var(--glass-highlight) / 0.3),
+    inset 0 0 0 1px rgb(var(--moss) / 0.08),
+    0 18px 58px rgb(0 0 0 / 0.32),
+    0 0 28px rgb(var(--steel) / 0.05);
+}
+
+.theme-cyberpunk .glass-sidebar,
+.theme-cyberpunk .glass-topbar {
+  background:
+    linear-gradient(180deg, rgb(var(--glass) / 0.9), rgb(var(--glass) / 0.72)),
+    linear-gradient(90deg, rgb(var(--moss) / 0.06), transparent 38%, rgb(var(--steel) / 0.06));
+}
+
+.theme-cyberpunk .glass-panel {
+  background:
+    linear-gradient(135deg, rgb(var(--glass-highlight) / 0.08), transparent 34%),
+    rgb(var(--glass) / var(--glass-panel));
+}
+
+.theme-cyberpunk .glass-control,
+.theme-cyberpunk .glass-subtle,
+.theme-cyberpunk :where(input, select, textarea) {
+  background:
+    linear-gradient(135deg, rgb(var(--steel) / 0.08), transparent 54%),
+    rgb(var(--glass) / var(--glass-control));
+}
+
+.theme-cyberpunk .glass-selected {
+  background:
+    linear-gradient(135deg, rgb(var(--moss) / 0.95), rgb(var(--steel) / 0.78));
+  color: rgb(var(--selected-text));
+  box-shadow:
+    0 0 0 1px rgb(var(--moss) / 0.38),
+    0 14px 36px rgb(var(--moss) / 0.18),
+    0 0 42px rgb(var(--steel) / 0.12),
+    inset 0 1px 0 rgb(255 255 255 / 0.32);
+}
+
+.theme-cyberpunk .shadow-panel {
+  box-shadow:
+    0 1px 0 rgb(var(--glass-highlight) / 0.11),
+    0 20px 68px rgb(0 0 0 / 0.38),
+    0 0 32px rgb(var(--steel) / 0.06);
+}
+
+.theme-cyberpunk :where(a, button):not(:disabled):hover {
+  border-color: rgb(var(--moss) / 0.58);
+  box-shadow:
+    0 0 0 1px rgb(var(--moss) / 0.18),
+    0 12px 28px rgb(var(--steel) / 0.1);
+}
+
+.theme-cyberpunk :where(input, select, textarea):focus-visible {
+  border-color: rgb(var(--moss) / 0.72);
+  box-shadow:
+    0 0 0 3px rgb(var(--moss) / 0.13),
+    0 0 32px rgb(var(--steel) / 0.12);
 }
 
 .theme-brutalist .glass-panel,
