@@ -498,6 +498,49 @@ def validate_topic_presets_contract() -> int:
     return total
 
 
+def validate_topic_intent_runtime_contract() -> int:
+    import sys
+
+    backend_path = str(ROOT / "backend")
+    if backend_path not in sys.path:
+        sys.path.insert(0, backend_path)
+
+    from app.services.topic_intent import (  # noqa: PLC0415
+        first_matching_topic_intent,
+        is_water_ranking_topic,
+    )
+
+    cases = [
+        ("全球水博排名必看", ["水博", "海外博士"], "list_filter", True),
+        ("硕升博申请路线怎么选", ["硕升博", "国内博士"], "route", False),
+        ("导师匹配前要做的方向自查", ["博士申请", "导师"], "mentor", False),
+        ("在职博士申请时间线怎么排", ["在职博士", "材料"], "timeline", False),
+        ("适合上班族的博士项目怎么咨询", ["博士项目", "转化"], "sales", False),
+        ("水博项目校徽和价格怎么核验", ["官网核验", "校徽"], "source_check", False),
+        ("别人问博士含金量怎么回答", ["咨询转化", "价值"], "sales", False),
+    ]
+
+    total = 0
+    for topic, tags, expected_key, expected_ranking in cases:
+        intent = first_matching_topic_intent(topic, tags)
+        actual_key = intent.key if intent else None
+        if actual_key != expected_key:
+            raise SystemExit(
+                f"Topic intent {topic!r} expected {expected_key}, got {actual_key}"
+            )
+        total += 1
+
+        actual_ranking = is_water_ranking_topic(topic, tags)
+        if actual_ranking != expected_ranking:
+            raise SystemExit(
+                f"Topic ranking flag {topic!r} expected {expected_ranking}, "
+                f"got {actual_ranking}"
+            )
+        total += 1
+
+    return total
+
+
 def validate_frontend_design_contract() -> int:
     dashboard_data_file = ROOT / "frontend" / "lib" / "dashboard-data.ts"
     data_text = dashboard_data_file.read_text(encoding="utf-8")
@@ -2272,6 +2315,7 @@ def main() -> None:
         "safety_gates_checked": validate_safety_gates(),
         "frontend_design_contract_checked": validate_frontend_design_contract(),
         "topic_presets_contract_checked": validate_topic_presets_contract(),
+        "topic_intent_runtime_contract_checked": validate_topic_intent_runtime_contract(),
         "content_production_contract_checked": validate_content_production_contract(),
         "android_shell_contract_checked": validate_android_shell_contract(),
         "text_hygiene_files_checked": validate_text_hygiene(),
