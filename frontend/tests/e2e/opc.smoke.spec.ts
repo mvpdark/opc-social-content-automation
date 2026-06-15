@@ -13,11 +13,13 @@ const MOBILE_TOPIC_PRESET_BUTTON_SELECTOR =
   'button[data-testid^="mobile-topic-preset-"]:not([data-testid="mobile-topic-preset-refresh"])';
 const E2E_GENERATED_CONTENT_ID = 8801;
 const E2E_COVER_FAILURE_CONTENT_ID = 8802;
+const E2E_CONTENT_FAILURE_CONTENT_ID = 8803;
 
 type JsonPayload = Record<string, unknown>;
 
 type MobileGenerationFixtureOptions = {
   contentId?: number;
+  failContent?: boolean;
   failCover?: boolean;
 };
 
@@ -76,7 +78,11 @@ async function trackGenerationServiceRequests(page: Page) {
 async function mockMobileGenerationFixture(
   page: Page,
   preset: GenerationTopicPreset,
-  { contentId = E2E_GENERATED_CONTENT_ID, failCover = false }: MobileGenerationFixtureOptions = {}
+  {
+    contentId = E2E_GENERATED_CONTENT_ID,
+    failContent = false,
+    failCover = false
+  }: MobileGenerationFixtureOptions = {}
 ) {
   const requests: MobileGenerationFixtureRequests = {
     contentGenerate: [],
@@ -124,6 +130,14 @@ async function mockMobileGenerationFixture(
   });
   await page.route("**/api/content/generate", async (route) => {
     requests.contentGenerate.push(readJsonPayload(route.request().postData()));
+    if (failContent) {
+      await route.fulfill({
+        body: JSON.stringify({ detail: "撰稿服务暂时不可用，请稍后重试。" }),
+        contentType: "application/json",
+        status: 503
+      });
+      return;
+    }
     await route.fulfill({
       body: JSON.stringify({
         body: [
@@ -507,6 +521,65 @@ test.describe("OPC smoke coverage", () => {
       template: "xiaohongshu-cover"
     });
     expect(String(generationRequests.imageGenerate[0].style_notes)).toContain(preset.coverDirection);
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("mobile content failure keeps topic inputs and source evidence without false draft", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const acceptedLogin = createLoginInput();
+    const preset = requireTopicPreset("mentor-direction-check");
+    const expectedTags = parseTagText(preset.tags);
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockMobileGenerationFixture(page, preset, {
+      contentId: E2E_CONTENT_FAILURE_CONTENT_ID,
+      failContent: true
+    });
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=create`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+    await page.getByTestId("mobile-creation-project-postgraduate-phd").click();
+
+    await page.getByTestId("mobile-topic").fill(preset.topic);
+    await expect(page.getByTestId("mobile-audience")).toHaveValue(preset.audience);
+    await expect(page.getByTestId("mobile-tags")).toHaveValue(preset.tags);
+
+    await page.getByTestId("mobile-source-preview-button").click();
+    await page.getByTestId("mobile-source-knowledge-toggle").click();
+    await expect(page.getByTestId("mobile-source-knowledge-list")).toContainText(
+      `E2E 知识库引用：${preset.topic}`
+    );
+
+    await page.getByTestId("mobile-generate-draft").click();
+
+    await expect(page.getByTestId("mobile-status")).toContainText(
+      "撰稿服务暂时不可用，请稍后重试。"
+    );
+    await expect(page.getByTestId("mobile-generation-progress")).toContainText("生成失败");
+    await expect(page.getByTestId("mobile-generate-draft")).toContainText("一键撰稿+封面图");
+    await expect(page.getByTestId(`mobile-draft-history-card-${E2E_CONTENT_FAILURE_CONTENT_ID}`)).toHaveCount(0);
+    await expect(page.getByTestId("mobile-topic")).toHaveValue(preset.topic);
+    await expect(page.getByTestId("mobile-audience")).toHaveValue(preset.audience);
+    await expect(page.getByTestId("mobile-tags")).toHaveValue(preset.tags);
+    await expect(page.getByTestId("mobile-source-knowledge-list")).toContainText(
+      `E2E 知识库引用：${preset.topic}`
+    );
+
+    expect(generationRequests.sourcePreview).toHaveLength(1);
+    expect(generationRequests.contentGenerate).toHaveLength(1);
+    expect(generationRequests.imageGenerate).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.contentGenerate[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: preset.knowledgeQuery,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: preset.audience,
+      topic: preset.topic
+    });
+    expect(await localStorageContains(page, String(E2E_CONTENT_FAILURE_CONTENT_ID))).toBe(false);
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 

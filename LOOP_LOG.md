@@ -827,3 +827,78 @@ Kept.
 ### Next candidate loop
 
 - Add a controlled content-generation failure fixture that verifies the mobile UI shows a recoverable error, does not create a false draft, and leaves source evidence/topic inputs intact.
+
+## Loop 12 - Cover mobile content failure without false drafts
+
+Date: 2026-06-16
+
+### Observation
+
+The mobile one-click generation flow now has success coverage and cover-failure coverage, but content-generation failure before any draft exists was still unprotected. This is the highest-risk failure point because the UI should preserve the user's selected topic and evidence while avoiding any fake draft or publishing implication.
+
+### Hypothesis
+
+If E2E simulates source preview success followed by content-generation failure, then CI can verify the app keeps topic inputs and evidence intact, shows a recoverable writing-service error, does not call image generation, and does not create a false draft.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Extended the mobile generation fixture with a content-service failure option.
+- Added a mentor-topic failure test using the `mentor-direction-check` preset.
+- Verified source evidence remains visible after the failure.
+- Verified topic, audience, and tags stay aligned with the selected preset.
+- Verified no draft card or local-storage record is created for the failed content id.
+- Verified image generation and publish/submit endpoints are not called.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed from frontend/
+
+npm run e2e
+# 13 passed, 1 skipped from frontend/
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run build
+# passed from frontend/
+```
+
+Notes:
+
+- The first E2E attempt used an overly strict "history is empty" assertion. Local or backend draft history may legitimately contain existing records, so the test was narrowed to the actual contract: the failed content id must not appear in history or local storage.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 27/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 94/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- Mobile generation now has success, cover-failure, and content-failure fixtures; PC generation still needs comparable E2E coverage.
+- Copy/preview actions after successful PC generation remain lighter than the mobile checks.
+
+### Next candidate loop
+
+- Add a controlled PC one-click generation E2E fixture that verifies selected topic, source evidence, draft card, preview/copy flow, and no automated publishing.
