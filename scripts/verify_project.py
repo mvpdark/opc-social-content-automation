@@ -1453,6 +1453,7 @@ def validate_content_production_contract() -> int:
         "isLocalOrPrivateHostname(window.location.hostname)",
         "setManualCopyText(copied ? null : previewUrl)",
         "async function copyDraftTextOnly()",
+        "}, [generatedContent?.id]);",
         'data-testid="draft-preview-copy"',
         'data-testid="draft-manual-copy-text"',
         'const XHS_COPY_TEXT_ONLY_LABEL = "只复制文案"',

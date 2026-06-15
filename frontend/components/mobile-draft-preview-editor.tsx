@@ -70,6 +70,12 @@ export function DraftPreviewEditor({
     manualCopyRef.current?.select();
   }, [manualCopyText]);
 
+  useEffect(() => {
+    setEditing(false);
+    setManualCopyText(null);
+    setXhsExportMessage(null);
+  }, [generatedContent?.id]);
+
   function updatePoint(index: number, value: string) {
     onChange({
       ...draft,
