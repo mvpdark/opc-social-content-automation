@@ -607,6 +607,8 @@ def validate_frontend_design_contract() -> int:
         ".theme-cyberpunk :where(input, select, textarea):focus-visible",
         'data-testid="cyberpunk-theme-preview"',
         ".cyberpunk-theme-preview::after",
+        "workspace-theme-card",
+        '.theme-cyberpunk .workspace-theme-card[aria-current="true"]',
         "深色石墨、HUD 网格和霓虹边缘",
     ]
     for snippet in cyberpunk_theme_contract_snippets:

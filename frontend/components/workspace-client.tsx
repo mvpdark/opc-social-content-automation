@@ -4771,6 +4771,7 @@ function SettingsView({
                       aria-current={selected ? "true" : undefined}
                       aria-label={`${template.label}${selected ? "，当前推荐风格" : ""}`}
                       className={[
+                        "workspace-theme-card",
                         "rounded-md border px-3 py-2 text-left transition",
                         selected
                           ? "border-steel bg-mist text-ink ring-1 ring-steel/25"
@@ -4810,6 +4811,7 @@ function SettingsView({
                       aria-label={`${style.label}${selected ? "，当前界面风格" : ""}`}
                       className={[
                         `theme-${style.id}`,
+                        "workspace-theme-card",
                         "rounded-md border px-4 py-3 text-left transition",
                         selected
                           ? "border-steel bg-mist text-ink ring-1 ring-steel/25"

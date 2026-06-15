@@ -560,6 +560,43 @@ li {
   background: linear-gradient(115deg, transparent 0 42%, rgb(var(--moss) / 0.24) 48%, transparent 54%);
 }
 
+.theme-cyberpunk .workspace-theme-card {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgb(var(--glass-highlight) / 0.07), transparent 36%),
+    linear-gradient(180deg, rgb(var(--glass) / 0.78), rgb(var(--glass) / 0.58));
+}
+
+.theme-cyberpunk .workspace-theme-card::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  opacity: 0;
+  background:
+    linear-gradient(90deg, rgb(var(--moss) / 0.24), transparent 34%, rgb(var(--steel) / 0.18)),
+    linear-gradient(180deg, transparent 0 46%, rgb(var(--steel) / 0.12) 50%, transparent 54%);
+  background-size: auto, 100% 8px;
+  transition: opacity 180ms ease;
+}
+
+.theme-cyberpunk .workspace-theme-card:hover::after,
+.theme-cyberpunk .workspace-theme-card[aria-current="true"]::after {
+  opacity: 1;
+}
+
+.theme-cyberpunk .workspace-theme-card[aria-current="true"] {
+  border-color: rgb(var(--moss) / 0.7);
+  background:
+    linear-gradient(135deg, rgb(var(--moss) / 0.13), transparent 40%),
+    linear-gradient(180deg, rgb(var(--glass) / 0.9), rgb(var(--glass) / 0.68));
+  box-shadow:
+    0 0 0 1px rgb(var(--moss) / 0.24),
+    0 0 30px rgb(var(--steel) / 0.12),
+    inset 0 1px 0 rgb(var(--glass-highlight) / 0.32);
+}
+
 .theme-brutalist .glass-panel,
 .theme-brutalist .glass-control,
 .theme-brutalist .glass-subtle {
