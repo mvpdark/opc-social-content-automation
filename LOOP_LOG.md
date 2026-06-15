@@ -756,3 +756,74 @@ Kept.
 ### Next candidate loop
 
 - Add a controlled failure fixture for mobile one-click generation where content succeeds but cover generation fails, preserving the draft and showing a recoverable error without losing manual review safety.
+
+## Loop 11 - Cover recoverable mobile cover failure
+
+Date: 2026-06-16
+
+### Observation
+
+The one-click mobile generation success path was covered, but a partial failure path remained unprotected: content generation can succeed and cover generation can fail. Product acceptance says cover preview failures must not break the workflow, and drafts should remain reviewable.
+
+### Hypothesis
+
+If E2E simulates a successful draft response followed by a failed cover response, then CI can verify the app preserves the generated draft, shows a recoverable cover failure message, keeps the manual-review preview available, and does not call publish/submit endpoints.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Generalized the mobile generation fixture so it can return either a generated cover or a cover-service failure.
+- Added a route-topic failure test using the `route-main` preset.
+- Verified the visible status explains that the draft exists but the cover failed.
+- Verified the generation progress enters the failure state while the draft card remains available.
+- Opened the preserved draft preview and confirmed title/body/tags plus the manual no-auto-publish warning are still visible with a text-cover fallback.
+- Asserted no publish/submit request was made and passwords were not persisted.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed from frontend/
+
+npm run e2e
+# 12 passed, 1 skipped from frontend/
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run build
+# passed from frontend/
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 27/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 94/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- Recoverable failures are now covered for cover generation, but content-generation failures before any draft exists still need a focused fixture.
+- PC one-click generation still has weaker E2E coverage than mobile.
+
+### Next candidate loop
+
+- Add a controlled content-generation failure fixture that verifies the mobile UI shows a recoverable error, does not create a false draft, and leaves source evidence/topic inputs intact.

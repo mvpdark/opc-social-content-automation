@@ -12,8 +12,14 @@ const PASSWORD = process.env.OPC_TEST_PASSWORD ?? "";
 const MOBILE_TOPIC_PRESET_BUTTON_SELECTOR =
   'button[data-testid^="mobile-topic-preset-"]:not([data-testid="mobile-topic-preset-refresh"])';
 const E2E_GENERATED_CONTENT_ID = 8801;
+const E2E_COVER_FAILURE_CONTENT_ID = 8802;
 
 type JsonPayload = Record<string, unknown>;
+
+type MobileGenerationFixtureOptions = {
+  contentId?: number;
+  failCover?: boolean;
+};
 
 type MobileGenerationFixtureRequests = {
   contentGenerate: JsonPayload[];
@@ -67,7 +73,11 @@ async function trackGenerationServiceRequests(page: Page) {
   return requests;
 }
 
-async function mockSuccessfulMobileGeneration(page: Page, preset: GenerationTopicPreset) {
+async function mockMobileGenerationFixture(
+  page: Page,
+  preset: GenerationTopicPreset,
+  { contentId = E2E_GENERATED_CONTENT_ID, failCover = false }: MobileGenerationFixtureOptions = {}
+) {
   const requests: MobileGenerationFixtureRequests = {
     contentGenerate: [],
     forbiddenPublishing: [],
@@ -123,7 +133,7 @@ async function mockSuccessfulMobileGeneration(page: Page, preset: GenerationTopi
           "发布前仍需人工确认标题、正文、标签和封面。"
         ].join("\n\n"),
         created_at: "2026-06-16T00:00:00.000Z",
-        id: E2E_GENERATED_CONTENT_ID,
+        id: contentId,
         platform: "xiaohongshu",
         source_context: sourceContext,
         status: "draft",
@@ -136,9 +146,17 @@ async function mockSuccessfulMobileGeneration(page: Page, preset: GenerationTopi
   });
   await page.route("**/api/image/generate", async (route) => {
     requests.imageGenerate.push(readJsonPayload(route.request().postData()));
+    if (failCover) {
+      await route.fulfill({
+        body: JSON.stringify({ detail: "封面服务暂时不可用，请稍后重试。" }),
+        contentType: "application/json",
+        status: 503
+      });
+      return;
+    }
     await route.fulfill({
       body: JSON.stringify({
-        content_id: E2E_GENERATED_CONTENT_ID,
+        content_id: contentId,
         created_at: "2026-06-16T00:00:01.000Z",
         id: 9901,
         image_url: buildFixtureCoverDataUri(preset.topic),
@@ -360,7 +378,7 @@ test.describe("OPC smoke coverage", () => {
     const preset = requireTopicPreset("ranking-low-budget");
     const expectedTags = parseTagText(preset.tags);
     await mockSuccessfulLogin(page, acceptedLogin.account);
-    const generationRequests = await mockSuccessfulMobileGeneration(page, preset);
+    const generationRequests = await mockMobileGenerationFixture(page, preset);
 
     await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=create`);
     await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
@@ -419,6 +437,73 @@ test.describe("OPC smoke coverage", () => {
     expect(generationRequests.imageGenerate[0]).toMatchObject({
       aspect_ratio: "3:4",
       content_id: E2E_GENERATED_CONTENT_ID,
+      template: "xiaohongshu-cover"
+    });
+    expect(String(generationRequests.imageGenerate[0].style_notes)).toContain(preset.coverDirection);
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("mobile preserves draft when cover generation fails", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const acceptedLogin = createLoginInput();
+    const preset = requireTopicPreset("route-main");
+    const expectedTags = parseTagText(preset.tags);
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockMobileGenerationFixture(page, preset, {
+      contentId: E2E_COVER_FAILURE_CONTENT_ID,
+      failCover: true
+    });
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=create`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+    await page.getByTestId("mobile-creation-project-postgraduate-phd").click();
+
+    await page.getByTestId("mobile-topic").fill(preset.topic);
+    await expect(page.getByTestId("mobile-audience")).toHaveValue(preset.audience);
+    await expect(page.getByTestId("mobile-tags")).toHaveValue(preset.tags);
+
+    await page.getByTestId("mobile-generate-draft").click();
+
+    await expect(page.getByTestId("mobile-status")).toContainText(
+      "文案草稿已生成，但封面图失败：封面服务暂时不可用，请稍后重试。"
+    );
+    await expect(page.getByTestId("mobile-generation-progress")).toContainText("生成失败");
+    await expect(page.getByTestId("mobile-generate-draft")).toContainText("重新一键生成");
+
+    const failedCoverDraftCard = page.getByTestId(
+      `mobile-draft-history-card-${E2E_COVER_FAILURE_CONTENT_ID}`
+    );
+    await expect(failedCoverDraftCard).toBeVisible();
+    await expect(failedCoverDraftCard).toContainText(preset.topic);
+    await failedCoverDraftCard.click();
+
+    const preview = page.getByTestId("draft-preview-editor");
+    await expect(preview).toBeVisible();
+    await expect(preview).toContainText(preset.topic);
+    await expect(preview).toContainText(`必须保持${preset.mobileLabel}选题意图`);
+    await expect(preview).toContainText(`#${expectedTags[0]}`);
+    await expect(preview).toContainText("文字版");
+    await expect(preview).toContainText("发布前预览 · 不会自动发布");
+    await expect(page.getByTestId("draft-preview-cover-image")).toHaveCount(0);
+
+    expect(generationRequests.sourcePreview).toHaveLength(0);
+    expect(generationRequests.contentGenerate).toHaveLength(1);
+    expect(generationRequests.imageGenerate).toHaveLength(1);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.contentGenerate[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: preset.knowledgeQuery,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: preset.audience,
+      topic: preset.topic
+    });
+    expect(generationRequests.imageGenerate[0]).toMatchObject({
+      aspect_ratio: "3:4",
+      content_id: E2E_COVER_FAILURE_CONTENT_ID,
       template: "xiaohongshu-cover"
     });
     expect(String(generationRequests.imageGenerate[0].style_notes)).toContain(preset.coverDirection);
