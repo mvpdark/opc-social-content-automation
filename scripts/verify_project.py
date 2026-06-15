@@ -229,6 +229,7 @@ def validate_safety_gates() -> int:
             '"学费表"',
             "official logo school emblem",
             "tuition fees total cost",
+            "official accreditation policy",
             '"include_answer": True',
             "Tavily 授权失败",
             "额度或频率限制",

@@ -64,6 +64,7 @@ LIVE_SEARCH_SCOPE_TERMS = (
 
 LOGO_QUERY_TERMS = ("logo", "校徽", "标志")
 PRICE_QUERY_TERMS = ("价格", "费用", "学费", "预算", "费用页", "学费表", "收费")
+POLICY_QUERY_TERMS = ("认证", "政策", "认可", "资质")
 
 
 @dataclass(frozen=True)
@@ -119,6 +120,8 @@ def _query_focus_terms(topic_text: str) -> str:
         focus_terms.append("official logo school emblem brand identity 校徽 官方 标志")
     if any(term.lower() in normalized for term in PRICE_QUERY_TERMS):
         focus_terms.append("tuition fees total cost budget 学费 费用 价格")
+    if any(term.lower() in normalized for term in POLICY_QUERY_TERMS):
+        focus_terms.append("official accreditation policy recognition 认证 政策 认可")
     return " ".join(focus_terms)
 
 
