@@ -637,7 +637,10 @@ function ReviewEvidenceBlock({ sourceContext }: { sourceContext: GenerationSourc
     generationSourceContextStats(sourceContext);
 
   return (
-    <section className="mt-4 rounded-[24px] border border-white/[0.86] bg-white/[0.72] px-4 py-4">
+    <section
+      className="mt-4 rounded-[24px] border border-white/[0.86] bg-white/[0.72] px-4 py-4"
+      data-testid="mobile-review-source-evidence"
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <h4 className="text-xs font-black text-ink">检索依据</h4>
@@ -655,10 +658,13 @@ function ReviewEvidenceBlock({ sourceContext }: { sourceContext: GenerationSourc
         </p>
       ) : null}
       {knowledgeItems.length ? (
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 space-y-2" data-testid="mobile-review-knowledge-list">
           <div className="text-[11px] font-black text-muted">知识库引用</div>
           {knowledgeItems.slice(0, 4).map((item, index) => (
-            <article className="rounded-[18px] bg-white/[0.76] px-3 py-2" key={`review-knowledge-${item.id}-${index}`}>
+            <article
+              className="mobile-review-evidence-result-card rounded-[18px] bg-white/[0.76] px-3 py-2"
+              key={`review-knowledge-${item.id}-${index}`}
+            >
               <h5 className="line-clamp-2 break-words text-xs font-black leading-5 text-ink">{item.title}</h5>
               <p className="mt-1 line-clamp-3 break-words text-[11px] font-semibold leading-5 text-muted">{item.content}</p>
             </article>
@@ -666,11 +672,11 @@ function ReviewEvidenceBlock({ sourceContext }: { sourceContext: GenerationSourc
         </div>
       ) : null}
       {webResults.length ? (
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 space-y-2" data-testid="mobile-review-web-list">
           <div className="text-[11px] font-black text-muted">联网来源</div>
           {webResults.slice(0, 4).map((item, index) => (
             <a
-              className="block rounded-[18px] bg-white/[0.76] px-3 py-2"
+              className="mobile-review-evidence-result-card block rounded-[18px] bg-white/[0.76] px-3 py-2"
               href={item.url}
               key={`review-web-${item.url}-${index}`}
               rel="noreferrer"
@@ -687,7 +693,10 @@ function ReviewEvidenceBlock({ sourceContext }: { sourceContext: GenerationSourc
         </div>
       ) : null}
       {missingRequiredWebResults ? (
-        <div className="mt-3 rounded-[18px] border border-[#f3dca3] bg-[#fff8e6] px-3 py-2 text-[11px] font-semibold leading-5 text-[#8a6110]">
+        <div
+          className="mt-3 rounded-[18px] border border-[#f3dca3] bg-[#fff8e6] px-3 py-2 text-[11px] font-semibold leading-5 text-[#8a6110]"
+          data-testid="mobile-review-required-web-warning"
+        >
           <p>这个选题需要联网来源，但当前没有可见 Tavily 结果。</p>
           {webSearch?.query ? <p className="mt-1 break-words">联网检索词：{webSearch.query}</p> : null}
           <p className="mt-1">请退回补充来源，或改成核验框架后再发布。</p>
@@ -699,7 +708,10 @@ function ReviewEvidenceBlock({ sourceContext }: { sourceContext: GenerationSourc
         </p>
       ) : null}
       {!hasEvidence ? (
-        <p className="mt-3 rounded-[18px] border border-[#f3dca3] bg-[#fff8e6] px-3 py-2 text-[11px] font-semibold leading-5 text-muted">
+        <p
+          className="mt-3 rounded-[18px] border border-[#f3dca3] bg-[#fff8e6] px-3 py-2 text-[11px] font-semibold leading-5 text-muted"
+          data-testid="mobile-review-no-evidence-warning"
+        >
           这篇草稿没有可见检索依据，建议退回修改或重新生成。
         </p>
       ) : null}
