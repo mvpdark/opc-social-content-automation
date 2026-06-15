@@ -607,6 +607,7 @@ function ReviewDetailSheet({
         <div className="grid grid-cols-2 gap-2 border-t border-moss/10 px-4 py-4">
           <button
             className="flex h-11 touch-manipulation items-center justify-center gap-2 rounded-full bg-[#23854f] text-sm font-black text-white shadow-[0_14px_28px_rgba(35,133,79,0.20)] active:scale-[0.99] disabled:opacity-60"
+            data-testid="mobile-review-detail-approve"
             disabled={busy}
             onClick={onApprove}
             type="button"
@@ -616,6 +617,7 @@ function ReviewDetailSheet({
           </button>
           <button
             className="flex h-11 touch-manipulation items-center justify-center gap-2 rounded-full border border-white/[0.84] bg-white/[0.78] text-sm font-black text-ink active:scale-[0.99] disabled:opacity-60"
+            data-testid="mobile-review-detail-request-changes"
             disabled={busy}
             onClick={onRequestChanges}
             type="button"

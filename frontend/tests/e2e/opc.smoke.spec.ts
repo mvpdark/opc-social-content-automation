@@ -17,6 +17,8 @@ const E2E_CONTENT_FAILURE_CONTENT_ID = 8803;
 const E2E_PC_GENERATED_CONTENT_ID = 8901;
 const E2E_PC_CONTENT_FAILURE_CONTENT_ID = 8902;
 const E2E_PC_COVER_FAILURE_CONTENT_ID = 8903;
+const E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID = 8911;
+const E2E_MOBILE_REVIEW_CHANGES_CONTENT_ID = 8912;
 
 type JsonPayload = Record<string, unknown>;
 
@@ -38,6 +40,20 @@ type PcGenerationFixtureRequests = MobileGenerationFixtureRequests & {
   imageList: number;
   providerStatus: number;
   rewrite: JsonPayload[];
+};
+
+type MobileReviewFixtureItem = {
+  contentId: number;
+  preset: GenerationTopicPreset;
+  status?: "draft" | "review_pending" | "rewritten";
+};
+
+type MobileReviewFixtureRequests = {
+  contentList: number;
+  forbiddenPublishing: string[];
+  imageList: number[];
+  reviewUrls: string[];
+  reviews: JsonPayload[];
 };
 
 async function resetLocalAuth(page: Page) {
@@ -240,6 +256,90 @@ async function mockMobileGenerationFixture(
       status: 200
     });
   });
+  await page.route(/\/api\/[^?]*(publish|submit)/i, async (route) => {
+    requests.forbiddenPublishing.push(route.request().url());
+    await route.fulfill({
+      body: JSON.stringify({ detail: "E2E guard blocked publishing-like call." }),
+      contentType: "application/json",
+      status: 500
+    });
+  });
+
+  return requests;
+}
+
+async function mockMobileReviewQueueFixture(page: Page, items: MobileReviewFixtureItem[]) {
+  const requests: MobileReviewFixtureRequests = {
+    contentList: 0,
+    forbiddenPublishing: [],
+    imageList: [],
+    reviewUrls: [],
+    reviews: []
+  };
+
+  const contents = items.map((item, index) => {
+    const sourceContext = buildE2eSourceContext(item.preset, item.preset.mobileLabel);
+    return {
+      body: [
+        `E2E 人工确认草稿：${item.preset.topic}`,
+        `这条队列草稿服务于 ${item.preset.audience}，必须由人工核对后再进入发布准备。`,
+        `检索词：${item.preset.knowledgeQuery}`
+      ].join("\n\n"),
+      created_at: `2026-06-16T00:0${index}:00.000Z`,
+      id: item.contentId,
+      platform: "xiaohongshu",
+      source_context: sourceContext,
+      status: item.status ?? "review_pending",
+      tags: parseTagText(item.preset.tags),
+      title: item.preset.topic
+    };
+  });
+
+  await page.route(/\/api\/content\/list(?:\?|$)/, async (route) => {
+    requests.contentList += 1;
+    await route.fulfill({
+      body: JSON.stringify(contents),
+      contentType: "application/json",
+      status: 200
+    });
+  });
+
+  await page.route(/\/api\/image\/list(?:\?|$)/, async (route) => {
+    const url = new URL(route.request().url());
+    const contentId = Number(url.searchParams.get("content_id"));
+    requests.imageList.push(contentId);
+    const content = contents.find((item) => item.id === contentId);
+    await route.fulfill({
+      body: JSON.stringify(
+        content
+          ? [
+              {
+                content_id: content.id,
+                created_at: "2026-06-16T00:00:02.000Z",
+                id: content.id + 10000,
+                image_url: buildFixtureCoverDataUri(content.title),
+                prompt: `E2E 人工确认封面：${content.title}`,
+                status: "generated",
+                template: "xiaohongshu-cover"
+              }
+            ]
+          : []
+      ),
+      contentType: "application/json",
+      status: 200
+    });
+  });
+
+  await page.route(/\/api\/content\/\d+\/reviews$/, async (route) => {
+    requests.reviewUrls.push(route.request().url());
+    requests.reviews.push(readJsonPayload(route.request().postData()));
+    await route.fulfill({
+      body: JSON.stringify({ ok: true }),
+      contentType: "application/json",
+      status: 200
+    });
+  });
+
   await page.route(/\/api\/[^?]*(publish|submit)/i, async (route) => {
     requests.forbiddenPublishing.push(route.request().url());
     await route.fulfill({
@@ -778,6 +878,77 @@ test.describe("OPC smoke coverage", () => {
       topic: preset.topic
     });
     expect(await localStorageContains(page, String(E2E_CONTENT_FAILURE_CONTENT_ID))).toBe(false);
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("mobile review queue submits human decisions without platform publishing", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const acceptedLogin = createLoginInput();
+    const approvePreset = requireTopicPreset("timeline-main");
+    const changesPreset = requireTopicPreset("sales-main");
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const reviewRequests = await mockMobileReviewQueueFixture(page, [
+      {
+        contentId: E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID,
+        preset: approvePreset,
+        status: "review_pending"
+      },
+      {
+        contentId: E2E_MOBILE_REVIEW_CHANGES_CONTENT_ID,
+        preset: changesPreset,
+        status: "rewritten"
+      }
+    ]);
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=review`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+
+    await expect(page.getByTestId("mobile-review-list")).toBeVisible();
+    await expect(page.getByTestId("mobile-review-card")).toHaveCount(2);
+    await expect(page.getByTestId("mobile-review-card").first()).toContainText(approvePreset.topic);
+    await expect(page.getByTestId("mobile-review-card").nth(1)).toContainText(changesPreset.topic);
+
+    await page.getByTestId("mobile-review-card").first().locator("button").first().click();
+    const reviewDetail = page.getByTestId("mobile-review-detail");
+    await expect(reviewDetail).toBeVisible();
+    await expect(reviewDetail).toContainText(approvePreset.topic);
+    await expect(page.getByTestId("mobile-review-source-evidence")).toContainText(approvePreset.topic);
+    await page.getByTestId("mobile-review-detail-approve").click();
+
+    await expect(page.getByTestId("mobile-review-detail")).toHaveCount(0);
+    await expect(page.getByTestId("mobile-review-card")).toHaveCount(1);
+    await expect(page.getByTestId("mobile-review-status")).toContainText(approvePreset.topic);
+    expect(reviewRequests.reviews).toHaveLength(1);
+    expect(reviewRequests.reviewUrls[0]).toContain(`/content/${E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID}/reviews`);
+    expect(reviewRequests.reviews[0]).toMatchObject({
+      decision: "approved",
+      risk_flags: [],
+      score: 95
+    });
+
+    await expect(page.getByTestId("mobile-review-card").first()).toContainText(changesPreset.topic);
+    await page.getByTestId("mobile-review-card").first().getByTestId("mobile-review-request-changes").click();
+    await expect(page.getByTestId("mobile-review-card")).toHaveCount(0);
+    await expect(page.getByTestId("mobile-review-status")).toContainText(changesPreset.topic);
+    expect(reviewRequests.reviews).toHaveLength(2);
+    expect(reviewRequests.reviewUrls[1]).toContain(`/content/${E2E_MOBILE_REVIEW_CHANGES_CONTENT_ID}/reviews`);
+    expect(reviewRequests.reviews[1]).toMatchObject({
+      decision: "changes_requested",
+      risk_flags: ["needs_revision"],
+      score: 60
+    });
+
+    expect(reviewRequests.contentList).toBeGreaterThanOrEqual(1);
+    expect(reviewRequests.imageList).toEqual(
+      expect.arrayContaining([
+        E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID,
+        E2E_MOBILE_REVIEW_CHANGES_CONTENT_ID
+      ])
+    );
+    expect(reviewRequests.forbiddenPublishing).toEqual([]);
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 

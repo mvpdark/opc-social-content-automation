@@ -1273,3 +1273,77 @@ Kept.
 ### Next candidate loop
 
 - Add mobile review-queue E2E coverage for approve/request-changes controls using mocked `/content/list`, `/image/list`, and `/content/:id/reviews` endpoints, ensuring no direct platform publishing is implied.
+
+## Loop 18 - Cover mobile human-review decisions in E2E
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 17 protected mobile preview copy/export, but the mobile human-review queue still lacked an E2E guard for the final approve/request-changes controls. This is a safety-critical boundary because review decisions should call only the human-review endpoint and must not imply direct platform publishing.
+
+### Hypothesis
+
+If E2E provides a controlled mobile review queue and records the review endpoints, then CI can verify that approving from the detail sheet and requesting changes from the list submit explicit human decisions, remove the reviewed item from the queue, keep source evidence visible, preserve credentials safely, and never touch publishing-like endpoints.
+
+### Patch
+
+Files changed:
+
+- `frontend/components/mobile-review-screen.tsx`
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added stable test IDs for the mobile review detail approve and request-changes buttons.
+- Added a mobile review-queue fixture that mocks `/content/list`, `/image/list`, and `/content/:id/reviews`.
+- Added E2E coverage for a two-item review queue: one draft is approved from the detail sheet, the other is returned for changes from the list.
+- Verified review payloads use `decision: "approved"` and `decision: "changes_requested"` with the expected risk flags/scores.
+- Verified source evidence is visible and no publish/submit endpoint is called.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed from frontend/
+
+npm run e2e -- --grep "mobile review queue submits human decisions without platform publishing"
+# 1 passed from frontend/
+
+npm run e2e
+# 17 passed, 1 skipped from frontend/
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run build
+# passed from frontend/
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 29/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 97/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The env-backed live login smoke still skips unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+- Mobile human-review success decisions are now covered; future loops can add review endpoint failure handling so approve/request-changes errors keep the item in queue and show a recoverable message.
+
+### Next candidate loop
+
+- Add mobile review decision failure E2E coverage for `/content/:id/reviews` returning an error, verifying the item stays in the queue and no publishing-like endpoint is touched.
