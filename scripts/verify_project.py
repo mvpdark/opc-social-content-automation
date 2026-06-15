@@ -556,6 +556,8 @@ def validate_topic_intent_runtime_contract() -> int:
         ("全球水博排名必看", ["水博", "海外博士"], "list_filter", True),
         ("硕升博申请路线怎么选", ["硕升博", "国内博士"], "route", False),
         ("导师匹配前要做的方向自查", ["博士申请", "导师"], "mentor", False),
+        ("导师清单怎么筛", ["导师匹配", "研究方向"], "mentor", False),
+        ("导师匹配清单怎么看", ["博士申请", "论文"], "mentor", False),
         ("在职博士申请时间线怎么排", ["在职博士", "材料"], "timeline", False),
         ("申博材料清单怎么看", ["申请时间线", "材料准备"], "timeline", False),
         ("博士申请材料清单怎么看", ["时间安排", "材料准备"], "timeline", False),
