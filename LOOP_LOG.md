@@ -2214,3 +2214,75 @@ Kept.
 ### Next candidate loop
 
 - Add a negative guard for source/current-fact topics if the UI ever allows generation without source evidence, or return to production workflow hardening around auth/session and review lifecycle.
+
+## Loop 31 - Block PC source-topic generation after source preview failure
+
+Date: 2026-06-16
+
+### Observation
+
+PC source-topic success coverage now verifies that official-fee/source topics keep source evidence aligned when the preview endpoint succeeds. The desktop creation UI still allowed the generation path to start after a source-preview failure, which could let current-fact topics produce a draft after the evidence step failed.
+
+### Hypothesis
+
+If PC source-type recommended topics clear stale source evidence on preview failure and disable one-click generation until the user retries source preview, then the workflow will not create a false draft when official/current-fact evidence is unavailable. A focused E2E test can protect that the content and image generation endpoints are not called in this state.
+
+### Patch
+
+Files changed:
+
+- `frontend/components/workspace-client.tsx`
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a PC source-topic guard that blocks one-click generation after a source-preview error for `source-*` topic presets.
+- Cleared stale source evidence when source preview fails, so old evidence is not shown as if it still applies.
+- Added a PC E2E failure scenario that verifies the source preview can be retried, the generate button is disabled, no draft card appears, and content/image/rewrite/publish-like calls are not made.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC source preview failure blocks source topic generation without false draft" --project=chromium
+# 1 passed
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run e2e
+# 24 passed, 1 skipped
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 24/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 3/5
+- Total: 91/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The env-backed live login smoke still skips unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+- This loop protects PC source-type recommended topics. Mobile creation has similar source-preview state and can receive the same failure guard in a follow-up loop.
+
+### Next candidate loop
+
+- Mirror the source-preview failure guard on mobile creation, or continue hardening auth/session recovery if mobile source blocking is already acceptable.

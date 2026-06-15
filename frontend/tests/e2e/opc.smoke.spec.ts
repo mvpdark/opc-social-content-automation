@@ -22,6 +22,7 @@ const E2E_PC_ROUTE_TOPIC_CONTENT_ID = 8905;
 const E2E_PC_MENTOR_TOPIC_CONTENT_ID = 8906;
 const E2E_PC_TIMELINE_TOPIC_CONTENT_ID = 8907;
 const E2E_PC_SOURCE_TOPIC_CONTENT_ID = 8908;
+const E2E_PC_SOURCE_PREVIEW_FAILURE_CONTENT_ID = 8909;
 const E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID = 8911;
 const E2E_MOBILE_REVIEW_CHANGES_CONTENT_ID = 8912;
 
@@ -32,6 +33,7 @@ type MobileGenerationFixtureOptions = {
   contentStatus?: string;
   failContent?: boolean;
   failCover?: boolean;
+  failSourcePreview?: boolean;
 };
 
 type MobileGenerationFixtureRequests = {
@@ -389,7 +391,8 @@ async function mockPcGenerationFixture(
     contentId = E2E_PC_GENERATED_CONTENT_ID,
     contentStatus = "draft",
     failContent = false,
-    failCover = false
+    failCover = false,
+    failSourcePreview = false
   }: MobileGenerationFixtureOptions = {}
 ) {
   const requests: PcGenerationFixtureRequests = {
@@ -431,6 +434,14 @@ async function mockPcGenerationFixture(
   });
   await page.route("**/api/content/source-preview", async (route) => {
     requests.sourcePreview.push(readJsonPayload(route.request().postData()));
+    if (failSourcePreview) {
+      await route.fulfill({
+        body: JSON.stringify({ detail: "E2E source preview unavailable." }),
+        contentType: "application/json",
+        status: 503
+      });
+      return;
+    }
     await route.fulfill({
       body: JSON.stringify({ source_context: sourceContext }),
       contentType: "application/json",
@@ -1188,6 +1199,58 @@ test.describe("OPC smoke coverage", () => {
       contentId: E2E_PC_SOURCE_TOPIC_CONTENT_ID,
       presetKey: "source-official-fee-check"
     });
+  });
+
+  test("PC source preview failure blocks source topic generation without false draft", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const acceptedLogin = createLoginInput();
+    const preset = requireTopicPreset("source-official-fee-check");
+    const expectedTags = parseTagText(preset.tags);
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockPcGenerationFixture(page, preset, {
+      contentId: E2E_PC_SOURCE_PREVIEW_FAILURE_CONTENT_ID,
+      failSourcePreview: true
+    });
+
+    await page.goto(`${BASE_URL}/?theme=mint&tab=content&project=postgraduate-phd`);
+    await expect(page.getByTestId("pc-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("pc-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("pc-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("pc-login-submit").click();
+
+    await expect(page.getByTestId("creation-project-return")).toBeVisible();
+    await expect(page.getByTestId("generation-launcher")).toBeVisible();
+    await page.getByTestId("content-topic").fill(preset.topic);
+    await expect(page.getByTestId("content-topic")).toHaveValue(preset.topic);
+    await expect(page.getByTestId("content-knowledge-query")).toHaveValue(preset.knowledgeQuery);
+    await expect(page.getByTestId("content-target-audience")).toHaveValue(preset.audience);
+    await expect(page.getByTestId("content-tags")).toHaveValue(preset.tags);
+
+    await page.getByTestId("source-preview-button").click();
+    await expect(page.getByTestId("generation-source-evidence")).toContainText(
+      "E2E source preview unavailable."
+    );
+    await expect(page.getByTestId("source-preview-button")).toBeEnabled();
+    await expect(page.getByTestId("start-production-button")).toBeDisabled();
+    await expect(page.getByTestId("start-production-button")).toContainText("先重新查看依据");
+    await expect(page.getByTestId("draft-history-card")).toHaveCount(0);
+
+    expect(generationRequests.providerStatus).toBeGreaterThan(0);
+    expect(generationRequests.contentList).toBeGreaterThan(0);
+    expect(generationRequests.sourcePreview).toHaveLength(1);
+    expect(generationRequests.contentGenerate).toHaveLength(0);
+    expect(generationRequests.imageGenerate).toHaveLength(0);
+    expect(generationRequests.rewrite).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.sourcePreview[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: preset.knowledgeQuery,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: preset.audience,
+      topic: preset.topic
+    });
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 
   test("PC published generation status stops at manual lifecycle review", async ({ page }) => {

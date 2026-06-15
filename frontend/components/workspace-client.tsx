@@ -2962,7 +2962,7 @@ function GenerationLauncher({
     draftCheckStatus && draftCheckStatus.status !== "ok"
   );
   const draftProviderBlocked = draftProviderMissing || draftProviderCheckFailed;
-  const canGenerate = hasTopic && busyAction === null && !draftProviderBlocked;
+  const sourceEvidenceRequired = Boolean(selectedTopicPreset?.key.startsWith("source-"));
   const exportContent = lastContent ?? latestContent;
   const currentExportContent = contentMatchesCurrentInputs(lastContent)
     ? lastContent
@@ -2986,12 +2986,17 @@ function GenerationLauncher({
       : null;
   const visibleSourceContext =
     matchingSourceContext ?? matchingExportSourceContext;
+  const sourceEvidenceBlocked =
+    sourceEvidenceRequired && Boolean(sourcePreviewError) && !visibleSourceContext;
+  const canGenerate = hasTopic && busyAction === null && !draftProviderBlocked && !sourceEvidenceBlocked;
   const generateButtonLabel = !hasTopic
       ? "先填写选题"
       : draftProviderMissing
         ? "先配置撰稿服务"
       : draftProviderCheckFailed
         ? "先修复撰稿服务"
+      : sourceEvidenceBlocked
+        ? "先重新查看依据"
       : "一键生成图文+封面";
   const generateButtonTitle = !hasTopic
       ? "先填写选题，再一键生成图文和封面"
@@ -2999,6 +3004,8 @@ function GenerationLauncher({
         ? "去设置里填写并应用撰稿服务授权"
       : draftProviderCheckFailed
         ? "检测到撰稿服务不可用，请先去设置页更换或重新应用服务授权"
+      : sourceEvidenceBlocked
+        ? "检索依据读取失败，请先重新查看依据后再生成"
       : undefined;
   const launchStatusText = !hasTopic
       ? "先填写选题，再一键生成图文和封面。"
@@ -3006,6 +3013,8 @@ function GenerationLauncher({
         ? "撰稿服务缺少服务授权，先去设置页填写并应用。"
       : draftProviderCheckFailed
         ? draftCheckStatus?.message ?? "撰稿服务检测未通过，请先去设置页修复。"
+      : sourceEvidenceBlocked
+        ? "检索依据读取失败，请先重新查看依据后再生成。"
       : statusText;
   const primaryGenerateLabel =
     busyAction === "draft"
@@ -3320,6 +3329,7 @@ function GenerationLauncher({
       const message = sanitizeServiceErrorMessage(
         error instanceof Error ? error.message : "检索依据读取失败。"
       );
+      setSourceContext(null);
       setSourcePreviewError(message);
       setStatusText(message);
     } finally {
@@ -3330,6 +3340,10 @@ function GenerationLauncher({
   async function generateDraft() {
     if (!topic.trim()) {
       setStatusText("先填写选题，再一键生成图文和封面。");
+      return;
+    }
+    if (sourceEvidenceBlocked) {
+      setStatusText("检索依据读取失败，请先重新查看依据后再生成。");
       return;
     }
 
