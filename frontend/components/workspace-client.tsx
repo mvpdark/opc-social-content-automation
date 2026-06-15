@@ -3910,6 +3910,7 @@ function GeneratedPostExportCard({
   const [imageBusy, setImageBusy] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const manualCopyRef = useRef<HTMLTextAreaElement | null>(null);
+  const currentContentIdRef = useRef(content.id);
   const warnings = complianceWarnings(content);
   const testDraft = isTestDraft(content);
   const canCopy = !testDraft && !generationBusy;
@@ -3936,10 +3937,15 @@ function GeneratedPostExportCard({
         : "检测并生成封面";
 
   useEffect(() => {
+    currentContentIdRef.current = content.id;
     if (generatedImageAsset?.content_id === content.id) {
       setImageAsset(generatedImageAsset);
       setImageError(null);
+    } else {
+      setImageAsset(null);
+      setImageError(null);
     }
+    setImageBusy(false);
   }, [content.id, generatedImageAsset]);
 
   useEffect(() => {
@@ -3979,6 +3985,7 @@ function GeneratedPostExportCard({
   }
 
   async function handleGenerateImage() {
+    const requestContentId = content.id;
     if (generationBusy) {
       setImageError("一键生成还没完成，请等文案和封面流程结束后再操作。");
       return;
@@ -4013,12 +4020,18 @@ function GeneratedPostExportCard({
         throw new Error(await readApiError(response, "封面图生成失败。"));
       }
       const data = (await response.json()) as GeneratedImageAsset;
-      setImageAsset(data);
       onImageGenerated(data);
+      if (currentContentIdRef.current === data.content_id) {
+        setImageAsset(data);
+      }
     } catch (error) {
-      setImageError(error instanceof Error ? error.message : "封面图生成失败。");
+      if (currentContentIdRef.current === requestContentId) {
+        setImageError(error instanceof Error ? error.message : "封面图生成失败。");
+      }
     } finally {
-      setImageBusy(false);
+      if (currentContentIdRef.current === requestContentId) {
+        setImageBusy(false);
+      }
     }
   }
 
