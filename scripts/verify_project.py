@@ -473,6 +473,16 @@ def validate_topic_presets_contract() -> int:
             )
         total += 1
 
+    fact_sensitive_label_requirements = {
+        "榜单型": (
+            ("核实", "核验", "认证", "风险", "未核实", "不承诺"),
+        ),
+        "来源型": (
+            ("官网", "官方"),
+            ("核验", "待复核", "待确认", "未核实", "不写", "不展示"),
+        ),
+    }
+
     for preset in presets:
         missing = sorted(field for field in required_fields if not preset.get(field, "").strip())
         if missing:
@@ -517,6 +527,14 @@ def validate_topic_presets_contract() -> int:
         tag_count = len(_split_topic_tags(preset["tags"]))
         if tag_count < 3:
             raise SystemExit(f"Topic preset {preset['key']} should have at least 3 tags")
+        fact_requirements = fact_sensitive_label_requirements.get(label, ())
+        fact_text = " ".join([preset["coverDirection"], preset["desktopHelper"]])
+        for terms in fact_requirements:
+            if not _contains_any(fact_text, terms):
+                raise SystemExit(
+                    f"Topic preset {preset['key']} lacks fact-sensitive boundary terms for {label}"
+                )
+            total += 1
         total += len(required_fields) + 3
 
     return total
