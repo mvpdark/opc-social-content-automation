@@ -17,6 +17,7 @@ const E2E_CONTENT_FAILURE_CONTENT_ID = 8803;
 const E2E_PC_GENERATED_CONTENT_ID = 8901;
 const E2E_PC_CONTENT_FAILURE_CONTENT_ID = 8902;
 const E2E_PC_COVER_FAILURE_CONTENT_ID = 8903;
+const E2E_PC_PUBLISHED_STATUS_CONTENT_ID = 8904;
 const E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID = 8911;
 const E2E_MOBILE_REVIEW_CHANGES_CONTENT_ID = 8912;
 
@@ -24,6 +25,7 @@ type JsonPayload = Record<string, unknown>;
 
 type MobileGenerationFixtureOptions = {
   contentId?: number;
+  contentStatus?: string;
   failContent?: boolean;
   failCover?: boolean;
 };
@@ -375,6 +377,7 @@ async function mockPcGenerationFixture(
   preset: GenerationTopicPreset,
   {
     contentId = E2E_PC_GENERATED_CONTENT_ID,
+    contentStatus = "draft",
     failContent = false,
     failCover = false
   }: MobileGenerationFixtureOptions = {}
@@ -446,7 +449,7 @@ async function mockPcGenerationFixture(
         id: contentId,
         platform: "xiaohongshu",
         source_context: sourceContext,
-        status: "draft",
+        status: contentStatus,
         tags,
         title: preset.topic
       }),
@@ -1128,6 +1131,89 @@ test.describe("OPC smoke coverage", () => {
       template: "xiaohongshu-cover"
     });
     expect(String(generationRequests.imageGenerate[0].style_notes)).toContain(preset.coverDirection);
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("PC published generation status stops at manual lifecycle review", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const acceptedLogin = createLoginInput();
+    const preset = requireTopicPreset("source-official-fee-check");
+    const expectedTags = parseTagText(preset.tags);
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockPcGenerationFixture(page, preset, {
+      contentId: E2E_PC_PUBLISHED_STATUS_CONTENT_ID,
+      contentStatus: "published"
+    });
+
+    await page.goto(`${BASE_URL}/?theme=mint&tab=content&project=postgraduate-phd`);
+    await expect(page.getByTestId("pc-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("pc-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("pc-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("pc-login-submit").click();
+
+    await expect(page.getByTestId("creation-project-return")).toBeVisible();
+    await expect(page.getByTestId("generation-launcher")).toBeVisible();
+    await page.getByTestId("content-topic").fill(preset.topic);
+    await expect(page.getByTestId("content-topic")).toHaveValue(preset.topic);
+    await expect(page.getByTestId("content-knowledge-query")).toHaveValue(preset.knowledgeQuery);
+    await expect(page.getByTestId("content-target-audience")).toHaveValue(preset.audience);
+    await expect(page.getByTestId("content-tags")).toHaveValue(preset.tags);
+
+    await page.getByTestId("source-preview-button").click();
+    await expect(page.getByTestId("generation-source-evidence")).toContainText("2 条");
+    await page.getByTestId("source-knowledge-toggle").click();
+    await expect(page.getByTestId("source-knowledge-list")).toContainText(
+      `E2E 知识库引用：${preset.topic}`
+    );
+    await page.getByTestId("source-web-toggle").click();
+    await expect(page.getByTestId("source-web-list")).toContainText(
+      `E2E 联网来源：${preset.topic}`
+    );
+
+    await page.getByTestId("start-production-button").click();
+
+    const exportCard = page.getByTestId("pc-generated-export-card");
+    await expect(exportCard).toBeVisible();
+    await expect(exportCard).toContainText("已发布");
+    await expect(page.getByTestId("pc-export-lifecycle-warning")).toContainText(
+      "后端返回状态为「已发布」"
+    );
+    await expect(page.getByTestId("pc-export-lifecycle-warning")).toContainText(
+      "发布前请先核对人工确认记录；OPC 不会自动发布。"
+    );
+    await expect(page.getByTestId("cover-generate-button")).toBeDisabled();
+    await expect(page.getByTestId("cover-generate-button")).toContainText("需先核对状态");
+    await expect(page.getByTestId("pc-export-prepublish-check")).toContainText("发布前检查");
+    await expect(page.getByTestId("pc-export-cover-card")).toContainText(
+      "生成后只是待确认素材，不会自动发布。"
+    );
+
+    const draftCard = page.getByTestId("draft-history-card").filter({ hasText: preset.topic }).first();
+    await expect(page.getByTestId("draft-history-strip")).toBeVisible();
+    await expect(draftCard).toBeVisible();
+    await draftCard.locator("button").first().click();
+
+    const previewModal = page.getByTestId("xhs-preview-modal");
+    await expect(previewModal).toBeVisible();
+    await expect(previewModal).toContainText(preset.topic);
+    await expect(previewModal).toContainText(`#${expectedTags[0]}`);
+    await expect(previewModal).toContainText("这是发布效果预览，不会自动发布");
+
+    expect(generationRequests.providerStatus).toBeGreaterThan(0);
+    expect(generationRequests.contentList).toBeGreaterThan(0);
+    expect(generationRequests.sourcePreview).toHaveLength(1);
+    expect(generationRequests.contentGenerate).toHaveLength(1);
+    expect(generationRequests.imageGenerate).toHaveLength(0);
+    expect(generationRequests.rewrite).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.contentGenerate[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: preset.knowledgeQuery,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: preset.audience,
+      topic: preset.topic
+    });
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 

@@ -1042,6 +1042,20 @@ function isTestDraft(content: GeneratedContent) {
   return localDraftMarkers.some((marker) => content.body.includes(marker));
 }
 
+const unsafeGeneratedContentStatuses = new Set(["published", "submitted"]);
+
+function isUnsafeGeneratedContentStatus(status: string) {
+  return unsafeGeneratedContentStatuses.has(status);
+}
+
+function generatedContentLifecycleWarning(status: string) {
+  if (!isUnsafeGeneratedContentStatus(status)) {
+    return null;
+  }
+  const statusLabel = status === "published" ? generatedContentStatusLabel(status) : status;
+  return `后端返回状态为「${statusLabel}」，发布前请先核对人工确认记录；OPC 不会自动发布。`;
+}
+
 function loadStoredGeneratedContent() {
   if (typeof window === "undefined") {
     return null;
@@ -3347,6 +3361,11 @@ function GenerationLauncher({
       setLastContentInputSignature({ contentId: data.id, signature: requestSignature });
       onGeneratedContent(data);
       setNeedsProviderSettings(false);
+      const lifecycleWarning = generatedContentLifecycleWarning(data.status);
+      if (lifecycleWarning) {
+        setStatusText(lifecycleWarning);
+        return;
+      }
       let finalContent = data;
       let rewriteWarning: string | null = null;
       if (!rewriteProviderReady) {
@@ -3918,8 +3937,9 @@ function GeneratedPostExportCard({
   const currentContentIdRef = useRef(content.id);
   const warnings = complianceWarnings(content);
   const testDraft = isTestDraft(content);
+  const lifecycleWarning = generatedContentLifecycleWarning(content.status);
   const canCopy = !testDraft && !generationBusy;
-  const canGenerateImage = canCopy && !imageBusy;
+  const canGenerateImage = canCopy && !imageBusy && !lifecycleWarning;
   const copyPayload = buildPlatformCopy(content);
   const tagLine = formatTagLine(content.tags);
   const imagePreviewUrl = imageAsset ? resolveAssetUrl(imageAsset.image_url) : null;
@@ -3935,11 +3955,14 @@ function GeneratedPostExportCard({
     ? "正在生成封面"
     : generationBusy
       ? "一键生成中"
+    : lifecycleWarning
+      ? "需先核对状态"
     : imageAsset
       ? "重新生成封面"
       : imageProviderReady
         ? "生成封面图"
         : "检测并生成封面";
+  const statusTone = lifecycleWarning ? "red" : content.status === "draft" ? "amber" : "green";
 
   useEffect(() => {
     currentContentIdRef.current = content.id;
@@ -3999,6 +4022,10 @@ function GeneratedPostExportCard({
       setImageError("本地检查草稿不可生成封面图，请先生成一篇正式草稿。");
       return;
     }
+    if (lifecycleWarning) {
+      setImageError(lifecycleWarning);
+      return;
+    }
 
     setImageBusy(true);
     setImageError(null);
@@ -4047,7 +4074,7 @@ function GeneratedPostExportCard({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <Pill tone="green">已生成</Pill>
-              <Pill tone={content.status === "draft" ? "amber" : "green"}>
+              <Pill tone={statusTone}>
                 {generatedContentStatusLabel(content.status)}
               </Pill>
             </div>
@@ -4101,7 +4128,7 @@ function GeneratedPostExportCard({
 
       <div className={`${subtleCardClass} p-4`} data-testid="pc-export-prepublish-check">
         <div className="flex items-center gap-2 text-sm font-semibold">
-          {warnings.length || testDraft ? (
+          {warnings.length || testDraft || lifecycleWarning ? (
             <AlertTriangle className="h-4 w-4 text-amber" />
           ) : (
             <CheckCircle2 className="h-4 w-4 text-moss" />
@@ -4123,6 +4150,14 @@ function GeneratedPostExportCard({
               未发现保录、包过、内部名额等高风险承诺词。
             </div>
           )}
+          {lifecycleWarning ? (
+            <div
+              className="rounded-md border border-coral/40 bg-coral/10 p-3 text-ink"
+              data-testid="pc-export-lifecycle-warning"
+            >
+              {lifecycleWarning}
+            </div>
+          ) : null}
           <div
             className="rounded-md border border-line bg-paper p-3"
             data-testid="pc-export-cover-review-check"

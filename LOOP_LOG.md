@@ -1418,3 +1418,79 @@ Kept.
 ### Next candidate loop
 
 - Add PC-side human-review/checklist failure coverage or a small task-lifecycle state guard so generated drafts cannot be represented as published/submitted without an explicit human-review transition.
+
+## Loop 20 - Guard PC generation lifecycle terminal statuses
+
+Date: 2026-06-16
+
+### Observation
+
+The PC generated export card rendered every non-draft content status with a green pill and the one-click generation chain would continue into rewrite/cover generation even if the draft endpoint unexpectedly returned a terminal status such as `published`. That could make a generated item look safer or more complete than the human-review workflow allows.
+
+### Hypothesis
+
+If the PC generation flow treats `published`/`submitted` content statuses as unsafe lifecycle states, then the UI can stop follow-up automation, show a visible manual-review warning, disable cover generation, and preserve preview/copy evidence without making any publishing-like request.
+
+### Patch
+
+Files changed:
+
+- `frontend/components/workspace-client.tsx`
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a shared unsafe generated-content lifecycle guard for `published` and `submitted`.
+- Stopped the PC one-click chain before rewrite or cover generation when a generated response returns an unsafe terminal status.
+- Marked the PC export status red, disabled cover generation, and added a `pc-export-lifecycle-warning` message that reminds users to verify human confirmation records and that OPC will not auto-publish.
+- Extended the PC generation fixture so E2E can simulate returned content statuses.
+- Added an E2E regression covering source preview, generated card, preview modal, no rewrite, no image generation, no publishing-like calls, and no password persistence for a returned `published` status.
+- Updated the project verifier to require the new lifecycle guard contract.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed from frontend/
+
+npm run e2e -- --grep "PC published generation status stops at manual lifecycle review"
+# 1 passed from frontend/
+
+npm run e2e
+# 19 passed, 1 skipped from frontend/
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run build
+# passed from frontend/
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 28/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 96/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The env-backed live login smoke still skips unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+- PC terminal lifecycle status is now guarded in the generation path; a future loop can add a backend/API contract test proving `/content/generate` itself never emits terminal statuses without review.
+
+### Next candidate loop
+
+- Add backend or API-level lifecycle contract coverage so generated content cannot transition to `published` without an explicit human-review and publish-record path.
