@@ -2,10 +2,14 @@ import { randomUUID } from "node:crypto";
 
 import { expect, test, type Page } from "@playwright/test";
 
+import { generationTopicPresets } from "../../lib/topic-presets";
+
 const BASE_URL = process.env.OPC_BASE_URL ?? "http://127.0.0.1:3000";
 const BASE_ORIGIN = new URL(BASE_URL).origin;
 const USERNAME = process.env.OPC_TEST_USERNAME ?? "";
 const PASSWORD = process.env.OPC_TEST_PASSWORD ?? "";
+const MOBILE_TOPIC_PRESET_BUTTON_SELECTOR =
+  'button[data-testid^="mobile-topic-preset-"]:not([data-testid="mobile-topic-preset-refresh"])';
 
 async function resetLocalAuth(page: Page) {
   await page.addInitScript(() => {
@@ -63,6 +67,12 @@ async function localStorageContains(page: Page, value: string) {
   return page.evaluate((needle) => {
     return Object.values(window.localStorage).some((item) => item.includes(needle));
   }, value);
+}
+
+function findExpectedTopicPreset(topic: string) {
+  const preset = generationTopicPresets.find((item) => item.topic === topic.trim());
+  expect(preset, `Expected visible mobile topic preset to exist for topic: ${topic}`).toBeTruthy();
+  return preset!;
 }
 
 test.describe("OPC smoke coverage", () => {
@@ -178,12 +188,39 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("mobile-create-project-detail")).toBeVisible();
     await expect(page.getByTestId("mobile-topic")).toHaveValue(/硕升博/);
     await expect(page.getByTestId("mobile-topic-preset-list")).toBeVisible();
-    await expect(page.locator('[data-testid^="mobile-topic-preset-"]').first()).toBeVisible();
+    await expect(page.locator(MOBILE_TOPIC_PRESET_BUTTON_SELECTOR).first()).toBeVisible();
     await expect(page.getByTestId("mobile-audience")).toHaveValue(/硕升博|博士/);
     await expect(page.getByTestId("mobile-tags")).toHaveValue(/硕升博|博士/);
     await expect(page.getByTestId("mobile-generate-draft")).toBeEnabled();
     await expect(page.getByText("会先生成文案，再自动生成封面图；不会自动发布。")).toBeVisible();
     await expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+    expect(generationRequests).toEqual([]);
+  });
+
+  test("mobile recommended topic keeps audience and tags aligned", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const acceptedLogin = createLoginInput();
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await trackGenerationServiceRequests(page);
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=create`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+    await page.getByTestId("mobile-creation-project-postgraduate-phd").click();
+
+    const firstPreset = page.locator(MOBILE_TOPIC_PRESET_BUTTON_SELECTOR).first();
+    await expect(firstPreset).toBeVisible();
+    const selectedTopic = (await firstPreset.locator("span").nth(1).innerText()).trim();
+    const expectedPreset = findExpectedTopicPreset(selectedTopic);
+
+    await firstPreset.click();
+
+    await expect(page.getByTestId("mobile-topic")).toHaveValue(expectedPreset.topic);
+    await expect(page.getByTestId("mobile-audience")).toHaveValue(expectedPreset.audience);
+    await expect(page.getByTestId("mobile-tags")).toHaveValue(expectedPreset.tags);
+    await expect(page.getByTestId("mobile-generate-draft")).toBeEnabled();
     expect(generationRequests).toEqual([]);
   });
 

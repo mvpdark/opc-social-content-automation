@@ -539,3 +539,77 @@ Kept.
 ### Next candidate loop
 
 - Add a focused topic-selection smoke that clicks a recommended topic and verifies topic/audience/tags stay aligned without calling generation services.
+
+## Loop 8 - Cover mobile recommended-topic alignment
+
+Date: 2026-06-15
+
+### Observation
+
+The mobile Create smoke verifies that topic controls render, but it does not yet click a recommended topic. The workflow depends on recommended topics keeping the topic, target audience, and tags aligned before generation, especially to avoid generic drift between ranking, route, mentor, timing, and sales topics.
+
+### Hypothesis
+
+If CI clicks one visible mobile recommended topic, reads the selected preset from the shared preset table, and verifies topic/audience/tags all update without calling generation services, regressions in topic-selection alignment will be caught before draft generation.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a focused mobile recommended-topic E2E smoke.
+- Clicked a visible recommended topic and verified the topic, target audience, and tags match the shared preset contract.
+- Tightened the existing recommended-topic selector so it targets actual preset buttons instead of the list container.
+- Kept a generation-service request guard and asserted no source-preview, content-generation, or image-generation calls happened.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed from frontend/
+
+npm run e2e
+# 10 passed, 1 skipped from frontend/
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run build
+# passed from frontend/
+```
+
+Manual checks:
+
+- Confirmed `npx` is available for Playwright tooling.
+- Confirmed the test reads expected preset data from `frontend/lib/topic-presets.ts`, avoiding hard-coded random topic assumptions.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 26/30
+- Correctness: 19/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 4/5
+- Total: 93/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- This verifies one visible recommended topic per run; it does not exhaustively click every preset category.
+- Draft generation success and recoverable generation failure still need controlled API fixtures before they can be covered safely.
+
+### Next candidate loop
+
+- Add a deterministic unit/contract test for all topic preset categories mapping to topic/audience/tags/knowledge query without generic drift.
