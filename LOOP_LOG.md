@@ -318,3 +318,77 @@ Kept.
 ### Next candidate loop
 
 - Add redirect-preservation coverage with a mocked successful login that does not bypass production auth behavior.
+
+## Loop 5 - Cover mobile login target preservation
+
+Date: 2026-06-15
+
+### Observation
+
+`BACKLOG_SEEDS.md` calls out redirect preservation after login as a P0 issue. The mobile login handler sets the active tab to home before the URL-driven tab restoration effect runs, so this path needs regression coverage.
+
+### Hypothesis
+
+If CI simulates a successful mobile login and verifies the requested tab plus PC return target, regressions that lose `tab` or `from` parameters after login will be caught without storing credentials or bypassing production auth.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a mocked successful mobile login smoke path that uses runtime-generated test input.
+- Verified `/android?...&tab=create` opens the requested Create tab after login.
+- Verified the mobile "return to PC workspace" action preserves the safe `from` target.
+- Reused the password persistence assertion to confirm the successful mocked path does not store plaintext passwords.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed from frontend/
+
+npm run e2e
+# 7 passed, 1 skipped from frontend/
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run build
+# passed from frontend/
+```
+
+Manual checks:
+
+- Confirmed the successful login path is mocked only in the browser test and does not alter app authentication code.
+- Confirmed the route remains on `tab=create` after login before returning to `/?theme=mint&tab=content`.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 25/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 4/5
+- Total: 91/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- Unsafe `from` sanitization is covered by product code but not yet directly asserted in E2E.
+- The credentialed real-backend login smoke remains skipped unless staging-safe environment credentials are provided.
+
+### Next candidate loop
+
+- Add a tiny E2E assertion for unsafe mobile `from` values falling back to `/`.

@@ -23,7 +23,22 @@ async function mockRejectedLogin(page: Page) {
   });
 }
 
-function createRejectedLoginInput() {
+async function mockSuccessfulLogin(page: Page, account: string) {
+  await page.route("**/api/auth/mobile-login", async (route) => {
+    await route.fulfill({
+      body: JSON.stringify({
+        account,
+        default_keys_bound: true,
+        key_profile: "e2e",
+        provider_statuses: []
+      }),
+      contentType: "application/json",
+      status: 200
+    });
+  });
+}
+
+function createLoginInput() {
   return {
     account: `e2e-${randomUUID()}`,
     password: `pw-${randomUUID()}`
@@ -66,7 +81,7 @@ test.describe("OPC smoke coverage", () => {
 
   test("PC login shows bad-credential feedback without persisting password", async ({ page }) => {
     await mockRejectedLogin(page);
-    const rejectedLogin = createRejectedLoginInput();
+    const rejectedLogin = createLoginInput();
 
     await page.goto(`${BASE_URL}/?theme=mint`);
     await page.getByTestId("pc-login-account").fill(rejectedLogin.account);
@@ -81,7 +96,7 @@ test.describe("OPC smoke coverage", () => {
   test("mobile login shows bad-credential feedback without persisting password", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await mockRejectedLogin(page);
-    const rejectedLogin = createRejectedLoginInput();
+    const rejectedLogin = createLoginInput();
 
     await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=home`);
     await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
@@ -92,6 +107,25 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("mobile-login-error")).toContainText("账号或密码不正确。");
     await expect(page.getByTestId("mobile-login-submit")).toBeEnabled();
     await expect(await localStorageContains(page, rejectedLogin.password)).toBe(false);
+  });
+
+  test("mobile login preserves requested tab and PC return target", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const acceptedLogin = createLoginInput();
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint%26tab%3Dcontent&tab=create`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+
+    await expect(page.getByTestId("mobile-tab-create")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("heading", { name: "创作项目" })).toBeVisible();
+    await expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+
+    await page.getByRole("button", { name: "返回 PC 工作台" }).click();
+    await expect(page).toHaveURL(/\/\?theme=mint&tab=content$/);
   });
 
   test("login form accepts env-provided test credentials when available", async ({ page }) => {
