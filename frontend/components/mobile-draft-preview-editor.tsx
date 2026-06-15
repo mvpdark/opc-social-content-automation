@@ -368,6 +368,14 @@ export function DraftPreviewEditor({
               <div className="mt-5 text-xs text-muted">
                 {editing ? "正在原地编辑 · 点右上角完成回到预览" : "发布前预览 · 不会自动发布"}
               </div>
+              {!editing ? (
+                <div
+                  className="mt-3 rounded-[18px] border border-[#ffe0a6] bg-[#fff8e6] px-3 py-2 text-[11px] font-semibold leading-5 text-[#8a6110]"
+                  data-testid="draft-preview-human-review-note"
+                >
+                  复制或分享只会准备标题、正文、标签和封面素材；发布前仍需人工确认，不会自动发布。
+                </div>
+              ) : null}
             </div>
           </article>
         </section>
@@ -407,6 +415,7 @@ export function DraftPreviewEditor({
             <div
               aria-live="polite"
               className="mb-2 rounded-md bg-[#fff6e3] px-3 py-2 text-[11px] font-medium leading-4 text-[#8a5d16]"
+              data-testid="draft-export-status"
               role="status"
             >
               {xhsExportMessage}

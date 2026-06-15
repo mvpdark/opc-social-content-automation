@@ -1201,3 +1201,75 @@ Kept.
 ### Next candidate loop
 
 - Add a mobile success-path assertion for the same manual-review/export distinction so both PC and phone flows prove that copying remains separate from final human publishing.
+
+## Loop 17 - Mirror manual-review export guard on mobile preview
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 16 protected the PC generated export card, but the mobile success-path E2E only verified that the preview modal said it would not auto-publish and that a cover existed. It did not explicitly protect the mobile copy/export controls, fallback manual-copy text, or the extra human-review reminder in the generated preview.
+
+### Hypothesis
+
+If the mobile preview displays an explicit human-review note and E2E clicks the text-only copy action, then CI can verify that mobile copy/export remains a draft-preparation flow, not an automated publishing flow.
+
+### Patch
+
+Files changed:
+
+- `frontend/components/mobile-draft-preview-editor.tsx`
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a visible mobile preview reminder: copying or sharing only prepares title, body, tags, and cover material; human confirmation is still required before publishing.
+- Added a stable test id for the mobile export status message.
+- Extended the mobile ranking-topic success E2E to verify the human-review note, enabled mobile copy/export controls, manual-copy fallback text containing the generated topic and tag, and no publish/submit calls.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed from frontend/
+
+npm run e2e -- --grep "mobile one-click generation keeps selected ranking topic aligned"
+# 1 passed from frontend/
+
+npm run e2e
+# 16 passed, 1 skipped from frontend/
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run build
+# passed from frontend/
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 27/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 5/5
+- Total: 95/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The env-backed live login smoke still skips unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+- Mobile copy/export is now protected in the success path; future loops can cover the mobile review queue approval/reject flow with mocked review endpoints to keep final human confirmation explicit.
+
+### Next candidate loop
+
+- Add mobile review-queue E2E coverage for approve/request-changes controls using mocked `/content/list`, `/image/list`, and `/content/:id/reviews` endpoints, ensuring no direct platform publishing is implied.

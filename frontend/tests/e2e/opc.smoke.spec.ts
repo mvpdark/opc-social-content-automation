@@ -613,6 +613,18 @@ test.describe("OPC smoke coverage", () => {
     await expect(preview).toContainText(`#${expectedTags[0]}`);
     await expect(preview).toContainText("发布前预览 · 不会自动发布");
     await expect(page.getByTestId("draft-preview-cover-image")).toBeVisible();
+    await expect(page.getByTestId("draft-preview-human-review-note")).toContainText(
+      "发布前仍需人工确认，不会自动发布"
+    );
+    await expect(page.getByTestId("draft-open-xiaohongshu")).toBeEnabled();
+    await expect(page.getByTestId("draft-preview-copy")).toBeEnabled();
+    await expect(page.getByTestId("draft-copy-preview-link")).toBeEnabled();
+
+    await page.getByTestId("draft-preview-copy").click();
+    await expect(page.getByTestId("draft-export-status")).toBeVisible();
+    const manualCopyText = await page.getByTestId("draft-manual-copy-text").inputValue();
+    expect(manualCopyText).toContain(preset.topic);
+    expect(manualCopyText).toContain(`#${expectedTags[0]}`);
 
     expect(generationRequests.sourcePreview).toHaveLength(1);
     expect(generationRequests.contentGenerate).toHaveLength(1);
