@@ -33,7 +33,11 @@ FORBIDDEN_TEXT_MARKERS = {
 
 
 def compile_backend() -> int:
-    py_files = sorted((ROOT / "backend").rglob("*.py"))
+    py_files = [
+        file
+        for file in sorted((ROOT / "backend").rglob("*.py"))
+        if not SKIP_DIRS.intersection(file.relative_to(ROOT).parts)
+    ]
     for file in py_files:
         py_compile.compile(str(file), doraise=True)
     return len(py_files)
