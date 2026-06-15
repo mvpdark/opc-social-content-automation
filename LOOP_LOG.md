@@ -392,3 +392,76 @@ Kept.
 ### Next candidate loop
 
 - Add a tiny E2E assertion for unsafe mobile `from` values falling back to `/`.
+
+## Loop 6 - Cover unsafe mobile return target fallback
+
+Date: 2026-06-15
+
+### Observation
+
+The mobile return helper already accepts only same-site paths that start with `/` but not `//`. `BACKLOG_SEEDS.md` explicitly requires unsafe redirect values to be sanitized, and the previous loop left direct E2E coverage for this gap.
+
+### Hypothesis
+
+If CI logs in through a mocked mobile success path with an external `from` value and then taps "return to PC workspace", regressions that allow external redirects will be caught without using real credentials or changing auth behavior.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added an E2E smoke path for a mocked successful mobile login with an external `from` value.
+- Verified the user remains on the requested mobile Create tab after login.
+- Verified the "return to PC workspace" action falls back to the same-site root URL instead of navigating to the external target.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed from frontend/
+
+npm run e2e
+# 8 passed, 1 skipped from frontend/
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run build
+# passed from frontend/
+```
+
+Manual checks:
+
+- Confirmed `npx` is available for Playwright tooling.
+- Confirmed the test uses a mocked login response and runtime-generated input; no credentials or secrets are committed.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 24/30
+- Correctness: 19/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 4/5
+- Total: 91/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- Protocol-relative `//host` fallback is covered by the same helper logic but not separately parameterized in E2E.
+- The credentialed real-backend login smoke remains skipped unless staging-safe environment credentials are provided.
+
+### Next candidate loop
+
+- Add a focused post-login smoke for one creation-page control that does not call real AI/model services.

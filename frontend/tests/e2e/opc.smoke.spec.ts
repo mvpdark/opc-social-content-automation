@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
 const BASE_URL = process.env.OPC_BASE_URL ?? "http://127.0.0.1:3000";
+const BASE_ORIGIN = new URL(BASE_URL).origin;
 const USERNAME = process.env.OPC_TEST_USERNAME ?? "";
 const PASSWORD = process.env.OPC_TEST_PASSWORD ?? "";
 
@@ -126,6 +127,23 @@ test.describe("OPC smoke coverage", () => {
 
     await page.getByRole("button", { name: "返回 PC 工作台" }).click();
     await expect(page).toHaveURL(/\/\?theme=mint&tab=content$/);
+  });
+
+  test("mobile return ignores unsafe external from target", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const acceptedLogin = createLoginInput();
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+
+    await page.goto(`${BASE_URL}/android?from=https%3A%2F%2Fevil.example%2Fsteal&tab=create`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+
+    await expect(page.getByTestId("mobile-tab-create")).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: "返回 PC 工作台" }).click();
+
+    await expect(page).toHaveURL(`${BASE_ORIGIN}/`);
   });
 
   test("login form accepts env-provided test credentials when available", async ({ page }) => {
