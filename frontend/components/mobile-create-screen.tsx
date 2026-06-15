@@ -264,6 +264,7 @@ export function CreateScreen({
 
   function updateMobileTopicAndAutoContext(nextTopic: string) {
     const previousTopic = topic.trim();
+    const previousTopicPreset = findGenerationTopicPresetByTopic(previousTopic);
     const nextTopicText = nextTopic.trim();
     const nextTopicPreset = findGenerationTopicPresetByTopic(nextTopicText);
     setTopic(nextTopic);
@@ -300,6 +301,8 @@ export function CreateScreen({
     clearMobileSourceEvidence();
     if (nextTopicPreset) {
       onAction(`已识别推荐选题：${nextTopicPreset.topic}`);
+    } else if (previousTopicPreset && nextTopicText) {
+      onAction(`已切换为自定义选题：${nextTopicText}`);
     }
   }
 

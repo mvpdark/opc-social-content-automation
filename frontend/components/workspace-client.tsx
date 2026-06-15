@@ -3168,6 +3168,7 @@ function GenerationLauncher({
 
   function updateTopicAndAutoKnowledgeQuery(nextTopic: string) {
     const previousTopic = topic.trim();
+    const previousTopicPreset = findGenerationTopicPresetByTopic(previousTopic);
     const nextTopicText = nextTopic.trim();
     const nextTopicPreset = findGenerationTopicPresetByTopic(nextTopicText);
     setTopic(nextTopic);
@@ -3213,6 +3214,8 @@ function GenerationLauncher({
     clearSourceEvidence();
     if (nextTopicPreset) {
       setStatusText(`已识别推荐选题：${nextTopicPreset.topic}`);
+    } else if (previousTopicPreset && nextTopicText) {
+      setStatusText(`已切换为自定义选题：${nextTopicText}`);
     }
   }
 
