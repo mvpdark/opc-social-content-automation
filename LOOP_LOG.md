@@ -978,3 +978,80 @@ Kept.
 ### Next candidate loop
 
 - Add a controlled PC failure-recovery fixture that verifies content or cover failures preserve selected topic inputs and source evidence without creating false drafts or suggesting publishing.
+
+## Loop 14 - Cover PC content failure without false drafts
+
+Date: 2026-06-16
+
+### Observation
+
+PC one-click generation now has success-path E2E coverage, but content-generation failure on PC was still less protected than mobile. A failed writing request must not create a fake draft, must not proceed to image generation, and must keep the selected topic plus source evidence available for retry.
+
+### Hypothesis
+
+If the PC generation fixture can simulate a content-service failure after source preview succeeds, then CI can verify the desktop creation workflow shows a recoverable error, preserves the timing/schedule topic inputs and evidence, skips image generation and rewrite, avoids publish/submit calls, and does not create local or visual draft artifacts.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Parameterized the PC generation fixture with `contentId`, `failContent`, and `failCover` options.
+- Added a PC content-failure test using the `timeline-main` preset to cover a timing/schedule topic type.
+- Verified topic, knowledge query, audience, and tags stay aligned after the failure.
+- Verified the compact evidence card still reports both sources and can reopen knowledge-base and Tavily/web evidence after the error.
+- Verified no draft history card is created, no image generation is called, no rewrite is called, no publish/submit endpoint is touched, and the login password is not persisted.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed from frontend/
+
+npm run e2e -- --grep "PC content failure keeps timing topic evidence without false draft"
+# 1 passed from frontend/
+
+npm run e2e
+# 15 passed, 1 skipped from frontend/
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run build
+# passed from frontend/
+```
+
+Notes:
+
+- The first focused E2E attempt asserted the knowledge list stayed open after the failed generation request. The UI correctly kept the evidence card and source count, but the knowledge list was collapsed while web evidence remained open. The test was adjusted to verify the real recovery path: users can click the compact knowledge/web toggles again after the failure.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 27/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 94/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- PC cover-generation failure is now easy to fixture but still lacks its own desktop recovery test.
+- The env-backed live login smoke remains skipped unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+
+### Next candidate loop
+
+- Add a controlled PC cover-failure E2E fixture that verifies a generated draft remains available for preview/copy while cover status clearly reports the failure and no publishing call is made.

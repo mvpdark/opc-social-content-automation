@@ -15,6 +15,7 @@ const E2E_GENERATED_CONTENT_ID = 8801;
 const E2E_COVER_FAILURE_CONTENT_ID = 8802;
 const E2E_CONTENT_FAILURE_CONTENT_ID = 8803;
 const E2E_PC_GENERATED_CONTENT_ID = 8901;
+const E2E_PC_CONTENT_FAILURE_CONTENT_ID = 8902;
 
 type JsonPayload = Record<string, unknown>;
 
@@ -250,7 +251,15 @@ async function mockMobileGenerationFixture(
   return requests;
 }
 
-async function mockPcGenerationFixture(page: Page, preset: GenerationTopicPreset) {
+async function mockPcGenerationFixture(
+  page: Page,
+  preset: GenerationTopicPreset,
+  {
+    contentId = E2E_PC_GENERATED_CONTENT_ID,
+    failContent = false,
+    failCover = false
+  }: MobileGenerationFixtureOptions = {}
+) {
   const requests: PcGenerationFixtureRequests = {
     contentGenerate: [],
     contentList: 0,
@@ -298,6 +307,14 @@ async function mockPcGenerationFixture(page: Page, preset: GenerationTopicPreset
   });
   await page.route("**/api/content/generate", async (route) => {
     requests.contentGenerate.push(readJsonPayload(route.request().postData()));
+    if (failContent) {
+      await route.fulfill({
+        body: JSON.stringify({ detail: "PC 撰稿服务暂时不可用，请稍后重试。" }),
+        contentType: "application/json",
+        status: 503
+      });
+      return;
+    }
     await route.fulfill({
       body: JSON.stringify({
         body: [
@@ -307,7 +324,7 @@ async function mockPcGenerationFixture(page: Page, preset: GenerationTopicPreset
           "发布前仍需人工确认标题、正文、标签和封面。"
         ].join("\n\n"),
         created_at: "2026-06-16T00:00:00.000Z",
-        id: E2E_PC_GENERATED_CONTENT_ID,
+        id: contentId,
         platform: "xiaohongshu",
         source_context: sourceContext,
         status: "draft",
@@ -328,9 +345,17 @@ async function mockPcGenerationFixture(page: Page, preset: GenerationTopicPreset
   });
   await page.route("**/api/image/generate", async (route) => {
     requests.imageGenerate.push(readJsonPayload(route.request().postData()));
+    if (failCover) {
+      await route.fulfill({
+        body: JSON.stringify({ detail: "PC 封面服务暂时不可用，请稍后重试。" }),
+        contentType: "application/json",
+        status: 503
+      });
+      return;
+    }
     await route.fulfill({
       body: JSON.stringify({
-        content_id: E2E_PC_GENERATED_CONTENT_ID,
+        content_id: contentId,
         created_at: "2026-06-16T00:00:01.000Z",
         id: 9902,
         image_url: buildFixtureCoverDataUri(preset.topic),
@@ -833,6 +858,78 @@ test.describe("OPC smoke coverage", () => {
       template: "xiaohongshu-cover"
     });
     expect(String(generationRequests.imageGenerate[0].style_notes)).toContain(preset.coverDirection);
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("PC content failure keeps timing topic evidence without false draft", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const acceptedLogin = createLoginInput();
+    const preset = requireTopicPreset("timeline-main");
+    const expectedTags = parseTagText(preset.tags);
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockPcGenerationFixture(page, preset, {
+      contentId: E2E_PC_CONTENT_FAILURE_CONTENT_ID,
+      failContent: true
+    });
+
+    await page.goto(`${BASE_URL}/?theme=mint&tab=content&project=postgraduate-phd`);
+    await expect(page.getByTestId("pc-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("pc-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("pc-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("pc-login-submit").click();
+
+    await expect(page.getByTestId("creation-project-return")).toBeVisible();
+    await expect(page.getByTestId("generation-launcher")).toBeVisible();
+    await page.getByTestId("content-topic").fill(preset.topic);
+    await expect(page.getByTestId("content-topic")).toHaveValue(preset.topic);
+    await expect(page.getByTestId("content-knowledge-query")).toHaveValue(preset.knowledgeQuery);
+    await expect(page.getByTestId("content-target-audience")).toHaveValue(preset.audience);
+    await expect(page.getByTestId("content-tags")).toHaveValue(preset.tags);
+
+    await page.getByTestId("source-preview-button").click();
+    await expect(page.getByTestId("generation-source-evidence")).toContainText("2 条");
+    await page.getByTestId("source-knowledge-toggle").click();
+    await expect(page.getByTestId("source-knowledge-list")).toContainText(
+      `E2E 知识库引用：${preset.topic}`
+    );
+    await page.getByTestId("source-web-toggle").click();
+    await expect(page.getByTestId("source-web-list")).toContainText(
+      `E2E 联网来源：${preset.topic}`
+    );
+
+    await page.getByTestId("start-production-button").click();
+    await expect(page.getByText("PC 撰稿服务暂时不可用，请稍后重试。")).toBeVisible();
+    await expect(page.getByTestId("content-topic")).toHaveValue(preset.topic);
+    await expect(page.getByTestId("content-knowledge-query")).toHaveValue(preset.knowledgeQuery);
+    await expect(page.getByTestId("content-target-audience")).toHaveValue(preset.audience);
+    await expect(page.getByTestId("content-tags")).toHaveValue(preset.tags);
+    await expect(page.getByTestId("generation-source-evidence")).toContainText("2 条");
+    await page.getByTestId("source-knowledge-toggle").click();
+    await expect(page.getByTestId("source-knowledge-list")).toContainText(
+      `E2E 知识库引用：${preset.topic}`
+    );
+    await page.getByTestId("source-web-toggle").click();
+    await expect(page.getByTestId("source-web-list")).toContainText(
+      `E2E 联网来源：${preset.topic}`
+    );
+    await expect(page.getByTestId("draft-history-card")).toHaveCount(0);
+
+    expect(generationRequests.providerStatus).toBeGreaterThan(0);
+    expect(generationRequests.contentList).toBeGreaterThan(0);
+    expect(generationRequests.sourcePreview).toHaveLength(1);
+    expect(generationRequests.contentGenerate).toHaveLength(1);
+    expect(generationRequests.imageGenerate).toHaveLength(0);
+    expect(generationRequests.rewrite).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.contentGenerate[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: preset.knowledgeQuery,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: preset.audience,
+      topic: preset.topic
+    });
+    expect(await localStorageContains(page, String(E2E_PC_CONTENT_FAILURE_CONTENT_ID))).toBe(false);
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 
