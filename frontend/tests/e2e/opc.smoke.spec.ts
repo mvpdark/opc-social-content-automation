@@ -48,6 +48,10 @@ type MobileReviewFixtureItem = {
   status?: "draft" | "review_pending" | "rewritten";
 };
 
+type MobileReviewFixtureOptions = {
+  failReviewForContentIds?: number[];
+};
+
 type MobileReviewFixtureRequests = {
   contentList: number;
   forbiddenPublishing: string[];
@@ -268,7 +272,11 @@ async function mockMobileGenerationFixture(
   return requests;
 }
 
-async function mockMobileReviewQueueFixture(page: Page, items: MobileReviewFixtureItem[]) {
+async function mockMobileReviewQueueFixture(
+  page: Page,
+  items: MobileReviewFixtureItem[],
+  { failReviewForContentIds = [] }: MobileReviewFixtureOptions = {}
+) {
   const requests: MobileReviewFixtureRequests = {
     contentList: 0,
     forbiddenPublishing: [],
@@ -331,8 +339,18 @@ async function mockMobileReviewQueueFixture(page: Page, items: MobileReviewFixtu
   });
 
   await page.route(/\/api\/content\/\d+\/reviews$/, async (route) => {
-    requests.reviewUrls.push(route.request().url());
+    const reviewUrl = route.request().url();
+    requests.reviewUrls.push(reviewUrl);
     requests.reviews.push(readJsonPayload(route.request().postData()));
+    const contentId = Number(reviewUrl.match(/\/content\/(\d+)\/reviews$/)?.[1] ?? 0);
+    if (failReviewForContentIds.includes(contentId)) {
+      await route.fulfill({
+        body: JSON.stringify({ detail: "E2E 人工确认服务暂时不可用，请稍后重试。" }),
+        contentType: "application/json",
+        status: 503
+      });
+      return;
+    }
     await route.fulfill({
       body: JSON.stringify({ ok: true }),
       contentType: "application/json",
@@ -948,6 +966,57 @@ test.describe("OPC smoke coverage", () => {
         E2E_MOBILE_REVIEW_CHANGES_CONTENT_ID
       ])
     );
+    expect(reviewRequests.forbiddenPublishing).toEqual([]);
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("mobile review decision failure keeps draft queued without publishing", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const acceptedLogin = createLoginInput();
+    const preset = requireTopicPreset("mentor-email-no-reply");
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const reviewRequests = await mockMobileReviewQueueFixture(
+      page,
+      [
+        {
+          contentId: E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID,
+          preset,
+          status: "review_pending"
+        }
+      ],
+      { failReviewForContentIds: [E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID] }
+    );
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=review`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+
+    await expect(page.getByTestId("mobile-review-list")).toBeVisible();
+    await expect(page.getByTestId("mobile-review-card")).toHaveCount(1);
+    await expect(page.getByTestId("mobile-review-card").first()).toContainText(preset.topic);
+
+    await page.getByTestId("mobile-review-card").first().locator("button").first().click();
+    await expect(page.getByTestId("mobile-review-detail")).toBeVisible();
+    await expect(page.getByTestId("mobile-review-source-evidence")).toContainText(preset.topic);
+    await page.getByTestId("mobile-review-detail-approve").click();
+
+    await expect(page.getByTestId("mobile-review-detail")).toBeVisible();
+    await expect(page.getByTestId("mobile-review-status")).toContainText(
+      "E2E 人工确认服务暂时不可用，请稍后重试。"
+    );
+    expect(reviewRequests.reviews).toHaveLength(1);
+    expect(reviewRequests.reviewUrls[0]).toContain(`/content/${E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID}/reviews`);
+    expect(reviewRequests.reviews[0]).toMatchObject({
+      decision: "approved",
+      risk_flags: [],
+      score: 95
+    });
+
+    await page.getByRole("button", { name: /关闭确认详情/ }).click();
+    await expect(page.getByTestId("mobile-review-card")).toHaveCount(1);
+    await expect(page.getByTestId("mobile-review-card").first()).toContainText(preset.topic);
     expect(reviewRequests.forbiddenPublishing).toEqual([]);
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });

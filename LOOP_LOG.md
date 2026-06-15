@@ -1347,3 +1347,74 @@ Kept.
 ### Next candidate loop
 
 - Add mobile review decision failure E2E coverage for `/content/:id/reviews` returning an error, verifying the item stays in the queue and no publishing-like endpoint is touched.
+
+## Loop 19 - Cover mobile review decision failure recovery
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 18 covered successful mobile human-review decisions, but there was no regression guard for a failed `/content/:id/reviews` call. This is a safety and reliability risk: if the review API is temporarily unavailable, the draft must remain in the queue and the UI must show a retryable error instead of removing the item or implying publish progress.
+
+### Hypothesis
+
+If the mobile review queue fixture can force a review endpoint failure, then E2E can prove that an attempted approval keeps the detail sheet and queue item visible, surfaces the backend error, records only the human-review payload, and never touches publishing-like endpoints.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Extended the mobile review E2E fixture with `failReviewForContentIds`.
+- Added a mobile review failure test that opens a queued draft, attempts approval, receives a controlled 503 response, and verifies the draft remains queued.
+- Verified the failed request still carries the expected human-review payload and no publish/submit endpoint is called.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed from frontend/
+
+npm run e2e -- --grep "mobile review decision failure keeps draft queued without publishing"
+# 1 passed from frontend/
+
+npm run e2e
+# 18 passed, 1 skipped from frontend/
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run build
+# passed from frontend/
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 27/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 95/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The env-backed live login smoke still skips unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+- Mobile review success and failure are now covered; future loops can add PC-side review/publish checklist failure coverage or continue into broader task lifecycle state modeling.
+
+### Next candidate loop
+
+- Add PC-side human-review/checklist failure coverage or a small task-lifecycle state guard so generated drafts cannot be represented as published/submitted without an explicit human-review transition.
