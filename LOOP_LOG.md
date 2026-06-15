@@ -2578,3 +2578,80 @@ Kept. This protects a P0 login failure mode and also removes an observed mobile 
 ### Next candidate loop
 
 - Continue auth/session recovery hardening, then add HTTP 5xx login feedback coverage or deeper semantic topic-intent checks for custom topics.
+
+## Loop 36 - Treat login 5xx as service failure
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 35 protected fetch-level login outages, but PC and mobile login still treated HTTP 5xx responses from `/api/auth/mobile-login` as generic bad credentials. That can mislead users when the backend is down or overloaded and also weakens the P0 requirement that network/API failures show retry guidance.
+
+### Hypothesis
+
+If both login clients classify `response.status >= 500` with `readApiError` and E2E simulates a 503 response, then server-side login failures will show service-recovery copy without storing passwords or weakening bad-credential handling.
+
+### Patch
+
+Files changed:
+
+- `frontend/components/workspace-client.tsx`
+- `frontend/app/android/page.tsx`
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Updated PC login to surface 5xx service failure copy from `readApiError`.
+- Updated mobile login to surface 5xx service failure copy from `readApiError`.
+- Added PC and mobile E2E coverage for a 503 login response.
+- Asserted the 503 path does not show the bad-credential message, leaves retry enabled, and does not persist passwords.
+
+### Verification
+
+Commands run:
+
+```bash
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "server-error feedback" --project=chromium
+# passed: 2 passed
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "bad-credential feedback|service-unavailable feedback" --project=chromium
+# passed: 4 passed
+
+npm run typecheck
+# passed
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run e2e
+# passed: 31 passed, 1 skipped
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 26/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 94/100
+
+### Result
+
+Kept. PC and mobile login now distinguish bad credentials, fetch-level outages, and HTTP 5xx backend failures, while preserving retry and password non-persistence checks.
+
+### Remaining risk
+
+- HTTP 4xx responses other than 401/403 still intentionally use bad-credential copy except 404/405 service-version guidance.
+- The env-backed live login smoke remains skipped unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+
+### Next candidate loop
+
+- Continue auth/session recovery hardening, or add a small contract check that prevents login 5xx paths from regressing into bad-credential copy.

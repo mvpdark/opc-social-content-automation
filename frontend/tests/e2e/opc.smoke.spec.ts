@@ -107,6 +107,16 @@ async function mockUnavailableLogin(page: Page) {
   });
 }
 
+async function mockServerErrorLogin(page: Page) {
+  await page.route("**/api/auth/mobile-login", async (route) => {
+    await route.fulfill({
+      body: JSON.stringify({ detail: "登录服务暂时不可用，请稍后重试。" }),
+      contentType: "application/json",
+      status: 503
+    });
+  });
+}
+
 async function mockSuccessfulLogin(page: Page, account: string) {
   await page.route("**/api/auth/mobile-login", async (route) => {
     await route.fulfill({
@@ -805,6 +815,42 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("mobile-login-error")).toContainText(
       "登录服务暂时不可用，请确认应用服务已启动。"
     );
+    await expect(page.getByTestId("mobile-login-submit")).toBeEnabled();
+    await expect(await localStorageContains(page, rejectedLogin.password)).toBe(false);
+  });
+
+  test("PC login shows server-error feedback without persisting password", async ({ page }) => {
+    await mockServerErrorLogin(page);
+    const rejectedLogin = createLoginInput();
+
+    await page.goto(`${BASE_URL}/?theme=mint`);
+    await page.getByTestId("pc-login-account").fill(rejectedLogin.account);
+    await page.getByTestId("pc-login-password").fill(rejectedLogin.password);
+    await page.getByTestId("pc-login-submit").click();
+
+    await expect(page.getByTestId("pc-login-error")).toContainText(
+      "登录服务暂时不可用，请稍后重试。"
+    );
+    await expect(page.getByTestId("pc-login-error")).not.toContainText("账号或密码不正确。");
+    await expect(page.getByTestId("pc-login-submit")).toBeEnabled();
+    await expect(await localStorageContains(page, rejectedLogin.password)).toBe(false);
+  });
+
+  test("mobile login shows server-error feedback without persisting password", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await mockServerErrorLogin(page);
+    const rejectedLogin = createLoginInput();
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=home`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(rejectedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(rejectedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+
+    await expect(page.getByTestId("mobile-login-error")).toContainText(
+      "登录服务暂时不可用，请稍后重试。"
+    );
+    await expect(page.getByTestId("mobile-login-error")).not.toContainText("账号或密码不正确。");
     await expect(page.getByTestId("mobile-login-submit")).toBeEnabled();
     await expect(await localStorageContains(page, rejectedLogin.password)).toBe(false);
   });
