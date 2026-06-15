@@ -136,6 +136,8 @@ TOPIC_INTENT_RULES = (
         key="route",
         topic_terms=(
             "路线",
+            "路线清单",
+            "申请路线清单",
             "怎么选",
             "选择",
             "路径",
@@ -146,6 +148,8 @@ TOPIC_INTENT_RULES = (
         ),
         draft_terms=(
             "路线",
+            "路线清单",
+            "申请路线清单",
             "路径",
             "选择",
             "适配",
@@ -300,6 +304,15 @@ STRONG_TOPIC_TERMS_BY_RULE = {
         "先准备",
         "一年内",
     ),
+    "route": (
+        "路线清单",
+        "申请路线清单",
+        "路线",
+        "怎么选",
+        "选择",
+        "路径",
+        "取舍",
+    ),
     "sales": ("咨询", "转化", "私域", "获客", "含金量", "怎么回答"),
 }
 
@@ -336,6 +349,9 @@ def _best_matching_topic_intent(text: str) -> TopicIntentRule | None:
 
 def is_water_ranking_topic(topic: str, tags: list[str] | None = None) -> bool:
     topic_text = joined_topic_text(topic, tags)
+    topic_intent = _best_matching_topic_intent(topic_text)
+    if topic_intent and topic_intent.key != "list_filter":
+        return False
     return contains_any(topic_text, WATER_ROUTE_TOPIC_TERMS) and contains_any(
         topic_text,
         RANKING_TOPIC_TERMS,
