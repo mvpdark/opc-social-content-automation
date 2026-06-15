@@ -1163,6 +1163,8 @@ def validate_content_production_contract() -> int:
         'topic: "低预算海外博士怎么筛"',
         'key: "source-logo-price"',
         'topic: "水博项目校徽和价格怎么核验"',
+        'key: "source-official-fee-check"',
+        'topic: "海外博士官方来源和费用怎么查"',
         'topic: "套磁邮件为什么没人回"',
         'topic: "博士项目咨询前必问5个问题"',
         "desktopLabel",

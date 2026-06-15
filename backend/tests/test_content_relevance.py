@@ -344,7 +344,7 @@ def test_generation_topic_presets_keep_broad_recommendation_pool() -> None:
         "导师型": 4,
         "时间型": 4,
         "转化型": 4,
-        "来源型": 1,
+        "来源型": 2,
     }
 
     assert len(presets) >= 20

@@ -57,6 +57,19 @@ export const generationTopicPresets: GenerationTopicPreset[] = [
     topic: "水博项目校徽和价格怎么核验"
   },
   {
+    audience: "想核对海外博士项目官网、费用页和认证口径的申请人",
+    coverDirection:
+      "使用官网证据链或费用核验表，突出项目页 URL、学费年份、收费口径、认证政策和待确认字段；未核实前不写价格结论或学校推荐。",
+    desktopHelper: "按官网 URL、费用页、认证和年份口径核验",
+    desktopLabel: "来源型",
+    key: "source-official-fee-check",
+    knowledgeQuery: "海外博士 官方来源 官网 项目页 学费 费用 认证 政策 年份 口径",
+    mobileHelper: "官网核验",
+    mobileLabel: "来源",
+    tags: "海外博士,官方来源,官网核验,学费费用,认证政策",
+    topic: "海外博士官方来源和费用怎么查"
+  },
+  {
     audience: "担心遇到不靠谱博士项目的咨询用户",
     coverDirection:
       "使用红黄绿风险清单或避坑榜，突出认证、官网信息、毕业要求、授课模式和付款节点。",
