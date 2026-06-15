@@ -76,7 +76,11 @@ fi
 if [ -f "$ROOT/playwright.config.ts" ] || [ -f "$ROOT/playwright.config.js" ] || [ -f "$ROOT/playwright.config.mjs" ]; then
   run_step "Playwright E2E" npx playwright test
 elif [ -f "$FRONTEND/playwright.config.ts" ] || [ -f "$FRONTEND/playwright.config.js" ] || [ -f "$FRONTEND/playwright.config.mjs" ]; then
-  (cd "$FRONTEND" && run_step "Playwright E2E" npx playwright test)
-elif [ -d "$ROOT/tests/e2e" ]; then
-  echo "-- E2E specs are present in tests/e2e, but no Playwright JS config is configured yet."
+  if [ -n "${FRONTEND_PM:-}" ] && has_script "$FRONTEND" "e2e"; then
+    run_package_script "$FRONTEND" "$FRONTEND_PM" "e2e"
+  else
+    (cd "$FRONTEND" && run_step "Playwright E2E" npx playwright test)
+  fi
+elif [ -d "$FRONTEND/tests/e2e" ]; then
+  echo "-- E2E specs are present in frontend/tests/e2e, but no Playwright config was found."
 fi

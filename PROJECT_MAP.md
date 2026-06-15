@@ -8,7 +8,7 @@ Last updated: 2026-06-15
 - Frontend package root: `frontend/`.
 - Backend: FastAPI, SQLAlchemy, Alembic, Python 3.11+.
 - Backend package root: `backend/`.
-- Browser automation: Python Playwright for collection; JS Playwright E2E specs are staged under `tests/e2e/`.
+- Browser automation: Python Playwright for collection; JS Playwright E2E runs through `frontend/playwright.config.ts`.
 
 ## Package Managers
 
@@ -49,20 +49,20 @@ Last updated: 2026-06-15
 
 - Backend tests: `backend/tests/`, run with `python -m pytest backend/tests`.
 - Project contract checks: `python scripts/verify_project.py`.
-- Frontend verification: run from `frontend/` with `npm run typecheck` or `npm run verify`.
-- E2E smoke spec draft: `tests/e2e/opc.smoke.spec.ts`.
-- JS Playwright config/dependency is not yet configured in this repository.
+- Frontend verification: run from `frontend/` with `npm run typecheck`, `npm run build`, or `npm run verify`.
+- E2E smoke tests: run from `frontend/` with `npm run e2e`; specs live in `frontend/tests/e2e/`.
+- Playwright starts the local Next dev server automatically when `OPC_BASE_URL` is not provided.
 
 ## Deployment and Build
 
 - Frontend build command: `npm run build` in `frontend/`.
 - Backend health and service startup are documented in `docs/RUNBOOK.md`.
 - Cloudflare tunnel notes are in `docs/CLOUDFLARE_OPC.md`.
-- CI runs backend project checks, backend tests, and frontend typecheck.
+- CI runs backend project checks, backend tests, frontend typecheck, and Chromium E2E smoke tests.
 
 ## Known Risks and Missing Pieces
 
-- Root-level JS Playwright runner is not configured yet; `tests/e2e/opc.smoke.spec.ts` is staged as a contract until the runner is added.
+- E2E only covers unauthenticated PC/mobile login-shell smoke paths by default; credentialed login remains skipped unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
 - The local Windows environment in this thread does not expose Bash, so `scripts/opc-loop-check.sh` is primarily for Unix/CI-style shells.
 - Mobile and PC login state rely on localStorage account markers; future auth work should keep explicit loading, expired-session, and network-error states.
 - Publishing and platform actions must remain behind human confirmation.

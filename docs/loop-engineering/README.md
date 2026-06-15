@@ -19,7 +19,7 @@ Repository placement note: in this OPC repo, the long-form pack files live in
 - `PLAYWRIGHT_E2E_SPEC.md`：移动端和 PC 端 E2E 测试说明。
 - `LOOP_LOG_TEMPLATE.md`：每轮循环记录模板。
 - `scripts/opc-loop-check.sh`：通用检查脚本，Codex 可按项目栈调整。
-- `tests/e2e/opc.smoke.spec.ts`：Playwright 冒烟测试草案，Codex 应根据真实 DOM 调整。
+- `frontend/tests/e2e/opc.smoke.spec.ts`：Playwright 冒烟测试，按真实 DOM 维护。
 
 ## 使用方式
 

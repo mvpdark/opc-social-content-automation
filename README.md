@@ -55,7 +55,7 @@ Data collection -> Knowledge base -> Draft generation -> Humanization -> Review 
 
 ## Delivery
 
-- GitHub Actions runs backend verification, backend tests, and frontend typecheck.
+- GitHub Actions runs backend verification, backend tests, frontend typecheck, and Playwright E2E smoke tests.
 - Local release checks are documented in `docs/RUNBOOK.md`.
 - Dependency audit notes are tracked in `docs/SECURITY_NOTES.md`.
 - Loop engineering rules and acceptance checks are tracked in `AGENTS.md`,
