@@ -676,6 +676,7 @@ function ReviewEvidenceBlock({ sourceContext }: { sourceContext: GenerationSourc
           <div className="text-[11px] font-black text-muted">联网来源</div>
           {webResults.slice(0, 4).map((item, index) => (
             <a
+              aria-label={`打开联网来源：${item.title}`}
               className="mobile-review-evidence-result-card block rounded-[18px] bg-white/[0.76] px-3 py-2"
               href={item.url}
               key={`review-web-${item.url}-${index}`}

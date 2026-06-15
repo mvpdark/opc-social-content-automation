@@ -252,6 +252,7 @@ export function GenerationSourceEvidenceCard({
           {webResults.length ? (
             webResults.slice(0, 4).map((item, index) => (
               <a
+                aria-label={`打开联网来源：${item.title}`}
                 className="workspace-evidence-result-card block rounded-md border border-line bg-mist/55 p-3 transition hover:border-steel/60"
                 href={item.url}
                 key={`${item.url}-${item.title}-${index}`}

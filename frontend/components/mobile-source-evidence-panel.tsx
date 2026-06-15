@@ -247,6 +247,7 @@ export function MobileSourceEvidencePanel({
           {webResults.length ? (
             webResults.slice(0, 3).map((item, index) => (
               <a
+                aria-label={`打开联网来源：${item.title}`}
                 className="mobile-source-evidence-result-card block rounded-[18px] border border-white/[0.86] bg-white/70 px-3 py-2"
                 href={item.url}
                 key={`${item.url}-${item.title}-${index}`}
