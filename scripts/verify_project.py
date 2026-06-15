@@ -525,6 +525,7 @@ def validate_topic_intent_runtime_contract() -> int:
         ("在职博士申请时间线怎么排", ["在职博士", "材料"], "timeline", False),
         ("适合上班族的博士项目怎么咨询", ["博士项目", "转化"], "sales", False),
         ("水博项目校徽和价格怎么核验", ["官网核验", "校徽"], "source_check", False),
+        ("海外博士官方来源和费用怎么查", ["官方来源", "官网核验", "学费费用"], "source_check", False),
         ("别人问博士含金量怎么回答", ["咨询转化", "价值"], "sales", False),
     ]
 
