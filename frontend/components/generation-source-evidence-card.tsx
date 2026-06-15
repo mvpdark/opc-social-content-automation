@@ -3,7 +3,11 @@
 import { ChevronDown, ExternalLink, Loader2, Search } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import type { GenerationKnowledgeSource, GenerationSourceContext } from "@/lib/generated-assets";
+import {
+  generationSourceContextStats,
+  type GenerationKnowledgeSource,
+  type GenerationSourceContext
+} from "@/lib/generated-assets";
 import {
   knowledgeCategoryLabel,
   knowledgeItemExcerpt,
@@ -48,16 +52,6 @@ function sourceKnowledgeItemToKnowledgeItem(item: GenerationKnowledgeSource): Kn
   };
 }
 
-function sourceContextStats(sourceContext: GenerationSourceContext | null) {
-  const knowledgeCount = sourceContext?.knowledge_items?.length ?? 0;
-  const webCount = sourceContext?.web_search?.results?.length ?? 0;
-  return {
-    hasEvidence: knowledgeCount + webCount > 0,
-    knowledgeCount,
-    webCount
-  };
-}
-
 type EvidenceSection = "knowledge" | "web" | null;
 
 export function GenerationSourceEvidenceCard({
@@ -75,17 +69,20 @@ export function GenerationSourceEvidenceCard({
   previewBusy?: boolean;
   sourceContext: GenerationSourceContext | null;
 }) {
-  const { hasEvidence, knowledgeCount, webCount } = sourceContextStats(sourceContext);
+  const {
+    hasEvidence,
+    missingRequiredWebResults,
+    totalCount,
+    webEvidenceCountLabel,
+    webRequired
+  } = generationSourceContextStats(sourceContext);
   const webSearch = sourceContext?.web_search;
-  const webRequired = Boolean(webSearch?.required);
   const webResults = webSearch?.results ?? [];
   const knowledgeItems = sourceContext?.knowledge_items ?? [];
-  const missingRequiredWebResults = webRequired && !webResults.length;
   const visibleKnowledgeQuery = sourceContext?.knowledge_query || fallbackKnowledgeQuery?.trim() || "";
   const [openEvidenceSection, setOpenEvidenceSection] = useState<EvidenceSection>(null);
   const knowledgeListRef = useRef<HTMLDivElement | null>(null);
   const webListRef = useRef<HTMLDivElement | null>(null);
-  const webEvidenceCountLabel = webResults.length ? `${webResults.length} 条` : webRequired ? "未返回" : "未启用";
 
   useEffect(() => {
     setOpenEvidenceSection(null);
@@ -116,7 +113,7 @@ export function GenerationSourceEvidenceCard({
           </p>
         </div>
         <SourcePill tone={missingRequiredWebResults ? "amber" : hasEvidence ? "green" : "neutral"}>
-          {missingRequiredWebResults ? "缺联网" : hasEvidence ? `${knowledgeCount + webCount} 条` : "待查看"}
+          {missingRequiredWebResults ? "缺联网" : hasEvidence ? `${totalCount} 条` : "待查看"}
         </SourcePill>
       </div>
       {visibleKnowledgeQuery ? (

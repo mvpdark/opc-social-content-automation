@@ -46,6 +46,25 @@ export function sourceContextMatchesKnowledgeQuery(
   return Boolean(sourceQuery && sourceQuery === knowledgeQuery.trim());
 }
 
+export function generationSourceContextStats(
+  sourceContext: GenerationSourceContext | null | undefined
+) {
+  const knowledgeCount = sourceContext?.knowledge_items?.length ?? 0;
+  const webRequired = Boolean(sourceContext?.web_search?.required);
+  const webCount = sourceContext?.web_search?.results?.length ?? 0;
+  const totalCount = knowledgeCount + webCount;
+
+  return {
+    hasEvidence: totalCount > 0,
+    knowledgeCount,
+    missingRequiredWebResults: webRequired && webCount === 0,
+    totalCount,
+    webCount,
+    webEvidenceCountLabel: webCount ? `${webCount} 条` : webRequired ? "未返回" : "未启用",
+    webRequired
+  };
+}
+
 export type GeneratedImageAsset = {
   content_id: number;
   created_at?: string;

@@ -3,7 +3,11 @@
 import { ChevronDown, ExternalLink, Loader2, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import type { GenerationKnowledgeSource, GenerationSourceContext } from "@/lib/generated-assets";
+import {
+  generationSourceContextStats,
+  type GenerationKnowledgeSource,
+  type GenerationSourceContext
+} from "@/lib/generated-assets";
 import {
   knowledgeCategoryLabel,
   knowledgeItemExcerpt,
@@ -43,15 +47,18 @@ export function MobileSourceEvidencePanel({
 }) {
   const knowledgeItems = sourceContext?.knowledge_items ?? [];
   const webSearch = sourceContext?.web_search;
-  const webRequired = Boolean(webSearch?.required);
   const webResults = webSearch?.results ?? [];
-  const hasEvidence = knowledgeItems.length + webResults.length > 0;
-  const missingRequiredWebResults = webRequired && !webResults.length;
+  const {
+    hasEvidence,
+    missingRequiredWebResults,
+    totalCount,
+    webEvidenceCountLabel,
+    webRequired
+  } = generationSourceContextStats(sourceContext);
   const visibleKnowledgeQuery = sourceContext?.knowledge_query || fallbackKnowledgeQuery?.trim() || "";
   const [openEvidenceSection, setOpenEvidenceSection] = useState<MobileEvidenceSection>(null);
   const knowledgeListRef = useRef<HTMLDivElement | null>(null);
   const webListRef = useRef<HTMLDivElement | null>(null);
-  const webEvidenceCountLabel = webResults.length ? `${webResults.length} 条` : webRequired ? "未返回" : "未启用";
 
   useEffect(() => {
     setOpenEvidenceSection(null);
@@ -95,7 +102,7 @@ export function MobileSourceEvidencePanel({
                 : "bg-white text-muted"
           ].join(" ")}
         >
-          {missingRequiredWebResults ? "缺联网" : hasEvidence ? `${knowledgeItems.length + webResults.length} 条` : "待查看"}
+          {missingRequiredWebResults ? "缺联网" : hasEvidence ? `${totalCount} 条` : "待查看"}
         </span>
       </div>
       {visibleKnowledgeQuery ? (
