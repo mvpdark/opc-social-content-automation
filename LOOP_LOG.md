@@ -2001,3 +2001,74 @@ Kept.
 ### Next candidate loop
 
 - Add a small reusable E2E helper for mobile terminal generation states, or add an explicit data-state attribute to progress components if more progress-related flake appears.
+
+## Loop 28 - Share mobile generation terminal-state wait helper
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 27 stabilized the mobile cover-failure wait by waiting for `mobile-generation-progress` to show `生成失败` before checking the status banner. The mobile content-failure test still had its own direct terminal-state assertion, so future progress-state tuning could drift between the two failure recovery scenarios.
+
+### Hypothesis
+
+If both mobile failure recovery tests use a shared terminal-state wait helper with the same timeout, then progress animation timing will be handled consistently and future changes to generation progress waits will be localized.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added `waitForMobileGenerationState` in the E2E spec.
+- Reused it for both mobile cover-failure and content-failure tests.
+- Kept the helper scoped to the test file and left product UI code unchanged.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile (preserves draft when cover generation fails|content failure keeps topic inputs and source evidence without false draft)" --project=chromium --repeat-each=2
+# 4 passed
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run e2e
+# 21 passed, 1 skipped
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 14/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 12/15
+- Maintainability: 10/10
+- UX polish: 2/5
+- Total: 78/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The env-backed live login smoke still skips unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+- The helper still depends on localized visible text; if progress labels become more dynamic, adding a `data-state` attribute to the progress component would be more robust.
+
+### Next candidate loop
+
+- Add a `data-state` style test hook to generation progress components only if another progress-label flake appears; otherwise return to workflow coverage such as PC timing/source topic success paths.

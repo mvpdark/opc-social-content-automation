@@ -540,6 +540,12 @@ async function localStorageContains(page: Page, value: string) {
   }, value);
 }
 
+async function waitForMobileGenerationState(page: Page, stateText: string) {
+  await expect(page.getByTestId("mobile-generation-progress")).toContainText(stateText, {
+    timeout: 20000
+  });
+}
+
 function findExpectedTopicPreset(topic: string) {
   const preset = generationTopicPresets.find((item) => item.topic === topic.trim());
   expect(preset, `Expected visible mobile topic preset to exist for topic: ${topic}`).toBeTruthy();
@@ -922,9 +928,7 @@ test.describe("OPC smoke coverage", () => {
 
     await page.getByTestId("mobile-generate-draft").click();
 
-    await expect(page.getByTestId("mobile-generation-progress")).toContainText("生成失败", {
-      timeout: 20000
-    });
+    await waitForMobileGenerationState(page, "生成失败");
     await expect(page.getByTestId("mobile-status")).toContainText(
       "文案草稿已生成，但封面图失败：封面服务暂时不可用，请稍后重试。"
     );
@@ -1000,7 +1004,7 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("mobile-status")).toContainText(
       "撰稿服务暂时不可用，请稍后重试。"
     );
-    await expect(page.getByTestId("mobile-generation-progress")).toContainText("生成失败");
+    await waitForMobileGenerationState(page, "生成失败");
     await expect(page.getByTestId("mobile-generate-draft")).toContainText("一键撰稿+封面图");
     await expect(page.getByTestId(`mobile-draft-history-card-${E2E_CONTENT_FAILURE_CONTENT_ID}`)).toHaveCount(0);
     await expect(page.getByTestId("mobile-topic")).toHaveValue(preset.topic);
