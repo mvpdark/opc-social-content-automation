@@ -4312,6 +4312,69 @@ function SettingsView({
   const canCheckProvider = !credentialBusy && !providerCheckBusy;
   const providerApplyLabel = "应用服务配置";
   const providerBindings = providerBindingDefaultsFromStatuses(providerStatuses);
+  const configuredServiceCount = [
+    providerBindings.draft,
+    providerBindings.image,
+    providerBindings.rewrite,
+    providerBindings.webSearch
+  ].filter(Boolean).length;
+  const providerStatusSummary = providerStatuses.length
+    ? `${configuredServiceCount} / 4 已连接`
+    : providerStatusError
+      ? "读取失败"
+      : "正在读取";
+  const currentStyleLabel =
+    interfaceStyles.find((style) => style.id === interfaceStyle)?.label ?? "当前主题";
+  const providerRouteItems = [
+    { label: "撰稿", name: "Draft generation", target: "正文草稿" },
+    { label: "改写", name: "Humanization rewrite", target: "口吻润色" },
+    { label: "图片", name: "Image generation", target: "封面生成" },
+    { label: "联网", name: "Web search", target: "Tavily 搜索" }
+  ].map((item) => ({
+    ...item,
+    status: providerStatuses.find((statusItem) => statusItem.name === item.name)
+  }));
+  const settingsOverviewCards: Array<{
+    detail: string;
+    icon: typeof KeyRound;
+    pill: string;
+    title: string;
+    tone: keyof typeof iconToneClass;
+    value: string;
+  }> = [
+    {
+      detail: "撰稿、图片、改写和联网搜索的保存状态来自后端。",
+      icon: KeyRound,
+      pill: providerStatuses.length ? "真实状态" : "待读取",
+      title: "AI Key 管理",
+      tone: configuredServiceCount >= 3 ? "green" : configuredServiceCount > 0 ? "amber" : "blue",
+      value: providerStatusSummary
+    },
+    {
+      detail: "生成、改写、封面和研究任务继续按用途分流。",
+      icon: Radar,
+      pill: "保留路由",
+      title: "Model Router",
+      tone: "blue",
+      value: "按任务路由"
+    },
+    {
+      detail: "采集、知识摘要和发布动作仍需要人工确认。",
+      icon: ShieldCheck,
+      pill: "固定规则",
+      title: "安全控制",
+      tone: "green",
+      value: "发布前审核"
+    },
+    {
+      detail: `当前 ${themeTemplates.length} 个运营模板可切换，设置入口始终保留。`,
+      icon: Settings,
+      pill: currentStyleLabel,
+      title: "界面模板",
+      tone: "amber",
+      value: `${interfaceStyles.length} 种主题`
+    }
+  ];
 
   async function refreshProviderStatuses() {
     try {
@@ -4484,6 +4547,57 @@ function SettingsView({
 
   return (
     <div className="space-y-4">
+      <section className="glass-panel overflow-hidden rounded-md border">
+        <div className="grid gap-5 p-4 lg:grid-cols-[1fr_340px] lg:p-5">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <Pill tone="green">Settings Console</Pill>
+              <Pill tone="blue">Model Router</Pill>
+            </div>
+            <h2 className="mt-3 text-2xl font-semibold tracking-[0] text-ink">
+              AI Key 与安全控制台
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+              服务授权、模型路由、人工确认和界面模板集中在这里；页面只展示保存状态，不显示敏感内容。
+            </p>
+          </div>
+          <div className={`${subtleCardClass} p-4`}>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-xs font-medium text-muted">当前服务状态</div>
+                <div className="mt-1 text-2xl font-semibold text-ink">{providerStatusSummary}</div>
+              </div>
+              <IconBox tone={configuredServiceCount >= 3 ? "green" : "amber"}>
+                <KeyRound className="h-4 w-4" />
+              </IconBox>
+            </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-mist">
+              <div
+                className="h-full rounded-full bg-moss transition-all"
+                style={{ width: `${providerStatuses.length ? (configuredServiceCount / 4) * 100 : 0}%` }}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-3 border-t border-line/70 p-4 md:grid-cols-2 xl:grid-cols-4 lg:p-5">
+          {settingsOverviewCards.map((card) => (
+            <article className={`${subtleCardClass} p-4`} key={card.title}>
+              <div className="flex items-start justify-between gap-3">
+                <IconBox tone={card.tone}>
+                  <card.icon className="h-4 w-4" />
+                </IconBox>
+                <Pill tone={card.tone === "red" ? "red" : card.tone === "amber" ? "amber" : card.tone === "green" ? "green" : "blue"}>
+                  {card.pill}
+                </Pill>
+              </div>
+              <div className="mt-4 text-xs font-medium text-muted">{card.title}</div>
+              <div className="mt-1 text-lg font-semibold text-ink">{card.value}</div>
+              <p className="mt-2 text-xs leading-5 text-muted">{card.detail}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <Panel
         action={<Pill tone="blue">集中管理</Pill>}
         helper="服务授权集中管理；工作台未开启访问保护。"
@@ -4587,6 +4701,30 @@ function SettingsView({
               <Pill tone={providerBindings.webSearch ? "green" : "amber"}>
                 联网 {providerBindings.webSearch ? "已保存" : "未配置"}
               </Pill>
+            </div>
+            <div className="mt-4 overflow-hidden rounded-md border border-line">
+              <div className="flex items-center justify-between gap-3 border-b border-line bg-paper/40 px-3 py-2">
+                <div className="text-xs font-semibold text-ink">Model Router 状态</div>
+                <Pill tone={providerStatuses.length ? "green" : "amber"}>
+                  {providerStatuses.length ? "已同步" : "待同步"}
+                </Pill>
+              </div>
+              <div className="divide-y divide-line">
+                {providerRouteItems.map((item) => {
+                  const configured = Boolean(item.status?.configured);
+                  return (
+                    <div className="grid grid-cols-[64px_1fr_auto] items-center gap-3 px-3 py-2 text-xs" key={item.name}>
+                      <span className="font-semibold text-ink">{item.label}</span>
+                      <span className="min-w-0 truncate text-muted">
+                        {item.status?.model ?? item.status?.provider ?? item.target}
+                      </span>
+                      <Pill tone={configured ? "green" : "amber"}>
+                        {configured ? "已连接" : "未配置"}
+                      </Pill>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

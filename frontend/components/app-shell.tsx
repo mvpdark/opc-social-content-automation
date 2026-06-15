@@ -189,7 +189,7 @@ export function AppShell({
 
         <section className="min-w-0">
           <header className="glass-topbar pc-shell-topbar sticky top-0 z-20 border-b border-line px-5 py-4 lg:px-6">
-            <div className="mx-auto grid max-w-[1560px] gap-4 xl:grid-cols-[220px_minmax(560px,1fr)_auto] xl:items-center">
+            <div className="mx-auto grid max-w-[1560px] gap-4 xl:grid-cols-[minmax(180px,220px)_minmax(0,1fr)_auto] xl:items-center">
               <div className="min-w-0">
                 <div className="text-[11px] font-semibold text-moss">OPC SOCIAL AUTOMATION</div>
                 <h1 className="mt-1 text-xl font-semibold leading-7">{activeMeta.title}</h1>
@@ -219,7 +219,7 @@ export function AppShell({
                   );
                 })}
               </nav>
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-end">
+              <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-end">
                 {showHelperText ? (
                   <div className="hidden xl:flex">
                     <div className="glass-control inline-flex h-8 items-center gap-2 rounded-md border px-2.5 text-xs font-medium text-muted">
@@ -228,9 +228,9 @@ export function AppShell({
                     </div>
                   </div>
                 ) : null}
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
                   <a
-                    className="glass-control hidden h-9 min-w-[190px] items-center gap-2 rounded-md border px-3 text-sm font-medium text-muted transition hover:text-ink md:flex"
+                    className="glass-control hidden h-9 min-w-[190px] items-center gap-2 rounded-md border px-3 text-sm font-medium text-muted transition hover:text-ink 2xl:flex"
                     href={tabHref("knowledge")}
                   >
                     <Search className="h-4 w-4 shrink-0" />
@@ -251,7 +251,7 @@ export function AppShell({
                     <Bell className="h-4 w-4" />
                   </a>
                   {accountLabel ? (
-                    <div className="glass-control flex h-9 max-w-[180px] items-center gap-2 rounded-md border px-3 text-xs font-medium text-muted">
+                    <div className="glass-control flex h-9 max-w-[140px] items-center gap-2 rounded-md border px-3 text-xs font-medium text-muted 2xl:max-w-[180px]">
                       <UserRound className="h-3.5 w-3.5 shrink-0 text-steel" />
                       <span className="truncate text-ink">{accountLabel}</span>
                     </div>
