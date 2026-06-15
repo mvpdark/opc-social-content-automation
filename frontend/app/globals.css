@@ -959,8 +959,15 @@ li {
     0 12px 30px rgb(0 0 0 / 0.18);
 }
 
-.theme-cyberpunk a.workspace-evidence-result-card:hover {
+.theme-cyberpunk a.workspace-evidence-result-card:hover,
+.theme-cyberpunk a.workspace-evidence-result-card:focus-visible {
   border-color: rgb(var(--moss) / 0.5);
+  outline: 2px solid rgb(var(--moss) / 0.34);
+  outline-offset: 2px;
+  box-shadow:
+    inset 0 1px 0 rgb(var(--glass-highlight) / 0.18),
+    0 0 0 1px rgb(var(--moss) / 0.18),
+    0 18px 42px rgb(var(--moss) / 0.14);
 }
 
 .theme-cyberpunk .border-coral\/30,
