@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { expect, test, type Page } from "@playwright/test";
 
 const BASE_URL = process.env.OPC_BASE_URL ?? "http://127.0.0.1:3000";
@@ -9,6 +11,29 @@ async function resetLocalAuth(page: Page) {
     window.localStorage.removeItem("opc_pc_auth_v1");
     window.localStorage.removeItem("opc_mobile_auth_v1");
   });
+}
+
+async function mockRejectedLogin(page: Page) {
+  await page.route("**/api/auth/mobile-login", async (route) => {
+    await route.fulfill({
+      body: JSON.stringify({ detail: "Invalid credentials" }),
+      contentType: "application/json",
+      status: 401
+    });
+  });
+}
+
+function createRejectedLoginInput() {
+  return {
+    account: `e2e-${randomUUID()}`,
+    password: `pw-${randomUUID()}`
+  };
+}
+
+async function localStorageContains(page: Page, value: string) {
+  return page.evaluate((needle) => {
+    return Object.values(window.localStorage).some((item) => item.includes(needle));
+  }, value);
 }
 
 test.describe("OPC smoke coverage", () => {
@@ -38,6 +63,36 @@ test.describe("OPC smoke coverage", () => {
       ).toBeVisible({ timeout: 3000 });
     });
   }
+
+  test("PC login shows bad-credential feedback without persisting password", async ({ page }) => {
+    await mockRejectedLogin(page);
+    const rejectedLogin = createRejectedLoginInput();
+
+    await page.goto(`${BASE_URL}/?theme=mint`);
+    await page.getByTestId("pc-login-account").fill(rejectedLogin.account);
+    await page.getByTestId("pc-login-password").fill(rejectedLogin.password);
+    await page.getByTestId("pc-login-submit").click();
+
+    await expect(page.getByTestId("pc-login-error")).toContainText("账号或密码不正确。");
+    await expect(page.getByTestId("pc-login-submit")).toBeEnabled();
+    await expect(await localStorageContains(page, rejectedLogin.password)).toBe(false);
+  });
+
+  test("mobile login shows bad-credential feedback without persisting password", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await mockRejectedLogin(page);
+    const rejectedLogin = createRejectedLoginInput();
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=home`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(rejectedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(rejectedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+
+    await expect(page.getByTestId("mobile-login-error")).toContainText("账号或密码不正确。");
+    await expect(page.getByTestId("mobile-login-submit")).toBeEnabled();
+    await expect(await localStorageContains(page, rejectedLogin.password)).toBe(false);
+  });
 
   test("login form accepts env-provided test credentials when available", async ({ page }) => {
     test.skip(!USERNAME || !PASSWORD, "Set OPC_TEST_USERNAME and OPC_TEST_PASSWORD to run login smoke test.");

@@ -244,3 +244,77 @@ Kept.
 ### Next candidate loop
 
 - Add staging-safe credentialed E2E coverage for redirect preservation and a basic post-login workflow.
+
+## Loop 4 - Cover bad-credential login feedback
+
+Date: 2026-06-15
+
+### Observation
+
+`BACKLOG_SEEDS.md` lists login failure feedback as a P0 issue. The UI already has explicit PC and mobile error states, but the CI E2E suite only checks login-shell rendering and skips credentialed login when environment credentials are absent.
+
+### Hypothesis
+
+If CI simulates a rejected login response without real credentials, future regressions that hide bad-credential feedback or persist passwords in local storage will be caught without weakening auth or requiring secrets.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added PC bad-credential smoke coverage with a mocked rejected login response.
+- Added mobile bad-credential smoke coverage at 390 px with the same mocked response.
+- Generated rejected login inputs at runtime so no test credentials or passwords are committed.
+- Asserted the rejected password is not persisted in local storage after the failed attempt.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed from frontend/
+
+npm run e2e
+# 6 passed, 1 skipped from frontend/
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run build
+# passed from frontend/
+```
+
+Manual checks:
+
+- Confirmed the E2E route mock avoids real backend credentials and does not fake a successful login.
+- Confirmed PC and mobile failure messages remain visible through dedicated error elements.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 24/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 4/5
+- Total: 90/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- Network/API unavailable feedback is still only indirectly covered through the credentialed smoke fallback text.
+- Redirect preservation after successful login still needs staging-safe credentials or a controlled authenticated fixture.
+
+### Next candidate loop
+
+- Add redirect-preservation coverage with a mocked successful login that does not bypass production auth behavior.
