@@ -219,3 +219,38 @@ def test_export_endpoint_accepts_only_human_approved_content(
     assert payload["content_ids"] == [content_id]
     assert payload["items"][0]["id"] == content_id
     assert "人工确认发布边界" in payload["payload"]
+
+
+def test_approved_content_endpoint_lists_only_human_approved_candidates() -> None:
+    client, testing_session = _workspace_api_client()
+    approved_id = _seed_workspace_content(
+        testing_session,
+        status="approved",
+        human_review_status="approved",
+    )
+    published_id = _seed_workspace_content(
+        testing_session,
+        status="published",
+        human_review_status="approved",
+    )
+    _seed_workspace_content(testing_session, status="approved")
+    _seed_workspace_content(
+        testing_session,
+        status="approved",
+        human_review_status="approved",
+        human_review_type="model",
+    )
+    _seed_workspace_content(
+        testing_session,
+        status="draft",
+        human_review_status="approved",
+    )
+    _seed_workspace_content(testing_session, status="published")
+
+    response = client.get("/api/workspace/approved-content?limit=20")
+
+    assert response.status_code == 200
+    payload = response.json()
+    returned_ids = {item["id"] for item in payload}
+    assert returned_ids == {approved_id, published_id}
+    assert {item["status"] for item in payload} == {"approved", "published"}

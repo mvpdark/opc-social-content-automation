@@ -1641,3 +1641,71 @@ Kept.
 ### Next candidate loop
 
 - Tighten `/api/workspace/approved-content` so read-only export candidates either require human-review evidence or clearly surface missing review evidence to the PC UI.
+
+## Loop 23 - Filter approved-content candidates by human review evidence
+
+Date: 2026-06-16
+
+### Observation
+
+After Loop 22, export and publish-record creation both required human approved review evidence, but `/api/workspace/approved-content` still returned candidates by status alone. That could show status-only approved or published content as export-ready in read-only candidate lists even though export itself would now reject it.
+
+### Hypothesis
+
+If the approved-content candidate query filters by both exportable status and an existing human approved review, then the read-only workspace candidate list will stay consistent with the export and publish-record safety gates.
+
+### Patch
+
+Files changed:
+
+- `backend/app/services/workspace_service.py`
+- `backend/tests/test_workspace_service.py`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a SQL `exists` filter to `approved_content_items` so only content with human approved review evidence is listed.
+- Added API coverage proving `/api/workspace/approved-content` returns approved/published candidates only when they have human approval evidence.
+- Verified status-only approved, model-only approved, draft, and published-without-review content are excluded from the candidate list.
+- Updated the project safety verifier to require the approved-content human-review filter.
+
+### Verification
+
+Commands run:
+
+```bash
+backend/.venv/Scripts/python.exe -m pytest backend/tests/test_workspace_service.py
+# 17 passed, 1 warning
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+backend/.venv/Scripts/python.exe -m pytest backend/tests
+# 225 passed, 1 warning
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 26/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 3/5
+- Total: 93/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The env-backed live login smoke still skips unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+- Backend publish/export/list lifecycle gates are now aligned; future loops can return to frontend workflow QA, especially topic alignment and copy/preview behavior.
+
+### Next candidate loop
+
+- Add or refine frontend E2E coverage for topic-aligned copy/preview behavior across another one-click generation topic type, such as route/decision or mentor-matching topics.

@@ -1,7 +1,7 @@
 import json
 
 from fastapi import HTTPException, status
-from sqlalchemy import desc, select
+from sqlalchemy import desc, exists, select
 from sqlalchemy.orm import Session
 
 from app.models.content import Content
@@ -40,9 +40,15 @@ def has_human_approved_review(db: Session, content_id: int) -> bool:
 
 
 def approved_content_items(db: Session, limit: int) -> list[Content]:
+    human_approved_review_exists = (
+        exists()
+        .where(ContentReview.content_id == Content.id)
+        .where(ContentReview.review_type == "human")
+        .where(ContentReview.status == "approved")
+    )
     statement = (
         select(Content)
-        .where(Content.status.in_(EXPORTABLE_STATUSES))
+        .where(Content.status.in_(EXPORTABLE_STATUSES), human_approved_review_exists)
         .order_by(desc(Content.created_at))
         .limit(limit)
     )

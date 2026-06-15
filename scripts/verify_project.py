@@ -266,6 +266,8 @@ def validate_safety_gates() -> int:
             "provider_status_items",
             "missing_key",
             "def has_human_approved_review",
+            "human_approved_review_exists",
+            ".where(Content.status.in_(EXPORTABLE_STATUSES), human_approved_review_exists)",
             "ContentReview.review_type == \"human\"",
             "ContentReview.status == \"approved\"",
             "只有人工确认通过的内容可以导出。",
