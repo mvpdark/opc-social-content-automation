@@ -1578,6 +1578,7 @@ def validate_content_production_contract() -> int:
                 'data-testid="source-knowledge-list"',
                 'data-testid="source-web-list"',
                 'data-testid="source-required-web-warning"',
+                "workspace-evidence-result-card",
                 "type EvidenceSection = \"knowledge\" | \"web\" | null;",
                 "const knowledgeOpen = openEvidenceSection === \"knowledge\";",
                 "const webOpen = openEvidenceSection === \"web\";",

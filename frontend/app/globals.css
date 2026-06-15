@@ -949,6 +949,20 @@ li {
   color: rgb(var(--ink));
 }
 
+.theme-cyberpunk .workspace-evidence-result-card {
+  border-color: rgb(var(--steel) / 0.28);
+  background:
+    linear-gradient(135deg, rgb(var(--glass-highlight) / 0.08), transparent 42%),
+    rgb(5 13 27 / 0.72);
+  box-shadow:
+    inset 0 1px 0 rgb(var(--glass-highlight) / 0.14),
+    0 12px 30px rgb(0 0 0 / 0.18);
+}
+
+.theme-cyberpunk a.workspace-evidence-result-card:hover {
+  border-color: rgb(var(--moss) / 0.5);
+}
+
 .theme-cyberpunk .border-coral\/30,
 .theme-cyberpunk .border-coral\/40,
 .theme-cyberpunk .border-coral\/45 {

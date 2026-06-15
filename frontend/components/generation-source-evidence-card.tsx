@@ -210,7 +210,7 @@ export function GenerationSourceEvidenceCard({
             knowledgeItems.slice(0, 4).map((item, index) => {
               const knowledgeItem = sourceKnowledgeItemToKnowledgeItem(item);
               return (
-                <article className="rounded-md border border-line bg-mist/55 p-3" key={`${item.id}-${index}`}>
+                <article className="workspace-evidence-result-card rounded-md border border-line bg-mist/55 p-3" key={`${item.id}-${index}`}>
                   <div className="flex items-start justify-between gap-2">
                     <h4 className="line-clamp-2 text-xs font-semibold leading-5 text-ink">
                       {knowledgeItemTitle(knowledgeItem)}
@@ -252,7 +252,7 @@ export function GenerationSourceEvidenceCard({
           {webResults.length ? (
             webResults.slice(0, 4).map((item, index) => (
               <a
-                className="block rounded-md border border-line bg-mist/55 p-3 transition hover:border-steel/60"
+                className="workspace-evidence-result-card block rounded-md border border-line bg-mist/55 p-3 transition hover:border-steel/60"
                 href={item.url}
                 key={`${item.url}-${item.title}-${index}`}
                 rel="noreferrer"
