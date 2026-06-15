@@ -16,6 +16,7 @@ const E2E_COVER_FAILURE_CONTENT_ID = 8802;
 const E2E_CONTENT_FAILURE_CONTENT_ID = 8803;
 const E2E_PC_GENERATED_CONTENT_ID = 8901;
 const E2E_PC_CONTENT_FAILURE_CONTENT_ID = 8902;
+const E2E_PC_COVER_FAILURE_CONTENT_ID = 8903;
 
 type JsonPayload = Record<string, unknown>;
 
@@ -930,6 +931,97 @@ test.describe("OPC smoke coverage", () => {
       topic: preset.topic
     });
     expect(await localStorageContains(page, String(E2E_PC_CONTENT_FAILURE_CONTENT_ID))).toBe(false);
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("PC cover failure keeps source topic draft available for preview copy", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const acceptedLogin = createLoginInput();
+    const preset = requireTopicPreset("source-official-fee-check");
+    const expectedTags = parseTagText(preset.tags);
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockPcGenerationFixture(page, preset, {
+      contentId: E2E_PC_COVER_FAILURE_CONTENT_ID,
+      failCover: true
+    });
+
+    await page.goto(`${BASE_URL}/?theme=mint&tab=content&project=postgraduate-phd`);
+    await expect(page.getByTestId("pc-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("pc-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("pc-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("pc-login-submit").click();
+
+    await expect(page.getByTestId("creation-project-return")).toBeVisible();
+    await expect(page.getByTestId("generation-launcher")).toBeVisible();
+    await page.getByTestId("content-topic").fill(preset.topic);
+    await expect(page.getByTestId("content-topic")).toHaveValue(preset.topic);
+    await expect(page.getByTestId("content-knowledge-query")).toHaveValue(preset.knowledgeQuery);
+    await expect(page.getByTestId("content-target-audience")).toHaveValue(preset.audience);
+    await expect(page.getByTestId("content-tags")).toHaveValue(preset.tags);
+
+    await page.getByTestId("source-preview-button").click();
+    await expect(page.getByTestId("generation-source-evidence")).toContainText("2 条");
+    await page.getByTestId("source-knowledge-toggle").click();
+    await expect(page.getByTestId("source-knowledge-list")).toContainText(
+      `E2E 知识库引用：${preset.topic}`
+    );
+    await page.getByTestId("source-web-toggle").click();
+    await expect(page.getByTestId("source-web-list")).toContainText(
+      `E2E 联网来源：${preset.topic}`
+    );
+
+    await page.getByTestId("start-production-button").click();
+    await expect(
+      page.getByText("文案已生成，但封面图未完成：PC 封面服务暂时不可用，请稍后重试。")
+    ).toBeVisible();
+
+    const draftCard = page.getByTestId("draft-history-card").filter({ hasText: preset.topic }).first();
+    await expect(page.getByTestId("draft-history-strip")).toBeVisible();
+    await expect(draftCard).toBeVisible();
+    await draftCard.locator("button").first().click();
+
+    const previewModal = page.getByTestId("xhs-preview-modal");
+    await expect(previewModal).toBeVisible();
+    await expect(previewModal).toContainText(preset.topic);
+    await expect(previewModal).toContainText(`必须保持${preset.desktopLabel}选题意图`);
+    await expect(previewModal).toContainText(`#${expectedTags[0]}`);
+    await expect(previewModal).toContainText("这是发布效果预览，不会自动发布");
+    await expect(previewModal).toContainText("小红书封面预览");
+    await expect(page.getByTestId("xhs-preview-real-cover")).toHaveCount(0);
+
+    await page.getByTestId("pc-preview-modal-copy-button").click();
+    await expect
+      .poll(async () => {
+        const buttonText = await page.getByTestId("pc-preview-modal-copy-button").textContent();
+        const manualCopyVisible = await page
+          .getByTestId("pc-preview-modal-manual-copy-text")
+          .isVisible()
+          .catch(() => false);
+        return Boolean(buttonText?.includes("已复制") || manualCopyVisible);
+      })
+      .toBe(true);
+
+    expect(generationRequests.providerStatus).toBeGreaterThan(0);
+    expect(generationRequests.contentList).toBeGreaterThan(0);
+    expect(generationRequests.sourcePreview).toHaveLength(1);
+    expect(generationRequests.contentGenerate).toHaveLength(1);
+    expect(generationRequests.imageGenerate).toHaveLength(1);
+    expect(generationRequests.rewrite).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.contentGenerate[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: preset.knowledgeQuery,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: preset.audience,
+      topic: preset.topic
+    });
+    expect(generationRequests.imageGenerate[0]).toMatchObject({
+      aspect_ratio: "3:4",
+      content_id: E2E_PC_COVER_FAILURE_CONTENT_ID,
+      template: "xiaohongshu-cover"
+    });
+    expect(String(generationRequests.imageGenerate[0].style_notes)).toContain(preset.coverDirection);
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 

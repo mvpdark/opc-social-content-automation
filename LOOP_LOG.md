@@ -1055,3 +1055,78 @@ Kept.
 ### Next candidate loop
 
 - Add a controlled PC cover-failure E2E fixture that verifies a generated draft remains available for preview/copy while cover status clearly reports the failure and no publishing call is made.
+
+## Loop 15 - Cover PC cover failure with draft preview copy
+
+Date: 2026-06-16
+
+### Observation
+
+PC success-path and content-failure E2E coverage are now in place, but cover-generation failure still lacked a desktop-specific recovery test. This is a core workflow risk because content can succeed while cover generation fails; the UI should keep the human-review draft available without implying the cover is ready or that anything was published.
+
+### Hypothesis
+
+If E2E simulates successful PC draft generation followed by cover-generation failure for a source/fact-sensitive topic, then CI can verify the app keeps the draft in history, opens the preview/copy flow with a text-cover fallback, preserves knowledge/Tavily evidence, reports the cover failure clearly, and avoids rewrite or publish/submit calls.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a PC cover-failure fixture id and a new desktop E2E test.
+- Used the `source-official-fee-check` preset to cover source/fee/current-fact-sensitive topics.
+- Verified source preview includes knowledge-base and Tavily/web evidence before generation.
+- Verified the UI shows `文案已生成，但封面图未完成：PC 封面服务暂时不可用，请稍后重试。`.
+- Verified the generated draft remains in history and opens the Xiaohongshu preview modal.
+- Verified the modal falls back to a text cover preview when the real cover image is unavailable.
+- Verified preview copy/manual-copy remains available, rewrite is not called, no publish/submit endpoint is touched, and the login password is not persisted.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed from frontend/
+
+npm run e2e -- --grep "PC cover failure keeps source topic draft available for preview copy"
+# 1 passed from frontend/
+
+npm run e2e
+# 16 passed, 1 skipped from frontend/
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run build
+# passed from frontend/
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 27/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 94/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- PC generation now has success, content-failure, and cover-failure fixtures; future loops can shift back toward generation output schema/checklist quality or live env credential smoke once test credentials are available.
+- The env-backed live login smoke remains skipped unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+
+### Next candidate loop
+
+- Add or tighten coverage for the publishing checklist / manual-review state after generated drafts so the UI keeps the distinction between draft copy and final human submission explicit.
