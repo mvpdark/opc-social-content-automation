@@ -27,15 +27,17 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByRole("button", { name: /登录并进入工作台|正在检查登录状态|正在登录/ })).toBeVisible();
   });
 
-  test("mobile route resolves login-state checking instead of hanging forever", async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=home`);
+  for (const width of [360, 390, 414]) {
+    test(`mobile route resolves login-state checking at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=home`);
 
-    await expect(page.getByText("正在检查登录状态")).toBeHidden({ timeout: 7000 });
-    await expect(
-      page.getByText(/登录手机工作台|首页|今日工作台|会话已过期|重新登录|网络错误|重试/)
-    ).toBeVisible({ timeout: 3000 });
-  });
+      await expect(page.getByText("正在检查登录状态")).toBeHidden({ timeout: 7000 });
+      await expect(
+        page.getByText(/登录手机工作台|首页|今日工作台|会话已过期|重新登录|网络错误|重试/)
+      ).toBeVisible({ timeout: 3000 });
+    });
+  }
 
   test("login form accepts env-provided test credentials when available", async ({ page }) => {
     test.skip(!USERNAME || !PASSWORD, "Set OPC_TEST_USERNAME and OPC_TEST_PASSWORD to run login smoke test.");

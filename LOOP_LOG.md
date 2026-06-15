@@ -173,3 +173,74 @@ Kept.
 ### Next candidate loop
 
 - Add a post-login workflow E2E path with test credentials in a staging-safe environment.
+
+## Loop 3 - Cover mobile auth smoke widths
+
+Date: 2026-06-15
+
+### Observation
+
+`PRODUCT_ACCEPTANCE.md` requires the mobile route to work at 360, 390, and 414 px widths, but the current E2E smoke test only verifies the auth-resolution path at 390 px.
+
+### Hypothesis
+
+If the mobile auth smoke test runs at 360, 390, and 414 px, layout or loading-state regressions on common phone widths will be caught earlier in CI.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Parameterized the mobile auth smoke test across 360, 390, and 414 px viewport widths.
+- Kept the credentialed login smoke path environment-gated and skipped when credentials are absent.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run e2e
+# 4 passed, 1 skipped from frontend/
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run typecheck
+# passed from frontend/
+
+npm run build
+# passed from frontend/
+```
+
+Manual checks:
+
+- Confirmed the three mobile width cases all resolve away from the login-checking state.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 22/30
+- Correctness: 18/20
+- Test coverage: 18/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 4/5
+- Total: 87/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The tests still do not verify authenticated redirects because no staging-safe credentials are configured in this thread.
+- This loop checks the auth shell and visible recovery state, not deeper mobile tab interactions after login.
+
+### Next candidate loop
+
+- Add staging-safe credentialed E2E coverage for redirect preservation and a basic post-login workflow.
