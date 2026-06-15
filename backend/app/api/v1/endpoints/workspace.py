@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.content import Content
+from app.models.content_review import ContentReview
 from app.models.knowledge_base import KnowledgeBase
 from app.models.publish_record import PublishRecord
 from app.models.trend_content import TrendContent
@@ -148,6 +149,21 @@ def create_publish_record(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="只有人工批准后的内容可以记录为已发布。",
+        )
+
+    approved_human_review_id = db.scalar(
+        select(ContentReview.id)
+        .where(
+            ContentReview.content_id == content.id,
+            ContentReview.review_type == "human",
+            ContentReview.status == "approved",
+        )
+        .limit(1)
+    )
+    if approved_human_review_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="只有人工确认通过的内容可以记录为已发布。",
         )
 
     record = PublishRecord(

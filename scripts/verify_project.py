@@ -151,6 +151,9 @@ def validate_safety_gates() -> int:
     checks = {
         "backend/app/api/v1/endpoints/workspace.py": [
             "只有人工批准后的内容可以记录为已发布。",
+            "ContentReview.review_type == \"human\"",
+            "ContentReview.status == \"approved\"",
+            "只有人工确认通过的内容可以记录为已发布。",
             'content.status = "published"',
         ],
         "backend/app/services/image_service.py": [

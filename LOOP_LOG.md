@@ -1494,3 +1494,79 @@ Kept.
 ### Next candidate loop
 
 - Add backend or API-level lifecycle contract coverage so generated content cannot transition to `published` without an explicit human-review and publish-record path.
+
+## Loop 21 - Require human review record before publish records
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 20 added a PC-side guard for terminal generation statuses, but the backend publish-record endpoint only checked `content.status == "approved"`. A direct or accidental status mutation to `approved` could still be recorded as published without evidence of an explicit human-review decision.
+
+### Hypothesis
+
+If `/api/workspace/publish-record` requires both `content.status == "approved"` and an existing human `ContentReview` with `status == "approved"`, then generated content cannot be marked as published unless it has passed the intended human-review transition.
+
+### Patch
+
+Files changed:
+
+- `backend/app/api/v1/endpoints/workspace.py`
+- `backend/tests/test_workspace_service.py`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a human-review existence check to the publish-record endpoint.
+- Kept non-approved lifecycle states blocked from publish-record creation.
+- Added API regression coverage for draft, review-pending, rewritten, and already-published statuses.
+- Added API regression coverage for `approved` content without a human review, which now stays blocked.
+- Added API success coverage for content with both approved status and a human approved review, which creates one publish record and then marks content published.
+- Updated the project safety verifier to require the human-review publish-record gate.
+
+### Verification
+
+Commands run:
+
+```bash
+python -m pytest backend/tests/test_workspace_service.py
+# attempted with system Python; blocked because pytest is not installed there
+
+backend/.venv/Scripts/python.exe -m pytest backend/tests/test_workspace_service.py
+# 9 passed, 1 warning
+
+backend/.venv/Scripts/python.exe -m pytest backend/tests/test_api_contract.py backend/tests/test_image_service.py
+# 10 passed
+
+backend/.venv/Scripts/python.exe -m pytest backend/tests
+# 217 passed, 1 warning
+
+python scripts/verify_project.py --keep-cache
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 29/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 3/5
+- Total: 96/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The env-backed live login smoke still skips unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+- Export still accepts approved/published statuses through the existing export package path; a future loop can require the same human-review evidence for export if the product should treat export as a publish-adjacent action.
+
+### Next candidate loop
+
+- Add backend export-package lifecycle coverage so `/api/workspace/export` only exports content that has explicit human-review approval evidence, not merely an `approved` status field.
