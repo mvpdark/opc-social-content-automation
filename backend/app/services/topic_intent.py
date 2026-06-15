@@ -40,6 +40,23 @@ RANKING_DRAFT_TERMS = (
     "预算",
     "毕业难度",
 )
+LIST_FILTER_STRUCTURE_DRAFT_TERMS = (
+    "排名",
+    "排行",
+    "榜",
+    "榜单",
+    "筛选",
+    "维度",
+    "梯队",
+    "清单",
+    "预算",
+    "费用",
+    "学费",
+    "认证",
+    "风险",
+    "避坑",
+    "分层",
+)
 
 
 @dataclass(frozen=True)
@@ -66,22 +83,7 @@ TOPIC_INTENT_RULES = (
             *SCHOOL_PROJECT_LIST_TOPIC_TERMS,
         ),
         draft_terms=(
-            "排名",
-            "排行",
-            "榜",
-            "榜单",
-            "筛选",
-            "维度",
-            "梯队",
-            "清单",
-            "预算",
-            "费用",
-            "学费",
-            "认证",
-            "风险",
-            "避坑",
-            "项目",
-            "学校",
+            *LIST_FILTER_STRUCTURE_DRAFT_TERMS,
         ),
         label="榜单/筛选",
         guidance="请围绕筛选维度、榜单结构、预算/认证/风险分层和项目核验动作展开。",

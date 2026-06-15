@@ -93,6 +93,29 @@ def test_water_list_topic_accepts_verified_checklist_structure() -> None:
     assert issue is None
 
 
+def test_list_filter_topic_rejects_generic_school_project_name_drop() -> None:
+    payload = ContentGenerateRequest(
+        platform="xiaohongshu",
+        topic="低预算海外博士怎么筛",
+        tags=["海外博士", "低预算博士", "在职博士", "博士项目"],
+    )
+
+    issue = _draft_topic_relevance_issue(
+        payload,
+        "先列几个学校和项目，再看导师近三年论文，最后安排套磁邮件。",
+    )
+
+    assert issue is not None
+    assert "榜单/筛选" in issue
+    assert (
+        _draft_topic_relevance_issue(
+            payload,
+            "低预算海外博士要按学费、认证风险、驻校成本和毕业难度做筛选维度，再分项目梯队。",
+        )
+        is None
+    )
+
+
 @pytest.mark.parametrize(
     ("topic", "bad_draft", "good_draft", "expected_label"),
     [

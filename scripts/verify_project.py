@@ -205,8 +205,11 @@ def validate_safety_gates() -> int:
             "榜单/筛选类内容最重要的是维度清楚",
         ],
         "backend/app/services/topic_intent.py": [
+            "LIST_FILTER_STRUCTURE_DRAFT_TERMS",
             'key="source_check"',
+            'key="list_filter"',
             "来源核验",
+            "榜单/筛选",
             '"来源"',
             '"核验"',
             '"官方"',
