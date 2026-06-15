@@ -2655,3 +2655,73 @@ Kept. PC and mobile login now distinguish bad credentials, fetch-level outages, 
 ### Next candidate loop
 
 - Continue auth/session recovery hardening, or add a small contract check that prevents login 5xx paths from regressing into bad-credential copy.
+
+## Loop 37 - Fast-contract login failure classification
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 36 fixed and E2E-covered login 5xx behavior, but the fast project verifier did not yet protect the new failure classification. A future edit could remove the `response.status >= 500` branch in PC or mobile login and only be caught by the slower browser suite.
+
+### Hypothesis
+
+If `scripts/verify_project.py` checks PC, mobile, and E2E login failure contracts, then every Loop Engineering run will quickly catch regressions that collapse bad credentials, fetch outages, and HTTP 5xx server failures into the same user-facing error.
+
+### Patch
+
+Files changed:
+
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added `validate_login_failure_contract`.
+- Checked that PC and mobile login both keep the auth endpoint, 404/405 service-version handling, 5xx service failure handling, bad-credential fallback, fetch-level outage copy, and password-safe failure branches.
+- Checked that E2E keeps mocked bad credentials, fetch outage, 503 server error, retry assertions, and password non-persistence coverage.
+- Added `login_failure_contract_checked` to the project verifier output.
+
+### Verification
+
+Commands run:
+
+```bash
+python scripts/verify_project.py --keep-cache
+# passed
+# login_failure_contract_checked=32
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "bad-credential feedback|service-unavailable feedback|server-error feedback" --project=chromium
+# passed: 6 passed
+
+npm run typecheck
+# passed
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 20/30
+- Correctness: 20/20
+- Test coverage: 18/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 2/5
+- Total: 85/100
+
+### Result
+
+Kept. The fast verifier now fails if PC/mobile login loses the 5xx service-failure branch or if the E2E suite drops coverage for bad credentials, fetch outages, 503 server errors, retry, or password non-persistence.
+
+### Remaining risk
+
+- The contract is static and snippet-based; the E2E suite still provides the runtime proof for the login UI behavior.
+- The env-backed live login smoke remains skipped unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+
+### Next candidate loop
+
+- Continue auth/session recovery hardening, or move to draft output schema/preview checklist resilience.
