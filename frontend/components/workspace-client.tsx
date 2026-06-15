@@ -1573,7 +1573,7 @@ function DashboardView({
     <div className="space-y-5">
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="space-y-4">
-          <div className="glass-panel rounded-md border p-5 shadow-panel">
+          <div className="workspace-dashboard-hero glass-panel rounded-md border p-5 shadow-panel">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <h2 className="text-[2rem] font-semibold leading-tight text-ink lg:text-[2.35rem]">
@@ -1591,7 +1591,7 @@ function DashboardView({
             <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-4">
               {workspaceHealth.map((item) => (
                 <a
-                  className="flex min-h-[86px] items-center gap-3 rounded-md border border-line/70 bg-paper/58 px-4 py-3"
+                  className="workspace-health-card flex min-h-[86px] items-center gap-3 rounded-md border border-line/70 bg-paper/58 px-4 py-3"
                   href={item.label === "模型 Key" ? buildWorkspaceUrl("settings") : item.label === "联网检索" ? buildWorkspaceUrl("content") : buildWorkspaceUrl("content")}
                   key={`workspace-health-${item.label}`}
                 >
@@ -1618,7 +1618,7 @@ function DashboardView({
             <div className="space-y-3">
               {keyTasks.map((task) => (
                 <div
-                  className="grid gap-3 rounded-md border border-line/70 bg-paper/58 p-4 lg:grid-cols-[230px_repeat(3,92px)_minmax(120px,1fr)_120px] lg:items-center"
+                  className="workspace-task-row grid gap-3 rounded-md border border-line/70 bg-paper/58 p-4 lg:grid-cols-[230px_repeat(3,92px)_minmax(120px,1fr)_120px] lg:items-center"
                   key={`key-task-${task.title}`}
                 >
                   <div className="flex min-w-0 items-center gap-3">
@@ -1690,7 +1690,7 @@ function DashboardView({
       <section className="glass-panel rounded-md border p-4 shadow-panel">
         <div className="grid grid-cols-1 divide-y divide-line lg:grid-cols-[repeat(5,minmax(0,1fr))_320px] lg:divide-x lg:divide-y-0">
           {productivityMetrics.map((metric) => (
-            <div className="px-3 py-3" key={`productivity-${metric.label}`}>
+            <div className="workspace-metric-tile px-3 py-3" key={`productivity-${metric.label}`}>
               <div className="text-xs text-muted">{metric.label}</div>
               <div className="mt-2 text-2xl font-semibold leading-none text-ink">{metric.value}</div>
               <div className="mt-2 text-xs font-semibold text-moss">{metric.trend}</div>
@@ -1737,7 +1737,7 @@ function DashboardView({
           <div className="flex flex-wrap items-center gap-2">
             {pipeline.slice(0, 5).map((step, index) => (
               <a
-                className="group flex items-center gap-2 rounded-md border border-line bg-paper/55 px-3 py-2 text-xs font-medium text-ink"
+                className="workspace-pipeline-chip group flex items-center gap-2 rounded-md border border-line bg-paper/55 px-3 py-2 text-xs font-medium text-ink"
                 href={
                   index === 0
                     ? buildWorkspaceUrl("research")
