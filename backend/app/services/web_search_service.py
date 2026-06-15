@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -129,6 +130,19 @@ POLICY_QUERY_TERMS = (
 )
 
 
+def _contains_search_term(text: str, term: str) -> bool:
+    normalized_term = term.lower().strip()
+    if not normalized_term:
+        return False
+    if normalized_term.isascii():
+        return re.search(rf"(?<![a-z0-9]){re.escape(normalized_term)}(?![a-z0-9])", text) is not None
+    return normalized_term in text
+
+
+def _contains_any_search_term(text: str, terms: tuple[str, ...]) -> bool:
+    return any(_contains_search_term(text, term) for term in terms)
+
+
 @dataclass(frozen=True)
 class WebSearchResult:
     title: str
@@ -169,20 +183,20 @@ class WebSearchContext:
 
 def topic_needs_live_web_search(topic: str, tags: list[str] | None = None) -> bool:
     haystack = " ".join([topic, *(tags or [])]).lower()
-    has_fact_term = any(term.lower() in haystack for term in LIVE_SEARCH_FACT_TERMS)
-    has_list_term = any(term.lower() in haystack for term in LIVE_SEARCH_LIST_TERMS)
-    has_scope_term = any(term.lower() in haystack for term in LIVE_SEARCH_SCOPE_TERMS)
+    has_fact_term = _contains_any_search_term(haystack, LIVE_SEARCH_FACT_TERMS)
+    has_list_term = _contains_any_search_term(haystack, LIVE_SEARCH_LIST_TERMS)
+    has_scope_term = _contains_any_search_term(haystack, LIVE_SEARCH_SCOPE_TERMS)
     return has_fact_term or (has_list_term and has_scope_term)
 
 
 def _query_focus_terms(topic_text: str) -> str:
     normalized = topic_text.lower()
     focus_terms: list[str] = []
-    if any(term.lower() in normalized for term in LOGO_QUERY_TERMS):
+    if _contains_any_search_term(normalized, LOGO_QUERY_TERMS):
         focus_terms.append("official logo school emblem brand identity 校徽 官方 标志")
-    if any(term.lower() in normalized for term in PRICE_QUERY_TERMS):
+    if _contains_any_search_term(normalized, PRICE_QUERY_TERMS):
         focus_terms.append("tuition fees total cost budget 学费 费用 价格")
-    if any(term.lower() in normalized for term in POLICY_QUERY_TERMS):
+    if _contains_any_search_term(normalized, POLICY_QUERY_TERMS):
         focus_terms.append("official accreditation policy recognition 认证 政策 认可")
     return " ".join(focus_terms)
 

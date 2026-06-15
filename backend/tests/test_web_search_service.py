@@ -34,6 +34,8 @@ def test_topic_needs_live_web_search_for_ranking_topic() -> None:
     assert topic_needs_live_web_search("Overseas doctoral program tuition fees", ["official sources"]) is True
     assert topic_needs_live_web_search("Doctoral program accreditation policy", ["official website"]) is True
     assert topic_needs_live_web_search("PhD mentor outreach timeline", ["planning"]) is False
+    assert topic_needs_live_web_search("Costume design moodboard", ["creative planning"]) is False
+    assert topic_needs_live_web_search("Homeschool ranking anxiety", ["family planning"]) is False
 
 
 def test_split_topic_tags_handles_chinese_delimiters() -> None:
