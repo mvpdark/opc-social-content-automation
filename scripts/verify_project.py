@@ -399,6 +399,32 @@ def validate_topic_presets_contract() -> int:
         "来源型": ("source-", ("来源", "核验", "官网", "校徽", "价格", "费用", "学费", "认证", "logo")),
         "转化型": ("sales-", ("咨询", "转化", "私域", "线索", "话术", "价值")),
     }
+    topic_preset_mojibake_markers = (
+        "鎯",
+        "鐭",
+        "鍗",
+        "璺",
+        "瀵",
+        "鏃",
+        "杞",
+        "绾",
+        "妫",
+        "缂",
+        "閫",
+        "灏",
+        "涓",
+        "鍦",
+        "鍚",
+        "鏉",
+        "浜",
+        "鐢",
+        "鑱",
+        "绋",
+        "褰",
+        "鏍",
+        "搴",
+        "鍜",
+    )
 
     total = 0
     if _split_topic_tags("水博，海外博士、在职博士;博士项目") != [
@@ -430,6 +456,20 @@ def validate_topic_presets_contract() -> int:
                 f"Topic preset {preset.get('key', '<unknown>')} missing fields: "
                 + ", ".join(missing)
             )
+        for field in required_fields:
+            value = preset[field]
+            if any("\ue000" <= char <= "\uf8ff" for char in value):
+                raise SystemExit(
+                    f"Topic preset {preset['key']} field {field} contains private-use text"
+                )
+            marker = next(
+                (marker for marker in topic_preset_mojibake_markers if marker in value),
+                None,
+            )
+            if marker:
+                raise SystemExit(
+                    f"Topic preset {preset['key']} field {field} contains mojibake marker {marker}"
+                )
         label = preset["desktopLabel"]
         if label not in label_contract:
             raise SystemExit(f"Unknown topic preset label: {label}")
