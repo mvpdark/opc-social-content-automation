@@ -875,6 +875,9 @@ def validate_content_production_contract() -> int:
     mobile_collect_text = (
         ROOT / "frontend" / "components" / "mobile-collect-screen.tsx"
     ).read_text(encoding="utf-8")
+    mobile_review_text = (
+        ROOT / "frontend" / "components" / "mobile-review-screen.tsx"
+    ).read_text(encoding="utf-8")
     mobile_trend_source_review_text = (
         ROOT / "frontend" / "components" / "mobile-trend-source-review.tsx"
     ).read_text(encoding="utf-8")
@@ -1337,6 +1340,18 @@ def validate_content_production_contract() -> int:
                 "generationSourceContextStats(sourceContext)",
             ],
             "mobile source evidence fallback query",
+        ),
+        (
+            mobile_review_text,
+            [
+                "generationSourceContextStats(sourceContext).totalCount",
+                "generationSourceContextStats(sourceContext).missingRequiredWebResults",
+                "generationSourceContextStats(sourceContext)",
+                "const { hasEvidence, missingRequiredWebResults, totalCount }",
+                "来源 {evidenceCount} 条",
+                "待补联网来源",
+            ],
+            "mobile review source evidence stats",
         ),
         (
             mobile_create_text,

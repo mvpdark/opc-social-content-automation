@@ -15,6 +15,7 @@ import { getApiBase } from "@/lib/api-base";
 import { resolveAssetUrl } from "@/lib/asset-url";
 import { addMobileBackHandler } from "@/lib/mobile-back-navigation";
 import {
+  generationSourceContextStats,
   isGeneratedContent,
   isGeneratedImageAsset,
   type GeneratedContent,
@@ -108,11 +109,11 @@ function mobileReviewStatusClass(status: string) {
 }
 
 function mobileReviewEvidenceCount(sourceContext?: GenerationSourceContext | null) {
-  return (sourceContext?.knowledge_items?.length ?? 0) + (sourceContext?.web_search?.results?.length ?? 0);
+  return generationSourceContextStats(sourceContext).totalCount;
 }
 
 function mobileReviewNeedsWebSourceReview(sourceContext?: GenerationSourceContext | null) {
-  return Boolean(sourceContext?.web_search?.required && !(sourceContext.web_search.results?.length ?? 0));
+  return generationSourceContextStats(sourceContext).missingRequiredWebResults;
 }
 
 function formatMobileReviewTime(value?: string) {
@@ -632,8 +633,8 @@ function ReviewEvidenceBlock({ sourceContext }: { sourceContext: GenerationSourc
   const knowledgeItems = sourceContext?.knowledge_items ?? [];
   const webSearch = sourceContext?.web_search;
   const webResults = webSearch?.results ?? [];
-  const hasEvidence = knowledgeItems.length + webResults.length > 0;
-  const missingRequiredWebResults = Boolean(webSearch?.required && !webResults.length);
+  const { hasEvidence, missingRequiredWebResults, totalCount } =
+    generationSourceContextStats(sourceContext);
 
   return (
     <section className="mt-4 rounded-[24px] border border-white/[0.86] bg-white/[0.72] px-4 py-4">
@@ -645,7 +646,7 @@ function ReviewEvidenceBlock({ sourceContext }: { sourceContext: GenerationSourc
           </p>
         </div>
         <span className="shrink-0 rounded-full bg-[#e7f2ea]/[0.92] px-2.5 py-1 text-[11px] font-black text-moss">
-          {hasEvidence ? `${knowledgeItems.length + webResults.length} 条` : "无依据"}
+          {hasEvidence ? `${totalCount} 条` : "无依据"}
         </span>
       </div>
       {sourceContext?.knowledge_query ? (
