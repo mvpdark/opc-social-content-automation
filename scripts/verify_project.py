@@ -1547,6 +1547,7 @@ def validate_content_production_contract() -> int:
         'data-testid="mobile-source-knowledge-list"',
         'data-testid="mobile-source-web-list"',
         'data-testid="mobile-source-required-web-warning"',
+        "mobile-source-evidence-result-card",
         "type MobileEvidenceSection = \"knowledge\" | \"web\" | null;",
         "const knowledgeOpen = openEvidenceSection === \"knowledge\";",
         "const webOpen = openEvidenceSection === \"web\";",
