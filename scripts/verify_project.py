@@ -1472,6 +1472,10 @@ def validate_content_production_contract() -> int:
             content_service_text,
             [
                 "def _draft_output_schema_issue",
+                "DRAFT_METADATA_SECTION_HEADINGS",
+                "def _draft_metadata_section_issue",
+                "schema_issue = _draft_metadata_section_issue(draft)",
+                "元数据段落",
                 "草稿生成结果为空，请补充素材或稍后重试。",
                 'status="schema_invalid"',
                 "status.HTTP_502_BAD_GATEWAY",
@@ -1482,6 +1486,9 @@ def validate_content_production_contract() -> int:
             content_source_context_test_text,
             [
                 "test_generate_content_rejects_blank_ai_draft",
+                "test_generate_content_rejects_metadata_section_ai_draft",
+                "Title: overseas doctoral logo check",
+                "元数据段落",
                 "db.query(Content).count() == 0",
                 "GenerationLog",
                 "schema_invalid",

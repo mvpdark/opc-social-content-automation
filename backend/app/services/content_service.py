@@ -28,6 +28,21 @@ from app.services.web_search_service import (
 
 
 SOURCE_CONTEXT_EXCERPT_LENGTH = 420
+DRAFT_METADATA_SECTION_HEADINGS = (
+    "title",
+    "body",
+    "tags",
+    "platform fit notes",
+    "source context ids",
+    "risk notes",
+    "标题",
+    "正文",
+    "标签",
+    "平台适配说明",
+    "来源上下文",
+    "风险说明",
+    "风险备注",
+)
 
 
 @dataclass(frozen=True)
@@ -222,6 +237,20 @@ def _draft_output_schema_issue(draft: object) -> str | None:
     return None
 
 
+def _draft_metadata_section_issue(draft: str) -> str | None:
+    for raw_line in draft.splitlines():
+        line = raw_line.strip().lstrip("#").strip()
+        line = line.lstrip("-*•0123456789.、) ").strip()
+        normalized_line = line.casefold()
+        for heading in DRAFT_METADATA_SECTION_HEADINGS:
+            normalized_heading = heading.casefold()
+            if normalized_line.startswith(f"{normalized_heading}:") or normalized_line.startswith(
+                f"{normalized_heading}："
+            ):
+                return "草稿生成结果包含标题、标签或风险说明等元数据段落，请重新生成正文草稿。"
+    return None
+
+
 def build_draft_prompt_package(
     db: Session,
     payload: ContentGenerateRequest,
@@ -327,6 +356,8 @@ def generate_content_draft(
         raise
 
     schema_issue = _draft_output_schema_issue(draft)
+    if schema_issue is None and isinstance(draft, str):
+        schema_issue = _draft_metadata_section_issue(draft)
     if schema_issue:
         record_generation_log(
             db=db,

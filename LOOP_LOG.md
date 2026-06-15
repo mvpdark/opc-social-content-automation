@@ -3018,3 +3018,72 @@ Kept. Mobile now explicitly warns when the current draft is stale after topic/in
 ### Next candidate loop
 
 - Continue draft completeness/checklist normalization, especially structured warning/checklist handling for model output.
+
+## Loop 42 - Draft metadata section guard
+
+Date: 2026-06-16
+
+### Observation
+
+The backend already rejected blank or non-string draft model output before saving content. However, a model could still return a body wrapped in metadata sections such as `Title:`, `Body:`, or `Tags:` even though the prompt tells the model to return only the post body. That output would be stored as the draft body and could pollute preview/copy flows while duplicating title and tag fields that the app stores separately.
+
+### Hypothesis
+
+If the backend rejects draft bodies that begin lines with known metadata section labels, then malformed model responses will fail safely as `schema_invalid` instead of becoming user-visible draft content.
+
+### Patch
+
+Files changed:
+
+- `backend/app/services/content_service.py`
+- `backend/tests/test_content_source_context.py`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a narrow metadata-section label guard for draft model output.
+- Reused the existing `schema_invalid` generation log and 502 failure path.
+- Added a backend regression test for `Title:` / `Body:` / `Tags:` style malformed output.
+- Extended the fast project verifier so this guard and test remain part of the content-production contract.
+
+### Verification
+
+Commands run:
+
+```bash
+backend\.venv\Scripts\python.exe -m pytest backend\tests\test_content_source_context.py -q
+# passed: 6 passed
+
+python scripts\verify_project.py --keep-cache
+# passed
+# content_production_contract_checked=999
+
+backend\.venv\Scripts\python.exe -m pytest backend\tests -q
+# passed: 227 passed, 1 warning
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 22/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 3/5
+- Total: 88/100
+
+### Result
+
+Kept. Draft generation now fails safely when a model returns app-level metadata sections as body text, preserving cleaner preview/copy output and the existing human-review workflow.
+
+### Remaining risk
+
+- The guard intentionally targets section labels at line starts only; it does not attempt to parse every possible malformed model response.
+- Broader structured checklist and cover-suggestion normalization remains pending.
+
+### Next candidate loop
+
+- Continue draft completeness/checklist normalization, especially user-visible checklist state and incomplete-output recovery.

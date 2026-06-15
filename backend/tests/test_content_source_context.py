@@ -182,6 +182,49 @@ def test_generated_content_persists_visible_source_context(monkeypatch) -> None:
     assert content.source_context["web_search"]["results"][0]["title"] == "Official source"
 
 
+def test_generate_content_rejects_metadata_section_ai_draft(monkeypatch) -> None:
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    bad_draft = "Title: overseas doctoral logo check\nBody: use official sources first\nTags: #water phd"
+
+    with Session(engine) as db:
+        user = User(id=1, phone="test", password_hash="hash", role="promoter")
+        db.add(user)
+        db.commit()
+
+        monkeypatch.setattr(
+            content_service.model_router,
+            "draft_model",
+            lambda _prompt_name, _payload: bad_draft,
+        )
+        monkeypatch.setattr(
+            "app.services.content_service.build_live_web_search_context",
+            lambda **_kwargs: None,
+        )
+
+        with pytest.raises(HTTPException) as exc:
+            generate_content_draft(
+                db,
+                ContentGenerateRequest(
+                    platform="xiaohongshu",
+                    topic="official source review for overseas doctoral programs",
+                    tags=[],
+                ),
+                user,
+            )
+
+        assert exc.value.status_code == status.HTTP_502_BAD_GATEWAY
+        assert "元数据段落" in exc.value.detail
+        assert db.query(Content).count() == 0
+
+        log = db.query(GenerationLog).one()
+        assert log.status == "schema_invalid"
+        assert log.result == bad_draft
+        assert log.error is not None
+        assert "元数据段落" in log.error
+
+
 def test_generate_content_rejects_blank_ai_draft(monkeypatch) -> None:
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
