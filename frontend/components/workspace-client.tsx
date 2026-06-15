@@ -5369,7 +5369,7 @@ function DraftPanel({
             >
               <button
                 aria-label={`关闭${previewPlatformLabel}预览`}
-                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-ink shadow-sm"
+                className="workspace-preview-close-button absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-ink shadow-sm"
                 data-testid="xhs-preview-close"
                 onClick={() => setPreviewOpen(false)}
                 type="button"
@@ -5476,7 +5476,8 @@ function DraftPanel({
                   关闭预览
                 </button>
                 <button
-                  className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-55"
+                  className="workspace-preview-copy-button flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-55"
+                  data-testid="pc-preview-modal-copy-button"
                   disabled={!canCopy}
                   onClick={handleCopy}
                   type="button"

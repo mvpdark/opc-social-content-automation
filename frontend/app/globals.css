@@ -982,6 +982,19 @@ li {
   clip-path: polygon(0 18px, 18px 0, calc(100% - 18px) 0, 100% 18px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 18px));
 }
 
+.theme-cyberpunk .workspace-preview-close-button {
+  border: 1px solid rgb(var(--steel) / 0.48);
+  border-radius: 0 !important;
+  background:
+    linear-gradient(135deg, rgb(var(--moss) / 0.16), transparent 56%),
+    rgb(4 12 28 / 0.84) !important;
+  color: rgb(var(--ink));
+  clip-path: polygon(0 8px, 8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+  box-shadow:
+    0 0 0 1px rgb(var(--moss) / 0.16),
+    0 0 22px rgb(var(--steel) / 0.12);
+}
+
 .theme-cyberpunk .workspace-trend-results,
 .theme-cyberpunk .workspace-knowledge-layout,
 .theme-cyberpunk .workspace-content-grid,
