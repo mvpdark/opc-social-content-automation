@@ -65,8 +65,8 @@ export function AppShell({
 
   return (
     <main className={`theme-${interfaceStyle} workspace-shell min-h-screen text-ink`}>
-      <div className="relative z-10 grid min-h-screen grid-cols-1 xl:grid-cols-[232px_minmax(0,1fr)]">
-        <aside className="glass-sidebar pc-shell-sidebar border-b border-line xl:sticky xl:top-0 xl:h-screen xl:border-b-0 xl:border-r">
+      <div className="relative z-10 grid min-h-screen grid-cols-1 xl:grid-cols-[224px_minmax(0,1fr)]">
+        <aside className="glass-sidebar pc-shell-sidebar border-b border-line xl:sticky xl:top-0 xl:flex xl:h-screen xl:flex-col xl:border-b-0 xl:border-r">
           <div className="flex h-[76px] items-center border-b border-line px-5 py-4 xl:px-5">
             <img
               alt=""
@@ -78,9 +78,20 @@ export function AppShell({
               <div className="text-xs text-muted">社媒内容自动化</div>
             </div>
           </div>
+          <div className="hidden px-3 pb-2 pt-3 xl:block">
+            <div className="glass-control rounded-md border px-3 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-xs text-muted">默认工作区</div>
+                  <div className="mt-1 truncate text-sm font-semibold text-ink">专业版 · 团队</div>
+                </div>
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-moss shadow-[0_0_0_4px_rgb(var(--moss)/0.12)]" />
+              </div>
+            </div>
+          </div>
           <nav
             aria-label="工作台主导航"
-            className="workspace-primary-nav flex gap-1 overflow-x-auto p-3 xl:block xl:p-3"
+            className="workspace-primary-nav flex gap-1 overflow-x-auto p-3 xl:block xl:flex-1 xl:p-3"
           >
             {navigation.map((item) => {
               const active = item.id === activeTab;
@@ -102,17 +113,24 @@ export function AppShell({
               );
             })}
           </nav>
-          <div className="hidden border-t border-line p-4 xl:block">
-            <div className="flex items-center gap-2 text-xs font-medium text-muted">
-              <ShieldCheck className="h-4 w-4 text-moss" />
-              发布前确认
+          <div className="hidden space-y-3 border-t border-line p-3 xl:block">
+            <div className="glass-subtle rounded-md border p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-xs font-semibold text-ink">
+                  <ShieldCheck className="h-4 w-4 text-moss" />
+                  发布前确认
+                </div>
+                <span className="rounded-md bg-moss/10 px-2 py-1 text-[11px] font-semibold text-moss">
+                  强制
+                </span>
+              </div>
+              {showHelperText ? (
+                <p className="mt-2 text-xs leading-5 text-muted">
+                  只生成草稿和预览，发布动作必须人工复制提交。
+                </p>
+              ) : null}
             </div>
-            {showHelperText ? (
-              <p className="mt-2 text-xs leading-5 text-muted">
-                系统不会自动发布，确认后再复制到小红书提交。
-              </p>
-            ) : null}
-            <div className="mt-4 border-t border-line pt-4">
+            <div className="glass-subtle rounded-md border p-3">
               <div className="flex items-center gap-2 text-xs font-medium text-muted">
                 <Palette className="h-4 w-4 text-steel" />
                 当前页推荐
@@ -146,12 +164,32 @@ export function AppShell({
                 )}
               </div>
             </div>
+            <div className="glass-subtle rounded-md border p-3">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="text-xs font-semibold text-ink">本地状态</div>
+                <span className="text-[11px] text-muted">实时入口</span>
+              </div>
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-muted">模型</span>
+                  <span className="font-semibold text-ink">设置可查</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-muted">搜索</span>
+                  <span className="font-semibold text-ink">按需触发</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-muted">发布</span>
+                  <span className="font-semibold text-ink">手动复制</span>
+                </div>
+              </div>
+            </div>
           </div>
         </aside>
 
         <section className="min-w-0">
           <header className="glass-topbar pc-shell-topbar sticky top-0 z-20 border-b border-line px-5 py-4 lg:px-6">
-            <div className="mx-auto grid max-w-[1560px] gap-4 xl:grid-cols-[minmax(220px,0.72fr)_minmax(440px,1fr)_auto] xl:items-center">
+            <div className="mx-auto grid max-w-[1560px] gap-4 xl:grid-cols-[220px_minmax(560px,1fr)_auto] xl:items-center">
               <div className="min-w-0">
                 <div className="text-[11px] font-semibold text-moss">OPC SOCIAL AUTOMATION</div>
                 <h1 className="mt-1 text-xl font-semibold leading-7">{activeMeta.title}</h1>
@@ -159,7 +197,7 @@ export function AppShell({
               </div>
               <nav
                 aria-label="桌面快捷导航"
-                className="hidden min-w-0 items-center justify-center gap-1 rounded-md border border-line/70 bg-paper/54 p-1 shadow-[inset_0_1px_0_rgb(var(--glass-highlight)/0.44)] xl:flex"
+                className="workspace-primary-nav hidden min-w-0 items-center justify-start gap-1 overflow-x-auto rounded-md border border-line/70 bg-paper/54 p-1 shadow-[inset_0_1px_0_rgb(var(--glass-highlight)/0.44)] xl:flex"
               >
                 {navigation.map((item) => {
                   const active = item.id === activeTab;
@@ -167,7 +205,7 @@ export function AppShell({
                     <a
                       aria-current={active ? "page" : undefined}
                       className={[
-                        "inline-flex h-9 min-w-0 items-center gap-2 rounded-md px-3 text-sm font-medium transition",
+                        "inline-flex h-9 min-w-max shrink-0 items-center gap-2 rounded-md px-3.5 text-sm font-medium transition",
                         active
                           ? "bg-moss text-white shadow-sm"
                           : "text-muted hover:bg-mist/80 hover:text-ink"
@@ -176,7 +214,7 @@ export function AppShell({
                       key={`top-${item.id}`}
                     >
                       <item.icon className="h-4 w-4 shrink-0" />
-                      <span className="truncate">{item.label}</span>
+                      <span>{item.label}</span>
                     </a>
                   );
                 })}

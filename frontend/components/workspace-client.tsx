@@ -1489,35 +1489,65 @@ function DashboardView({
   defaultWritingStyle: WritingStylePresetId;
   onDefaultWritingStyleChange: (nextStyle: WritingStylePresetId) => void;
 }) {
-  const coverLines = buildCoverLines(draftPreview.title);
-  const statusLanes = [
+  const keyTasks = [
     {
-      title: "素材参考",
-      description: "先补 3-5 条公开高赞图文，再进入知识库。",
-      action: "去采集",
+      title: "趋势采集",
+      description: "发现热门话题与优质内容",
+      primaryMetric: "待同步",
+      secondaryMetric: "待确认",
+      tertiaryMetric: "待筛选",
+      primaryLabel: "今日完成",
+      secondaryLabel: "素材结果",
+      tertiaryLabel: "高热话题",
+      progress: "0%",
+      action: "开始采集",
       href: buildWorkspaceUrl("research"),
       icon: Radar,
-      tone: "blue" as const,
-      value: "待补充"
+      tone: "green" as const
     },
     {
-      title: "知识库",
-      description: "只沉淀人工确认过的标题、开头、封面结构。",
-      action: "看资产",
+      title: "知识加工",
+      description: "沉淀知识，构建可复用资产",
+      primaryMetric: "待同步",
+      secondaryMetric: "待关联",
+      tertiaryMetric: "待入库",
+      primaryLabel: "待处理",
+      secondaryLabel: "证据来源",
+      tertiaryLabel: "知识条目",
+      progress: "0%",
+      action: "去处理",
       href: buildWorkspaceUrl("knowledge"),
       icon: BookOpenText,
-      tone: "green" as const,
-      value: "可接入"
+      tone: "green" as const
     },
     {
-      title: "安全检查",
-      description: "生成后人工确认，避免保录、包过和虚假承诺。",
-      action: "看规则",
-      href: buildWorkspaceUrl("settings"),
-      icon: ShieldCheck,
-      tone: "red" as const,
-      value: "强制"
+      title: "内容创作",
+      description: "基于知识生产优质内容",
+      primaryMetric: "待生成",
+      secondaryMetric: "待审核",
+      tertiaryMetric: "手动发布",
+      primaryLabel: "草稿",
+      secondaryLabel: "人工确认",
+      tertiaryLabel: "发布动作",
+      progress: "0%",
+      action: "去创作",
+      href: buildWorkspaceUrl("content"),
+      icon: PenLine,
+      tone: "green" as const
     }
+  ];
+  const recentActivities = [
+    { time: "--:--", title: "趋势采集", detail: "运行采集后显示真实完成记录", status: "待运行", tone: "neutral" as const },
+    { time: "--:--", title: "知识处理", detail: "保存摘要后显示真实入库记录", status: "待入库", tone: "neutral" as const },
+    { time: "--:--", title: "内容生成", detail: "一键生成后显示真实草稿记录", status: "待生成", tone: "neutral" as const },
+    { time: "--:--", title: "联网搜索", detail: "按需查询后显示 Tavily 结果", status: "按需触发", tone: "neutral" as const }
+  ];
+  const productivityMetrics = [
+    { label: "采集话题", value: "--", trend: "连接后显示" },
+    { label: "入库知识", value: "--", trend: "连接后显示" },
+    { label: "生成内容", value: "--", trend: "连接后显示" },
+    { label: "发布内容", value: "手动", trend: "不自动发布" },
+    { label: "互动数据", value: "--", trend: "连接后显示" }
   ];
   const workspaceHealth = [
     { icon: KeyRound, label: "模型 Key", state: "设置可查", tone: "blue" as const },
@@ -1529,182 +1559,158 @@ function DashboardView({
   return (
     <div className="space-y-5">
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="glass-panel overflow-hidden rounded-[24px] border shadow-panel">
-          <div className="flex flex-col gap-5 p-5 lg:p-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-4">
+          <div className="glass-panel rounded-md border p-5 shadow-panel">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <div className="flex flex-wrap gap-2">
-                  <Pill tone="blue">采集优先</Pill>
-                  <Pill tone="green">本地预览</Pill>
-                  <Pill tone="amber">人工确认</Pill>
-                </div>
-                <h2 className="mt-4 max-w-3xl text-[2.15rem] font-semibold leading-[1.05] text-ink lg:text-[2.7rem]">
+                <h2 className="text-[2rem] font-semibold leading-tight text-ink lg:text-[2.35rem]">
                   今日工作台
                 </h2>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
-                  选择一个获客目标，系统会把资料、趋势参考、文案、封面和发布检查串成可确认的任务流程。
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  采集、知识、创作和审核按顺序推进；系统只生成草稿，不会自动发布。
                 </p>
               </div>
-              <div className="hidden rounded-md border border-line bg-mist/60 px-3 py-2 text-xs leading-5 text-muted md:block">
-                发布边界
-                <div className="font-medium text-ink">先生成，再确认，再复制</div>
+              <div className="flex items-center gap-2 text-xs text-muted">
+                <span>工作中</span>
+                <span className="h-2 w-2 rounded-full bg-moss" />
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+            <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-4">
               {workspaceHealth.map((item) => (
-                <div
-                  className="flex items-center gap-3 rounded-md border border-line/70 bg-paper/58 px-3 py-2.5"
+                <a
+                  className="flex min-h-[86px] items-center gap-3 rounded-md border border-line/70 bg-paper/58 px-4 py-3"
+                  href={item.label === "模型 Key" ? buildWorkspaceUrl("settings") : item.label === "联网检索" ? buildWorkspaceUrl("content") : buildWorkspaceUrl("content")}
                   key={`workspace-health-${item.label}`}
                 >
                   <IconBox tone={item.tone}>
                     <item.icon className="h-4 w-4" />
                   </IconBox>
                   <div className="min-w-0">
-                    <div className="truncate text-xs font-semibold text-ink">{item.label}</div>
-                    <div className="mt-0.5 text-[11px] text-muted">{item.state}</div>
+                    <div className="truncate text-sm font-semibold text-ink">{item.label}</div>
+                    <div className="mt-1 text-xs text-muted">{item.state}</div>
                   </div>
-                </div>
+                </a>
               ))}
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-[160px_1fr]">
-              <div className="rounded-md border border-line bg-paper/65 p-4">
-                <div className="text-xs font-medium text-muted">平台</div>
-                <PlatformLabel
-                  className="mt-2 text-lg font-semibold text-ink"
-                  iconSize="lg"
-                  platform="xiaohongshu"
-                  suffix="图文"
-                />
+          <div className="glass-panel rounded-md border p-4 shadow-panel">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold text-ink">关键任务</div>
+                <p className="mt-1 text-xs text-muted">按参考图的桌面工作流排列，不再像手机卡片堆叠。</p>
               </div>
-              <div className="rounded-md border border-line bg-paper/65 p-4">
-                <div className="text-xs font-medium text-muted">主题</div>
-                <div className="mt-2 text-lg font-semibold leading-6 text-ink">
-                  硕升博申请第一步
-                </div>
-              </div>
-              <div className="rounded-md border border-line bg-paper/65 p-4 md:col-span-2">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <div className="text-xs font-medium text-muted">默认风格</div>
-                  <span className="text-[11px] text-muted">可在创作项目中细调</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-                  {writingStylePresets.map((style) => {
-                    const selected = style.id === defaultWritingStyle;
-                    return (
-                      <button
-                        aria-pressed={selected}
-                        className={[
-                          "rounded-md border px-3 py-2 text-left text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-steel/45",
-                          selected
-                            ? "border-steel/50 bg-steel/10 text-ink"
-                            : "border-line bg-mist/50 text-muted hover:border-steel/40 hover:bg-steel/5 hover:text-ink"
-                        ].join(" ")}
-                        data-testid={`dashboard-writing-style-${style.id}`}
-                        key={style.id}
-                        onClick={() => onDefaultWritingStyleChange(style.id)}
-                        type="button"
-                      >
-                        {style.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <Pill tone="green">系统状态</Pill>
             </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <a
-                className="flex h-12 items-center justify-center gap-2 rounded-[14px] bg-steel px-5 text-sm font-semibold text-paper shadow-soft transition hover:translate-y-[-1px] hover:shadow-panel active:translate-y-0"
-                href={buildWorkspaceUrl("content")}
-              >
-                <PlatformIcon className="ring-white/55" platform="xiaohongshu" size="sm" />
-                一键生成图文+封面
-              </a>
-              <a
-                className={`${secondaryButtonClass} h-12 px-4`}
-                href={buildWorkspaceUrl("research")}
-              >
-                <Search className="h-4 w-4" />
-                先补素材参考
-              </a>
-              <span className="text-xs leading-5 text-muted">
-                不会自动发布；复制前仍需人工看一遍标题、正文、标签和封面。
-              </span>
+            <div className="space-y-3">
+              {keyTasks.map((task) => (
+                <div
+                  className="grid gap-3 rounded-md border border-line/70 bg-paper/58 p-4 lg:grid-cols-[230px_repeat(3,92px)_minmax(120px,1fr)_120px] lg:items-center"
+                  key={`key-task-${task.title}`}
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <IconBox tone={task.tone}>
+                      <task.icon className="h-4 w-4" />
+                    </IconBox>
+                    <div className="min-w-0">
+                      <div className="truncate text-base font-semibold text-ink">{task.title}</div>
+                      <div className="mt-1 truncate text-xs text-muted">{task.description}</div>
+                    </div>
+                  </div>
+                  {[
+                    [task.primaryMetric, task.primaryLabel],
+                    [task.secondaryMetric, task.secondaryLabel],
+                    [task.tertiaryMetric, task.tertiaryLabel]
+                  ].map(([value, label]) => (
+                    <div className="border-line/70 lg:border-l lg:pl-4" key={`${task.title}-${label}`}>
+                      <div className="text-lg font-semibold leading-6 text-ink">{value}</div>
+                      <div className="mt-1 text-xs text-muted">{label}</div>
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-3">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-line/70">
+                      <div className="h-full rounded-full bg-moss" style={{ width: task.progress }} />
+                    </div>
+                    <span className="w-10 text-xs text-muted">{task.progress}</span>
+                  </div>
+                  <a
+                    className="flex h-10 items-center justify-center rounded-md bg-moss px-4 text-sm font-semibold text-white"
+                    href={task.href}
+                  >
+                    {task.action}
+                  </a>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        <aside className="glass-panel overflow-hidden rounded-[24px] border shadow-panel">
-          <div className="border-b border-line px-4 py-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-sm font-semibold text-ink">发布前预览</div>
-                <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">
-                  <PlatformIcon platform="xiaohongshu" size="sm" />
-                  预览小红书图文卡片，不自动发布。
-                </p>
-              </div>
-              <Pill tone="green">草稿</Pill>
+        <aside className="glass-panel rounded-md border p-4 shadow-panel">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-ink">最近动态</div>
+              <p className="mt-1 text-xs text-muted">真实流程入口，发布仍需人工确认。</p>
             </div>
+            <Pill tone="neutral">全部类型</Pill>
           </div>
-          <div className="p-4">
-            <div className="overflow-hidden rounded-[22px] border border-line bg-paper/70">
-              <div className="relative min-h-[260px] bg-[radial-gradient(circle_at_20%_18%,rgba(255,255,255,0.95),transparent_32%),linear-gradient(145deg,#fff7e8_0%,#d9f3e6_50%,#f8cfc0_100%)] p-5">
-                <div className="absolute bottom-5 left-5 right-5">
-                  <div className="mb-4 h-1.5 w-14 rounded-full bg-coral" />
-                  <div className="space-y-1 text-[2.15rem] font-black leading-[1.06] text-ink">
-                    {coverLines.map((line, index) => (
-                      <div key={`draft-cover-line-${index}-${line}`}>{line}</div>
-                    ))}
-                  </div>
+          <div className="mt-5 space-y-4">
+            {recentActivities.map((activity) => (
+              <div className="grid grid-cols-[52px_1fr_auto] gap-3" key={`${activity.time}-${activity.title}`}>
+                <div className="text-xs text-muted">{activity.time}</div>
+                <div className="min-w-0 border-l border-line pl-4">
+                  <div className="text-sm font-semibold text-ink">{activity.title}</div>
+                  <div className="mt-1 truncate text-xs text-muted">{activity.detail}</div>
                 </div>
+                <Pill tone={activity.tone}>{activity.status}</Pill>
               </div>
-              <div className="p-4">
-                <div className="text-base font-semibold leading-6 text-ink">
-                  {draftPreview.title}
-                </div>
-                <p className="mt-2 line-clamp-3 text-sm leading-6 text-muted">
-                  不是先套磁，先把问题想清楚。申请第一步要先确认研究方向、匹配导师项目，再定制套磁内容。
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium text-steel">
-                  <span>#硕升博</span>
-                  <span>#博士申请</span>
-                  <span>#申请规划</span>
-                </div>
-                <a
-                  className={`${secondaryButtonClass} mt-4 h-10 w-full`}
-                  href={buildWorkspaceUrl("content")}
-                >
-                  <Clipboard className="h-4 w-4" />
-                  一键复制文案
-                </a>
-              </div>
-            </div>
+            ))}
           </div>
+          <a
+            className="mt-6 flex h-10 items-center justify-center gap-2 rounded-md border border-line bg-paper/58 text-sm font-semibold text-ink"
+            href={buildWorkspaceUrl("content")}
+          >
+            查看全部动态
+          </a>
         </aside>
       </section>
 
-      <section className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        {statusLanes.map((lane, index) => (
-          <div className="glass-panel rounded-[20px] border p-4" key={`status-lane-${index}-${lane.title}`}>
-            <div className="flex items-start justify-between gap-3">
-              <IconBox tone={lane.tone}>
-                <lane.icon className="h-4 w-4" />
-              </IconBox>
-              <Pill tone={lane.tone}>{lane.value}</Pill>
+      <section className="glass-panel rounded-md border p-4 shadow-panel">
+        <div className="grid grid-cols-1 divide-y divide-line lg:grid-cols-[repeat(5,minmax(0,1fr))_320px] lg:divide-x lg:divide-y-0">
+          {productivityMetrics.map((metric) => (
+            <div className="px-3 py-3" key={`productivity-${metric.label}`}>
+              <div className="text-xs text-muted">{metric.label}</div>
+              <div className="mt-2 text-2xl font-semibold leading-none text-ink">{metric.value}</div>
+              <div className="mt-2 text-xs font-semibold text-moss">{metric.trend}</div>
+              <div className="mt-4 h-6 rounded-sm bg-[linear-gradient(135deg,rgb(var(--moss)/0.18)_25%,transparent_25%,transparent_50%,rgb(var(--moss)/0.18)_50%,rgb(var(--moss)/0.18)_75%,transparent_75%)] bg-[length:12px_12px]" />
             </div>
-            <div className="mt-4 text-sm font-semibold leading-5 text-ink">{lane.title}</div>
-            <p className="mt-2 min-h-10 text-xs leading-5 text-muted">{lane.description}</p>
-            <a
-              className="mt-4 inline-flex h-9 items-center justify-center rounded-md border border-line bg-paper/60 px-3 text-xs font-medium text-ink transition hover:border-steel/50 hover:bg-mist"
-              href={lane.href}
-            >
-              {lane.action}
-            </a>
+          ))}
+          <div className="px-4 py-3">
+            <div className="text-sm font-semibold text-ink">默认风格</div>
+            <p className="mt-1 text-xs leading-5 text-muted">可在创作项目中细调。</p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {writingStylePresets.slice(0, 4).map((style) => {
+                const selected = style.id === defaultWritingStyle;
+                return (
+                  <button
+                    aria-pressed={selected}
+                    className={[
+                      "rounded-md border px-3 py-2 text-left text-xs font-medium transition",
+                      selected
+                        ? "border-steel/50 bg-steel/10 text-ink"
+                        : "border-line bg-mist/50 text-muted hover:border-steel/40 hover:text-ink"
+                    ].join(" ")}
+                    data-testid={`dashboard-writing-style-${style.id}`}
+                    key={style.id}
+                    onClick={() => onDefaultWritingStyleChange(style.id)}
+                    type="button"
+                  >
+                    {style.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        ))}
+        </div>
       </section>
 
       <section className="glass-panel rounded-[20px] border px-4 py-4">
@@ -2094,51 +2100,75 @@ function KnowledgeView() {
           <Pill tone={items.length ? "green" : "neutral"}>{items.length} 条</Pill>
         </div>
 
-        <div className="grid grid-cols-1 gap-2" data-testid="knowledge-list">
-          {items.map((item) => (
-            <article
-              aria-label={`查看知识条目：${knowledgeItemTitle(item)}`}
-              className={[
-                subtleCardClass,
-                "cursor-pointer overflow-hidden px-4 py-3 transition hover:border-steel/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss/30",
-                visibleDetailItem?.id === item.id ? "border-moss/45 bg-moss/10" : ""
-              ].join(" ")}
-              data-testid="knowledge-item"
-              key={item.id}
-              onClick={() => openKnowledgeItem(item)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  openKnowledgeItem(item);
-                }
-              }}
-              role="button"
-              tabIndex={0}
-            >
-              <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold text-moss">#{item.id}</span>
-                    <span className="text-[11px] font-medium text-muted">
+        <div className="overflow-hidden rounded-md border border-line/70" data-testid="knowledge-list">
+          <div className="overflow-x-auto">
+            <table className="min-w-[760px] w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-line text-xs font-semibold text-muted">
+                  <th className="px-3 py-3">标题</th>
+                  <th className="px-3 py-3">类别</th>
+                  <th className="px-3 py-3">来源</th>
+                  <th className="px-3 py-3">状态</th>
+                  <th className="px-3 py-3 text-right">操作</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {items.map((item) => (
+                  <tr
+                    className={[
+                      "cursor-pointer bg-paper/50 align-top transition focus-within:bg-moss/10 hover:bg-moss/5",
+                      visibleDetailItem?.id === item.id ? "bg-moss/10" : ""
+                    ].join(" ")}
+                    data-testid="knowledge-item"
+                    key={item.id}
+                    onClick={() => openKnowledgeItem(item)}
+                  >
+                    <td className="px-3 py-3">
+                      <button
+                        className="block w-full text-left focus-visible:outline-none"
+                        onClick={() => openKnowledgeItem(item)}
+                        type="button"
+                      >
+                        <span className="line-clamp-2 break-words font-semibold leading-5 text-ink">
+                          {knowledgeItemTitle(item)}
+                        </span>
+                        <span className="mt-1 line-clamp-2 break-words text-xs leading-5 text-muted">
+                          {knowledgeItemExcerpt(item, 150)}
+                        </span>
+                      </button>
+                    </td>
+                    <td className="px-3 py-3">
+                      <Pill>{knowledgeCategoryLabel(item.category)}</Pill>
+                    </td>
+                    <td className="px-3 py-3 text-xs leading-5 text-muted">
+                      #{item.id}
+                      <br />
                       {item.match_type === "recent" ? "最近入库" : "检索结果"}
-                    </span>
-                  </div>
-                  <h3 className="mt-1 line-clamp-2 break-words text-sm font-semibold leading-5">
-                    {knowledgeItemTitle(item)}
-                  </h3>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <Pill>{knowledgeCategoryLabel(item.category)}</Pill>
-                  {typeof item.score === "number" ? (
-                    <Pill tone="green">匹配 {Math.round(item.score * 100)}%</Pill>
-                  ) : (
-                    <Pill tone="neutral">点击看全文</Pill>
-                  )}
-                </div>
-              </div>
-              <p className="mt-2 line-clamp-2 break-words text-xs leading-5 text-muted">{knowledgeItemExcerpt(item, 180)}</p>
-            </article>
-          ))}
+                    </td>
+                    <td className="px-3 py-3">
+                      {typeof item.score === "number" ? (
+                        <Pill tone="green">匹配 {Math.round(item.score * 100)}%</Pill>
+                      ) : (
+                        <Pill tone="neutral">点击看全文</Pill>
+                      )}
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      <button
+                        className="inline-flex h-8 items-center justify-center rounded-md border border-line bg-paper/70 px-3 text-xs font-semibold text-ink"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openKnowledgeDetailModal(item);
+                        }}
+                        type="button"
+                      >
+                        展开
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {!loading && items.length === 0 ? (
@@ -3480,7 +3510,7 @@ function GenerationLauncher({
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_400px] 2xl:grid-cols-[minmax(360px,0.95fr)_320px_minmax(360px,1.05fr)]">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="block">
               <span className="flex items-center justify-between gap-3 text-xs font-medium text-muted">
@@ -3546,7 +3576,7 @@ function GenerationLauncher({
                 </button>
               </div>
               <div className="mt-1 text-[11px] text-muted">每 45 秒自动换一批，也可以直接修改为自定义选题</div>
-              <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+              <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
                 {visibleTopicPresets.map((preset) => {
                   const selected = selectedTopicPreset?.key === preset.key;
                   return (
@@ -3774,6 +3804,11 @@ function GenerationLauncher({
                 去设置检查撰稿服务授权
               </button>
             ) : null}
+            <div className="mt-4 border-l-4 border-amber pl-3 text-xs leading-5 text-muted">
+              一键生成会按顺序处理文案、改写和封面；最终发布仍保持人工确认，不会自动发布。
+            </div>
+          </div>
+          <div className="space-y-4">
             <GenerationSourceEvidenceCard
               disabled={!hasTopic || busyAction !== null}
               error={sourcePreviewError}
@@ -3782,24 +3817,53 @@ function GenerationLauncher({
               previewBusy={sourcePreviewBusy}
               sourceContext={visibleSourceContext}
             />
-            <div className="mt-4 border-l-4 border-amber pl-3 text-xs leading-5 text-muted">
-              一键生成会按顺序处理文案、改写和封面；最终发布仍保持人工确认，不会自动发布。
-            </div>
+            {currentExportContent ? (
+              <GeneratedPostExportCard
+                key={currentExportContent.id}
+                content={currentExportContent}
+                generatedImageAsset={latestImageAsset}
+                generationBusy={busyAction !== null}
+                imageProviderReady={liveImageProviderReady}
+                onImageGenerated={onImageGenerated}
+                onOpenSettings={onOpenSettings}
+                onRefreshProviderStatuses={refreshProviderStatuses}
+                workspaceToken={workspaceToken}
+              />
+            ) : (
+              <div className={`${subtleCardClass} p-4`}>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-semibold text-ink">小红书内容预览</div>
+                  <Pill tone="neutral">待生成</Pill>
+                </div>
+                <div className="mt-4 overflow-hidden rounded-md border border-line bg-paper/70">
+                  <div className="relative aspect-[3/4] bg-[linear-gradient(145deg,rgb(var(--moss)/0.18),rgb(var(--paper))_45%,rgb(var(--amber)/0.16))] p-4">
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <div className="mb-3 h-1.5 w-12 rounded-full bg-moss" />
+                      <div className="line-clamp-4 text-2xl font-black leading-tight text-ink">
+                        {topic || "选择主题后一键生成"}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-3">
+                    <div className="text-xs font-semibold text-muted">封面方向</div>
+                    <p className="mt-1 line-clamp-3 text-xs leading-5 text-ink">
+                      {coverDirectionPreview}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium text-steel">
+                      {tagsText
+                        .split(/[，,\s]+/)
+                        .filter(Boolean)
+                        .slice(0, 4)
+                        .map((tag) => (
+                          <span key={`preview-tag-${tag}`}>#{tag.replace(/^#/, "")}</span>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-        {currentExportContent ? (
-          <GeneratedPostExportCard
-            key={currentExportContent.id}
-            content={currentExportContent}
-            generatedImageAsset={latestImageAsset}
-            generationBusy={busyAction !== null}
-            imageProviderReady={liveImageProviderReady}
-            onImageGenerated={onImageGenerated}
-            onOpenSettings={onOpenSettings}
-            onRefreshProviderStatuses={refreshProviderStatuses}
-            workspaceToken={workspaceToken}
-          />
-        ) : null}
       </Panel>
     </div>
   );
@@ -3943,7 +4007,7 @@ function GeneratedPostExportCard({
   }
 
   return (
-    <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
+    <div className="grid grid-cols-1 gap-4">
       <div className={`${subtleCardClass} p-4`}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -4046,7 +4110,7 @@ function GeneratedPostExportCard({
         </div>
       </div>
 
-      <div className={`${subtleCardClass} p-4 xl:col-span-2`}>
+      <div className={`${subtleCardClass} p-4`}>
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
             <div className="flex items-center gap-2 text-sm font-semibold">
