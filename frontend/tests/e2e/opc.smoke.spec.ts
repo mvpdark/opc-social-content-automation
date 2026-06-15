@@ -14,6 +14,7 @@ const MOBILE_TOPIC_PRESET_BUTTON_SELECTOR =
 const E2E_GENERATED_CONTENT_ID = 8801;
 const E2E_COVER_FAILURE_CONTENT_ID = 8802;
 const E2E_CONTENT_FAILURE_CONTENT_ID = 8803;
+const E2E_PC_GENERATED_CONTENT_ID = 8901;
 
 type JsonPayload = Record<string, unknown>;
 
@@ -30,10 +31,24 @@ type MobileGenerationFixtureRequests = {
   sourcePreview: JsonPayload[];
 };
 
+type PcGenerationFixtureRequests = MobileGenerationFixtureRequests & {
+  contentList: number;
+  imageList: number;
+  providerStatus: number;
+  rewrite: JsonPayload[];
+};
+
 async function resetLocalAuth(page: Page) {
   await page.addInitScript(() => {
-    window.localStorage.removeItem("opc_pc_auth_v1");
-    window.localStorage.removeItem("opc_mobile_auth_v1");
+    [
+      "opc_pc_auth_v1",
+      "opc_mobile_auth_v1",
+      "opc_latest_generated_content_v1",
+      "opc_pinned_draft_ids_v1",
+      "opc_mobile_create_draft_history_v1",
+      "opc_mobile_draft_history_v1",
+      "opc_mobile_deleted_draft_ids_v1"
+    ].forEach((key) => window.localStorage.removeItem(key));
   });
 }
 
@@ -75,6 +90,74 @@ async function trackGenerationServiceRequests(page: Page) {
   return requests;
 }
 
+function buildE2eSourceContext(preset: GenerationTopicPreset, label: string) {
+  return {
+    knowledge_items: [
+      {
+        category: "E2E",
+        content: `受控测试知识库引用：${preset.topic} 必须围绕 ${preset.audience} 展开。`,
+        id: 701,
+        match_type: "fixture",
+        score: 0.91,
+        title: `E2E 知识库引用：${preset.topic}`
+      }
+    ],
+    knowledge_query: preset.knowledgeQuery,
+    review_note: "受控 E2E 夹具：发布前仍需人工核对来源。",
+    web_search: {
+      answer: `受控测试联网摘要：${label}选题需要保留 ${preset.topic} 的意图。`,
+      provider: "tavily",
+      query: preset.knowledgeQuery,
+      required: true,
+      results: [
+        {
+          content: "受控测试联网结果：只验证 UI 展示和请求契约，不代表真实排名、价格或录取结论。",
+          score: 0.84,
+          title: `E2E 联网来源：${preset.topic}`,
+          url: "https://example.edu/e2e-source"
+        }
+      ]
+    }
+  };
+}
+
+function buildE2eProviderStatuses() {
+  return [
+    {
+      configured: true,
+      model: "e2e-draft-model",
+      name: "Draft generation",
+      note: "E2E fixture ready",
+      provider: "openai",
+      status: "ok"
+    },
+    {
+      configured: true,
+      model: "e2e-image-model",
+      name: "Image generation",
+      note: "E2E fixture ready",
+      provider: "openai",
+      status: "ok"
+    },
+    {
+      configured: false,
+      model: null,
+      name: "Humanization rewrite",
+      note: "E2E rewrite disabled",
+      provider: "codex_test",
+      status: "missing"
+    },
+    {
+      configured: true,
+      model: null,
+      name: "Web search",
+      note: "E2E fixture ready",
+      provider: "tavily",
+      status: "ok"
+    }
+  ];
+}
+
 async function mockMobileGenerationFixture(
   page: Page,
   preset: GenerationTopicPreset,
@@ -91,34 +174,7 @@ async function mockMobileGenerationFixture(
     sourcePreview: []
   };
   const tags = parseTagText(preset.tags);
-  const sourceContext = {
-    knowledge_items: [
-      {
-        category: "E2E",
-        content: `受控测试知识库引用：${preset.topic} 必须围绕 ${preset.audience} 展开。`,
-        id: 701,
-        match_type: "fixture",
-        score: 0.91,
-        title: `E2E 知识库引用：${preset.topic}`
-      }
-    ],
-    knowledge_query: preset.knowledgeQuery,
-    review_note: "受控 E2E 夹具：发布前仍需人工核对来源。",
-    web_search: {
-      answer: `受控测试联网摘要：${preset.mobileLabel}选题需要保留 ${preset.topic} 的意图。`,
-      provider: "tavily",
-      query: preset.knowledgeQuery,
-      required: true,
-      results: [
-        {
-          content: `受控测试联网结果：只验证 UI 展示和请求契约，不代表真实排名、价格或录取结论。`,
-          score: 0.84,
-          title: `E2E 联网来源：${preset.topic}`,
-          url: "https://example.edu/e2e-source"
-        }
-      ]
-    }
-  };
+  const sourceContext = buildE2eSourceContext(preset, preset.mobileLabel);
 
   await page.route("**/api/content/source-preview", async (route) => {
     requests.sourcePreview.push(readJsonPayload(route.request().postData()));
@@ -175,6 +231,110 @@ async function mockMobileGenerationFixture(
         id: 9901,
         image_url: buildFixtureCoverDataUri(preset.topic),
         prompt: `受控 E2E 封面方向：${preset.coverDirection}`,
+        status: "generated",
+        template: "xiaohongshu-cover"
+      }),
+      contentType: "application/json",
+      status: 200
+    });
+  });
+  await page.route(/\/api\/[^?]*(publish|submit)/i, async (route) => {
+    requests.forbiddenPublishing.push(route.request().url());
+    await route.fulfill({
+      body: JSON.stringify({ detail: "E2E guard blocked publishing-like call." }),
+      contentType: "application/json",
+      status: 500
+    });
+  });
+
+  return requests;
+}
+
+async function mockPcGenerationFixture(page: Page, preset: GenerationTopicPreset) {
+  const requests: PcGenerationFixtureRequests = {
+    contentGenerate: [],
+    contentList: 0,
+    forbiddenPublishing: [],
+    imageGenerate: [],
+    imageList: 0,
+    providerStatus: 0,
+    rewrite: [],
+    sourcePreview: []
+  };
+  const tags = parseTagText(preset.tags);
+  const sourceContext = buildE2eSourceContext(preset, preset.desktopLabel);
+
+  await page.route("**/api/workspace/provider-status", async (route) => {
+    requests.providerStatus += 1;
+    await route.fulfill({
+      body: JSON.stringify(buildE2eProviderStatuses()),
+      contentType: "application/json",
+      status: 200
+    });
+  });
+  await page.route(/\/api\/content\/list(?:\?|$)/, async (route) => {
+    requests.contentList += 1;
+    await route.fulfill({
+      body: JSON.stringify([]),
+      contentType: "application/json",
+      status: 200
+    });
+  });
+  await page.route(/\/api\/image\/list(?:\?|$)/, async (route) => {
+    requests.imageList += 1;
+    await route.fulfill({
+      body: JSON.stringify([]),
+      contentType: "application/json",
+      status: 200
+    });
+  });
+  await page.route("**/api/content/source-preview", async (route) => {
+    requests.sourcePreview.push(readJsonPayload(route.request().postData()));
+    await route.fulfill({
+      body: JSON.stringify({ source_context: sourceContext }),
+      contentType: "application/json",
+      status: 200
+    });
+  });
+  await page.route("**/api/content/generate", async (route) => {
+    requests.contentGenerate.push(readJsonPayload(route.request().postData()));
+    await route.fulfill({
+      body: JSON.stringify({
+        body: [
+          `受控 E2E 正式草稿：${preset.topic}`,
+          `这篇 PC 草稿服务于${preset.audience}，必须保持${preset.desktopLabel}选题意图。`,
+          `知识库检索词：${preset.knowledgeQuery}`,
+          "发布前仍需人工确认标题、正文、标签和封面。"
+        ].join("\n\n"),
+        created_at: "2026-06-16T00:00:00.000Z",
+        id: E2E_PC_GENERATED_CONTENT_ID,
+        platform: "xiaohongshu",
+        source_context: sourceContext,
+        status: "draft",
+        tags,
+        title: preset.topic
+      }),
+      contentType: "application/json",
+      status: 200
+    });
+  });
+  await page.route("**/api/content/rewrite", async (route) => {
+    requests.rewrite.push(readJsonPayload(route.request().postData()));
+    await route.fulfill({
+      body: JSON.stringify({ detail: "E2E guard blocked unexpected rewrite call." }),
+      contentType: "application/json",
+      status: 500
+    });
+  });
+  await page.route("**/api/image/generate", async (route) => {
+    requests.imageGenerate.push(readJsonPayload(route.request().postData()));
+    await route.fulfill({
+      body: JSON.stringify({
+        content_id: E2E_PC_GENERATED_CONTENT_ID,
+        created_at: "2026-06-16T00:00:01.000Z",
+        id: 9902,
+        image_url: buildFixtureCoverDataUri(preset.topic),
+        prompt: `受控 E2E PC 封面方向：${preset.coverDirection}`,
         status: "generated",
         template: "xiaohongshu-cover"
       }),
@@ -580,6 +740,99 @@ test.describe("OPC smoke coverage", () => {
       topic: preset.topic
     });
     expect(await localStorageContains(page, String(E2E_CONTENT_FAILURE_CONTENT_ID))).toBe(false);
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("PC one-click generation keeps selected sales topic aligned through preview copy", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const acceptedLogin = createLoginInput();
+    const preset = requireTopicPreset("sales-main");
+    const expectedTags = parseTagText(preset.tags);
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockPcGenerationFixture(page, preset);
+
+    await page.goto(`${BASE_URL}/?theme=mint&tab=content&project=postgraduate-phd`);
+    await expect(page.getByTestId("pc-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("pc-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("pc-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("pc-login-submit").click();
+
+    await expect(page.getByTestId("creation-project-return")).toBeVisible();
+    await expect(page.getByTestId("generation-launcher")).toBeVisible();
+    await page.getByTestId("content-topic").fill(preset.topic);
+    await expect(page.getByTestId("content-topic")).toHaveValue(preset.topic);
+    await expect(page.getByTestId("content-knowledge-query")).toHaveValue(preset.knowledgeQuery);
+    await expect(page.getByTestId("content-target-audience")).toHaveValue(preset.audience);
+    await expect(page.getByTestId("content-tags")).toHaveValue(preset.tags);
+
+    await page.getByTestId("source-preview-button").click();
+    await expect(page.getByTestId("generation-source-evidence")).toContainText("2 条");
+    await page.getByTestId("source-knowledge-toggle").click();
+    await expect(page.getByTestId("source-knowledge-list")).toContainText(
+      `E2E 知识库引用：${preset.topic}`
+    );
+    await page.getByTestId("source-web-toggle").click();
+    await expect(page.getByTestId("source-web-list")).toContainText(
+      `E2E 联网来源：${preset.topic}`
+    );
+
+    await page.getByTestId("start-production-button").click();
+    await expect(page.getByText(/文案和封面图已生成/)).toBeVisible();
+
+    const draftCard = page.getByTestId("draft-history-card").filter({ hasText: preset.topic }).first();
+    await expect(page.getByTestId("draft-history-strip")).toBeVisible();
+    await expect(draftCard).toBeVisible();
+    await draftCard.locator("button").first().click();
+
+    const previewModal = page.getByTestId("xhs-preview-modal");
+    await expect(previewModal).toBeVisible();
+    await expect(previewModal).toContainText(preset.topic);
+    await expect(previewModal).toContainText(`必须保持${preset.desktopLabel}选题意图`);
+    await expect(previewModal).toContainText(`#${expectedTags[0]}`);
+    await expect(previewModal).toContainText("这是发布效果预览，不会自动发布");
+    await expect(page.getByTestId("xhs-preview-real-cover")).toBeVisible();
+
+    await page.getByTestId("pc-preview-modal-copy-button").click();
+    await expect
+      .poll(async () => {
+        const buttonText = await page.getByTestId("pc-preview-modal-copy-button").textContent();
+        const manualCopyVisible = await page
+          .getByTestId("pc-preview-modal-manual-copy-text")
+          .isVisible()
+          .catch(() => false);
+        return Boolean(buttonText?.includes("已复制") || manualCopyVisible);
+      })
+      .toBe(true);
+
+    expect(generationRequests.providerStatus).toBeGreaterThan(0);
+    expect(generationRequests.contentList).toBeGreaterThan(0);
+    expect(generationRequests.sourcePreview).toHaveLength(1);
+    expect(generationRequests.contentGenerate).toHaveLength(1);
+    expect(generationRequests.imageGenerate).toHaveLength(1);
+    expect(generationRequests.rewrite).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.sourcePreview[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: preset.knowledgeQuery,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: preset.audience,
+      topic: preset.topic
+    });
+    expect(generationRequests.contentGenerate[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: preset.knowledgeQuery,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: preset.audience,
+      topic: preset.topic
+    });
+    expect(generationRequests.imageGenerate[0]).toMatchObject({
+      aspect_ratio: "3:4",
+      content_id: E2E_PC_GENERATED_CONTENT_ID,
+      template: "xiaohongshu-cover"
+    });
+    expect(String(generationRequests.imageGenerate[0].style_notes)).toContain(preset.coverDirection);
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 

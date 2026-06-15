@@ -902,3 +902,79 @@ Kept.
 ### Next candidate loop
 
 - Add a controlled PC one-click generation E2E fixture that verifies selected topic, source evidence, draft card, preview/copy flow, and no automated publishing.
+
+## Loop 13 - Cover PC one-click generation preview copy
+
+Date: 2026-06-16
+
+### Observation
+
+Mobile generation now has success, cover-failure, and content-failure E2E fixtures, but PC generation still had weaker coverage. The PC creation page is where the user expects the desktop web experience to catch up with mobile, especially around selected topic intent, evidence expansion, cover generation, preview, copy, and the human-review/no-auto-publish safety boundary.
+
+### Hypothesis
+
+If E2E simulates a PC login into the `postgraduate-phd` creation project and runs a controlled sales/marketing topic through source preview, draft generation, image generation, draft history, preview modal, and copy flow, then CI can catch generic topic drift, missing evidence expansion, fake rewrite/publishing calls, and password persistence regressions before release.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a PC generation fixture with controlled provider statuses, empty existing history, source-preview evidence, content generation, cover generation, and guarded publish/submit endpoints.
+- Reused a shared E2E source-context builder so mobile and PC tests assert the same knowledge/web-search contract.
+- Added a PC one-click generation test using the `sales-main` preset to cover a sales/marketing topic type.
+- Verified the PC page syncs topic, knowledge query, audience, and tags from the selected preset.
+- Verified knowledge-base and Tavily/web evidence expand from the compact evidence card.
+- Verified the generated draft appears in history, opens the Xiaohongshu preview modal, shows the generated cover, and allows copy/manual-copy fallback.
+- Verified rewrite is not called when the rewrite provider is disabled, no publish/submit request is made, and the login password is not persisted.
+- Expanded E2E local-storage cleanup to remove PC and mobile draft caches between tests.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed from frontend/
+
+npm run e2e -- --grep "PC one-click generation keeps selected sales topic aligned through preview copy"
+# 1 passed from frontend/
+
+npm run e2e
+# 14 passed, 1 skipped from frontend/
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run build
+# passed from frontend/
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 27/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 94/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- PC now has a success-path fixture, but PC cover-failure/content-failure recovery still has less coverage than mobile.
+- The env-backed live login smoke remains skipped unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+
+### Next candidate loop
+
+- Add a controlled PC failure-recovery fixture that verifies content or cover failures preserve selected topic inputs and source evidence without creating false drafts or suggesting publishing.
