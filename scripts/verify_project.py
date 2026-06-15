@@ -1047,6 +1047,7 @@ def validate_content_production_contract() -> int:
         "targetRef.current?.select()",
         "visibleTopicPresets",
         "TOPIC_PRESET_REFRESH_MS",
+        "当前选题已就绪，点击“一键生成图文+封面”。",
         "pickGenerationTopicPresetBatch",
         "pickGenerationTopicPresetBatch()",
         "refreshTopicPresets",

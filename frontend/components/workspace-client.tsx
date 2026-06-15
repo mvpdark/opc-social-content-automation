@@ -2907,7 +2907,7 @@ function GenerationLauncher({
   );
   const [tagsText, setTagsText] = useState(defaultGenerationTagsText);
   const [busyAction, setBusyAction] = useState<"draft" | null>(null);
-  const [statusText, setStatusText] = useState("填写选题后，点击“一键生成图文+封面”。");
+  const [statusText, setStatusText] = useState("当前选题已就绪，点击“一键生成图文+封面”。");
   const [lastContent, setLastContent] = useState<GeneratedContent | null>(null);
   const [lastContentInputSignature, setLastContentInputSignature] =
     useState<GeneratedContentInputSignature | null>(null);
