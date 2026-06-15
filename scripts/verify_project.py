@@ -1245,6 +1245,9 @@ def validate_content_production_contract() -> int:
     content_source_context_test_text = (
         ROOT / "backend" / "tests" / "test_content_source_context.py"
     ).read_text(encoding="utf-8")
+    e2e_text = (
+        ROOT / "frontend" / "tests" / "e2e" / "opc.smoke.spec.ts"
+    ).read_text(encoding="utf-8")
     trend_browser_scripts_text = (
         ROOT / "backend" / "app" / "services" / "trend_browser_scripts.py"
     ).read_text(encoding="utf-8")
@@ -1491,6 +1494,22 @@ def validate_content_production_contract() -> int:
             total += 1
             if snippet not in text:
                 raise SystemExit(f"Missing {contract_name} contract: {snippet}")
+
+    custom_topic_e2e_contracts = [
+        "buildCustomTopicAudience",
+        "buildCustomTopicTags",
+        "PC one-click generation keeps custom fact topic aligned through preview copy",
+        "E2E_PC_CUSTOM_TOPIC_CONTENT_ID",
+        "customSourceTopic",
+        "content-cover-direction-type",
+        "knowledge_query: customSourceTopic",
+        "target_audience: expectedAudience",
+        "expect(generationRequests.forbiddenPublishing).toEqual([])",
+    ]
+    for snippet in custom_topic_e2e_contracts:
+        total += 1
+        if snippet not in e2e_text:
+            raise SystemExit(f"Missing custom topic E2E contract: {snippet}")
 
     topic_preset_contract_snippets = [
         "export const generationTopicPresets",

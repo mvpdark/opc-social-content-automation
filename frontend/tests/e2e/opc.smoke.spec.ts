@@ -3,7 +3,12 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
 import { parseTagText } from "../../lib/tags";
-import { generationTopicPresets, type GenerationTopicPreset } from "../../lib/topic-presets";
+import {
+  buildCustomTopicAudience,
+  buildCustomTopicTags,
+  generationTopicPresets,
+  type GenerationTopicPreset
+} from "../../lib/topic-presets";
 
 const BASE_URL = process.env.OPC_BASE_URL ?? "http://127.0.0.1:3000";
 const BASE_ORIGIN = new URL(BASE_URL).origin;
@@ -28,6 +33,7 @@ const E2E_PC_SOURCE_PREVIEW_FAILURE_CONTENT_ID = 8909;
 const E2E_PC_CUSTOM_SOURCE_PREVIEW_FAILURE_CONTENT_ID = 8910;
 const E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID = 8911;
 const E2E_MOBILE_REVIEW_CHANGES_CONTENT_ID = 8912;
+const E2E_PC_CUSTOM_TOPIC_CONTENT_ID = 8913;
 
 type JsonPayload = Record<string, unknown>;
 
@@ -1517,6 +1523,114 @@ test.describe("OPC smoke coverage", () => {
       target_audience: customAudience,
       topic: customSourceTopic
     });
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("PC one-click generation keeps custom fact topic aligned through preview copy", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const acceptedLogin = createLoginInput();
+    const customSourceTopic =
+      "official tuition fees and logo verification for overseas doctoral programs";
+    const expectedAudience = buildCustomTopicAudience(customSourceTopic);
+    const expectedTagsText = buildCustomTopicTags(customSourceTopic);
+    const expectedTags = parseTagText(expectedTagsText);
+    const customPreset: GenerationTopicPreset = {
+      ...requireTopicPreset("source-official-fee-check"),
+      audience: expectedAudience,
+      coverDirection:
+        "Custom source verification checklist focused on official pages, tuition fields, and logo-use review.",
+      desktopHelper: "Custom source verification",
+      desktopLabel: "自定义",
+      key: "e2e-custom-fact-topic",
+      knowledgeQuery: customSourceTopic,
+      mobileHelper: "Custom source",
+      mobileLabel: "自定义",
+      tags: expectedTagsText,
+      topic: customSourceTopic
+    };
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockPcGenerationFixture(page, customPreset, {
+      contentId: E2E_PC_CUSTOM_TOPIC_CONTENT_ID
+    });
+
+    await page.goto(`${BASE_URL}/?theme=mint&tab=content&project=postgraduate-phd`);
+    await expect(page.getByTestId("pc-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("pc-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("pc-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("pc-login-submit").click();
+
+    await expect(page.getByTestId("creation-project-return")).toBeVisible();
+    await expect(page.getByTestId("generation-launcher")).toBeVisible();
+    await page.getByTestId("content-topic").fill(customSourceTopic);
+    await expect(page.getByTestId("content-topic")).toHaveValue(customSourceTopic);
+    await expect(page.getByTestId("content-knowledge-query")).toHaveValue(customSourceTopic);
+    await expect(page.getByTestId("content-target-audience")).toHaveValue(expectedAudience);
+    await expect(page.getByTestId("content-tags")).toHaveValue(expectedTagsText);
+    await expect(page.getByTestId("content-cover-direction-type")).toContainText("自定义");
+
+    await page.getByTestId("source-preview-button").click();
+    await expect(page.getByTestId("generation-source-evidence")).toBeVisible();
+    await page.getByTestId("source-knowledge-toggle").click();
+    await expect(page.getByTestId("source-knowledge-list")).toContainText(customSourceTopic);
+    await page.getByTestId("source-web-toggle").click();
+    await expect(page.getByTestId("source-web-list")).toContainText(customSourceTopic);
+
+    await page.getByTestId("start-production-button").click();
+
+    const exportCard = page.getByTestId("pc-generated-export-card");
+    await expect(exportCard).toBeVisible();
+    await expect(exportCard).toContainText(customSourceTopic);
+    await expect(exportCard).toContainText(expectedAudience);
+    await expect(page.getByTestId("pc-export-copy-button")).toBeEnabled();
+    await expect(page.getByTestId("pc-export-prepublish-check")).toContainText("发布前检查");
+
+    const draftCard = page.getByTestId("draft-history-card").filter({ hasText: customSourceTopic }).first();
+    await expect(page.getByTestId("draft-history-strip")).toBeVisible();
+    await expect(draftCard).toBeVisible();
+    await draftCard.locator("button").first().click();
+
+    const previewModal = page.getByTestId("xhs-preview-modal");
+    await expect(previewModal).toBeVisible();
+    await expect(previewModal).toContainText(customSourceTopic);
+    await expect(previewModal).toContainText(expectedAudience);
+    await expect(previewModal).toContainText(`#${expectedTags[0]}`);
+    await expect(page.getByTestId("xhs-preview-real-cover")).toBeVisible();
+
+    const copyButton = page.getByTestId("pc-preview-modal-copy-button");
+    await copyButton.click();
+    await expect(copyButton).toContainText(/\u5df2\u590d\u5236/);
+
+    expect(generationRequests.providerStatus).toBeGreaterThan(0);
+    expect(generationRequests.contentList).toBeGreaterThan(0);
+    expect(generationRequests.sourcePreview).toHaveLength(1);
+    expect(generationRequests.contentGenerate).toHaveLength(1);
+    expect(generationRequests.imageGenerate).toHaveLength(1);
+    expect(generationRequests.rewrite).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.sourcePreview[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: customSourceTopic,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: expectedAudience,
+      topic: customSourceTopic
+    });
+    expect(generationRequests.contentGenerate[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: customSourceTopic,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: expectedAudience,
+      topic: customSourceTopic
+    });
+    expect(generationRequests.imageGenerate[0]).toMatchObject({
+      aspect_ratio: "3:4",
+      content_id: E2E_PC_CUSTOM_TOPIC_CONTENT_ID,
+      template: "xiaohongshu-cover"
+    });
+    expect(String(generationRequests.imageGenerate[0].style_notes)).not.toContain(
+      requireTopicPreset("source-official-fee-check").coverDirection
+    );
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 
