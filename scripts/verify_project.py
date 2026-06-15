@@ -617,6 +617,8 @@ def validate_frontend_design_contract() -> int:
         ".theme-cyberpunk .workspace-task-row::before",
         ".theme-cyberpunk .workspace-metric-tile::after",
         "pc-shell-grid",
+        ".theme-cyberpunk :is(.pc-shell-status-card, .pc-shell-safety-card, .pc-shell-theme-card, .pc-shell-local-card)::before",
+        ".theme-cyberpunk :is(.pc-shell-status-card, .pc-shell-safety-card, .pc-shell-theme-card, .pc-shell-local-card)::after",
         ".theme-cyberpunk .pc-shell-nav-link[aria-current=\"page\"]",
         "workspace-panel-header",
         ".theme-cyberpunk .workspace-panel::before",

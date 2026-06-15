@@ -706,7 +706,47 @@ li {
 .theme-cyberpunk .pc-shell-safety-card,
 .theme-cyberpunk .pc-shell-theme-card,
 .theme-cyberpunk .pc-shell-local-card {
+  position: relative;
+  overflow: hidden;
+  border-color: rgb(var(--steel) / 0.3);
+  background:
+    linear-gradient(135deg, rgb(var(--moss) / 0.1), transparent 44%),
+    linear-gradient(180deg, rgb(var(--glass) / 0.74), rgb(4 12 28 / 0.58));
+  box-shadow:
+    inset 0 1px 0 rgb(var(--glass-highlight) / 0.16),
+    inset 0 0 0 1px rgb(var(--moss) / 0.04),
+    0 0 28px rgb(var(--steel) / 0.06);
   clip-path: polygon(0 10px, 10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+}
+
+.theme-cyberpunk :is(.pc-shell-status-card, .pc-shell-safety-card, .pc-shell-theme-card, .pc-shell-local-card)::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background:
+    linear-gradient(90deg, rgb(var(--moss) / 0.22), transparent 34%, rgb(var(--steel) / 0.16)),
+    linear-gradient(180deg, transparent 0 46%, rgb(var(--steel) / 0.1) 50%, transparent 54%);
+  background-size: auto, 100% 8px;
+  opacity: 0.34;
+}
+
+.theme-cyberpunk :is(.pc-shell-status-card, .pc-shell-safety-card, .pc-shell-theme-card, .pc-shell-local-card)::after {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 34px;
+  height: 8px;
+  pointer-events: none;
+  content: "";
+  border-top: 1px solid rgb(var(--moss) / 0.64);
+  border-right: 1px solid rgb(var(--steel) / 0.58);
+  opacity: 0.72;
+}
+
+.theme-cyberpunk :is(.pc-shell-status-card, .pc-shell-safety-card, .pc-shell-theme-card, .pc-shell-local-card) > * {
+  position: relative;
+  z-index: 1;
 }
 
 .theme-cyberpunk .pc-shell-nav-link {
