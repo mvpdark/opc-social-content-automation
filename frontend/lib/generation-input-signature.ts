@@ -65,6 +65,7 @@ export function generatedContentInputSignatureMatches(
   record: GeneratedContentInputSignature | null,
   currentSignature: GenerationInputSignature
 ) {
+  // Restored drafts may not have an in-memory signature; only enforce signatures for the same content id.
   return (
     !record ||
     record.contentId !== contentId ||

@@ -1660,7 +1660,10 @@ def validate_content_production_contract() -> int:
         "left.targetAudience === right.targetAudience",
         "left.tone === right.tone",
         "export function generatedContentInputSignatureMatches",
+        "Restored drafts may not have an in-memory signature",
+        "!record ||",
         "record.contentId !== contentId",
+        "generationInputSignaturesMatch(record.signature, currentSignature)",
     ]
     for snippet in generation_input_signature_contract_snippets:
         total += 1
