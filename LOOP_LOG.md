@@ -1709,3 +1709,75 @@ Kept.
 ### Next candidate loop
 
 - Add or refine frontend E2E coverage for topic-aligned copy/preview behavior across another one-click generation topic type, such as route/decision or mentor-matching topics.
+
+## Loop 24 - Cover PC route-topic preview copy alignment
+
+Date: 2026-06-16
+
+### Observation
+
+PC E2E coverage already protected sales, source, and timing topic behavior, but the Loop 23 next candidate still left the route/decision topic family under-covered on desktop. Route topics are a known drift risk because they can be accidentally generated as mentor matching or schedule planning.
+
+### Hypothesis
+
+If the PC one-click E2E flow runs with the `route-main` preset and asserts the selected topic across source preview, generation payloads, cover style notes, draft history, preview, and copy state, then future generic topic drift in the desktop workflow will be caught before shipping.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added an isolated PC route-topic generated content id.
+- Added a PC one-click route-topic E2E case using the existing `route-main` preset.
+- Verified the route topic keeps its audience, tags, knowledge query, cover direction, source evidence, generated requests, preview modal content, copy action, and no-publishing guard aligned.
+- Kept the copy assertion focused on the actual modal success state to avoid waiting on the absent manual-copy fallback when clipboard copy succeeds.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC one-click generation keeps selected route topic aligned through preview copy" --project=chromium
+# 1 passed
+
+npm run e2e
+# 20 passed, 1 skipped
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 24/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 14/15
+- Maintainability: 8/10
+- UX polish: 3/5
+- Total: 89/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The env-backed live login smoke still skips unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+- Mentor-matching desktop generation is still not covered by an explicit PC preview/copy E2E path.
+
+### Next candidate loop
+
+- Add or refine PC E2E coverage for mentor-matching topic alignment, or factor the repeated PC one-click assertions into a focused helper once another topic family is added.
