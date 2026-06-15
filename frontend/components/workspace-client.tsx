@@ -1519,6 +1519,12 @@ function DashboardView({
       value: "强制"
     }
   ];
+  const workspaceHealth = [
+    { icon: KeyRound, label: "模型 Key", state: "设置可查", tone: "blue" as const },
+    { icon: Search, label: "联网检索", state: "按需触发", tone: "green" as const },
+    { icon: ShieldCheck, label: "人工确认", state: "固定开启", tone: "red" as const },
+    { icon: Clipboard, label: "复制发布", state: "手动执行", tone: "amber" as const }
+  ];
 
   return (
     <div className="space-y-5">
@@ -1532,21 +1538,38 @@ function DashboardView({
                   <Pill tone="green">本地预览</Pill>
                   <Pill tone="amber">人工确认</Pill>
                 </div>
-                <h2 className="mt-4 text-2xl font-semibold leading-tight text-ink">
-                  今天要生产什么？
+                <h2 className="mt-4 max-w-3xl text-[2.15rem] font-semibold leading-[1.05] text-ink lg:text-[2.7rem]">
+                  今日工作台
                 </h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
                   选择一个获客目标，系统会把资料、趋势参考、文案、封面和发布检查串成可确认的任务流程。
                 </p>
               </div>
-              <div className="hidden rounded-[18px] border border-line bg-mist/60 px-3 py-2 text-xs leading-5 text-muted md:block">
-                普通用户入口
+              <div className="hidden rounded-md border border-line bg-mist/60 px-3 py-2 text-xs leading-5 text-muted md:block">
+                发布边界
                 <div className="font-medium text-ink">先生成，再确认，再复制</div>
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+              {workspaceHealth.map((item) => (
+                <div
+                  className="flex items-center gap-3 rounded-md border border-line/70 bg-paper/58 px-3 py-2.5"
+                  key={`workspace-health-${item.label}`}
+                >
+                  <IconBox tone={item.tone}>
+                    <item.icon className="h-4 w-4" />
+                  </IconBox>
+                  <div className="min-w-0">
+                    <div className="truncate text-xs font-semibold text-ink">{item.label}</div>
+                    <div className="mt-0.5 text-[11px] text-muted">{item.state}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             <div className="grid grid-cols-1 gap-3 md:grid-cols-[160px_1fr]">
-              <div className="rounded-[18px] border border-line bg-paper/65 p-4">
+              <div className="rounded-md border border-line bg-paper/65 p-4">
                 <div className="text-xs font-medium text-muted">平台</div>
                 <PlatformLabel
                   className="mt-2 text-lg font-semibold text-ink"
@@ -1555,13 +1578,13 @@ function DashboardView({
                   suffix="图文"
                 />
               </div>
-              <div className="rounded-[18px] border border-line bg-paper/65 p-4">
+              <div className="rounded-md border border-line bg-paper/65 p-4">
                 <div className="text-xs font-medium text-muted">主题</div>
                 <div className="mt-2 text-lg font-semibold leading-6 text-ink">
                   硕升博申请第一步
                 </div>
               </div>
-              <div className="rounded-[18px] border border-line bg-paper/65 p-4 md:col-span-2">
+              <div className="rounded-md border border-line bg-paper/65 p-4 md:col-span-2">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div className="text-xs font-medium text-muted">默认风格</div>
                   <span className="text-[11px] text-muted">可在创作项目中细调</span>
@@ -1957,6 +1980,7 @@ function KnowledgeView() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("正在读取知识库...");
   const [selectedItem, setSelectedItem] = useState<KnowledgeItem | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const [portalReady, setPortalReady] = useState(false);
 
@@ -2008,6 +2032,11 @@ function KnowledgeView() {
     setSelectedItem(item);
   }
 
+  function openKnowledgeDetailModal(item: KnowledgeItem) {
+    setSelectedItem(item);
+    setDetailModalOpen(true);
+  }
+
   async function copyKnowledgeItem(item: KnowledgeItem) {
     try {
       await copyText(`${knowledgeItemTitle(item)}\n\n${knowledgeItemContent(item)}`);
@@ -2017,8 +2046,10 @@ function KnowledgeView() {
     }
   }
 
+  const visibleDetailItem = selectedItem ?? items[0] ?? null;
+
   return (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
       <Panel helper="查看已经入库的采集摘要、写作素材和人工确认后的知识条目。" title="知识库">
         <form className="mb-4 grid gap-3 md:grid-cols-[1fr_auto_auto]" onSubmit={submitSearch}>
           <label className="min-w-0">
@@ -2063,11 +2094,15 @@ function KnowledgeView() {
           <Pill tone={items.length ? "green" : "neutral"}>{items.length} 条</Pill>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2" data-testid="knowledge-list">
+        <div className="grid grid-cols-1 gap-2" data-testid="knowledge-list">
           {items.map((item) => (
             <article
               aria-label={`查看知识条目：${knowledgeItemTitle(item)}`}
-              className={`${subtleCardClass} cursor-pointer overflow-hidden p-4 transition hover:border-steel/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss/30`}
+              className={[
+                subtleCardClass,
+                "cursor-pointer overflow-hidden px-4 py-3 transition hover:border-steel/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss/30",
+                visibleDetailItem?.id === item.id ? "border-moss/45 bg-moss/10" : ""
+              ].join(" ")}
               data-testid="knowledge-item"
               key={item.id}
               onClick={() => openKnowledgeItem(item)}
@@ -2080,18 +2115,28 @@ function KnowledgeView() {
               role="button"
               tabIndex={0}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-moss">#{item.id}</p>
-                  <h3 className="mt-1 line-clamp-2 break-words text-sm font-semibold leading-5">{knowledgeItemTitle(item)}</h3>
+              <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-semibold text-moss">#{item.id}</span>
+                    <span className="text-[11px] font-medium text-muted">
+                      {item.match_type === "recent" ? "最近入库" : "检索结果"}
+                    </span>
+                  </div>
+                  <h3 className="mt-1 line-clamp-2 break-words text-sm font-semibold leading-5">
+                    {knowledgeItemTitle(item)}
+                  </h3>
                 </div>
-                <Pill>{knowledgeCategoryLabel(item.category)}</Pill>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Pill>{knowledgeCategoryLabel(item.category)}</Pill>
+                  {typeof item.score === "number" ? (
+                    <Pill tone="green">匹配 {Math.round(item.score * 100)}%</Pill>
+                  ) : (
+                    <Pill tone="neutral">点击看全文</Pill>
+                  )}
+                </div>
               </div>
-              <p className="mt-3 line-clamp-4 break-words text-xs leading-5 text-muted">{knowledgeItemExcerpt(item, 220)}</p>
-              <div className="mt-3 flex items-center justify-between text-[11px] font-medium text-muted">
-                <span>{item.match_type === "recent" ? "最近入库" : "检索结果"}</span>
-                <span>{typeof item.score === "number" ? `匹配 ${Math.round(item.score * 100)}%` : "点击看全文"}</span>
-              </div>
+              <p className="mt-2 line-clamp-2 break-words text-xs leading-5 text-muted">{knowledgeItemExcerpt(item, 180)}</p>
             </article>
           ))}
         </div>
@@ -2103,13 +2148,13 @@ function KnowledgeView() {
         ) : null}
       </Panel>
 
-      {selectedItem && portalReady
+      {detailModalOpen && selectedItem && portalReady
         ? createPortal(
             <div
               aria-modal="true"
               className="fixed inset-0 z-[80] flex items-center justify-center bg-ink/40 p-4 backdrop-blur-md"
               data-testid="pc-knowledge-detail-modal"
-              onClick={() => setSelectedItem(null)}
+              onClick={() => setDetailModalOpen(false)}
               role="dialog"
             >
               <section
@@ -2131,7 +2176,7 @@ function KnowledgeView() {
                     aria-label="关闭知识条目详情"
                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-mist text-muted"
                     data-testid="pc-knowledge-detail-close"
-                    onClick={() => setSelectedItem(null)}
+                    onClick={() => setDetailModalOpen(false)}
                     type="button"
                   >
                     <X className="h-4 w-4" />
@@ -2166,6 +2211,58 @@ function KnowledgeView() {
         : null}
 
       <div className="space-y-4">
+        <Panel
+          action={visibleDetailItem ? <Pill tone="green">可复制</Pill> : <Pill tone="neutral">待选择</Pill>}
+          helper="点击左侧知识条目后，会在这里直接展开正文。"
+          title="知识详情"
+        >
+          {visibleDetailItem ? (
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold text-moss">#{visibleDetailItem.id}</span>
+                <Pill>{knowledgeCategoryLabel(visibleDetailItem.category)}</Pill>
+                {visibleDetailItem.match_type ? (
+                  <Pill tone={visibleDetailItem.match_type === "recent" ? "neutral" : "green"}>
+                    {visibleDetailItem.match_type === "recent" ? "最近入库" : "检索命中"}
+                  </Pill>
+                ) : null}
+              </div>
+              <h3 className="mt-3 break-words text-lg font-semibold leading-7 text-ink">
+                {knowledgeItemTitle(visibleDetailItem)}
+              </h3>
+              <div className="mt-4 max-h-[420px] overflow-y-auto rounded-md border border-line/70 bg-paper/60 p-4">
+                <p className="whitespace-pre-wrap break-words text-sm leading-7 text-ink/82">
+                  {knowledgeItemContent(visibleDetailItem)}
+                </p>
+              </div>
+              <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <button
+                  className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-paper"
+                  onClick={() => void copyKnowledgeItem(visibleDetailItem)}
+                  type="button"
+                >
+                  <Clipboard className="h-4 w-4" />
+                  {copyState === "copied" ? "已复制" : copyState === "failed" ? "复制失败" : "复制条目"}
+                </button>
+                <button
+                  className={`${secondaryButtonClass} h-10 px-4`}
+                  onClick={() => openKnowledgeDetailModal(visibleDetailItem)}
+                  type="button"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  展开详情
+                </button>
+              </div>
+              <p className="mt-3 text-xs leading-5 text-muted">
+                学校、价格、排名、认证等事实仍需回到原始来源核对后再发布。
+              </p>
+            </div>
+          ) : (
+            <div className={`${subtleCardClass} px-4 py-5 text-sm leading-6 text-muted`}>
+              当前没有可预览的知识条目。先从采集页保存知识摘要。
+            </div>
+          )}
+        </Panel>
         <Panel helper="系统默认不跳过的项目规则。" title="入库规则">
           <SafetyGateList />
         </Panel>
@@ -3331,7 +3428,7 @@ function GenerationLauncher({
         helper="一键生成会生成文案并尝试生成封面，不会自动发布；发布前仍需人工确认。"
         title="一键生成图文+封面"
       >
-        <div className="mb-5 overflow-hidden rounded-[26px] border border-steel/35 bg-[linear-gradient(135deg,rgb(var(--steel)/0.13),rgb(var(--moss)/0.10),rgb(var(--glass)/0.42))] p-4 shadow-[inset_0_1px_0_rgb(var(--glass-highlight)/0.52)] lg:p-5">
+        <div className="mb-5 overflow-hidden rounded-md border border-line/80 bg-paper/60 p-4 shadow-[inset_0_1px_0_rgb(var(--glass-highlight)/0.52)] lg:p-5">
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(260px,360px)] xl:items-center">
             <div>
               <Pill
@@ -3365,7 +3462,7 @@ function GenerationLauncher({
               </div>
               <button
                 aria-label={primaryGenerateLabel}
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-ink px-5 text-sm font-semibold text-paper shadow-sm transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-md bg-moss px-5 text-sm font-semibold text-white shadow-sm transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60"
                 data-flow="one-click-generate"
                 data-testid="start-production-button"
                 disabled={!canGenerate}
@@ -3383,7 +3480,7 @@ function GenerationLauncher({
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_400px]">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="block">
               <span className="flex items-center justify-between gap-3 text-xs font-medium text-muted">
@@ -3458,7 +3555,7 @@ function GenerationLauncher({
                       className={[
                         "min-h-[94px] rounded-[16px] border px-3 py-2.5 text-left transition hover:translate-y-[-1px]",
                         selected
-                          ? "border-moss/70 bg-moss/12 shadow-[inset_0_1px_0_rgb(var(--glass-highlight)/0.44)]"
+                          ? "border-moss/70 bg-moss/10 shadow-[inset_0_1px_0_rgb(var(--glass-highlight)/0.44)]"
                           : "border-steel/35 bg-paper/70 hover:border-moss/60 hover:bg-moss/10"
                       ].join(" ")}
                       data-testid={`topic-preset-${preset.key}`}
@@ -3511,7 +3608,7 @@ function GenerationLauncher({
               />
             </label>
             <div
-              className="md:col-span-2 rounded-md border border-moss/25 bg-moss/8 px-3 py-2.5"
+              className="md:col-span-2 rounded-md border border-moss/25 bg-moss/10 px-3 py-2.5"
               data-testid="content-cover-direction-preview"
             >
               <div className="flex items-center justify-between gap-3">
@@ -5294,15 +5391,15 @@ function Panel({
   title: string;
 }) {
   return (
-    <section className={["glass-panel rounded-md border", className].join(" ")}>
-      <div className="flex flex-col gap-3 border-b border-line/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+    <section className={["glass-panel overflow-hidden rounded-md border", className].join(" ")}>
+      <div className="flex flex-col gap-3 border-b border-line/70 bg-paper/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h2 className="text-sm font-semibold leading-5">{title}</h2>
           {helper ? <p className="mt-1 text-xs text-muted">{helper}</p> : null}
         </div>
         {action}
       </div>
-      <div className="p-4">{children}</div>
+      <div className="p-4 lg:p-5">{children}</div>
     </section>
   );
 }

@@ -6,19 +6,19 @@
   --apple-font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
     "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", Arial, sans-serif;
   --ink: 29 29 31;
-  --paper: 245 245 247;
-  --mist: 242 242 247;
-  --line: 210 210 215;
-  --muted: 110 110 115;
-  --moss: 52 199 89;
+  --paper: 247 248 244;
+  --mist: 239 242 235;
+  --line: 210 217 207;
+  --muted: 104 112 105;
+  --moss: 44 151 88;
   --coral: 255 59 48;
   --steel: 0 122 255;
   --amber: 255 159 10;
   --glass: 255 255 255;
-  --glass-strong: 0.72;
-  --glass-panel: 0.68;
-  --glass-control: 0.58;
-  --glass-subtle: 0.46;
+  --glass-strong: 0.82;
+  --glass-panel: 0.74;
+  --glass-control: 0.68;
+  --glass-subtle: 0.54;
   --glass-highlight: 255 255 255;
   --selected-bg: var(--ink);
   --selected-text: 255 255 255;
@@ -27,11 +27,11 @@
 
 .theme-apple {
   --ink: 29 29 31;
-  --paper: 245 245 247;
-  --mist: 242 242 247;
-  --line: 210 210 215;
-  --muted: 110 110 115;
-  --moss: 52 199 89;
+  --paper: 247 248 244;
+  --mist: 239 242 235;
+  --line: 210 217 207;
+  --muted: 104 112 105;
+  --moss: 44 151 88;
   --coral: 255 59 48;
   --steel: 0 122 255;
   --amber: 255 159 10;
@@ -254,8 +254,9 @@ li {
   position: relative;
   isolation: isolate;
   background:
-    linear-gradient(135deg, rgb(var(--steel) / 0.08), transparent 32%),
-    linear-gradient(220deg, rgb(var(--moss) / 0.08), transparent 36%),
+    radial-gradient(circle at 18% 10%, rgb(var(--moss) / 0.11), transparent 30%),
+    radial-gradient(circle at 94% 4%, rgb(var(--steel) / 0.09), transparent 27%),
+    linear-gradient(180deg, rgb(var(--glass) / 0.44), transparent 26%),
     rgb(var(--paper));
 }
 
@@ -266,11 +267,24 @@ li {
   pointer-events: none;
   content: "";
   background-image:
-    linear-gradient(rgb(var(--surface-grid) / 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(var(--surface-grid) / 0.022) 1px, transparent 1px);
-  background-size: 44px 44px;
-  -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.65), transparent 76%);
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.65), transparent 76%);
+    linear-gradient(rgb(var(--surface-grid) / 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--surface-grid) / 0.024) 1px, transparent 1px);
+  background-size: 38px 38px;
+  -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.56), transparent 72%);
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.56), transparent 72%);
+}
+
+.workspace-shell::after {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+  opacity: 0.18;
+  background-image:
+    radial-gradient(circle at 25% 25%, rgb(var(--ink) / 0.09) 0 1px, transparent 1px),
+    radial-gradient(circle at 75% 65%, rgb(var(--moss) / 0.08) 0 1px, transparent 1px);
+  background-size: 18px 18px, 26px 26px;
 }
 
 .workspace-primary-nav {
@@ -293,15 +307,18 @@ li {
 .glass-sidebar,
 .glass-topbar {
   background: rgb(var(--glass) / var(--glass-strong));
-  box-shadow: inset -1px 0 0 rgb(var(--glass-highlight) / 0.5);
+  box-shadow:
+    inset -1px 0 0 rgb(var(--glass-highlight) / 0.48),
+    0 1px 0 rgb(var(--ink) / 0.035);
 }
 
 .glass-panel {
   background: rgb(var(--glass) / var(--glass-panel));
-  border-color: rgb(var(--line) / 0.72);
+  border-color: rgb(var(--line) / 0.74);
   box-shadow:
-    0 18px 45px rgb(var(--ink) / 0.055),
-    inset 0 1px 0 rgb(var(--glass-highlight) / 0.52);
+    0 16px 44px rgb(var(--ink) / 0.045),
+    0 1px 0 rgb(var(--ink) / 0.035),
+    inset 0 1px 0 rgb(var(--glass-highlight) / 0.56);
 }
 
 .glass-control {
@@ -311,16 +328,98 @@ li {
 }
 
 .glass-selected {
-  background: rgb(var(--selected-bg) / 0.92);
+  background: rgb(var(--selected-bg) / 0.9);
   color: rgb(var(--selected-text));
   box-shadow:
-    0 10px 26px rgb(var(--selected-bg) / 0.22),
+    0 10px 28px rgb(var(--selected-bg) / 0.2),
     inset 0 1px 0 rgb(var(--glass-highlight) / 0.2);
 }
 
 .glass-subtle {
   background: rgb(var(--glass) / var(--glass-subtle));
   border-color: rgb(var(--line) / 0.64);
+}
+
+.workspace-shell .glass-panel {
+  border-radius: 10px !important;
+}
+
+.workspace-shell .rounded-\[30px\],
+.workspace-shell .rounded-\[28px\],
+.workspace-shell .rounded-\[26px\],
+.workspace-shell .rounded-\[24px\],
+.workspace-shell .rounded-\[22px\],
+.workspace-shell .rounded-\[20px\],
+.workspace-shell .rounded-\[18px\],
+.workspace-shell .rounded-\[16px\],
+.workspace-shell .rounded-\[14px\] {
+  border-radius: 10px !important;
+}
+
+.workspace-shell .glass-control,
+.workspace-shell .glass-subtle,
+.workspace-shell :where(input, select, textarea) {
+  border-radius: 8px;
+}
+
+.workspace-shell :where(a, button) {
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease,
+    opacity 180ms ease;
+}
+
+.workspace-shell :where(a, button):not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.workspace-shell :where(a, button):not(:disabled):active {
+  transform: translateY(0);
+}
+
+.pc-shell-sidebar {
+  background:
+    linear-gradient(180deg, rgb(var(--glass) / 0.9), rgb(var(--glass) / 0.7)),
+    rgb(var(--paper));
+}
+
+.pc-shell-topbar {
+  background:
+    linear-gradient(180deg, rgb(var(--glass) / 0.88), rgb(var(--glass) / 0.74));
+}
+
+.pc-content-frame {
+  min-height: calc(100vh - 76px);
+}
+
+.workspace-shell .shadow-panel {
+  box-shadow:
+    0 1px 0 rgb(var(--ink) / 0.04),
+    0 18px 48px rgb(var(--ink) / 0.055);
+}
+
+.workspace-shell table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.workspace-shell thead {
+  background: rgb(var(--mist) / 0.62);
+}
+
+.workspace-shell tbody tr {
+  transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.workspace-shell tbody tr:hover {
+  background: rgb(var(--moss) / 0.055);
+}
+
+.workspace-shell :where(th, td) {
+  border-color: rgb(var(--line) / 0.74);
 }
 
 .theme-graphite .bg-white,

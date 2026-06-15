@@ -313,7 +313,9 @@ export function TrendCollectorPanel({
     ? "先填关键词"
     : isPollingJob
       ? "采集中"
-      : "开始采集";
+      : sourcesReviewed
+        ? "继续采集下一批"
+        : "开始采集";
   const saveDigestLabel = !canSubmit
     ? "先填关键词"
     : !sourcesReviewed
@@ -632,7 +634,7 @@ export function TrendCollectorPanel({
       }
       const data = (await response.json()) as { knowledge_id: number; item_count: number };
       setStatusText(
-        `知识条目 #${data.knowledge_id} 已由 ${data.item_count} 条素材生成。`
+        `知识条目 #${data.knowledge_id} 已由 ${data.item_count} 条素材生成。可继续采集下一批，也可以去知识库查看摘要。`
       );
     } catch (error) {
       setStatusText(error instanceof Error ? error.message : "知识摘要生成失败。");
@@ -642,15 +644,20 @@ export function TrendCollectorPanel({
   }
 
   return (
-    <section className="glass-panel rounded-md border">
-      <div className="border-b border-line/70 px-4 py-3">
-        <h2 className="text-sm font-semibold leading-5">平台研究采集</h2>
-        <p className="text-xs text-muted">
+    <section className="glass-panel overflow-hidden rounded-md border shadow-panel">
+      <div className="flex flex-col gap-2 border-b border-line/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-sm font-semibold leading-5">平台研究采集</h2>
+          <p className="mt-1 text-xs text-muted">
           公开优先、图文限定、人工确认后再入知识库。
-        </p>
+          </p>
+        </div>
+        <span className="rounded-md border border-moss/30 bg-moss/10 px-2 py-1 text-xs font-medium text-ink">
+          可连续采集
+        </span>
       </div>
 
-      <div className="grid grid-cols-1 divide-y divide-line xl:grid-cols-[1.1fr_0.9fr] xl:divide-x xl:divide-y-0">
+      <div className="grid grid-cols-1 divide-y divide-line xl:grid-cols-[380px_minmax(0,1fr)] xl:divide-x xl:divide-y-0">
         <div className="px-4 py-4">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="block">
@@ -756,6 +763,12 @@ export function TrendCollectorPanel({
               </span>
             </span>
           </label>
+
+          {sourcesReviewed ? (
+            <div className="mt-3 rounded-md border border-moss/35 bg-moss/10 px-3 py-2 text-xs leading-5 text-ink">
+              本批来源已人工确认：现在可以保存知识摘要；需要补素材时，直接点击“继续采集下一批”，不会自动发布任何内容。
+            </div>
+          ) : null}
 
           <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
             <button

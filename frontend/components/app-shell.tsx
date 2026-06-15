@@ -2,9 +2,12 @@
 
 import type React from "react";
 import {
+  Bell,
+  HelpCircle,
   LogOut,
   Palette,
   PenLine,
+  Search,
   Settings,
   ShieldCheck,
   Smartphone,
@@ -62,22 +65,22 @@ export function AppShell({
 
   return (
     <main className={`theme-${interfaceStyle} workspace-shell min-h-screen text-ink`}>
-      <div className="relative z-10 grid min-h-screen grid-cols-1 xl:grid-cols-[252px_1fr]">
-        <aside className="glass-sidebar border-b border-line xl:border-b-0 xl:border-r">
-          <div className="flex h-[72px] items-center border-b border-line px-5 py-4 xl:px-6">
+      <div className="relative z-10 grid min-h-screen grid-cols-1 xl:grid-cols-[232px_minmax(0,1fr)]">
+        <aside className="glass-sidebar pc-shell-sidebar border-b border-line xl:sticky xl:top-0 xl:h-screen xl:border-b-0 xl:border-r">
+          <div className="flex h-[76px] items-center border-b border-line px-5 py-4 xl:px-5">
             <img
               alt=""
-              className="h-10 w-10 rounded-md object-cover shadow-[0_10px_24px_rgba(37,99,235,0.18)]"
+              className="h-10 w-10 rounded-md object-cover shadow-[0_10px_24px_rgb(var(--moss)/0.18)]"
               src="/app-icon.png"
             />
             <div className="ml-3">
-              <div className="text-base font-semibold leading-5">OPC</div>
-              <div className="text-xs text-muted">AI 任务执行平台</div>
+              <div className="text-base font-semibold leading-5">OMPC工作站</div>
+              <div className="text-xs text-muted">社媒内容自动化</div>
             </div>
           </div>
           <nav
             aria-label="工作台主导航"
-            className="workspace-primary-nav flex gap-1 overflow-x-auto p-3 xl:block xl:p-4"
+            className="workspace-primary-nav flex gap-1 overflow-x-auto p-3 xl:block xl:p-3"
           >
             {navigation.map((item) => {
               const active = item.id === activeTab;
@@ -147,13 +150,38 @@ export function AppShell({
         </aside>
 
         <section className="min-w-0">
-          <header className="glass-topbar border-b border-line px-5 py-4 lg:px-6">
-            <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
-              <div>
-                <h1 className="text-xl font-semibold leading-7">{activeMeta.title}</h1>
-                {showHelperText ? <p className="text-xs text-muted">{activeMeta.description}</p> : null}
+          <header className="glass-topbar pc-shell-topbar sticky top-0 z-20 border-b border-line px-5 py-4 lg:px-6">
+            <div className="mx-auto grid max-w-[1560px] gap-4 xl:grid-cols-[minmax(220px,0.72fr)_minmax(440px,1fr)_auto] xl:items-center">
+              <div className="min-w-0">
+                <div className="text-[11px] font-semibold text-moss">OPC SOCIAL AUTOMATION</div>
+                <h1 className="mt-1 text-xl font-semibold leading-7">{activeMeta.title}</h1>
+                {showHelperText ? <p className="mt-1 text-xs text-muted">{activeMeta.description}</p> : null}
               </div>
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+              <nav
+                aria-label="桌面快捷导航"
+                className="hidden min-w-0 items-center justify-center gap-1 rounded-md border border-line/70 bg-paper/54 p-1 shadow-[inset_0_1px_0_rgb(var(--glass-highlight)/0.44)] xl:flex"
+              >
+                {navigation.map((item) => {
+                  const active = item.id === activeTab;
+                  return (
+                    <a
+                      aria-current={active ? "page" : undefined}
+                      className={[
+                        "inline-flex h-9 min-w-0 items-center gap-2 rounded-md px-3 text-sm font-medium transition",
+                        active
+                          ? "bg-moss text-white shadow-sm"
+                          : "text-muted hover:bg-mist/80 hover:text-ink"
+                      ].join(" ")}
+                      href={tabHref(item.id)}
+                      key={`top-${item.id}`}
+                    >
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                    </a>
+                  );
+                })}
+              </nav>
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-end">
                 {showHelperText ? (
                   <div className="hidden xl:flex">
                     <div className="glass-control inline-flex h-8 items-center gap-2 rounded-md border px-2.5 text-xs font-medium text-muted">
@@ -163,6 +191,27 @@ export function AppShell({
                   </div>
                 ) : null}
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <a
+                    className="glass-control hidden h-9 min-w-[190px] items-center gap-2 rounded-md border px-3 text-sm font-medium text-muted transition hover:text-ink md:flex"
+                    href={tabHref("knowledge")}
+                  >
+                    <Search className="h-4 w-4 shrink-0" />
+                    <span className="truncate">去知识库搜索</span>
+                  </a>
+                  <a
+                    aria-label="查看发布安全规则"
+                    className="glass-control hidden h-9 w-9 items-center justify-center rounded-md border text-muted transition hover:text-ink lg:flex"
+                    href={tabHref("settings")}
+                  >
+                    <HelpCircle className="h-4 w-4" />
+                  </a>
+                  <a
+                    aria-label="查看发布助手"
+                    className="glass-control hidden h-9 w-9 items-center justify-center rounded-md border text-muted transition hover:text-ink lg:flex"
+                    href={tabHref("delivery")}
+                  >
+                    <Bell className="h-4 w-4" />
+                  </a>
                   {accountLabel ? (
                     <div className="glass-control flex h-9 max-w-[180px] items-center gap-2 rounded-md border px-3 text-xs font-medium text-muted">
                       <UserRound className="h-3.5 w-3.5 shrink-0 text-steel" />
@@ -209,7 +258,7 @@ export function AppShell({
               </div>
             </div>
           </header>
-          <div className="p-4 lg:p-6">{children}</div>
+          <div className="pc-content-frame mx-auto max-w-[1560px] p-4 lg:p-6">{children}</div>
         </section>
       </div>
     </main>
