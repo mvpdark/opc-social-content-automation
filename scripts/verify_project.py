@@ -1515,6 +1515,34 @@ def validate_content_production_contract() -> int:
         if snippet not in e2e_text:
             raise SystemExit(f"Missing custom topic E2E contract: {snippet}")
 
+    mobile_stale_draft_contracts = [
+        (
+            mobile_create_text,
+            [
+                "staleMobileDraftMessage",
+                'data-testid="mobile-stale-draft-warning"',
+                "当前已打开草稿是",
+                "activeContentId={generatedContentMatchesCurrentInputs ? generatedContent?.id ?? null : null}",
+            ],
+            "mobile stale draft warning",
+        ),
+        (
+            e2e_text,
+            [
+                "mobile-stale-draft-warning",
+                "mentor matching checklist for part-time doctoral applicants",
+                "toContainText(customSourceTopic)",
+                "toContainText(nextCustomTopic)",
+            ],
+            "mobile stale draft E2E",
+        ),
+    ]
+    for text, snippets, contract_name in mobile_stale_draft_contracts:
+        for snippet in snippets:
+            total += 1
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
+
     topic_preset_contract_snippets = [
         "export const generationTopicPresets",
         "TOPIC_PRESET_ROTATION_SIZE",

@@ -175,6 +175,12 @@ export function CreateScreen({
         currentMobileGenerationInputSignature
       )
   );
+  const staleMobileDraftMessage =
+    generatedContent && !generatedContentMatchesCurrentInputs
+      ? generatedContent.title === topic.trim()
+        ? "当前草稿的检索依据或标签已不是当前输入，复制前请重新生成。"
+        : `当前已打开草稿是“${generatedContent.title}”，不是当前选题“${topic.trim()}”，复制前请重新生成。`
+      : null;
   const matchingMobileSourceContext = sourceContextMatchesKnowledgeQuery(sourceContext, generationKnowledgeQuery)
     ? sourceContext
     : null;
@@ -1331,13 +1337,21 @@ export function CreateScreen({
             </div>
           </div>
         ) : null}
+        {staleMobileDraftMessage ? (
+          <div
+            className="mt-3 rounded-[18px] border border-[#ffcfda] bg-[#fff4f6] px-3 py-2 text-xs font-bold leading-5 text-[#a2152c]"
+            data-testid="mobile-stale-draft-warning"
+          >
+            {staleMobileDraftMessage}
+          </div>
+        ) : null}
         <p className="mt-2 text-[11px] leading-5 text-muted">
           会先生成文案，再自动生成封面图；不会自动发布。
         </p>
       </MobilePanel>
 
       <DraftHistoryCarousel
-        activeContentId={generatedContent?.id ?? null}
+        activeContentId={generatedContentMatchesCurrentInputs ? generatedContent?.id ?? null : null}
         items={draftHistory}
         onLongPress={beginDraftSelection}
         onOpen={openOrToggleDraftHistoryItem}

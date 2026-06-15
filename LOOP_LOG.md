@@ -2945,3 +2945,76 @@ Kept. Mobile one-click generation now has runtime E2E protection for successful 
 ### Next candidate loop
 
 - Continue draft completeness/checklist normalization, or add coverage for mobile custom-topic stale-draft invalidation after topic edits.
+
+## Loop 41 - Mobile stale draft warning
+
+Date: 2026-06-16
+
+### Observation
+
+Mobile generation already computed whether the current generated content still matched the active topic, tags, platform, source query, and generation signature. However, when a user edited the topic after generating a draft, the UI did not clearly tell them that the opened draft was now stale, and the draft history card could still look like the active current draft.
+
+### Hypothesis
+
+If the mobile create screen surfaces a stale-draft warning and only marks a draft history card active when it matches current inputs, then users are less likely to copy or trust an old draft after changing topics.
+
+### Patch
+
+Files changed:
+
+- `frontend/components/mobile-create-screen.tsx`
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added `staleMobileDraftMessage` for mobile drafts that no longer match the active topic/query/tags/signature.
+- Displayed a mobile warning telling the user to regenerate before copying stale content.
+- Stopped marking a draft history item as active unless it still matches the current inputs.
+- Extended the mobile custom-topic E2E to generate, copy, change the topic, and assert the stale warning mentions both the old draft and new topic.
+- Added fast contract checks for the mobile stale-draft warning and E2E coverage.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile one-click generation keeps custom fact topic aligned" --project=chromium
+# passed: 1 passed
+
+python scripts\verify_project.py --keep-cache
+# passed
+# content_production_contract_checked=992
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 24/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 92/100
+
+### Result
+
+Kept. Mobile now explicitly warns when the current draft is stale after topic/input edits, while preserving draft history access and the no-automated-publishing boundary.
+
+### Remaining risk
+
+- This warns users but does not block manual opening/copying of older draft history items; draft history intentionally remains available.
+- Broader draft completeness/checklist normalization is still pending.
+
+### Next candidate loop
+
+- Continue draft completeness/checklist normalization, especially structured warning/checklist handling for model output.

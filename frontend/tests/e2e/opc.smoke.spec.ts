@@ -1206,6 +1206,13 @@ test.describe("OPC smoke coverage", () => {
     expect(manualCopyText).toContain(customSourceTopic);
     expect(manualCopyText).toContain(`#${expectedTags[0]}`);
 
+    await page.getByTestId("draft-preview-close").click();
+    const nextCustomTopic = "mentor matching checklist for part-time doctoral applicants";
+    await page.getByTestId("mobile-topic").fill(nextCustomTopic);
+    await expect(page.getByTestId("mobile-stale-draft-warning")).toContainText(customSourceTopic);
+    await expect(page.getByTestId("mobile-stale-draft-warning")).toContainText(nextCustomTopic);
+    await expect(page.getByTestId("mobile-generate-draft")).toContainText("一键");
+
     expect(generationRequests.sourcePreview).toHaveLength(1);
     expect(generationRequests.contentGenerate).toHaveLength(1);
     expect(generationRequests.imageGenerate).toHaveLength(1);
