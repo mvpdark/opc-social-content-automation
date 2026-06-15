@@ -1781,3 +1781,74 @@ Kept.
 ### Next candidate loop
 
 - Add or refine PC E2E coverage for mentor-matching topic alignment, or factor the repeated PC one-click assertions into a focused helper once another topic family is added.
+
+## Loop 25 - Cover PC mentor-topic preview copy alignment
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 24 added desktop route/decision topic coverage, but mentor-matching topics still had no explicit PC one-click generation path. Mobile E2E covered mentor failure/review cases, yet desktop success coverage could still drift from mentor matching into route planning, timing, or ranking language without a direct regression guard.
+
+### Hypothesis
+
+If the PC one-click E2E flow runs with the `mentor-direction-check` preset and asserts the selected mentor topic through source preview, generation payloads, cover style notes, draft history, preview, and copy state, then desktop mentor-topic drift will be caught while preserving the no-automated-publishing boundary.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added an isolated PC mentor-topic generated content id.
+- Added a PC one-click mentor-topic E2E case using the existing `mentor-direction-check` preset.
+- Verified the mentor topic keeps its audience, tags, knowledge query, cover direction, source evidence, generated requests, preview modal content, copy action, and no-publishing guard aligned.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC one-click generation keeps selected mentor topic aligned through preview copy" --project=chromium
+# 1 passed
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run e2e
+# 21 passed, 1 skipped
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 23/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 14/15
+- Maintainability: 7/10
+- UX polish: 3/5
+- Total: 87/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The env-backed live login smoke still skips unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+- PC topic-alignment E2E now has repeated success-flow assertions; a future loop can factor those into a helper before adding more desktop topic families.
+
+### Next candidate loop
+
+- Refactor repeated PC one-click topic-alignment E2E steps into a helper, then keep sales, route, and mentor coverage as concise scenario calls.
