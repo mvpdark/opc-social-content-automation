@@ -1130,3 +1130,74 @@ Kept.
 ### Next candidate loop
 
 - Add or tighten coverage for the publishing checklist / manual-review state after generated drafts so the UI keeps the distinction between draft copy and final human submission explicit.
+
+## Loop 16 - Keep PC export checklist visible after generation
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 15 left the PC publishing checklist/manual-review state as the next candidate. While adding E2E assertions for the generated export card, the new check exposed a real regression: after a successful PC one-click generation, the draft was saved to history, but the active export card stayed in the placeholder state because the generated-content input signature did not match the current form.
+
+### Hypothesis
+
+The request payload used the platform-enhanced generation tone, while the current-form signature used the visible raw tone. If both paths share the same generation tone, the newly generated draft should remain matched to the current inputs and the PC export card should show copy, cover, and publishing checklist controls immediately after generation.
+
+### Patch
+
+Files changed:
+
+- `frontend/components/workspace-client.tsx`
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+
+Summary:
+
+- Reused one `generationTone` value for both the generation request payload and the current input signature.
+- Added stable test IDs around the PC generated export card, copy action, publishing checklist, cover review reminder, and cover card.
+- Extended the PC success E2E to verify the export card appears immediately after generation, the copy action is enabled, the content is still manual-copy only, the publishing checklist is visible, high-risk promise wording is checked, cover review remains required, and cover output is not treated as automatic publishing.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed from frontend/
+
+npm run e2e -- --grep "PC one-click generation keeps selected sales topic aligned through preview copy"
+# 1 passed from frontend/
+
+npm run e2e
+# 16 passed, 1 skipped from frontend/
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run build
+# passed from frontend/
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 28/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 96/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The env-backed live login smoke still skips unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+- The PC export card is now covered after successful generation; future loops can add the same manual-review checklist assertions to mobile success paths or expand checklist schema validation.
+
+### Next candidate loop
+
+- Add a mobile success-path assertion for the same manual-review/export distinction so both PC and phone flows prove that copying remains separate from final human publishing.

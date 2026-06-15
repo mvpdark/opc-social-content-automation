@@ -2927,12 +2927,13 @@ function GenerationLauncher({
   const selectedPlatform: PlatformId = platform === "douyin" ? "douyin" : "xiaohongshu";
   const selectedTopicPreset = findGenerationTopicPresetByTopic(topic);
   const hasTopic = topic.trim().length > 0;
+  const generationTone = buildGenerationTone(tone, platform, styleOptions);
   const currentGenerationInputSignature = buildGenerationInputSignature({
     knowledgeQuery,
     platform: selectedPlatform,
     tagsText,
     targetAudience,
-    tone,
+    tone: generationTone,
     topic
   });
   const coverDirectionPreviewLabel = selectedTopicPreset?.desktopLabel ?? (hasTopic ? "自定义" : "待选择");
@@ -3273,7 +3274,7 @@ function GenerationLauncher({
       platform,
       topic: topic.trim(),
       knowledge_query: knowledgeQuery.trim() || undefined,
-      tone: buildGenerationTone(tone, platform, styleOptions),
+      tone: generationTone,
       target_audience: targetAudience.trim() || undefined,
       knowledge_limit: 5,
       tags: parseTagText(tagsText)
@@ -4040,7 +4041,7 @@ function GeneratedPostExportCard({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4">
+    <div className="grid grid-cols-1 gap-4" data-testid="pc-generated-export-card">
       <div className={`${subtleCardClass} p-4`}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -4065,6 +4066,7 @@ function GeneratedPostExportCard({
             </button>
             <button
               className="flex h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-60"
+              data-testid="pc-export-copy-button"
               disabled={!canCopy}
               onClick={handleCopy}
               type="button"
@@ -4097,7 +4099,7 @@ function GeneratedPostExportCard({
         </p>
       </div>
 
-      <div className={`${subtleCardClass} p-4`}>
+      <div className={`${subtleCardClass} p-4`} data-testid="pc-export-prepublish-check">
         <div className="flex items-center gap-2 text-sm font-semibold">
           {warnings.length || testDraft ? (
             <AlertTriangle className="h-4 w-4 text-amber" />
@@ -4121,7 +4123,10 @@ function GeneratedPostExportCard({
               未发现保录、包过、内部名额等高风险承诺词。
             </div>
           )}
-          <div className="rounded-md border border-line bg-paper p-3">
+          <div
+            className="rounded-md border border-line bg-paper p-3"
+            data-testid="pc-export-cover-review-check"
+          >
             封面图生成后仍需人工复核；不要使用假录取通知、校徽或保证录取视觉。
           </div>
           {copyState === "failed" && !testDraft ? (
@@ -4143,7 +4148,7 @@ function GeneratedPostExportCard({
         </div>
       </div>
 
-      <div className={`${subtleCardClass} p-4`}>
+      <div className={`${subtleCardClass} p-4`} data-testid="pc-export-cover-card">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
             <div className="flex items-center gap-2 text-sm font-semibold">

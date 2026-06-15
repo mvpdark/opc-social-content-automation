@@ -805,6 +805,23 @@ test.describe("OPC smoke coverage", () => {
     await page.getByTestId("start-production-button").click();
     await expect(page.getByText(/文案和封面图已生成/)).toBeVisible();
 
+    const exportCard = page.getByTestId("pc-generated-export-card");
+    await expect(exportCard).toBeVisible();
+    await expect(exportCard).toContainText(
+      "复制内容包含标题、正文和话题标签；不会自动发布，粘贴到小红书前仍需人工看一遍。"
+    );
+    await expect(page.getByTestId("pc-export-copy-button")).toBeEnabled();
+    await expect(page.getByTestId("pc-export-prepublish-check")).toContainText("发布前检查");
+    await expect(page.getByTestId("pc-export-prepublish-check")).toContainText(
+      "未发现保录、包过、内部名额等高风险承诺词。"
+    );
+    await expect(page.getByTestId("pc-export-cover-review-check")).toContainText(
+      "封面图生成后仍需人工复核"
+    );
+    await expect(page.getByTestId("pc-export-cover-card")).toContainText(
+      "生成后只是待确认素材，不会自动发布。"
+    );
+
     const draftCard = page.getByTestId("draft-history-card").filter({ hasText: preset.topic }).first();
     await expect(page.getByTestId("draft-history-strip")).toBeVisible();
     await expect(draftCard).toBeVisible();
