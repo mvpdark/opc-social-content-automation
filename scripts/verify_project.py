@@ -667,6 +667,17 @@ def validate_frontend_design_contract() -> int:
         if snippet not in app_shell_text:
             raise SystemExit(f"Missing app shell login contract snippet: {snippet}")
 
+    pc_topbar_overflow_contract_snippets = [
+        "xl:grid-cols-[minmax(180px,220px)_minmax(0,1fr)_auto]",
+        "flex min-w-0 flex-col gap-3",
+        "flex min-w-0 flex-wrap items-center justify-end",
+        "hover:text-ink 2xl:flex",
+        "max-w-[140px]",
+    ]
+    for snippet in pc_topbar_overflow_contract_snippets:
+        if snippet not in app_shell_text:
+            raise SystemExit(f"Missing PC topbar overflow guard: {snippet}")
+
     one_click_entry_contracts = [
         (app_shell_text, ["创作项目"], "topbar creation project entry"),
         (
@@ -1147,7 +1158,15 @@ def validate_content_production_contract() -> int:
     settings_access_contracts = [
         (
             workspace_text,
-            ["placeholder: \"未开启时留空\"", "? (localFilled ? \"已填写\" : \"未开启\")"],
+            [
+                "placeholder: \"未开启时留空\"",
+                "? (localFilled ? \"已填写\" : \"未开启\")",
+                'data-testid="settings-console-overview"',
+                'data-testid="settings-router-status"',
+                "AI Key 与安全控制台",
+                "Model Router 状态",
+                "页面只展示保存状态，不显示敏感内容。",
+            ],
             "PC access protection settings copy",
         ),
         (

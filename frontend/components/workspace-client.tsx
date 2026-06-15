@@ -4547,7 +4547,10 @@ function SettingsView({
 
   return (
     <div className="space-y-4">
-      <section className="glass-panel overflow-hidden rounded-md border">
+      <section
+        className="glass-panel overflow-hidden rounded-md border"
+        data-testid="settings-console-overview"
+      >
         <div className="grid gap-5 p-4 lg:grid-cols-[1fr_340px] lg:p-5">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -4702,7 +4705,7 @@ function SettingsView({
                 联网 {providerBindings.webSearch ? "已保存" : "未配置"}
               </Pill>
             </div>
-            <div className="mt-4 overflow-hidden rounded-md border border-line">
+            <div className="mt-4 overflow-hidden rounded-md border border-line" data-testid="settings-router-status">
               <div className="flex items-center justify-between gap-3 border-b border-line bg-paper/40 px-3 py-2">
                 <div className="text-xs font-semibold text-ink">Model Router 状态</div>
                 <Pill tone={providerStatuses.length ? "green" : "amber"}>
