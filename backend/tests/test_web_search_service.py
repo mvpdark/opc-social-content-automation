@@ -28,6 +28,10 @@ def test_topic_needs_live_web_search_for_ranking_topic() -> None:
     assert topic_needs_live_web_search("海外博士价格怎么对比", ["海外博士"]) is True
     assert topic_needs_live_web_search("博士项目官方来源怎么查", ["来源核验"]) is True
     assert topic_needs_live_web_search("海外博士来源核验清单", ["官网核验"]) is True
+    assert topic_needs_live_web_search(
+        "海外博士官方来源和费用怎么查",
+        ["海外博士", "官方来源", "官网核验", "学费费用", "认证政策"],
+    ) is True
     assert topic_needs_live_web_search("博士项目费用页怎么核验", ["海外博士"]) is True
     assert topic_needs_live_web_search("学校官网学费表怎么查", ["博士项目"]) is True
     assert topic_needs_live_web_search("Global water resources PhD rankings", ["PhD programs"]) is True
@@ -79,6 +83,11 @@ def test_build_tavily_query_preserves_logo_and_price_intent() -> None:
         "xiaohongshu",
         ["official sources"],
     )
+    official_fee_query = build_tavily_query(
+        "海外博士官方来源和费用怎么查",
+        "xiaohongshu",
+        ["海外博士", "官方来源", "官网核验", "学费费用", "认证政策"],
+    )
     english_policy_query = build_tavily_query(
         "doctoral program accreditation recognition policy",
         "xiaohongshu",
@@ -97,6 +106,10 @@ def test_build_tavily_query_preserves_logo_and_price_intent() -> None:
     assert "认证" in accreditation_query
     assert "政策" in accreditation_query
     assert "tuition fees total cost" in english_tuition_query
+    assert "海外博士官方来源和费用怎么查" in official_fee_query
+    assert "official sources" in official_fee_query
+    assert "tuition fees" in official_fee_query
+    assert "official accreditation policy" in official_fee_query
     assert "official accreditation policy" in english_policy_query
 
 
