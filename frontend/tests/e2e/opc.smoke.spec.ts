@@ -15,6 +15,7 @@ const E2E_GENERATED_CONTENT_ID = 8801;
 const E2E_COVER_FAILURE_CONTENT_ID = 8802;
 const E2E_CONTENT_FAILURE_CONTENT_ID = 8803;
 const E2E_MOBILE_SOURCE_PREVIEW_FAILURE_CONTENT_ID = 8804;
+const E2E_MOBILE_CUSTOM_SOURCE_PREVIEW_FAILURE_CONTENT_ID = 8805;
 const E2E_PC_GENERATED_CONTENT_ID = 8901;
 const E2E_PC_CONTENT_FAILURE_CONTENT_ID = 8902;
 const E2E_PC_COVER_FAILURE_CONTENT_ID = 8903;
@@ -24,6 +25,7 @@ const E2E_PC_MENTOR_TOPIC_CONTENT_ID = 8906;
 const E2E_PC_TIMELINE_TOPIC_CONTENT_ID = 8907;
 const E2E_PC_SOURCE_TOPIC_CONTENT_ID = 8908;
 const E2E_PC_SOURCE_PREVIEW_FAILURE_CONTENT_ID = 8909;
+const E2E_PC_CUSTOM_SOURCE_PREVIEW_FAILURE_CONTENT_ID = 8910;
 const E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID = 8911;
 const E2E_MOBILE_REVIEW_CHANGES_CONTENT_ID = 8912;
 
@@ -976,6 +978,57 @@ test.describe("OPC smoke coverage", () => {
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 
+  test("mobile custom fact topic source preview failure blocks generation without false draft", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const acceptedLogin = createLoginInput();
+    const customSourceTopic = "official tuition fees and logo verification for overseas doctoral programs";
+    const preset = requireTopicPreset("source-official-fee-check");
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockMobileGenerationFixture(page, preset, {
+      contentId: E2E_MOBILE_CUSTOM_SOURCE_PREVIEW_FAILURE_CONTENT_ID,
+      failSourcePreview: true
+    });
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=create`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+    await page.getByTestId("mobile-creation-project-postgraduate-phd").click();
+
+    await page.getByTestId("mobile-topic").fill(customSourceTopic);
+    await expect(page.getByTestId("mobile-topic")).toHaveValue(customSourceTopic);
+    await expect(page.getByTestId("mobile-audience")).toHaveValue(new RegExp(customSourceTopic));
+    await expect(page.getByTestId("mobile-tags")).toHaveValue(customSourceTopic);
+    const customAudience = await page.getByTestId("mobile-audience").inputValue();
+    const customTags = await page.getByTestId("mobile-tags").inputValue();
+    const expectedTags = parseTagText(customTags);
+
+    await page.getByTestId("mobile-source-preview-button").click();
+    await expect(page.getByTestId("mobile-source-evidence")).toContainText(
+      "E2E mobile source preview unavailable."
+    );
+    await expect(page.getByTestId("mobile-generate-draft")).toBeDisabled();
+    await expect(page.getByTestId("mobile-generate-draft")).toContainText("先重新查看依据");
+    await expect(
+      page.getByTestId(`mobile-draft-history-card-${E2E_MOBILE_CUSTOM_SOURCE_PREVIEW_FAILURE_CONTENT_ID}`)
+    ).toHaveCount(0);
+
+    expect(generationRequests.sourcePreview).toHaveLength(1);
+    expect(generationRequests.contentGenerate).toHaveLength(0);
+    expect(generationRequests.imageGenerate).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.sourcePreview[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: customSourceTopic,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: customAudience,
+      topic: customSourceTopic
+    });
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
   test("mobile preserves draft when cover generation fails", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const acceptedLogin = createLoginInput();
@@ -1308,6 +1361,61 @@ test.describe("OPC smoke coverage", () => {
       tags: expectedTags,
       target_audience: preset.audience,
       topic: preset.topic
+    });
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("PC custom fact topic source preview failure blocks generation without false draft", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const acceptedLogin = createLoginInput();
+    const customSourceTopic = "official tuition fees and logo verification for overseas doctoral programs";
+    const preset = requireTopicPreset("source-official-fee-check");
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockPcGenerationFixture(page, preset, {
+      contentId: E2E_PC_CUSTOM_SOURCE_PREVIEW_FAILURE_CONTENT_ID,
+      failSourcePreview: true
+    });
+
+    await page.goto(`${BASE_URL}/?theme=mint&tab=content&project=postgraduate-phd`);
+    await expect(page.getByTestId("pc-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("pc-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("pc-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("pc-login-submit").click();
+
+    await expect(page.getByTestId("creation-project-return")).toBeVisible();
+    await expect(page.getByTestId("generation-launcher")).toBeVisible();
+    await page.getByTestId("content-topic").fill(customSourceTopic);
+    await expect(page.getByTestId("content-topic")).toHaveValue(customSourceTopic);
+    await expect(page.getByTestId("content-knowledge-query")).toHaveValue(customSourceTopic);
+    await expect(page.getByTestId("content-target-audience")).toHaveValue(new RegExp(customSourceTopic));
+    await expect(page.getByTestId("content-tags")).toHaveValue(customSourceTopic);
+    const customAudience = await page.getByTestId("content-target-audience").inputValue();
+    const customTags = await page.getByTestId("content-tags").inputValue();
+    const expectedTags = parseTagText(customTags);
+
+    await page.getByTestId("source-preview-button").click();
+    await expect(page.getByTestId("generation-source-evidence")).toContainText(
+      "E2E source preview unavailable."
+    );
+    await expect(page.getByTestId("source-preview-button")).toBeEnabled();
+    await expect(page.getByTestId("start-production-button")).toBeDisabled();
+    await expect(page.getByTestId("start-production-button")).toContainText("先重新查看依据");
+    await expect(page.getByTestId("draft-history-card")).toHaveCount(0);
+
+    expect(generationRequests.providerStatus).toBeGreaterThan(0);
+    expect(generationRequests.contentList).toBeGreaterThan(0);
+    expect(generationRequests.sourcePreview).toHaveLength(1);
+    expect(generationRequests.contentGenerate).toHaveLength(0);
+    expect(generationRequests.imageGenerate).toHaveLength(0);
+    expect(generationRequests.rewrite).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.sourcePreview[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: customSourceTopic,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: customAudience,
+      topic: customSourceTopic
     });
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });

@@ -112,6 +112,7 @@ import {
   buildCustomTopicTags,
   buildTopicCoverStyleNotes,
   findGenerationTopicPresetByTopic,
+  generationTopicRequiresSourceEvidence,
   isKnownGenerationTopicAudience,
   isKnownGenerationTopicKnowledgeQuery,
   isKnownGenerationTopicTags,
@@ -2962,7 +2963,12 @@ function GenerationLauncher({
     draftCheckStatus && draftCheckStatus.status !== "ok"
   );
   const draftProviderBlocked = draftProviderMissing || draftProviderCheckFailed;
-  const sourceEvidenceRequired = Boolean(selectedTopicPreset?.key.startsWith("source-"));
+  const sourceEvidenceRequired = generationTopicRequiresSourceEvidence({
+    knowledgeQuery,
+    preset: selectedTopicPreset,
+    tags: tagsText,
+    topic
+  });
   const exportContent = lastContent ?? latestContent;
   const currentExportContent = contentMatchesCurrentInputs(lastContent)
     ? lastContent

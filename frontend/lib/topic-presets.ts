@@ -16,6 +16,41 @@ export type GenerationTopicPreset = {
 export const TOPIC_PRESET_ROTATION_SIZE = 6;
 export const TOPIC_PRESET_REFRESH_MS = 45_000;
 
+const SOURCE_EVIDENCE_REQUIRED_KEYWORDS = [
+  "官网",
+  "官方",
+  "来源",
+  "证据",
+  "核验",
+  "校徽",
+  "价格",
+  "费用",
+  "学费",
+  "排名",
+  "榜单",
+  "学校",
+  "院校",
+  "项目清单",
+  "认证",
+  "logo",
+  "official",
+  "source",
+  "sources",
+  "tuition",
+  "fee",
+  "fees",
+  "price",
+  "cost",
+  "ranking",
+  "rankings",
+  "school",
+  "schools",
+  "university",
+  "universities",
+  "program list",
+  "accreditation"
+];
+
 export const generationTopicPresets: GenerationTopicPreset[] = [
   {
     audience: "想快速筛选海外博士路线的在职申请人",
@@ -351,6 +386,26 @@ export function findGenerationTopicPresetByTopic(topic: string) {
   const normalizedTopic = topic.trim();
   return (
     generationTopicPresets.find((preset) => preset.topic === normalizedTopic) ?? null
+  );
+}
+
+export function generationTopicRequiresSourceEvidence({
+  knowledgeQuery = "",
+  preset,
+  tags = "",
+  topic
+}: {
+  knowledgeQuery?: string;
+  preset?: GenerationTopicPreset | null;
+  tags?: string;
+  topic: string;
+}) {
+  if (preset?.key.startsWith("source-")) {
+    return true;
+  }
+  const searchText = `${topic} ${knowledgeQuery} ${tags}`.toLowerCase();
+  return SOURCE_EVIDENCE_REQUIRED_KEYWORDS.some((keyword) =>
+    searchText.includes(keyword.toLowerCase())
   );
 }
 

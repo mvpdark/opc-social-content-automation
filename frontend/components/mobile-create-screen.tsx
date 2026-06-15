@@ -58,6 +58,7 @@ import {
   buildCustomTopicTags,
   buildTopicCoverStyleNotes,
   findGenerationTopicPresetByTopic,
+  generationTopicRequiresSourceEvidence,
   isKnownGenerationTopicAudience,
   isKnownGenerationTopicTags,
   pickGenerationTopicPresetBatch,
@@ -147,8 +148,13 @@ export function CreateScreen({
   const coverImageUrl = generatedCover ? resolveAssetUrl(generatedCover.image_url) : null;
   const selectedProject = findEnabledMobileCreationProject(selectedProjectId);
   const selectedTopicPreset = findGenerationTopicPresetByTopic(topic);
-  const sourceEvidenceRequired = Boolean(selectedTopicPreset?.key.startsWith("source-"));
   const generationKnowledgeQuery = selectedTopicPreset?.knowledgeQuery ?? topic;
+  const sourceEvidenceRequired = generationTopicRequiresSourceEvidence({
+    knowledgeQuery: generationKnowledgeQuery,
+    preset: selectedTopicPreset,
+    tags: tagsText,
+    topic
+  });
   const currentMobileGenerationInputSignature = buildGenerationInputSignature({
     knowledgeQuery: generationKnowledgeQuery,
     platform,

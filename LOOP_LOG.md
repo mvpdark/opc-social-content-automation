@@ -2358,3 +2358,77 @@ Kept.
 ### Next candidate loop
 
 - Consider adding a lightweight source/current-fact classifier for custom topics, or return to auth/session recovery and draft review lifecycle hardening.
+
+## Loop 33 - Classify custom fact topics as source-evidence gated
+
+Date: 2026-06-16
+
+### Observation
+
+PC and mobile source-preview failure guards now protect recommended `source-*` topics. Custom topics could still include official pages, prices, fees, logos, rankings, school lists, project lists, or accreditation terms without being treated as source/current-fact topics, so a source-preview failure could leave generation available for a custom fact-heavy topic.
+
+### Hypothesis
+
+If the source-evidence requirement is computed by a shared lightweight keyword classifier as well as the `source-*` preset key, then both PC and mobile custom topics with obvious current-fact terms will block generation after source preview fails. Focused E2E tests on PC and mobile can verify no content, image, rewrite, or publishing-like calls happen.
+
+### Patch
+
+Files changed:
+
+- `frontend/lib/topic-presets.ts`
+- `frontend/components/workspace-client.tsx`
+- `frontend/components/mobile-create-screen.tsx`
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added `generationTopicRequiresSourceEvidence`, a shared keyword-based source-evidence classifier.
+- Switched PC and mobile generation guards to use the shared classifier instead of only checking `source-*` preset keys.
+- Added PC and mobile E2E cases for a custom fact-heavy topic that mentions official tuition fees and logo verification.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "(mobile|PC) custom fact topic source preview failure blocks generation without false draft" --project=chromium
+# 2 passed
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run e2e
+# 27 passed, 1 skipped
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 25/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 3/5
+- Total: 92/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The env-backed live login smoke still skips unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+- The classifier is intentionally lightweight and keyword-based. It catches obvious fact/source terms but does not understand every possible phrasing of a current-fact request.
+
+### Next candidate loop
+
+- Add focused tests for custom ranking/list topics or return to auth/session recovery and draft review lifecycle hardening.
