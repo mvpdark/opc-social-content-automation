@@ -118,6 +118,7 @@ export function CollectScreen({
   const [trendItems, setTrendItems] = useState<MobileTrendContent[]>([]);
   const [selectedTrendIds, setSelectedTrendIds] = useState<number[]>([]);
   const [reviewedTrendIds, setReviewedTrendIds] = useState<number[]>([]);
+  const [dismissedTrendIds, setDismissedTrendIds] = useState<number[]>([]);
   const [deletingTrendIds, setDeletingTrendIds] = useState<number[]>([]);
   const [selectedTrendItem, setSelectedTrendItem] = useState<MobileTrendContent | null>(null);
   const [trendListLoading, setTrendListLoading] = useState(false);
@@ -132,9 +133,15 @@ export function CollectScreen({
     diagnosticItems.find((item) => item.label === "已采集")?.value ?? "0";
   const selectedTrendIdSet = new Set(selectedTrendIds);
   const reviewedTrendIdSet = new Set(reviewedTrendIds);
-  const reviewedSelectedCount = selectedTrendIds.filter((id) => reviewedTrendIdSet.has(id)).length;
-  const sourceReviewed =
-    selectedTrendIds.length > 0 && reviewedSelectedCount === selectedTrendIds.length;
+  const dismissedTrendIdSet = new Set(dismissedTrendIds);
+  const pendingTrendItems = trendItems.filter(
+    (item) => !reviewedTrendIdSet.has(item.id) && !dismissedTrendIdSet.has(item.id)
+  );
+  const pendingTrendIdSet = new Set(pendingTrendItems.map((item) => item.id));
+  const selectedPendingCount = selectedTrendIds.filter((id) => pendingTrendIdSet.has(id)).length;
+  const allPendingSelected =
+    pendingTrendItems.length > 0 && pendingTrendItems.every((item) => selectedTrendIdSet.has(item.id));
+  const sourceReviewed = reviewedTrendIds.length > 0;
 
   useEffect(() => {
     return addMobileBackHandler(() => {
@@ -343,6 +350,7 @@ export function CollectScreen({
     const validIds = new Set(trendItems.map((item) => item.id));
     setSelectedTrendIds((currentIds) => currentIds.filter((id) => validIds.has(id)));
     setReviewedTrendIds((currentIds) => currentIds.filter((id) => validIds.has(id)));
+    setDismissedTrendIds((currentIds) => currentIds.filter((id) => validIds.has(id)));
     setSelectedTrendItem((currentItem) =>
       currentItem ? trendItems.find((item) => item.id === currentItem.id) ?? null : null
     );
@@ -351,6 +359,7 @@ export function CollectScreen({
   useEffect(() => {
     setSelectedTrendIds([]);
     setReviewedTrendIds([]);
+    setDismissedTrendIds([]);
     setSelectedTrendItem(null);
   }, [platform, query]);
 
@@ -556,6 +565,9 @@ export function CollectScreen({
   }
 
   function toggleTrendSelection(itemId: number) {
+    if (!pendingTrendIdSet.has(itemId)) {
+      return;
+    }
     setSelectedTrendIds((currentIds) =>
       currentIds.includes(itemId)
         ? currentIds.filter((id) => id !== itemId)
@@ -564,12 +576,12 @@ export function CollectScreen({
   }
 
   function selectVisibleTrendItems() {
-    if (!trendItems.length) {
+    if (!pendingTrendItems.length) {
       onAction("当前没有可选素材，请先运行采集。");
       return;
     }
-    setSelectedTrendIds(trendItems.map((item) => item.id));
-    onAction(`已选中 ${trendItems.length} 条采集素材，请继续人工确认。`);
+    setSelectedTrendIds(pendingTrendItems.map((item) => item.id));
+    onAction(`已选中 ${pendingTrendItems.length} 条待确认素材，请继续人工确认。`);
   }
 
   function clearTrendSelection() {
@@ -582,14 +594,19 @@ export function CollectScreen({
       onAction("先选择至少一条采集素材，再确认来源。");
       return;
     }
-    setReviewedTrendIds((currentIds) => Array.from(new Set([...currentIds, ...selectedTrendIds])));
-    onAction(`已人工确认 ${selectedTrendIds.length} 条采集来源。`);
+    const nextReviewedIds = selectedTrendIds.filter((id) => pendingTrendIdSet.has(id));
+    if (!nextReviewedIds.length) {
+      setSelectedTrendIds([]);
+      onAction("当前选择已经处理过，请继续选择新的采集素材。");
+      return;
+    }
+    setReviewedTrendIds((currentIds) => Array.from(new Set([...currentIds, ...nextReviewedIds])));
+    setSelectedTrendIds([]);
+    onAction(`已人工确认 ${nextReviewedIds.length} 条来源，已移入待保存摘要。`);
   }
 
   function confirmSingleTrendSource(item: MobileTrendContent) {
-    setSelectedTrendIds((currentIds) =>
-      currentIds.includes(item.id) ? currentIds : [...currentIds, item.id]
-    );
+    setSelectedTrendIds((currentIds) => currentIds.filter((id) => id !== item.id));
     setReviewedTrendIds((currentIds) =>
       currentIds.includes(item.id) ? currentIds : [...currentIds, item.id]
     );
@@ -614,6 +631,7 @@ export function CollectScreen({
       setTrendItems((currentItems) => currentItems.filter((currentItem) => currentItem.id !== item.id));
       setSelectedTrendIds((currentIds) => currentIds.filter((id) => id !== item.id));
       setReviewedTrendIds((currentIds) => currentIds.filter((id) => id !== item.id));
+      setDismissedTrendIds((currentIds) => currentIds.filter((id) => id !== item.id));
       setSelectedTrendItem((currentItem) => (currentItem?.id === item.id ? null : currentItem));
       onAction(`已删除采集素材：${item.title}`);
     } catch (error) {
@@ -638,8 +656,8 @@ export function CollectScreen({
       onAction("先填关键词，再保存知识摘要。");
       return;
     }
-    if (!selectedTrendIds.length) {
-      onAction("先在“采集结果确认”里选择至少一条素材。");
+    if (!reviewedTrendIds.length) {
+      onAction("先在“采集结果确认”里确认至少一条素材。");
       return;
     }
     if (!sourceReviewed) {
@@ -656,8 +674,8 @@ export function CollectScreen({
         body: JSON.stringify({
           platform,
           keyword,
-          trend_ids: selectedTrendIds,
-          limit: Math.min(100, selectedTrendIds.length),
+          trend_ids: reviewedTrendIds,
+          limit: Math.min(100, reviewedTrendIds.length),
           category: "trend-insight",
           source_reviewed: true
         })
@@ -666,6 +684,13 @@ export function CollectScreen({
         throw new Error(await readApiError(response, "知识摘要生成失败。"));
       }
       const data = (await response.json()) as { item_count: number; knowledge_id: number };
+      const savedTrendIds = [...reviewedTrendIds];
+      setDismissedTrendIds((currentIds) => Array.from(new Set([...currentIds, ...savedTrendIds])));
+      setSelectedTrendIds([]);
+      setReviewedTrendIds([]);
+      setSelectedTrendItem((currentItem) =>
+        currentItem && savedTrendIds.includes(currentItem.id) ? null : currentItem
+      );
       onAction(`知识条目 #${data.knowledge_id} 已生成，来源素材 ${data.item_count} 条。`);
     } catch (error) {
       onAction(error instanceof Error ? error.message : "知识摘要生成失败。");
@@ -932,7 +957,10 @@ export function CollectScreen({
         <div className="flex items-center justify-between gap-3 px-1 pb-2">
           <h2 className="text-[22px] font-black leading-7">采集结果确认</h2>
           <div className="flex items-center gap-3 text-sm font-black">
-            <span>{reviewedSelectedCount} / {selectedTrendIds.length || Math.max(maxItems, trendItems.length)}</span>
+            <span>
+              待确认 {pendingTrendItems.length}
+              {reviewedTrendIds.length ? ` · 待保存 ${reviewedTrendIds.length}` : ""}
+            </span>
             <button
               className="flex touch-manipulation items-center gap-1 rounded-full px-2 py-1 text-[#23854f] active:bg-[#e7f2ea]"
               disabled={trendListLoading}
@@ -950,8 +978,8 @@ export function CollectScreen({
         </span>
 
         <div className="max-h-[310px] space-y-2 overflow-y-auto pr-0.5" data-testid="mobile-trend-source-list">
-          {trendItems.length ? (
-            trendItems.map((item) => (
+          {pendingTrendItems.length ? (
+            pendingTrendItems.map((item) => (
               <TrendSourceCard
                 deleting={deletingTrendIds.includes(item.id)}
                 item={item}
@@ -970,7 +998,11 @@ export function CollectScreen({
             ))
           ) : (
             <div className="rounded-[24px] border border-dashed border-[#d6e8df] bg-white/[0.54] px-4 py-5 text-center text-xs font-semibold leading-5 text-muted">
-              {trendListLoading ? "正在读取采集素材..." : "暂无可确认素材，点击立即运行或刷新素材。"}
+              {trendListLoading
+                ? "正在读取采集素材..."
+                : reviewedTrendIds.length
+                  ? "本批来源已确认，可先保存摘要；继续运行采集会显示新素材。"
+                  : "暂无可确认素材，点击立即运行或刷新素材。"}
             </div>
           )}
         </div>
@@ -993,16 +1025,35 @@ export function CollectScreen({
             type="button"
           >
             {busyAction === "digest" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            {busyAction === "digest" ? "保存中" : "保存摘要"}
+            {busyAction === "digest"
+              ? "保存中"
+              : reviewedTrendIds.length
+                ? `保存 ${reviewedTrendIds.length} 条摘要`
+                : "保存摘要"}
           </button>
         </div>
 
         <button
           className="mt-2 flex h-10 w-full touch-manipulation items-center justify-center rounded-full border border-white/[0.82] bg-white/[0.52] text-xs font-black text-muted active:scale-[0.99]"
-          onClick={selectedTrendIds.length === trendItems.length && trendItems.length > 0 ? clearTrendSelection : selectVisibleTrendItems}
+          disabled={busyAction === "job"}
+          onClick={
+            pendingTrendItems.length
+              ? allPendingSelected
+                ? clearTrendSelection
+                : selectVisibleTrendItems
+              : () => void runCollectionJob("manual")
+          }
           type="button"
         >
-          {selectedTrendIds.length === trendItems.length && trendItems.length > 0 ? "清空选择" : "全选可见"}
+          {pendingTrendItems.length
+            ? allPendingSelected
+              ? "清空选择"
+              : selectedPendingCount
+                ? `已选 ${selectedPendingCount} 条`
+                : "全选待确认"
+            : busyAction === "job"
+              ? "运行中"
+              : "继续运行采集获取新素材"}
         </button>
       </section>
 
