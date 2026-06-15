@@ -681,3 +681,78 @@ Kept.
 ### Next candidate loop
 
 - Add controlled generation API fixtures that verify title/body/cover/tags align with a selected ranking or route topic without calling real model, image, scraping, or publishing services.
+
+## Loop 10 - Cover mobile one-click generation fixture alignment
+
+Date: 2026-06-16
+
+### Observation
+
+The mobile Create flow had smoke coverage for entering the project and selecting a recommended topic, but it did not yet exercise a successful one-click generation path with controlled source, draft, and cover responses.
+
+### Hypothesis
+
+If E2E uses explicit fixtures for source preview, content generation, and cover generation, CI can verify that the generated title, body, tags, cover request, source evidence, preview, and copy-safe human-review messaging remain aligned with the selected topic without calling real model, image, scraping, or publishing services.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a mobile generation fixture helper for source-preview, content-generate, and image-generate responses.
+- Added a ranking-topic one-click generation E2E path using the `ranking-low-budget` preset.
+- Verified request payloads include the selected topic, audience, tags, knowledge query, and cover direction.
+- Verified knowledge and web evidence expand, the draft history opens the generated preview, and the preview preserves the manual-review/no-auto-publish warning.
+- Added a publishing-like endpoint guard and asserted no publish/submit request was made.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed from frontend/
+
+npm run e2e
+# 11 passed, 1 skipped from frontend/
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run build
+# passed from frontend/
+```
+
+Notes:
+
+- The first E2E run failed because the publishing guard also matched normal `platform=xiaohongshu` query parameters. The guard was narrowed to API paths containing `publish` or `submit`, then the full suite passed.
+- Attempts to run a single Playwright test with Windows path arguments returned "No tests found"; the full E2E command is the verified runner for this repository.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 28/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 95/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- This covers one ranking/list topic; route, mentor, timing, source, and sales topics still rely on preset contracts plus selection smoke.
+- Recoverable generation failure after a successful draft but failed cover should get a dedicated fixture test.
+
+### Next candidate loop
+
+- Add a controlled failure fixture for mobile one-click generation where content succeeds but cover generation fails, preserving the draft and showing a recoverable error without losing manual review safety.

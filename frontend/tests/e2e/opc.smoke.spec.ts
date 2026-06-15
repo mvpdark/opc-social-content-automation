@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import { expect, test, type Page } from "@playwright/test";
 
-import { generationTopicPresets } from "../../lib/topic-presets";
+import { parseTagText } from "../../lib/tags";
+import { generationTopicPresets, type GenerationTopicPreset } from "../../lib/topic-presets";
 
 const BASE_URL = process.env.OPC_BASE_URL ?? "http://127.0.0.1:3000";
 const BASE_ORIGIN = new URL(BASE_URL).origin;
@@ -10,6 +11,16 @@ const USERNAME = process.env.OPC_TEST_USERNAME ?? "";
 const PASSWORD = process.env.OPC_TEST_PASSWORD ?? "";
 const MOBILE_TOPIC_PRESET_BUTTON_SELECTOR =
   'button[data-testid^="mobile-topic-preset-"]:not([data-testid="mobile-topic-preset-refresh"])';
+const E2E_GENERATED_CONTENT_ID = 8801;
+
+type JsonPayload = Record<string, unknown>;
+
+type MobileGenerationFixtureRequests = {
+  contentGenerate: JsonPayload[];
+  forbiddenPublishing: string[];
+  imageGenerate: JsonPayload[];
+  sourcePreview: JsonPayload[];
+};
 
 async function resetLocalAuth(page: Page) {
   await page.addInitScript(() => {
@@ -56,11 +67,124 @@ async function trackGenerationServiceRequests(page: Page) {
   return requests;
 }
 
+async function mockSuccessfulMobileGeneration(page: Page, preset: GenerationTopicPreset) {
+  const requests: MobileGenerationFixtureRequests = {
+    contentGenerate: [],
+    forbiddenPublishing: [],
+    imageGenerate: [],
+    sourcePreview: []
+  };
+  const tags = parseTagText(preset.tags);
+  const sourceContext = {
+    knowledge_items: [
+      {
+        category: "E2E",
+        content: `受控测试知识库引用：${preset.topic} 必须围绕 ${preset.audience} 展开。`,
+        id: 701,
+        match_type: "fixture",
+        score: 0.91,
+        title: `E2E 知识库引用：${preset.topic}`
+      }
+    ],
+    knowledge_query: preset.knowledgeQuery,
+    review_note: "受控 E2E 夹具：发布前仍需人工核对来源。",
+    web_search: {
+      answer: `受控测试联网摘要：${preset.mobileLabel}选题需要保留 ${preset.topic} 的意图。`,
+      provider: "tavily",
+      query: preset.knowledgeQuery,
+      required: true,
+      results: [
+        {
+          content: `受控测试联网结果：只验证 UI 展示和请求契约，不代表真实排名、价格或录取结论。`,
+          score: 0.84,
+          title: `E2E 联网来源：${preset.topic}`,
+          url: "https://example.edu/e2e-source"
+        }
+      ]
+    }
+  };
+
+  await page.route("**/api/content/source-preview", async (route) => {
+    requests.sourcePreview.push(readJsonPayload(route.request().postData()));
+    await route.fulfill({
+      body: JSON.stringify({ source_context: sourceContext }),
+      contentType: "application/json",
+      status: 200
+    });
+  });
+  await page.route("**/api/content/generate", async (route) => {
+    requests.contentGenerate.push(readJsonPayload(route.request().postData()));
+    await route.fulfill({
+      body: JSON.stringify({
+        body: [
+          `【受控测试草稿】${preset.topic}`,
+          `这篇内容服务于${preset.audience}，必须保持${preset.mobileLabel}选题意图。`,
+          `知识库检索词：${preset.knowledgeQuery}`,
+          "发布前仍需人工确认标题、正文、标签和封面。"
+        ].join("\n\n"),
+        created_at: "2026-06-16T00:00:00.000Z",
+        id: E2E_GENERATED_CONTENT_ID,
+        platform: "xiaohongshu",
+        source_context: sourceContext,
+        status: "draft",
+        tags,
+        title: preset.topic
+      }),
+      contentType: "application/json",
+      status: 200
+    });
+  });
+  await page.route("**/api/image/generate", async (route) => {
+    requests.imageGenerate.push(readJsonPayload(route.request().postData()));
+    await route.fulfill({
+      body: JSON.stringify({
+        content_id: E2E_GENERATED_CONTENT_ID,
+        created_at: "2026-06-16T00:00:01.000Z",
+        id: 9901,
+        image_url: buildFixtureCoverDataUri(preset.topic),
+        prompt: `受控 E2E 封面方向：${preset.coverDirection}`,
+        status: "generated",
+        template: "xiaohongshu-cover"
+      }),
+      contentType: "application/json",
+      status: 200
+    });
+  });
+  await page.route(/\/api\/[^?]*(publish|submit)/i, async (route) => {
+    requests.forbiddenPublishing.push(route.request().url());
+    await route.fulfill({
+      body: JSON.stringify({ detail: "E2E guard blocked publishing-like call." }),
+      contentType: "application/json",
+      status: 500
+    });
+  });
+
+  return requests;
+}
+
 function createLoginInput() {
   return {
     account: `e2e-${randomUUID()}`,
     password: `pw-${randomUUID()}`
   };
+}
+
+function buildFixtureCoverDataUri(topic: string) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200">
+<rect width="900" height="1200" fill="#fff7df"/>
+<rect x="64" y="90" width="772" height="1020" rx="56" fill="#d9f1e5"/>
+<text x="92" y="210" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="42" font-weight="800" fill="#ff2442">E2E 封面夹具</text>
+<text x="92" y="330" font-family="-apple-system,BlinkMacSystemFont,PingFang SC,sans-serif" font-size="58" font-weight="900" fill="#111111">${topic}</text>
+</svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+function readJsonPayload(postData: string | null) {
+  try {
+    return JSON.parse(postData ?? "{}") as JsonPayload;
+  } catch (_error) {
+    return {};
+  }
 }
 
 async function localStorageContains(page: Page, value: string) {
@@ -72,6 +196,12 @@ async function localStorageContains(page: Page, value: string) {
 function findExpectedTopicPreset(topic: string) {
   const preset = generationTopicPresets.find((item) => item.topic === topic.trim());
   expect(preset, `Expected visible mobile topic preset to exist for topic: ${topic}`).toBeTruthy();
+  return preset!;
+}
+
+function requireTopicPreset(key: string) {
+  const preset = generationTopicPresets.find((item) => item.key === key);
+  expect(preset, `Expected topic preset key to exist: ${key}`).toBeTruthy();
   return preset!;
 }
 
@@ -222,6 +352,77 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("mobile-tags")).toHaveValue(expectedPreset.tags);
     await expect(page.getByTestId("mobile-generate-draft")).toBeEnabled();
     expect(generationRequests).toEqual([]);
+  });
+
+  test("mobile one-click generation keeps selected ranking topic aligned", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const acceptedLogin = createLoginInput();
+    const preset = requireTopicPreset("ranking-low-budget");
+    const expectedTags = parseTagText(preset.tags);
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockSuccessfulMobileGeneration(page, preset);
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=create`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+    await page.getByTestId("mobile-creation-project-postgraduate-phd").click();
+
+    await page.getByTestId("mobile-topic").fill(preset.topic);
+    await expect(page.getByTestId("mobile-audience")).toHaveValue(preset.audience);
+    await expect(page.getByTestId("mobile-tags")).toHaveValue(preset.tags);
+
+    await page.getByTestId("mobile-source-preview-button").click();
+    await expect(page.getByTestId("mobile-source-evidence")).toContainText("2 条");
+    await page.getByTestId("mobile-source-knowledge-toggle").click();
+    await expect(page.getByTestId("mobile-source-knowledge-list")).toContainText(
+      `E2E 知识库引用：${preset.topic}`
+    );
+    await page.getByTestId("mobile-source-web-toggle").click();
+    await expect(page.getByTestId("mobile-source-web-list")).toContainText(
+      `E2E 联网来源：${preset.topic}`
+    );
+
+    await page.getByTestId("mobile-generate-draft").click();
+    await expect(page.getByTestId("mobile-generate-draft")).toContainText("重新一键生成");
+    await page.getByTestId(`mobile-draft-history-card-${E2E_GENERATED_CONTENT_ID}`).click();
+
+    const preview = page.getByTestId("draft-preview-editor");
+    await expect(preview).toBeVisible();
+    await expect(preview).toContainText(preset.topic);
+    await expect(preview).toContainText(`必须保持${preset.mobileLabel}选题意图`);
+    await expect(preview).toContainText(`#${expectedTags[0]}`);
+    await expect(preview).toContainText("发布前预览 · 不会自动发布");
+    await expect(page.getByTestId("draft-preview-cover-image")).toBeVisible();
+
+    expect(generationRequests.sourcePreview).toHaveLength(1);
+    expect(generationRequests.contentGenerate).toHaveLength(1);
+    expect(generationRequests.imageGenerate).toHaveLength(1);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.sourcePreview[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: preset.knowledgeQuery,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: preset.audience,
+      topic: preset.topic
+    });
+    expect(generationRequests.contentGenerate[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: preset.knowledgeQuery,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: preset.audience,
+      topic: preset.topic
+    });
+    expect(generationRequests.imageGenerate[0]).toMatchObject({
+      aspect_ratio: "3:4",
+      content_id: E2E_GENERATED_CONTENT_ID,
+      template: "xiaohongshu-cover"
+    });
+    expect(String(generationRequests.imageGenerate[0].style_notes)).toContain(preset.coverDirection);
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 
   test("login form accepts env-provided test credentials when available", async ({ page }) => {
