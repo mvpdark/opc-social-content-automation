@@ -680,7 +680,7 @@ function ReviewEvidenceBlock({ sourceContext }: { sourceContext: GenerationSourc
               className="mobile-review-evidence-result-card block rounded-[18px] bg-white/[0.76] px-3 py-2"
               href={item.url}
               key={`review-web-${item.url}-${index}`}
-              rel="noreferrer"
+              rel="noopener noreferrer"
               target="_blank"
             >
               <div className="flex items-start justify-between gap-2">

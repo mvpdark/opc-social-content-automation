@@ -256,7 +256,7 @@ export function GenerationSourceEvidenceCard({
                 className="workspace-evidence-result-card block rounded-md border border-line bg-mist/55 p-3 transition hover:border-steel/60"
                 href={item.url}
                 key={`${item.url}-${item.title}-${index}`}
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 target="_blank"
               >
                 <div className="flex items-start justify-between gap-2">

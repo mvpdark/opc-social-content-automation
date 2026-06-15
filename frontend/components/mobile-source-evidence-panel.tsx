@@ -251,7 +251,7 @@ export function MobileSourceEvidencePanel({
                 className="mobile-source-evidence-result-card block rounded-[18px] border border-white/[0.86] bg-white/70 px-3 py-2"
                 href={item.url}
                 key={`${item.url}-${item.title}-${index}`}
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 target="_blank"
               >
                 <div className="flex items-start justify-between gap-2">
