@@ -101,6 +101,12 @@ async function mockRejectedLogin(page: Page) {
   });
 }
 
+async function mockUnavailableLogin(page: Page) {
+  await page.route("**/api/auth/mobile-login", async (route) => {
+    await route.abort("failed");
+  });
+}
+
 async function mockSuccessfulLogin(page: Page, account: string) {
   await page.route("**/api/auth/mobile-login", async (route) => {
     await route.fulfill({
@@ -216,7 +222,7 @@ async function mockMobileGenerationFixture(
   const tags = parseTagText(preset.tags);
   const sourceContext = buildE2eSourceContext(preset, preset.mobileLabel);
 
-  await page.route("**/api/content/source-preview", async (route) => {
+  await page.route(/\/api\/content\/source-preview(?:\?|$)/, async (route) => {
     requests.sourcePreview.push(readJsonPayload(route.request().postData()));
     if (failSourcePreview) {
       await route.fulfill({
@@ -232,7 +238,21 @@ async function mockMobileGenerationFixture(
       status: 200
     });
   });
-  await page.route("**/api/content/generate", async (route) => {
+  await page.route(/\/api\/content\/list(?:\?|$)/, async (route) => {
+    await route.fulfill({
+      body: JSON.stringify([]),
+      contentType: "application/json",
+      status: 200
+    });
+  });
+  await page.route(/\/api\/image\/list(?:\?|$)/, async (route) => {
+    await route.fulfill({
+      body: JSON.stringify([]),
+      contentType: "application/json",
+      status: 200
+    });
+  });
+  await page.route(/\/api\/content\/generate(?:\?|$)/, async (route) => {
     requests.contentGenerate.push(readJsonPayload(route.request().postData()));
     if (failContent) {
       await route.fulfill({
@@ -262,7 +282,7 @@ async function mockMobileGenerationFixture(
       status: 200
     });
   });
-  await page.route("**/api/image/generate", async (route) => {
+  await page.route(/\/api\/image\/generate(?:\?|$)/, async (route) => {
     requests.imageGenerate.push(readJsonPayload(route.request().postData()));
     if (failCover) {
       await route.fulfill({
@@ -751,6 +771,40 @@ test.describe("OPC smoke coverage", () => {
     await page.getByTestId("mobile-login-submit").click();
 
     await expect(page.getByTestId("mobile-login-error")).toContainText("账号或密码不正确。");
+    await expect(page.getByTestId("mobile-login-submit")).toBeEnabled();
+    await expect(await localStorageContains(page, rejectedLogin.password)).toBe(false);
+  });
+
+  test("PC login shows service-unavailable feedback without persisting password", async ({ page }) => {
+    await mockUnavailableLogin(page);
+    const rejectedLogin = createLoginInput();
+
+    await page.goto(`${BASE_URL}/?theme=mint`);
+    await page.getByTestId("pc-login-account").fill(rejectedLogin.account);
+    await page.getByTestId("pc-login-password").fill(rejectedLogin.password);
+    await page.getByTestId("pc-login-submit").click();
+
+    await expect(page.getByTestId("pc-login-error")).toContainText(
+      "无法连接登录服务，请确认应用服务正在运行。"
+    );
+    await expect(page.getByTestId("pc-login-submit")).toBeEnabled();
+    await expect(await localStorageContains(page, rejectedLogin.password)).toBe(false);
+  });
+
+  test("mobile login shows service-unavailable feedback without persisting password", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await mockUnavailableLogin(page);
+    const rejectedLogin = createLoginInput();
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=home`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(rejectedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(rejectedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+
+    await expect(page.getByTestId("mobile-login-error")).toContainText(
+      "登录服务暂时不可用，请确认应用服务已启动。"
+    );
     await expect(page.getByTestId("mobile-login-submit")).toBeEnabled();
     await expect(await localStorageContains(page, rejectedLogin.password)).toBe(false);
   });

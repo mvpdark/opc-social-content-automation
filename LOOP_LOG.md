@@ -2501,3 +2501,80 @@ Kept. This loop is small, but it turns the Loop 33 source-evidence classifier in
 ### Next candidate loop
 
 - Continue auth/session recovery hardening, then add deeper semantic topic-intent checks for custom topics that do not contain obvious source keywords.
+
+## Loop 35 - Protect login service-unavailable feedback
+
+Date: 2026-06-16
+
+### Observation
+
+PC and mobile login already show distinct copy when the login request cannot reach the service, but E2E only protected the bad-credential path. A future change could collapse network/service failures back into generic credential errors, disable retry, or persist sensitive input without a fast regression signal.
+
+### Hypothesis
+
+If E2E explicitly simulates an unavailable login service on both PC and mobile, then CI will protect recoverable login feedback and password non-persistence for network/API failures, not just rejected credentials.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a shared E2E helper that aborts `/api/auth/mobile-login` to simulate a service-level fetch failure.
+- Added PC login service-unavailable coverage.
+- Added mobile login service-unavailable coverage at a 390 px viewport.
+- Asserted the retry button becomes enabled again and the submitted password is not persisted.
+- Tightened the mobile generation fixture so background content/cover list hydration cannot leak local or default backend data into source/cover E2E assertions.
+
+### Verification
+
+Commands run:
+
+```bash
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "service-unavailable feedback" --project=chromium
+# passed: 2 passed
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile one-click generation keeps selected ranking topic aligned|mobile preserves draft when cover generation fails" --project=chromium
+# passed after fixture isolation: 2 passed
+
+npm run typecheck
+# passed
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run e2e
+# passed after fixture isolation: 29 passed, 1 skipped
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 24/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 3/5
+- Total: 91/100
+
+### Result
+
+Kept. This protects a P0 login failure mode and also removes an observed mobile E2E instability where background draft/cover hydration could overwrite controlled source evidence or status assertions.
+
+### Remaining risk
+
+- The service-unavailable coverage simulates a fetch-level failure; separate HTTP 5xx copy can be covered later if product copy changes.
+- The env-backed live login smoke remains skipped unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+- Mobile generation fixtures are deterministic CI guards; they do not validate live Tavily/provider availability.
+
+### Next candidate loop
+
+- Continue auth/session recovery hardening, then add HTTP 5xx login feedback coverage or deeper semantic topic-intent checks for custom topics.
