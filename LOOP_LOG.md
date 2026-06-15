@@ -1852,3 +1852,81 @@ Kept.
 ### Next candidate loop
 
 - Refactor repeated PC one-click topic-alignment E2E steps into a helper, then keep sales, route, and mentor coverage as concise scenario calls.
+
+## Loop 26 - Refactor PC topic-alignment E2E helper
+
+Date: 2026-06-16
+
+### Observation
+
+After adding sales, route, and mentor desktop topic-alignment coverage, the PC one-click E2E success path repeated the same login, source-preview, generation, draft-preview, copy, and no-publishing assertions three times. That made future topic-family coverage more error-prone and already caused slight differences in copy-state assertions between scenarios.
+
+### Hypothesis
+
+If the shared PC topic-alignment flow is factored into one helper while each scenario keeps only its preset key and content id, then the tests will preserve the same regression coverage with less duplication and more consistent safety assertions.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added `runPcTopicAlignmentScenario` for the shared desktop one-click generation flow.
+- Kept sales, route, and mentor tests as short scenario calls with their original content ids and preset keys.
+- Preserved sales-specific export safety copy checks through an option.
+- Standardized the shared assertions for source evidence, cover direction, generated payloads, preview copy state, local password safety, and no publish/submit calls.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC one-click generation keeps selected (sales|route|mentor) topic aligned through preview copy" --project=chromium
+# 3 passed
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run e2e
+# first full run had one unrelated mobile cover-failure wait timeout
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile preserves draft when cover generation fails" --project=chromium
+# 1 passed
+
+npm run e2e
+# 21 passed, 1 skipped
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 18/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 14/15
+- Maintainability: 10/10
+- UX polish: 2/5
+- Total: 84/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The env-backed live login smoke still skips unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+- The first full E2E run exposed an intermittent wait in the mobile cover-failure scenario; it passed when run alone and in the final full rerun, but a future loop can make that wait condition more deterministic.
+
+### Next candidate loop
+
+- Stabilize the mobile cover-failure E2E wait so it waits on the finished failure state rather than a short status-text timeout during progress animation.
