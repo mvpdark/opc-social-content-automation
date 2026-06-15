@@ -963,6 +963,7 @@ li {
 
 .theme-cyberpunk .workspace-creation-gateway .glass-panel,
 .theme-cyberpunk .workspace-content-status,
+.theme-cyberpunk .workspace-preview-modal-card,
 .theme-cyberpunk .workspace-cover-layout .workspace-panel,
 .theme-cyberpunk .workspace-delivery-layout .workspace-panel,
 .theme-cyberpunk .workspace-settings-layout .workspace-panel {
@@ -970,6 +971,15 @@ li {
     inset 0 1px 0 rgb(var(--glass-highlight) / 0.2),
     0 20px 70px rgb(0 0 0 / 0.34),
     0 0 36px rgb(var(--steel) / 0.06);
+}
+
+.theme-cyberpunk .workspace-preview-modal-card {
+  border-color: rgb(var(--steel) / 0.34);
+  border-radius: 0 !important;
+  background:
+    linear-gradient(135deg, rgb(var(--moss) / 0.08), transparent 34%),
+    linear-gradient(180deg, rgb(var(--paper) / 0.98), rgb(4 12 28 / 0.94));
+  clip-path: polygon(0 18px, 18px 0, calc(100% - 18px) 0, 100% 18px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 18px));
 }
 
 .theme-cyberpunk .workspace-trend-results,

@@ -1303,6 +1303,7 @@ export function WorkspaceClient({
       {activeTab === "content" ? (
         <ContentView
           defaultWritingStyle={defaultWritingStyle}
+          interfaceStyle={interfaceStyle}
           initialProject={initialProject}
           onOpenSettings={() => handleTabChange("settings")}
           workspaceToken={credentials.workspaceToken}
@@ -2335,11 +2336,13 @@ function KnowledgeView() {
 }
 function ContentView({
   defaultWritingStyle,
+  interfaceStyle,
   initialProject,
   onOpenSettings,
   workspaceToken
 }: {
   defaultWritingStyle: WritingStylePresetId;
+  interfaceStyle: InterfaceStyle;
   initialProject: string | null;
   onOpenSettings: () => void;
   workspaceToken: string;
@@ -2604,6 +2607,7 @@ function ContentView({
           draftActionError={draftActionError}
           history={draftHistory}
           imageAssetsByContentId={draftImagesByContentId}
+          interfaceStyle={interfaceStyle}
           loading={previewLoading}
           onDeleteContent={handleDeleteDraft}
           onSelectContent={handleSelectDraft}
@@ -5212,6 +5216,7 @@ function DraftPanel({
   draftActionError,
   history,
   imageAssetsByContentId,
+  interfaceStyle,
   loading,
   onDeleteContent,
   onSelectContent,
@@ -5223,6 +5228,7 @@ function DraftPanel({
   draftActionError: string | null;
   history: GeneratedContent[];
   imageAssetsByContentId: Record<number, GeneratedImageAsset | null>;
+  interfaceStyle: InterfaceStyle;
   loading: boolean;
   onDeleteContent: (contentId: number) => void;
   onSelectContent: (content: GeneratedContent) => void;
@@ -5349,11 +5355,11 @@ function DraftPanel({
       {previewOpen && portalReady ? createPortal(
         <div
           aria-modal="true"
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-ink/40 p-4 backdrop-blur-md"
+          className={`theme-${interfaceStyle} fixed inset-0 z-[80] flex items-center justify-center bg-ink/40 p-4 text-ink backdrop-blur-md`}
           data-testid="xhs-preview-modal"
           role="dialog"
         >
-          <div className="grid max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-[24px] border border-white/40 bg-paper shadow-2xl lg:grid-cols-[minmax(300px,420px)_1fr] lg:overflow-hidden">
+          <div className="workspace-preview-modal-card grid max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-[24px] border border-white/40 bg-paper shadow-2xl lg:grid-cols-[minmax(300px,420px)_1fr] lg:overflow-hidden">
             <div
               className={`relative min-h-[320px] overflow-hidden ${
                 coverImageUrl
