@@ -605,11 +605,13 @@ def validate_frontend_design_contract() -> int:
         ".theme-cyberpunk .glass-selected",
         "0 0 42px rgb(var(--steel) / 0.12)",
         ".theme-cyberpunk :where(input, select, textarea):focus-visible",
+        'data-testid="cyberpunk-theme-preview"',
+        ".cyberpunk-theme-preview::after",
         "深色石墨、HUD 网格和霓虹边缘",
     ]
     for snippet in cyberpunk_theme_contract_snippets:
         total += 1
-        if snippet not in f"{css_text}\n{data_text}":
+        if snippet not in f"{css_text}\n{data_text}\n{workspace_text}":
             raise SystemExit(f"Missing cyberpunk theme contract: {snippet}")
 
     for tab_id in tab_ids:

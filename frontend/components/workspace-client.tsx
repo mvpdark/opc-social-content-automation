@@ -859,6 +859,19 @@ function ThemeSwatches({
 }) {
   const sizeClass = compact ? "h-1.5 w-7" : "h-2.5 w-8";
   const marginClass = compact ? "mt-2" : "mt-3";
+  if (style === "cyberpunk") {
+    return (
+      <span
+        aria-hidden="true"
+        className={`theme-cyberpunk cyberpunk-theme-preview ${marginClass} ${compact ? "h-7" : "h-10"}`}
+        data-testid="cyberpunk-theme-preview"
+      >
+        <span className="h-1.5 w-10 rounded-sm bg-moss shadow-[0_0_14px_rgb(var(--moss)/0.42)]" />
+        <span className="h-1.5 w-8 rounded-sm bg-steel shadow-[0_0_14px_rgb(var(--steel)/0.38)]" />
+        <span className="h-1.5 w-2.5 rounded-full bg-coral shadow-[0_0_12px_rgb(var(--coral)/0.45)]" />
+      </span>
+    );
+  }
 
   return (
     <span aria-hidden="true" className={`theme-${style} ${marginClass} flex gap-1`}>
