@@ -136,6 +136,14 @@ export function GenerationSourceEvidenceCard({
         </button>
       ) : null}
       {error ? <p className="mt-2 text-xs leading-5 text-coral">{error}</p> : null}
+      {missingRequiredWebResults ? (
+        <div
+          className="mt-3 rounded-md border border-amber/40 bg-amber/10 px-3 py-2 text-[11px] leading-5 text-[#8a6110]"
+          data-testid="source-required-web-warning"
+        >
+          此选题需要联网来源；未拿到 Tavily 结果前，不要写学校、价格、logo 或排名结论。
+        </div>
+      ) : null}
       <div className="workspace-evidence-switcher mt-3 rounded-md border border-line bg-mist/45 p-1.5" data-testid="source-evidence-switcher">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <button

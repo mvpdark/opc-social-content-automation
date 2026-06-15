@@ -123,6 +123,14 @@ export function MobileSourceEvidencePanel({
         {previewBusy ? "正在检索" : hasEvidence ? "重新查看依据" : "查看检索依据"}
       </button>
       {error ? <p className="mt-2 text-[11px] font-medium leading-5 text-[#c92a3f]">{error}</p> : null}
+      {missingRequiredWebResults ? (
+        <div
+          className="mt-3 rounded-[18px] border border-[#f3dca3] bg-[#fff8e6] px-3 py-2 text-[11px] font-semibold leading-5 text-[#8a6110]"
+          data-testid="mobile-source-required-web-warning"
+        >
+          此选题需要联网来源；未拿到 Tavily 结果前，不要写学校、价格、logo 或排名结论。
+        </div>
+      ) : null}
       <div
         className="mt-3 rounded-[20px] border border-white/[0.86] bg-white/60 p-1.5"
         data-testid="mobile-source-evidence-switcher"
