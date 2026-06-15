@@ -181,6 +181,7 @@ export function CollectScreen({
   const allPendingSelected =
     pendingTrendItems.length > 0 && pendingTrendItems.every((item) => selectedTrendIdSet.has(item.id));
   const sourceReviewed = reviewedTrendIds.length > 0;
+  const collectionBusy = busyAction !== null || activeCollectionJobId !== null;
 
   useEffect(() => {
     return addMobileBackHandler(() => {
@@ -686,7 +687,7 @@ export function CollectScreen({
     }
     setReviewedTrendIds((currentIds) => Array.from(new Set([...currentIds, ...nextReviewedIds])));
     setSelectedTrendIds([]);
-    onAction(`已人工确认 ${nextReviewedIds.length} 条来源，已移入待保存摘要。`);
+    onAction(`已人工确认 ${nextReviewedIds.length} 条来源，可保存摘要，也可以继续采集下一批。`);
   }
 
   function confirmSingleTrendSource(item: MobileTrendContent) {
@@ -695,7 +696,7 @@ export function CollectScreen({
       currentIds.includes(item.id) ? currentIds : [...currentIds, item.id]
     );
     setSelectedTrendItem(null);
-    onAction(`已确认来源：${item.title}`);
+    onAction(`已确认来源：${item.title}。可保存摘要，也可以继续采集下一批。`);
   }
 
   async function deleteTrendSource(item: MobileTrendContent) {
@@ -1116,6 +1117,28 @@ export function CollectScreen({
                 : "保存摘要"}
           </button>
         </div>
+
+        {reviewedTrendIds.length ? (
+          <div className="mt-2 rounded-[22px] border border-[#d6e8df] bg-[#f4fbf6] px-3 py-2">
+            <p className="text-[11px] font-semibold leading-5 text-[#3f6f58]">
+              已确认 {reviewedTrendIds.length} 条素材，仍会保留在待保存摘要里；需要补充素材时可直接采下一批。
+            </p>
+            <button
+              className="mt-2 flex h-10 w-full touch-manipulation items-center justify-center gap-2 rounded-full bg-white text-xs font-black text-[#23854f] shadow-[inset_0_1px_0_rgba(255,255,255,0.86)] active:scale-[0.99] disabled:opacity-60"
+              data-testid="mobile-collect-next-batch"
+              disabled={collectionBusy}
+              onClick={() => void runCollectionJob("manual")}
+              type="button"
+            >
+              {busyAction === "job" || activeCollectionJobId !== null ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Zap className="h-4 w-4" />
+              )}
+              {busyAction === "job" || activeCollectionJobId !== null ? "采集中" : "继续采集下一批"}
+            </button>
+          </div>
+        ) : null}
 
         <button
           className="mt-2 flex h-10 w-full touch-manipulation items-center justify-center rounded-full border border-white/[0.82] bg-white/[0.52] text-xs font-black text-muted active:scale-[0.99]"
