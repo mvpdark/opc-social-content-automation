@@ -1930,3 +1930,74 @@ Kept.
 ### Next candidate loop
 
 - Stabilize the mobile cover-failure E2E wait so it waits on the finished failure state rather than a short status-text timeout during progress animation.
+
+## Loop 27 - Stabilize mobile cover-failure E2E wait
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 26's first full E2E run exposed an intermittent failure in `mobile preserves draft when cover generation fails`: the test asserted the top-level failure status while the UI was still showing cover-generation progress. The flow itself passed when run alone and in a later full rerun, so the issue was the test waiting on a short-lived status surface rather than the finished failure state.
+
+### Hypothesis
+
+If the test first waits for `mobile-generation-progress` to reach the explicit `生成失败` terminal state with a longer timeout, then the later status, retry button, and preserved-draft assertions will run after the UI has actually finished the cover-failure transition.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Reordered the mobile cover-failure test to wait for the generation progress terminal failure state before asserting the top-level status text.
+- Increased only that terminal-state wait to 20 seconds to tolerate parallel E2E scheduling without hiding real hangs.
+- Left product code and mocked service behavior unchanged.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile preserves draft when cover generation fails" --project=chromium --repeat-each=3
+# 3 passed
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run e2e
+# 21 passed, 1 skipped
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 16/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 12/15
+- Maintainability: 9/10
+- UX polish: 2/5
+- Total: 79/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The env-backed live login smoke still skips unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+- This stabilizes the test wait only; if future UI progress states change labels, the E2E will need a matching terminal-state selector or data attribute.
+
+### Next candidate loop
+
+- Add a small reusable E2E helper for mobile terminal generation states, or add an explicit data-state attribute to progress components if more progress-related flake appears.

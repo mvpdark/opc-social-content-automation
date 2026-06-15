@@ -922,10 +922,12 @@ test.describe("OPC smoke coverage", () => {
 
     await page.getByTestId("mobile-generate-draft").click();
 
+    await expect(page.getByTestId("mobile-generation-progress")).toContainText("生成失败", {
+      timeout: 20000
+    });
     await expect(page.getByTestId("mobile-status")).toContainText(
       "文案草稿已生成，但封面图失败：封面服务暂时不可用，请稍后重试。"
     );
-    await expect(page.getByTestId("mobile-generation-progress")).toContainText("生成失败");
     await expect(page.getByTestId("mobile-generate-draft")).toContainText("重新一键生成");
 
     const failedCoverDraftCard = page.getByTestId(
