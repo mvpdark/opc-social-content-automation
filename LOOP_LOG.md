@@ -2725,3 +2725,79 @@ Kept. The fast verifier now fails if PC/mobile login loses the 5xx service-failu
 ### Next candidate loop
 
 - Continue auth/session recovery hardening, or move to draft output schema/preview checklist resilience.
+
+## Loop 38 - Reject blank generated drafts
+
+Date: 2026-06-16
+
+### Observation
+
+The draft generation service saved the model result as a draft after provider and topic-relevance checks. If a draft provider returned whitespace for a generic/custom topic, the relevance guard could pass and the app could persist a draft with no usable body.
+
+### Hypothesis
+
+If the backend rejects blank or non-string draft output before topic relevance and database persistence, then users will receive a recoverable generation error instead of a misleading empty draft, and future loops will catch regressions through backend tests plus the fast project verifier.
+
+### Patch
+
+Files changed:
+
+- `backend/app/services/content_service.py`
+- `backend/tests/test_content_source_context.py`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added `_draft_output_schema_issue` to classify blank/non-string draft output.
+- Recorded invalid draft output as a `schema_invalid` generation log entry.
+- Returned HTTP 502 with clear Chinese recovery copy instead of saving empty content.
+- Added a regression test proving blank model output does not create `Content` and does create a `GenerationLog`.
+- Added static contract checks so `scripts/verify_project.py` protects the guard and its test.
+
+### Verification
+
+Commands run:
+
+```bash
+backend\.venv\Scripts\python.exe -m pytest backend\tests\test_content_source_context.py -q
+# passed: 5 passed
+
+python scripts\verify_project.py --keep-cache
+# passed
+# content_production_contract_checked=971
+
+backend\.venv\Scripts\python.exe -m pytest backend\tests -q
+# passed: 226 passed, 1 warning
+
+npm run typecheck
+# passed
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 24/30
+- Correctness: 20/20
+- Test coverage: 19/20
+- Safety/security: 14/15
+- Maintainability: 10/10
+- UX polish: 3/5
+- Total: 90/100
+
+### Result
+
+Kept. Blank generated drafts are now rejected before persistence, with a recoverable error and an auditable `schema_invalid` log.
+
+### Remaining risk
+
+- This loop only guards empty/non-string output; richer structured completeness for title/tags/checklist/cover suggestion still needs a later schema-normalization pass.
+- The browser E2E generation path remains mostly mocked, so this backend guard is covered by backend tests and the project verifier rather than Playwright.
+
+### Next candidate loop
+
+- Add a small draft completeness normalizer/checklist guard, or continue one-click topic alignment coverage for custom topics.

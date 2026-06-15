@@ -216,6 +216,12 @@ def _draft_topic_relevance_issue(payload: ContentGenerateRequest, draft: str) ->
     )
 
 
+def _draft_output_schema_issue(draft: object) -> str | None:
+    if not isinstance(draft, str) or not draft.strip():
+        return "草稿生成结果为空，请补充素材或稍后重试。"
+    return None
+
+
 def build_draft_prompt_package(
     db: Session,
     payload: ContentGenerateRequest,
@@ -319,6 +325,23 @@ def generate_content_draft(
             error=str(exc.detail),
         )
         raise
+
+    schema_issue = _draft_output_schema_issue(draft)
+    if schema_issue:
+        record_generation_log(
+            db=db,
+            current_user=current_user,
+            purpose="draft_generation",
+            model="draft_model",
+            package=package,
+            result=draft if isinstance(draft, str) else "",
+            status="schema_invalid",
+            error=schema_issue,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=schema_issue,
+        )
 
     relevance_issue = _draft_topic_relevance_issue(payload, draft)
     if relevance_issue:

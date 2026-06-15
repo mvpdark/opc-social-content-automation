@@ -1,7 +1,11 @@
+import pytest
+from fastapi import HTTPException, status
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.db.base import Base
+from app.models.content import Content
+from app.models.generation_log import GenerationLog
 from app.models.knowledge_base import KnowledgeBase
 from app.models.user import User
 from app.schemas.content import ContentGenerateRequest
@@ -176,3 +180,44 @@ def test_generated_content_persists_visible_source_context(monkeypatch) -> None:
     assert content.source_context["knowledge_items"][0]["title"] == "水博榜结构参考"
     assert "official pages" in content.source_context["web_search"]["answer"]
     assert content.source_context["web_search"]["results"][0]["title"] == "Official source"
+
+
+def test_generate_content_rejects_blank_ai_draft(monkeypatch) -> None:
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as db:
+        user = User(id=1, phone="test", password_hash="hash", role="promoter")
+        db.add(user)
+        db.commit()
+
+        monkeypatch.setattr(
+            content_service.model_router,
+            "draft_model",
+            lambda _prompt_name, _payload: " \n\t ",
+        )
+        monkeypatch.setattr(
+            "app.services.content_service.build_live_web_search_context",
+            lambda **_kwargs: None,
+        )
+
+        with pytest.raises(HTTPException) as exc:
+            generate_content_draft(
+                db,
+                ContentGenerateRequest(
+                    platform="xiaohongshu",
+                    topic="general draft quality check",
+                    tags=[],
+                ),
+                user,
+            )
+
+        assert exc.value.status_code == status.HTTP_502_BAD_GATEWAY
+        assert "草稿生成结果为空" in exc.value.detail
+        assert db.query(Content).count() == 0
+
+        log = db.query(GenerationLog).one()
+        assert log.status == "schema_invalid"
+        assert log.result == " \n\t "
+        assert log.error is not None
+        assert "草稿生成结果为空" in log.error

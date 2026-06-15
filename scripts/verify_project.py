@@ -1239,6 +1239,12 @@ def validate_content_production_contract() -> int:
     image_service_text = (
         ROOT / "backend" / "app" / "services" / "image_service.py"
     ).read_text(encoding="utf-8")
+    content_service_text = (
+        ROOT / "backend" / "app" / "services" / "content_service.py"
+    ).read_text(encoding="utf-8")
+    content_source_context_test_text = (
+        ROOT / "backend" / "tests" / "test_content_source_context.py"
+    ).read_text(encoding="utf-8")
     trend_browser_scripts_text = (
         ROOT / "backend" / "app" / "services" / "trend_browser_scripts.py"
     ).read_text(encoding="utf-8")
@@ -1457,6 +1463,34 @@ def validate_content_production_contract() -> int:
         total += 1
         if snippet not in image_service_text:
             raise SystemExit(f"Missing content production backend contract: {snippet}")
+
+    draft_schema_contracts = [
+        (
+            content_service_text,
+            [
+                "def _draft_output_schema_issue",
+                "草稿生成结果为空，请补充素材或稍后重试。",
+                'status="schema_invalid"',
+                "status.HTTP_502_BAD_GATEWAY",
+            ],
+            "draft output schema guard",
+        ),
+        (
+            content_source_context_test_text,
+            [
+                "test_generate_content_rejects_blank_ai_draft",
+                "db.query(Content).count() == 0",
+                "GenerationLog",
+                "schema_invalid",
+            ],
+            "draft output schema test",
+        ),
+    ]
+    for text, snippets, contract_name in draft_schema_contracts:
+        for snippet in snippets:
+            total += 1
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
 
     topic_preset_contract_snippets = [
         "export const generationTopicPresets",
