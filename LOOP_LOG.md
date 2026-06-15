@@ -2143,3 +2143,74 @@ Kept.
 ### Next candidate loop
 
 - Add PC source-topic success coverage through the shared topic-alignment helper, or return to production workflow hardening if source coverage is sufficient.
+
+## Loop 30 - Cover PC source-topic preview copy alignment
+
+Date: 2026-06-16
+
+### Observation
+
+PC one-click success coverage now protects sales, route, mentor, and timing topic families. Source-style topics were still represented mostly by published-status and cover-failure paths, even though they are the topic family most likely to require official pages, fee data, logo permissions, or other current facts.
+
+### Hypothesis
+
+If the shared PC topic-alignment scenario runs with the `source-official-fee-check` preset and a dedicated content id, then the desktop source-topic success path will verify topic, audience, tags, knowledge query, cover direction, source evidence, preview copy, and no-publishing behavior without adding duplicate fixture logic.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added an isolated PC source-topic generated content id.
+- Added a PC one-click source-topic E2E case using the existing `source-official-fee-check` preset and shared topic-alignment helper.
+- Kept the source evidence assertions on the mocked knowledge/web-search path so CI can verify the workflow contract without inventing real market or school facts.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC one-click generation keeps selected source topic aligned through preview copy" --project=chromium
+# 1 passed
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run e2e
+# 23 passed, 1 skipped
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 22/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 14/15
+- Maintainability: 9/10
+- UX polish: 3/5
+- Total: 88/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The env-backed live login smoke still skips unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+- The new source-topic success path uses deterministic mocked knowledge/web-search evidence for CI. It protects routing, request payloads, preview/copy alignment, and no-publishing behavior, but does not validate live Tavily/provider availability.
+
+### Next candidate loop
+
+- Add a negative guard for source/current-fact topics if the UI ever allows generation without source evidence, or return to production workflow hardening around auth/session and review lifecycle.

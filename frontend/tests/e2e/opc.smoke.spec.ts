@@ -21,6 +21,7 @@ const E2E_PC_PUBLISHED_STATUS_CONTENT_ID = 8904;
 const E2E_PC_ROUTE_TOPIC_CONTENT_ID = 8905;
 const E2E_PC_MENTOR_TOPIC_CONTENT_ID = 8906;
 const E2E_PC_TIMELINE_TOPIC_CONTENT_ID = 8907;
+const E2E_PC_SOURCE_TOPIC_CONTENT_ID = 8908;
 const E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID = 8911;
 const E2E_MOBILE_REVIEW_CHANGES_CONTENT_ID = 8912;
 
@@ -1179,6 +1180,13 @@ test.describe("OPC smoke coverage", () => {
     await runPcTopicAlignmentScenario(page, {
       contentId: E2E_PC_TIMELINE_TOPIC_CONTENT_ID,
       presetKey: "timeline-main"
+    });
+  });
+
+  test("PC one-click generation keeps selected source topic aligned through preview copy", async ({ page }) => {
+    await runPcTopicAlignmentScenario(page, {
+      contentId: E2E_PC_SOURCE_TOPIC_CONTENT_ID,
+      presetKey: "source-official-fee-check"
     });
   });
 
