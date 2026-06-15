@@ -620,10 +620,16 @@ def validate_frontend_design_contract() -> int:
         "workspace-evidence-toggle",
         ".theme-cyberpunk .workspace-evidence-toggle[aria-expanded=\"true\"]",
         "深色石墨、HUD 网格和霓虹边缘",
+        'const showingCurrentTheme = interfaceStyle === "cyberpunk"',
+        'const displayThemeStyle = showingCurrentTheme ? interfaceStyle : recommendedTheme.style',
+        'const displayThemeReason = showingCurrentTheme',
+        '{showingCurrentTheme ? "当前主题" : "当前页推荐"}',
+        'theme-${displayThemeStyle}',
+        "usingDisplayTheme",
     ]
     for snippet in cyberpunk_theme_contract_snippets:
         total += 1
-        if snippet not in f"{css_text}\n{data_text}\n{workspace_text}":
+        if snippet not in f"{css_text}\n{data_text}\n{workspace_text}\n{app_shell_text}":
             raise SystemExit(f"Missing cyberpunk theme contract: {snippet}")
 
     for tab_id in tab_ids:

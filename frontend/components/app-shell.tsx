@@ -61,7 +61,14 @@ export function AppShell({
   const androidHref = `/android?from=${encodeURIComponent(tabHref(activeTab))}`;
   const recommendedTheme = tabThemeRecommendations[activeTab];
   const recommendedStyle = interfaceStyles.find((style) => style.id === recommendedTheme.style);
-  const usingRecommendedTheme = recommendedTheme.style === interfaceStyle;
+  const currentStyle = interfaceStyles.find((style) => style.id === interfaceStyle);
+  const showingCurrentTheme = interfaceStyle === "cyberpunk";
+  const displayThemeStyle = showingCurrentTheme ? interfaceStyle : recommendedTheme.style;
+  const displayTheme = showingCurrentTheme ? currentStyle : recommendedStyle;
+  const displayThemeReason = showingCurrentTheme
+    ? currentStyle?.description ?? "当前工作台主题。"
+    : recommendedTheme.reason;
+  const usingDisplayTheme = displayThemeStyle === interfaceStyle;
 
   return (
     <main className={`theme-${interfaceStyle} workspace-shell min-h-screen text-ink`}>
@@ -133,31 +140,31 @@ export function AppShell({
             <div className="pc-shell-theme-card glass-subtle rounded-md border p-3">
               <div className="flex items-center gap-2 text-xs font-medium text-muted">
                 <Palette className="h-4 w-4 text-steel" />
-                当前页推荐
+                {showingCurrentTheme ? "当前主题" : "当前页推荐"}
               </div>
               <div className="mt-2 flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="truncate text-sm font-semibold">
-                    {recommendedStyle?.label ?? "苹果风"}
+                    {displayTheme?.label ?? "苹果风"}
                   </div>
-                  <div className={`theme-${recommendedTheme.style} mt-2 flex gap-1`} aria-hidden="true">
+                  <div className={`theme-${displayThemeStyle} mt-2 flex gap-1`} aria-hidden="true">
                     <span className="h-1.5 w-8 rounded-sm bg-steel" />
                     <span className="h-1.5 w-8 rounded-sm bg-moss" />
                     <span className="h-1.5 w-8 rounded-sm bg-coral" />
                   </div>
                   {showHelperText ? (
-                    <p className="mt-1 text-xs leading-5 text-muted">{recommendedTheme.reason}</p>
+                    <p className="mt-1 text-xs leading-5 text-muted">{displayThemeReason}</p>
                   ) : null}
                 </div>
-                {usingRecommendedTheme ? (
+                {usingDisplayTheme ? (
                   <span className="glass-control shrink-0 rounded-md border px-2 py-1 text-xs font-medium text-ink">
                     已使用
                   </span>
                 ) : (
                   <a
-                    aria-label={`切换到${recommendedStyle?.label ?? "推荐"}主题`}
+                    aria-label={`切换到${displayTheme?.label ?? "推荐"}主题`}
                     className="glass-control shrink-0 rounded-md border px-2 py-1 text-xs font-medium text-ink"
-                    href={themeHref(recommendedTheme.style)}
+                    href={themeHref(displayThemeStyle)}
                   >
                     切换
                   </a>
