@@ -2286,3 +2286,75 @@ Kept.
 ### Next candidate loop
 
 - Mirror the source-preview failure guard on mobile creation, or continue hardening auth/session recovery if mobile source blocking is already acceptable.
+
+## Loop 32 - Block mobile source-topic generation after source preview failure
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 31 protected the PC creation page from generating a source/current-fact topic after source preview failed. Mobile creation had the same source-preview state but still only disabled generation while the request was busy, so a failed source lookup could leave the one-click generation button available.
+
+### Hypothesis
+
+If mobile source-type recommended topics clear stale evidence on source-preview failure and disable one-click generation until the user retries source preview, then mobile users will not create false drafts when official/current-fact evidence is unavailable. A focused mobile E2E test can verify that content, image, and publishing-like calls are not made after source preview fails.
+
+### Patch
+
+Files changed:
+
+- `frontend/components/mobile-create-screen.tsx`
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a mobile source-topic guard that blocks one-click generation after a source-preview error for `source-*` topic presets.
+- Cleared stale mobile source evidence when source preview fails.
+- Added a mobile E2E failure scenario that verifies the retry affordance remains available, the generate button is disabled, no draft appears, and generation/publishing-like calls are not made.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile source preview failure blocks source topic generation without false draft" --project=chromium
+# 1 passed
+
+python scripts/verify_project.py --keep-cache
+# passed
+
+npm run e2e
+# 25 passed, 1 skipped
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 24/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 3/5
+- Total: 91/100
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- The env-backed live login smoke still skips unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
+- The source-preview failure guard applies to recommended `source-*` topics. Custom topics can still generate after source preview failure unless they are later classified as source/current-fact topics.
+
+### Next candidate loop
+
+- Consider adding a lightweight source/current-fact classifier for custom topics, or return to auth/session recovery and draft review lifecycle hardening.

@@ -14,6 +14,7 @@ const MOBILE_TOPIC_PRESET_BUTTON_SELECTOR =
 const E2E_GENERATED_CONTENT_ID = 8801;
 const E2E_COVER_FAILURE_CONTENT_ID = 8802;
 const E2E_CONTENT_FAILURE_CONTENT_ID = 8803;
+const E2E_MOBILE_SOURCE_PREVIEW_FAILURE_CONTENT_ID = 8804;
 const E2E_PC_GENERATED_CONTENT_ID = 8901;
 const E2E_PC_CONTENT_FAILURE_CONTENT_ID = 8902;
 const E2E_PC_COVER_FAILURE_CONTENT_ID = 8903;
@@ -200,7 +201,8 @@ async function mockMobileGenerationFixture(
   {
     contentId = E2E_GENERATED_CONTENT_ID,
     failContent = false,
-    failCover = false
+    failCover = false,
+    failSourcePreview = false
   }: MobileGenerationFixtureOptions = {}
 ) {
   const requests: MobileGenerationFixtureRequests = {
@@ -214,6 +216,14 @@ async function mockMobileGenerationFixture(
 
   await page.route("**/api/content/source-preview", async (route) => {
     requests.sourcePreview.push(readJsonPayload(route.request().postData()));
+    if (failSourcePreview) {
+      await route.fulfill({
+        body: JSON.stringify({ detail: "E2E mobile source preview unavailable." }),
+        contentType: "application/json",
+        status: 503
+      });
+      return;
+    }
     await route.fulfill({
       body: JSON.stringify({ source_context: sourceContext }),
       contentType: "application/json",
@@ -914,6 +924,55 @@ test.describe("OPC smoke coverage", () => {
       template: "xiaohongshu-cover"
     });
     expect(String(generationRequests.imageGenerate[0].style_notes)).toContain(preset.coverDirection);
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("mobile source preview failure blocks source topic generation without false draft", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const acceptedLogin = createLoginInput();
+    const preset = requireTopicPreset("source-official-fee-check");
+    const expectedTags = parseTagText(preset.tags);
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockMobileGenerationFixture(page, preset, {
+      contentId: E2E_MOBILE_SOURCE_PREVIEW_FAILURE_CONTENT_ID,
+      failSourcePreview: true
+    });
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=create`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+    await page.getByTestId("mobile-creation-project-postgraduate-phd").click();
+
+    await page.getByTestId("mobile-topic").fill(preset.topic);
+    await expect(page.getByTestId("mobile-topic")).toHaveValue(preset.topic);
+    await expect(page.getByTestId("mobile-audience")).toHaveValue(preset.audience);
+    await expect(page.getByTestId("mobile-tags")).toHaveValue(preset.tags);
+
+    await page.getByTestId("mobile-source-preview-button").click();
+    await expect(page.getByTestId("mobile-source-evidence")).toContainText(
+      "E2E mobile source preview unavailable."
+    );
+    await expect(page.getByTestId("mobile-source-preview-button")).toBeEnabled();
+    await expect(page.getByTestId("mobile-generate-draft")).toBeDisabled();
+    await expect(page.getByTestId("mobile-generate-draft")).toContainText("先重新查看依据");
+    await expect(
+      page.getByTestId(`mobile-draft-history-card-${E2E_MOBILE_SOURCE_PREVIEW_FAILURE_CONTENT_ID}`)
+    ).toHaveCount(0);
+
+    expect(generationRequests.sourcePreview).toHaveLength(1);
+    expect(generationRequests.contentGenerate).toHaveLength(0);
+    expect(generationRequests.imageGenerate).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.sourcePreview[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: preset.knowledgeQuery,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: preset.audience,
+      topic: preset.topic
+    });
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 

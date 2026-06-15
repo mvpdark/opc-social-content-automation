@@ -147,6 +147,7 @@ export function CreateScreen({
   const coverImageUrl = generatedCover ? resolveAssetUrl(generatedCover.image_url) : null;
   const selectedProject = findEnabledMobileCreationProject(selectedProjectId);
   const selectedTopicPreset = findGenerationTopicPresetByTopic(topic);
+  const sourceEvidenceRequired = Boolean(selectedTopicPreset?.key.startsWith("source-"));
   const generationKnowledgeQuery = selectedTopicPreset?.knowledgeQuery ?? topic;
   const currentMobileGenerationInputSignature = buildGenerationInputSignature({
     knowledgeQuery: generationKnowledgeQuery,
@@ -178,6 +179,9 @@ export function CreateScreen({
       : null;
   const visibleMobileSourceContext =
     matchingMobileSourceContext ?? matchingMobileGeneratedSourceContext;
+  const sourceEvidenceBlocked =
+    sourceEvidenceRequired && Boolean(sourcePreviewError) && !visibleMobileSourceContext;
+  const mobileGenerateDraftDisabled = busy || sourceEvidenceBlocked;
   const todayDraftCount = countMobileDraftsToday(draftHistory);
   const selectedDraftIdSet = new Set(selectedDraftIds);
   const selectedDraftItems = draftHistory.filter((item) => selectedDraftIdSet.has(item.content.id));
@@ -925,6 +929,7 @@ export function CreateScreen({
       const message = sanitizeServiceErrorMessage(
         error instanceof Error ? error.message : "检索依据读取失败。"
       );
+      setSourceContext(null);
       setSourcePreviewError(message);
       onAction(message);
     } finally {
@@ -935,6 +940,10 @@ export function CreateScreen({
   async function generateDraftAndCover() {
     if (!topic.trim()) {
       onAction("先填写选题，再生成草稿。");
+      return;
+    }
+    if (sourceEvidenceBlocked) {
+      onAction("检索依据读取失败，请先重新查看依据后再生成。");
       return;
     }
 
@@ -1285,13 +1294,16 @@ export function CreateScreen({
           aria-label="一键完成撰稿和封面图"
           className="mt-4 flex h-[54px] w-full touch-manipulation items-center justify-center gap-2 rounded-full bg-[#ff2442] text-sm font-black text-white shadow-[0_16px_34px_rgba(255,36,66,0.22)] active:scale-[0.99] disabled:opacity-60"
           data-testid="mobile-generate-draft"
-          disabled={busy}
+          disabled={mobileGenerateDraftDisabled}
           onClick={generateDraftAndCover}
+          title={sourceEvidenceBlocked ? "检索依据读取失败，请先重新查看依据后再生成" : undefined}
           type="button"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
           {busy
             ? `${progressLabel} ${progressPercent}%`
+            : sourceEvidenceBlocked
+              ? "先重新查看依据"
             : generatedContentMatchesCurrentInputs
               ? "重新一键生成"
               : "一键撰稿+封面图"}
