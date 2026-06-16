@@ -272,6 +272,16 @@ def validate_safety_gates() -> int:
             "ContentReview.status == \"approved\"",
             "只有人工确认通过的内容可以导出。",
         ],
+        "backend/app/services/review_service.py": [
+            'HUMAN_REVIEWABLE_STATUSES = {"draft", "rewritten", "review_pending"}',
+            "content.status not in HUMAN_REVIEWABLE_STATUSES",
+            "当前状态不能记录人工审核",
+        ],
+        "backend/tests/test_review_service.py": [
+            "test_human_review_rejects_non_reviewable_lifecycle_statuses",
+            '["approved", "published", "submitted", "rejected", "changes_requested"]',
+            "assert content.status == content_status",
+        ],
         "backend/app/services/content_service.py": [
             "这个选题需要实时来源",
             "没有可见 Tavily 结果",

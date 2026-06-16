@@ -5334,3 +5334,65 @@ Kept. Mobile one-click generation now preserves the draft for manual review but 
 ### Next candidate loop
 
 - Inspect review-queue decision failure handling across mobile and PC, or add screenshot artifacts for the highest-risk lifecycle warning surfaces.
+
+## Loop 76 - Backend human review lifecycle guard
+
+Date: 2026-06-16
+
+### Observation
+
+Frontend preview/export now treats backend `published` and `submitted` generated content as unsafe lifecycle states, and mobile review only shows `draft`, `rewritten`, and `review_pending` candidates. The backend `record_human_review()` guard only rejected `published`, so a direct API call could still overwrite `approved`, `submitted`, `rejected`, or `changes_requested` content with a new human review decision instead of forcing the user back through the draft/rewrite/review request flow.
+
+### Hypothesis
+
+If the backend accepts human review decisions only for `draft`, `rewritten`, or `review_pending` content, and rejects terminal/returned lifecycle states with HTTP 409, then direct API calls cannot bypass the same human-review state machine the UI already presents.
+
+### Patch
+
+- Added `HUMAN_REVIEWABLE_STATUSES` in `backend/app/services/review_service.py`.
+- Changed `record_human_review()` to reject any content status outside `draft`, `rewritten`, and `review_pending`.
+- Added backend tests covering `approved`, `published`, `submitted`, `rejected`, and `changes_requested` statuses.
+- Extended `scripts/verify_project.py` safety gates to require the backend lifecycle guard and the regression test.
+
+### Verification
+
+```text
+cd backend && ..\.venv\Scripts\python.exe -m pytest tests/test_review_service.py
+python scripts\verify_project.py --keep-cache
+cd backend && ..\.venv\Scripts\python.exe -m pytest tests
+git diff --check
+```
+
+All checks passed.
+
+Evidence:
+
+- Focused backend review-service tests passed: 5 passed.
+- Full backend test suite passed: 235 passed, with one existing FastAPI/TestClient deprecation warning.
+- Project verifier passed and now counts the added review lifecycle safety contracts.
+- `git diff --check` passed with no whitespace errors.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 25/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 4/5
+- Total: 94/100
+
+### Result
+
+Kept. Direct backend human-review writes now follow the same lifecycle boundary as the mobile review queue and preview/export safety model.
+
+### Remaining risk
+
+- This is a backend service/API guard; PC still does not have a dedicated review queue surface.
+- Future loops can add endpoint-level E2E/API tests for review decisions if the UI adds a PC review workflow.
+
+### Next candidate loop
+
+- Inspect whether PC should expose a small read-only review queue or add screenshot artifacts for the mobile lifecycle warning surfaces.

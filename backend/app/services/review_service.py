@@ -11,6 +11,7 @@ from app.services.model_router import load_prompt, model_router
 
 
 EDITABLE_STATUSES = {"draft", "rewritten", "review_pending", "changes_requested"}
+HUMAN_REVIEWABLE_STATUSES = {"draft", "rewritten", "review_pending"}
 
 
 def get_content_or_404(db: Session, content_id: int) -> Content:
@@ -41,10 +42,10 @@ def record_human_review(
     payload: ContentReviewRequest,
     current_user: User,
 ) -> ContentReview:
-    if content.status == "published":
+    if content.status not in HUMAN_REVIEWABLE_STATUSES:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="已发布内容不能再次审核。",
+            detail=f"当前状态不能记录人工审核：{content.status}。请先回到草稿、改写或待确认流程。",
         )
 
     review = ContentReview(
