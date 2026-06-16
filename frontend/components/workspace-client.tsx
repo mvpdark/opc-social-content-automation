@@ -2477,6 +2477,7 @@ function ContentView({
   const [pinnedDraftIds, setPinnedDraftIds] = useState<number[]>([]);
   const [draftActionError, setDraftActionError] = useState<string | null>(null);
   const [contentListError, setContentListError] = useState<string | null>(null);
+  const [contentListReloadKey, setContentListReloadKey] = useState(0);
   const [previewLoading, setPreviewLoading] = useState(true);
   const selectedCreationProject = findEnabledCreationProject(selectedCreationProjectId);
   const pcReviewQueueContents = draftHistory.filter(isPcReviewQueueCandidate);
@@ -2588,6 +2589,12 @@ function ContentView({
     updateCreationProjectQuery(null);
   }
 
+  function handleRetryContentList() {
+    setPreviewLoading(true);
+    setContentListError(null);
+    setContentListReloadKey((current) => current + 1);
+  }
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const project = findEnabledCreationProject(params.get("project"));
@@ -2676,7 +2683,7 @@ function ContentView({
     return () => {
       active = false;
     };
-  }, []);
+  }, [contentListReloadKey]);
 
   if (!selectedCreationProject) {
     return (
@@ -2745,6 +2752,7 @@ function ContentView({
             contents={pcReviewQueueContents}
             error={contentListError}
             loading={previewLoading}
+            onRetry={handleRetryContentList}
             onSelectContent={handleSelectDraft}
           />
           <Panel helper="生成前需要明确输入、改写和确认边界。" title="生产控制">
@@ -2779,11 +2787,13 @@ function PcReviewQueuePanel({
   contents,
   error,
   loading,
+  onRetry,
   onSelectContent
 }: {
   contents: GeneratedContent[];
   error: string | null;
   loading: boolean;
+  onRetry: () => void;
   onSelectContent: (content: GeneratedContent) => void;
 }) {
   const visibleContents = contents.slice(0, 4);
@@ -2822,6 +2832,14 @@ function PcReviewQueuePanel({
             <p className="mt-2 text-xs font-medium text-muted">
               请稍后刷新，或先检查服务连接；OPC 不会在队列不可读时自动发布。
             </p>
+            <button
+              className={`${secondaryButtonClass} mt-3 h-9 px-3 text-xs`}
+              data-testid="pc-review-queue-retry"
+              onClick={onRetry}
+              type="button"
+            >
+              重新读取队列
+            </button>
           </div>
         ) : visibleContents.length ? (
           <div className="space-y-2" data-testid="pc-review-queue-list">

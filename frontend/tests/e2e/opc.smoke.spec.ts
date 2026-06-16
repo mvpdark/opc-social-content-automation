@@ -64,6 +64,7 @@ type MobileGenerationFixtureOptions = {
   failContent?: boolean;
   failContentDetail?: string;
   failContentList?: boolean;
+  failContentListUntilReleased?: boolean;
   failCover?: boolean;
   failSourcePreview?: boolean;
   responseTags?: string[];
@@ -80,6 +81,7 @@ type PcGenerationFixtureRequests = MobileGenerationFixtureRequests & {
   contentList: number;
   imageList: number;
   providerStatus: number;
+  releaseContentListFailures: () => void;
   rewrite: JsonPayload[];
 };
 
@@ -505,11 +507,13 @@ async function mockPcGenerationFixture(
     failContent = false,
     failContentDetail,
     failContentList = false,
+    failContentListUntilReleased = false,
     failCover = false,
     failSourcePreview = false,
     responseTags
   }: MobileGenerationFixtureOptions = {}
 ) {
+  let contentListFailuresReleased = false;
   const requests: PcGenerationFixtureRequests = {
     contentGenerate: [],
     contentList: 0,
@@ -517,6 +521,9 @@ async function mockPcGenerationFixture(
     imageGenerate: [],
     imageList: 0,
     providerStatus: 0,
+    releaseContentListFailures: () => {
+      contentListFailuresReleased = true;
+    },
     rewrite: [],
     sourcePreview: []
   };
@@ -548,7 +555,7 @@ async function mockPcGenerationFixture(
   });
   await page.route(/\/api\/content\/list(?:\?|$)/, async (route) => {
     requests.contentList += 1;
-    if (failContentList) {
+    if (failContentList || (failContentListUntilReleased && !contentListFailuresReleased)) {
       await route.fulfill({
         body: JSON.stringify({ detail: "E2E PC review queue unavailable." }),
         contentType: "application/json",
@@ -2039,6 +2046,48 @@ test.describe("OPC smoke coverage", () => {
     );
 
     expect(generationRequests.contentList).toBeGreaterThan(0);
+    expect(generationRequests.contentGenerate).toHaveLength(0);
+    expect(generationRequests.imageGenerate).toHaveLength(0);
+    expect(generationRequests.rewrite).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("PC read-only review queue retry reloads content list only", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const acceptedLogin = createLoginInput();
+    const pendingPreset = requireTopicPreset("timeline-main");
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockPcGenerationFixture(page, pendingPreset, {
+      failContentListUntilReleased: true,
+      contentListItems: [
+        {
+          contentId: E2E_PC_REVIEW_QUEUE_CONTENT_ID,
+          preset: pendingPreset,
+          status: "review_pending"
+        }
+      ]
+    });
+
+    await page.goto(`${BASE_URL}/?theme=mint&tab=content&project=postgraduate-phd`);
+    await expect(page.getByTestId("pc-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("pc-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("pc-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("pc-login-submit").click();
+
+    await expect(page.getByTestId("pc-review-queue-error")).toContainText(
+      "E2E PC review queue unavailable."
+    );
+    generationRequests.releaseContentListFailures();
+    await page.getByTestId("pc-review-queue-retry").click();
+
+    await expect(page.getByTestId("pc-review-queue-count")).toContainText("1");
+    await expect(page.getByTestId(`pc-review-queue-card-${E2E_PC_REVIEW_QUEUE_CONTENT_ID}`)).toContainText(
+      pendingPreset.topic
+    );
+    await expect(page.getByTestId("pc-review-queue-error")).toHaveCount(0);
+
+    expect(generationRequests.contentList).toBeGreaterThan(1);
     expect(generationRequests.contentGenerate).toHaveLength(0);
     expect(generationRequests.imageGenerate).toHaveLength(0);
     expect(generationRequests.rewrite).toHaveLength(0);

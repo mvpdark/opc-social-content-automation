@@ -5531,3 +5531,70 @@ Kept. PC operators can now tell the difference between an empty review queue and
 ### Next candidate loop
 
 - Add screenshot artifacts for PC/mobile lifecycle warning states, or add a retry-only queue reload control with E2E coverage.
+
+## Loop 79 - PC review queue retry reload
+
+Date: 2026-06-16
+
+### Observation
+
+The PC read-only review queue now shows a clear error when `/content/list?platform=xiaohongshu` fails, but the recovery is passive: operators must reload the full page to try reading the queue again. This is heavier than needed for a transient read failure and can interrupt the draft preview workflow.
+
+### Hypothesis
+
+If the PC review queue error state includes a retry control that only reloads the content list, then users can recover from transient queue-read failures without adding any publishing, approval, generation, image, or rewrite action.
+
+### Patch
+
+- Added a `contentListReloadKey` and retry handler to the PC content page so queue reloads can be requested without changing the selected project or starting generation.
+- Added a `重新读取队列` button to the PC review queue error state.
+- Extended the PC E2E fixture with a manually releasable content-list failure mode for stable retry testing under dev-mode repeated effects.
+- Added a focused Playwright E2E that verifies the error appears, the retry reloads the pending queue, and no generation, image, rewrite, or publishing-like calls occur.
+- Extended `scripts/verify_project.py` contracts for the retry UI and E2E.
+
+### Verification
+
+```text
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx --version
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC read-only review queue retry reloads content list only" --project=chromium
+cd frontend && npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+All checks passed.
+
+Evidence:
+
+- The focused PC Playwright test initially exposed a dev-mode timing issue with count-based failures; the fixture was tightened to use a manual failure release before retry.
+- The final focused E2E passed and confirmed retry reloads the content list after a visible error.
+- The same E2E confirmed zero content generation, image generation, rewrite, or publishing-like requests.
+- Frontend typecheck/lint, production build, and project verifier passed.
+- `git diff --check` passed with only the existing CRLF-to-LF normalization warning for the touched TSX file.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 22/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 5/5
+- Total: 91/100
+
+### Result
+
+Kept. PC operators can retry a transient review-queue read failure without leaving the workflow, and the retry remains read-only.
+
+### Remaining risk
+
+- Retry reloads the whole content-list-backed draft history, not only the side-rail queue, matching the current data flow but still broader than a dedicated queue endpoint.
+- PC approval/change-request actions remain intentionally absent.
+
+### Next candidate loop
+
+- Add screenshot artifacts for PC/mobile lifecycle warning states, or inspect whether a dedicated read-only review queue endpoint would reduce UI coupling.
