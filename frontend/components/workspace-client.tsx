@@ -4067,7 +4067,7 @@ function GeneratedPostExportCard({
   const warnings = complianceWarnings(content);
   const testDraft = isTestDraft(content);
   const lifecycleWarning = generatedContentLifecycleWarning(content.status);
-  const canCopy = !testDraft && !generationBusy;
+  const canCopy = !testDraft && !generationBusy && !lifecycleWarning;
   const canGenerateImage = canCopy && !imageBusy && !lifecycleWarning;
   const copyPayload = buildPlatformCopy(content);
   const tagLine = formatTagLine(content.tags);
@@ -4241,6 +4241,8 @@ function GeneratedPostExportCard({
               )}
               {testDraft
                 ? "本地检查草稿不可复制"
+                : lifecycleWarning
+                  ? "需先核对状态"
                 : copyState === "copied"
                   ? "已复制"
                   : `一键复制${platformLabel}文案`}

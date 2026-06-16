@@ -2255,6 +2255,8 @@ test.describe("OPC smoke coverage", () => {
     );
     await expect(page.getByTestId("cover-generate-button")).toBeDisabled();
     await expect(page.getByTestId("cover-generate-button")).toContainText("需先核对状态");
+    await expect(page.getByTestId("pc-export-copy-button")).toBeDisabled();
+    await expect(page.getByTestId("pc-export-copy-button")).toContainText("需先核对状态");
     await expect(page.getByTestId("pc-export-prepublish-check")).toContainText("发布前检查");
     await expect(page.getByTestId("pc-export-cover-card")).toContainText(
       "生成后只是待确认素材，不会自动发布。"

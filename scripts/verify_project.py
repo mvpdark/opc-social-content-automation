@@ -1374,8 +1374,10 @@ def validate_content_production_contract() -> int:
         'data-testid="xhs-preview-real-cover"',
         'const unsafeGeneratedContentStatuses = new Set(["published", "submitted"]);',
         "generatedContentLifecycleWarning(data.status)",
+        "const canCopy = !testDraft && !generationBusy && !lifecycleWarning;",
         "const canGenerateImage = canCopy && !imageBusy && !lifecycleWarning;",
         'data-testid="pc-export-lifecycle-warning"',
+        'data-testid="pc-export-copy-button"',
         "type PrepublishChecklistItem",
         "function buildPrepublishChecklist",
         "generationSourceContextStats(content.source_context)",
@@ -1730,6 +1732,20 @@ def validate_content_production_contract() -> int:
         total += 1
         if snippet not in e2e_text:
             raise SystemExit(f"Missing PC multi-topic E2E contract: {snippet}")
+
+    pc_lifecycle_e2e_contracts = [
+        "PC published generation status stops at manual lifecycle review",
+        "E2E_PC_PUBLISHED_STATUS_CONTENT_ID",
+        'contentStatus: "published"',
+        'page.getByTestId("pc-export-copy-button")).toBeDisabled()',
+        'page.getByTestId("pc-export-copy-button")).toContainText("需先核对状态")',
+        "expect(generationRequests.imageGenerate).toHaveLength(0)",
+        "expect(generationRequests.forbiddenPublishing).toEqual([])",
+    ]
+    for snippet in pc_lifecycle_e2e_contracts:
+        total += 1
+        if snippet not in e2e_text:
+            raise SystemExit(f"Missing PC lifecycle E2E contract: {snippet}")
 
     copy_dedupe_contracts = [
         (

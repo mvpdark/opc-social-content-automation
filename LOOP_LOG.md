@@ -5071,3 +5071,68 @@ Kept. Mobile review failure coverage now protects both approve and request-chang
 ### Next candidate loop
 
 - Inspect PC/manual-review source-evidence safeguards, or add a compact screenshot artifact for one mobile review detail if visual QA becomes higher priority.
+
+## Loop 72 - PC published copy lifecycle guard
+
+Date: 2026-06-16
+
+### Observation
+
+PC generation cards already warn when the backend returns unsafe lifecycle states such as `published` or `submitted`, and cover generation is disabled in that state. The same card still leaves the one-click copy action available, so unsafe lifecycle content can be copied even though it requires manual confirmation evidence before any publishing workflow continues.
+
+### Hypothesis
+
+If the PC export card disables one-click copy when an unsafe lifecycle warning is present, and the published-status E2E asserts that lock, then backend-published content cannot regress into an exportable state without human review.
+
+### Patch
+
+- Disabled PC one-click copy when generated content has an unsafe lifecycle warning such as backend `published` or `submitted`.
+- Reused the existing "需先核对状态" label on the copy button so the blocked state is visible and consistent with cover generation.
+- Extended the PC published-status Playwright test to assert the copy button is disabled and labeled as requiring state review.
+- Added verifier contracts for the lifecycle copy lock and the focused E2E assertions.
+
+### Verification
+
+```text
+npm run lint
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx --version
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC published generation status stops at manual lifecycle review" --project=chromium
+cd frontend && npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+Results:
+
+- Root `npm run lint` is not applicable because the repository root has no `package.json`; frontend lint/typecheck passed from `frontend/`.
+- The focused PC lifecycle Playwright test passed.
+- Production build passed.
+- Project verifier passed after the contract updates.
+- `git diff --check` passed with only the existing CRLF-to-LF normalization warning for the touched TSX file.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 23/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 5/5
+- Total: 92/100
+
+### Result
+
+Kept. PC generation cards now lock both cover generation and one-click copy when the backend returns an unsafe already-published lifecycle state, keeping export actions behind manual review.
+
+### Remaining risk
+
+- This protects the PC generated-content card; a separate PC manual-review queue, if added later, will need its own source-evidence and decision-failure coverage.
+- Screenshot-level visual regression coverage remains outside this loop.
+
+### Next candidate loop
+
+- Inspect PC preview/manual-copy fallback behavior for unsafe lifecycle states, or add a compact screenshot artifact for one high-risk review surface.
