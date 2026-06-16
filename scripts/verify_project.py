@@ -587,6 +587,12 @@ def validate_topic_presets_contract() -> int:
         "ranking",
         "program list",
         "accreditation",
+        "市场数据",
+        "市场行情",
+        "行情",
+        "market data",
+        "market rates",
+        "pricing benchmarks",
     ]
     missing_source_keywords = sorted(
         keyword for keyword in required_source_keywords if keyword not in source_evidence_keywords
@@ -613,6 +619,9 @@ def validate_topic_presets_contract() -> int:
         ("全球水博排名清单", True),
         ("water resources PhD university program list", True),
         ("official tuition fees and logo verification", True),
+        ("overseas doctoral consulting market data benchmarks", True),
+        ("博士项目市场行情和最新价格", True),
+        ("marketing content conversion hooks", False),
         ("how to choose domestic or overseas PhD route", False),
     ]
     for sample, expected_match in keyword_contract_cases:
@@ -1604,6 +1613,7 @@ def validate_content_production_contract() -> int:
         'page.getByTestId("pc-export-prepublish-check-cover")',
         "封面尚未生成或不可用",
         "customSourceTopic",
+        "overseas doctoral consulting market data and pricing benchmarks",
         "mobile-source-preview-button",
         "mobile-draft-history-card-${E2E_MOBILE_CUSTOM_TOPIC_CONTENT_ID}",
         "content-cover-direction-type",

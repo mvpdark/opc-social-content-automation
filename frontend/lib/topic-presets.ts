@@ -48,7 +48,22 @@ const SOURCE_EVIDENCE_REQUIRED_KEYWORDS = [
   "university",
   "universities",
   "program list",
-  "accreditation"
+  "accreditation",
+  "市场数据",
+  "市场行情",
+  "行情",
+  "最新价格",
+  "价格走势",
+  "market data",
+  "market rate",
+  "market rates",
+  "market price",
+  "market prices",
+  "pricing benchmark",
+  "pricing benchmarks",
+  "current price",
+  "latest price",
+  "live price"
 ];
 
 export const generationTopicPresets: GenerationTopicPreset[] = [

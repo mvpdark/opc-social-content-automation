@@ -4372,3 +4372,66 @@ Kept. Source preview failure and recovery states now have PC/mobile viewport pro
 ### Next candidate loop
 
 - Add a source-required guard for another current-facts preset family, or add screenshot-level source evidence visual QA for one focused viewport.
+
+## Loop 61 - Market data source detection guard
+
+Date: 2026-06-16
+
+### Observation
+
+The source-evidence classifier already covers official pages, tuition, prices, logos, rankings, schools, and program lists. It does not explicitly cover market-data and market-rate wording, even though those topics also require current sources and should not be answered from model memory alone.
+
+### Hypothesis
+
+If market-data and market-rate phrases are included in the shared source-evidence classifier, while generic marketing wording remains excluded, then custom market-data topics will be forced through the evidence path without breaking sales/marketing topic selection.
+
+### Patch
+
+- Added market-data, market-rate, pricing-benchmark, live-price, and Chinese market-rate phrases to the shared source-evidence keyword classifier.
+- Added verifier contract cases that require market-data topics to match, while keeping generic marketing copy excluded.
+- Retargeted the PC and mobile custom fact-topic success E2E smoke tests to a market-data/pricing-benchmark topic so the browser flow now covers this source-required family.
+
+### Verification
+
+```text
+npm run lint
+python scripts\verify_project.py --keep-cache
+npx --version
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "custom fact topic aligned" --project=chromium
+npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+All checks passed.
+
+Evidence:
+
+- The focused Playwright run passed 2 tests, covering the market-data custom topic on mobile 390 px and desktop 1280 px.
+- The source preview request, generated title/body/tags, cover direction, pre-publish checklist, draft history, preview, and copy actions stayed aligned with the market-data custom topic.
+- The verifier now fails if market-data/pricing-benchmark source detection is removed or if generic marketing wording becomes source-required by accident.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 22/30
+- Correctness: 19/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 4/5
+- Total: 89/100
+
+### Result
+
+Kept. Custom market-data and pricing-benchmark topics now require source evidence and are covered by PC/mobile one-click generation smoke tests without widening the classifier to generic marketing topics.
+
+### Remaining risk
+
+- The source data remains fixture-backed in E2E; live Tavily/provider result quality still needs sampling when credentials are configured.
+- Other fact-sensitive phrases such as exchange rates or platform fee schedules may need their own explicit keywords if they appear in future topic presets.
+
+### Next candidate loop
+
+- Add a source-required guard for exchange-rate or platform-fee wording, or add screenshot-level source evidence visual QA for one focused viewport.

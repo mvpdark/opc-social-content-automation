@@ -1354,7 +1354,7 @@ test.describe("OPC smoke coverage", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     const acceptedLogin = createLoginInput();
     const customSourceTopic =
-      "official tuition fees and logo verification for overseas doctoral programs";
+      "overseas doctoral consulting market data and pricing benchmarks";
     const expectedAudience = buildCustomTopicAudience(customSourceTopic);
     const expectedTagsText = buildCustomTopicTags(customSourceTopic);
     const expectedTags = parseTagText(expectedTagsText);
@@ -1362,7 +1362,7 @@ test.describe("OPC smoke coverage", () => {
       ...requireTopicPreset("source-official-fee-check"),
       audience: expectedAudience,
       coverDirection:
-        "Custom mobile source verification checklist for official tuition pages and logo review.",
+        "Custom mobile source verification checklist for current market data and pricing benchmarks.",
       desktopHelper: "Custom source verification",
       desktopLabel: "自定义",
       key: "e2e-mobile-custom-fact-topic",
@@ -1985,7 +1985,7 @@ test.describe("OPC smoke coverage", () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     const acceptedLogin = createLoginInput();
     const customSourceTopic =
-      "official tuition fees and logo verification for overseas doctoral programs";
+      "overseas doctoral consulting market data and pricing benchmarks";
     const expectedAudience = buildCustomTopicAudience(customSourceTopic);
     const expectedTagsText = buildCustomTopicTags(customSourceTopic);
     const expectedTags = parseTagText(expectedTagsText);
@@ -1993,7 +1993,7 @@ test.describe("OPC smoke coverage", () => {
       ...requireTopicPreset("source-official-fee-check"),
       audience: expectedAudience,
       coverDirection:
-        "Custom source verification checklist focused on official pages, tuition fields, and logo-use review.",
+        "Custom source verification checklist focused on current market data and pricing benchmarks.",
       desktopHelper: "Custom source verification",
       desktopLabel: "自定义",
       key: "e2e-custom-fact-topic",
