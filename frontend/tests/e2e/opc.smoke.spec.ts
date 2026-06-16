@@ -84,6 +84,10 @@ type PcTopicAlignmentScenarioOptions = {
   presetKey: string;
 };
 
+function countTextOccurrences(text: string, needle: string) {
+  return text.split(needle).length - 1;
+}
+
 async function resetLocalAuth(page: Page) {
   await page.addInitScript(() => {
     [
@@ -285,7 +289,8 @@ async function mockMobileGenerationFixture(
           `【受控测试草稿】${preset.topic}`,
           `这篇内容服务于${preset.audience}，必须保持${preset.mobileLabel}选题意图。`,
           `知识库检索词：${preset.knowledgeQuery}`,
-          "发布前仍需人工确认标题、正文、标签和封面。"
+          "发布前仍需人工确认标题、正文、标签和封面。",
+          `#${tags[0]} #${tags[1]}`
         ].join("\n\n"),
         created_at: "2026-06-16T00:00:00.000Z",
         id: contentId,
@@ -1006,6 +1011,7 @@ test.describe("OPC smoke coverage", () => {
     const manualCopyText = await page.getByTestId("draft-manual-copy-text").inputValue();
     expect(manualCopyText).toContain(preset.topic);
     expect(manualCopyText).toContain(`#${expectedTags[0]}`);
+    expect(countTextOccurrences(manualCopyText, `#${expectedTags[0]}`)).toBe(1);
 
     expect(generationRequests.sourcePreview).toHaveLength(1);
     expect(generationRequests.contentGenerate).toHaveLength(1);
@@ -1211,6 +1217,7 @@ test.describe("OPC smoke coverage", () => {
     const manualCopyText = await page.getByTestId("draft-manual-copy-text").inputValue();
     expect(manualCopyText).toContain(customSourceTopic);
     expect(manualCopyText).toContain(`#${expectedTags[0]}`);
+    expect(countTextOccurrences(manualCopyText, `#${expectedTags[0]}`)).toBe(1);
 
     await page.getByTestId("draft-preview-close").click();
     const nextCustomTopic = "mentor matching checklist for part-time doctoral applicants";

@@ -4,6 +4,7 @@ import {
   type GeneratedContent,
   type GeneratedImageAsset
 } from "@/lib/generated-assets";
+import { buildPlatformCopyText } from "@/lib/platform-copy";
 import { formatTagLine } from "@/lib/tags";
 
 export type DraftPreviewState = {
@@ -222,14 +223,12 @@ export function clearStoredMobileCover() {
 }
 
 export function buildEditableDraftCopy(draft: DraftPreviewState) {
-  return [
-    draft.title.trim(),
-    draft.body.trim(),
-    draft.points.map((point, index) => `${index + 1}. ${point.trim()}`).join("\n"),
-    draft.tags.trim()
-  ]
-    .filter(Boolean)
-    .join("\n\n");
+  const pointText = draft.points.map((point, index) => `${index + 1}. ${point.trim()}`).join("\n");
+  return buildPlatformCopyText({
+    body: [draft.body.trim(), pointText].filter(Boolean).join("\n\n"),
+    tags: draft.tags,
+    title: draft.title
+  });
 }
 
 export function draftStateFromContent(content: GeneratedContent): DraftPreviewState {

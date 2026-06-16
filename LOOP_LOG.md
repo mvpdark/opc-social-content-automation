@@ -3369,3 +3369,82 @@ Kept. AI draft bodies with standalone hashtag lines now fail safely before previ
 ### Next candidate loop
 
 - Continue incomplete-output recovery for missing cover/checklist fields, or add focused E2E coverage that confirms preview/copy appends tags only once.
+
+## Loop 47 - Shared copy tag dedupe
+
+Date: 2026-06-16
+
+### Observation
+
+PC copy uses a local `buildPlatformCopy` helper, while mobile draft preview builds editable copy from a separate storage helper. Loop 46 prevents new backend AI drafts from saving standalone hashtag lines, but legacy or edited drafts can still carry a duplicate tag-only line in the body while the tags field is appended separately.
+
+### Hypothesis
+
+If PC and mobile copy/preview use one shared helper that removes standalone tag lines already represented by the tags field, then users get one clean tag block in preview/copy without weakening the separate manual review and no-auto-publish flow.
+
+### Patch
+
+Files changed:
+
+- `frontend/lib/platform-copy.ts`
+- `frontend/lib/mobile-draft-storage.ts`
+- `frontend/components/mobile-draft-preview-editor.tsx`
+- `frontend/components/workspace-client.tsx`
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added shared platform-copy helpers for PC and mobile copy payloads.
+- Removed duplicate standalone tag lines from preview/copy when those tags already exist in the structured tags field.
+- Kept the final tag block intact and left unique or inline body text untouched.
+- Updated mobile E2E fixtures to include a duplicate tag line and assert copied text contains the selected tag only once.
+- Added project verifier contracts for the shared helper, PC/mobile integration, and E2E assertion.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed
+
+python scripts\verify_project.py --keep-cache
+# passed
+# content_production_contract_checked=1029
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile one-click generation keeps selected ranking topic aligned|mobile one-click generation keeps custom fact topic aligned" --project=chromium
+# passed: 2 passed
+
+npm run build
+# passed
+
+git diff --check
+# passed, with CRLF normalization warnings for existing frontend files
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 21/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 86/100
+
+### Result
+
+Kept. PC and mobile copy/preview now share tag-line dedupe behavior, reducing duplicate Xiaohongshu tags while preserving the separate tags field and manual review flow.
+
+### Remaining risk
+
+- The helper removes only tag-only lines whose tags are already represented by the structured tag field; unique tag-only lines remain visible for human review.
+- PC modal copy success does not expose clipboard contents in E2E, so mobile manual-copy coverage is the direct assertion path.
+
+### Next candidate loop
+
+- Add incomplete-output recovery for missing cover/checklist fields, or add a small frontend utility test harness for platform-copy behavior if the project grows unit-test support.

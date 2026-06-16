@@ -23,6 +23,7 @@ import {
   buildEditableDraftCopy,
   type DraftPreviewState
 } from "@/lib/mobile-draft-storage";
+import { stripDuplicateStandaloneTagLines } from "@/lib/platform-copy";
 import {
   buildXhsCoverFile,
   downloadFile,
@@ -149,7 +150,7 @@ export function DraftPreviewEditor({
   const [xhsExportMessage, setXhsExportMessage] = useState<string | null>(null);
   const manualCopyRef = useRef<HTMLTextAreaElement | null>(null);
   const titleLines = draft.title.split(/[，,]/).slice(0, 3);
-  const bodyParagraphs = draft.body
+  const bodyParagraphs = stripDuplicateStandaloneTagLines(draft.body, draft.tags)
     .split(/\n+/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean);

@@ -1191,6 +1191,9 @@ def validate_content_production_contract() -> int:
     mobile_draft_storage_text = (
         ROOT / "frontend" / "lib" / "mobile-draft-storage.ts"
     ).read_text(encoding="utf-8")
+    platform_copy_text = (
+        ROOT / "frontend" / "lib" / "platform-copy.ts"
+    ).read_text(encoding="utf-8")
     mobile_create_text = (
         ROOT / "frontend" / "components" / "mobile-create-screen.tsx"
     ).read_text(encoding="utf-8")
@@ -1538,6 +1541,47 @@ def validate_content_production_contract() -> int:
         total += 1
         if snippet not in e2e_text:
             raise SystemExit(f"Missing custom topic E2E contract: {snippet}")
+
+    copy_dedupe_contracts = [
+        (
+            platform_copy_text,
+            [
+                "export function stripDuplicateStandaloneTagLines",
+                "export function buildPlatformCopyText",
+                "lineTags.every((tag) => knownTags.has(tag))",
+            ],
+            "shared platform copy dedupe",
+        ),
+        (
+            workspace_text,
+            [
+                "buildPlatformCopyText({",
+                "stripDuplicateStandaloneTagLines(preview.body, preview.tags)",
+            ],
+            "PC platform copy dedupe",
+        ),
+        (
+            mobile_draft_contract_text,
+            [
+                "buildPlatformCopyText({",
+                "stripDuplicateStandaloneTagLines(draft.body, draft.tags)",
+            ],
+            "mobile platform copy dedupe",
+        ),
+        (
+            e2e_text,
+            [
+                "`#${tags[0]} #${tags[1]}`",
+                "countTextOccurrences(manualCopyText, `#${expectedTags[0]}`)",
+            ],
+            "platform copy dedupe E2E",
+        ),
+    ]
+    for text, snippets, contract_name in copy_dedupe_contracts:
+        for snippet in snippets:
+            total += 1
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
 
     mobile_stale_draft_contracts = [
         (

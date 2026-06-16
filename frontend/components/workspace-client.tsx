@@ -97,6 +97,7 @@ import {
   sanitizeProviderStatusItems,
   type ProviderStatusItem
 } from "@/lib/provider-settings";
+import { buildPlatformCopyText, stripDuplicateStandaloneTagLines } from "@/lib/platform-copy";
 import {
   SERVICE_CONFIG_READ_ERROR,
   isServiceCredentialError,
@@ -1034,8 +1035,11 @@ const localDraftMarkers = [
 ];
 
 function buildPlatformCopy(content: GeneratedContent) {
-  const tagLine = formatTagLine(content.tags);
-  return [content.title.trim(), content.body.trim(), tagLine].filter(Boolean).join("\n\n");
+  return buildPlatformCopyText({
+    body: content.body,
+    tags: content.tags,
+    title: content.title
+  });
 }
 
 function complianceWarnings(content: GeneratedContent) {
@@ -5424,7 +5428,7 @@ function DraftPanel({
     title: content?.title ?? draftPreview.title
   };
   const coverLines = buildCoverLines(preview.title);
-  const paragraphs = formatPreviewParagraphs(preview.body);
+  const paragraphs = formatPreviewParagraphs(stripDuplicateStandaloneTagLines(preview.body, preview.tags));
   const tagLine = formatTagLine(preview.tags);
   const canCopy = Boolean(content && !isTestDraft(content));
   const coverImageUrl =
