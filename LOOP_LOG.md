@@ -3233,3 +3233,70 @@ Kept. Mobile preview now surfaces a compact prepublish checklist before copy/sha
 ### Next candidate loop
 
 - Continue incomplete-output recovery for draft generation, or isolate and repair one visible mobile mojibake cluster at a time with E2E coverage.
+
+## Loop 45 - Chinese draft metadata guard coverage
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 42 added a schema guard for model output that includes app-level metadata sections such as `Title:`, `Body:`, and `Tags:`. The guard also supports Chinese labels such as `标题：`, `正文：`, and `风险说明：`, but only the English-label case had a direct backend regression test.
+
+### Hypothesis
+
+If the backend test suite covers Chinese metadata-section labels, then regressions in common Chinese model output formatting will be caught before malformed drafts are saved as post bodies.
+
+### Patch
+
+Files changed:
+
+- `backend/tests/test_content_source_context.py`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a backend test for draft model output containing `标题：`, `正文：`, and `风险说明：`.
+- Verified the response fails safely with `schema_invalid`, creates no `Content`, and logs the rejected draft.
+- Extended the fast verifier contract so this Chinese metadata guard coverage remains protected.
+
+### Verification
+
+Commands run:
+
+```bash
+backend\.venv\Scripts\python.exe -m pytest backend\tests\test_content_source_context.py -q
+# passed: 7 passed
+
+python scripts\verify_project.py --keep-cache
+# passed
+# content_production_contract_checked=1014
+
+backend\.venv\Scripts\python.exe -m pytest backend\tests -q
+# passed: 228 passed, 1 warning
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 18/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 2/5
+- Total: 83/100
+
+### Result
+
+Kept. Chinese metadata-section draft failures now have explicit backend coverage, reducing the risk of malformed Chinese model output reaching preview/copy flows.
+
+### Remaining risk
+
+- This is test coverage for an existing guard rather than a new recovery UI.
+- Broader incomplete-output normalization, such as missing checklist or cover suggestion handling, remains pending.
+
+### Next candidate loop
+
+- Continue incomplete-output recovery for draft generation, or add a focused guard for another observed malformed-output pattern.

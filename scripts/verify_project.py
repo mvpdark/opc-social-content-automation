@@ -1492,7 +1492,9 @@ def validate_content_production_contract() -> int:
             [
                 "test_generate_content_rejects_blank_ai_draft",
                 "test_generate_content_rejects_metadata_section_ai_draft",
+                "test_generate_content_rejects_chinese_metadata_section_ai_draft",
                 "Title: overseas doctoral logo check",
+                "标题：海外博士官方来源核验",
                 "元数据段落",
                 "db.query(Content).count() == 0",
                 "GenerationLog",
