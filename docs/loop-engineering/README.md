@@ -15,6 +15,7 @@ Repository placement note: in this OPC repo, the long-form pack files live in
 - `LOOP_ENGINEERING_RUNBOOK.md`：循环执行方法。
 - `EVAL_MATRIX.md`：质量评分与验收矩阵。
 - `PRODUCT_ACCEPTANCE.md`：OPC 产品级验收标准。
+- `PROMOTION_PRECISION.md`：硕升博小红书获客内容精度、事实安全与转化质量循环指南。
 - `BACKLOG_SEEDS.md`：第一批高价值改进任务。
 - `PLAYWRIGHT_E2E_SPEC.md`：移动端和 PC 端 E2E 测试说明。
 - `LOOP_LOG_TEMPLATE.md`：每轮循环记录模板。

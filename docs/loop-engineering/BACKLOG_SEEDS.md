@@ -101,9 +101,70 @@ Acceptance:
 - No horizontal overflow at 360/390/414 px widths.
 - Empty/loading/error states exist.
 
+### 9. Promotion topic intent router
+
+Problem: 硕升博推广选题容易混用同一套撰稿逻辑，导致榜单、路线、导师匹配、时间规划和销售转化互相漂移。
+
+Hypothesis: A topic-intent router will keep prompt, evidence requirements, tags, cover direction, and validation gates aligned with the selected or custom topic.
+
+Acceptance:
+
+- Ranking/list, route/decision, mentor-matching, timing/schedule, sales/marketing, and source-check topics have distinct intent labels.
+- PC and mobile custom topics can be routed without hard-coded exact titles.
+- Generated title/body/tags/cover direction do not drift across intents.
+- Source-check topics require knowledge/Tavily evidence or produce only a verification framework.
+
+### 10. Fact ledger source cards
+
+Problem: Knowledge/search snippets can be passed to the model without a structured record of which claims are supported.
+
+Hypothesis: A fact ledger will make drafts safer and more persuasive by separating supported claims from unsupported current facts.
+
+Acceptance:
+
+- Draft payload includes source cards with source id or URL, supported claim, freshness, confidence/review status, and usage boundary.
+- Rankings, fees, school lists, logos, policies, prices, and exchange rates are blocked or downgraded without supporting cards.
+- Preview/checklist shows missing-source risk in user language.
+
+### 11. Promotion brief before drafting
+
+Problem: The draft pipeline can summarize information but may lack a clear lead-generation strategy.
+
+Hypothesis: A promotion brief will make drafts more targeted by defining persona, pain point, trust proof, CTA, forbidden claims, source requirements, and cover angle before writing.
+
+Acceptance:
+
+- The brief is visible or inspectable in logs/payloads.
+- Drafts use the brief for hook, body, CTA, tags, and cover direction.
+- Thin business material creates a warning or conservative brief, not fabricated selling points.
+
+### 12. Variants and draft scoring
+
+Problem: The first model output may not be the best title, hook, or cover promise.
+
+Hypothesis: Bounded variants plus scoring will improve Xiaohongshu stop-power and conversion clarity while keeping manual review.
+
+Acceptance:
+
+- Generate or preview multiple title/opening/cover options within a bounded budget.
+- Score topic-intent alignment, source safety, stop-power, persona fit, CTA clarity, and cover/title/body consistency.
+- Recommend one option with a reason while keeping human review required.
+
+### 13. Feedback labels for future generation
+
+Problem: Human review feedback does not yet become structured guidance for future drafts.
+
+Hypothesis: Simple review labels can improve future briefs and prompts without storing secrets or platform cookies.
+
+Acceptance:
+
+- Human can label title weak, hook weak, fact risk, too much like an ad, CTA unclear, topic drift, cover mismatch, or ready to publish.
+- Labels are stored safely and can be summarized into future generation preferences.
+- Feedback never triggers automatic publishing.
+
 ## P3 — Operational hardening
 
-### 9. Task lifecycle model
+### 14. Task lifecycle model
 
 Problem: task state may be implicit.
 
@@ -125,7 +186,7 @@ Acceptance:
 - UI renders valid state transitions only.
 - Invalid transitions show safe error.
 
-### 10. Client error boundary
+### 15. Client error boundary
 
 Problem: one runtime error can blank the app.
 

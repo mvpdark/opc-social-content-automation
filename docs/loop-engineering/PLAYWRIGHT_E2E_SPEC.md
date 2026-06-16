@@ -58,6 +58,21 @@ Assertions:
 - Draft output has title/body/tags or recoverable error.
 - Publishing requires manual confirmation.
 
+### 5. Promotion precision smoke, if feature exists
+
+Assertions:
+
+- Recommended and custom topics preserve their detected intent through title, body,
+  tags, cover direction, preview, and copy/export.
+- Ranking/list topics stay ranking/list topics and do not drift into mentor
+  matching or generic time planning.
+- Source-check topics that require current facts show source evidence before
+  generation, or clearly fall back to a verification framework.
+- Missing current-fact sources do not produce school lists, rankings, prices,
+  logos, policies, exchange rates, or market claims as conclusions.
+- Preview/checklist makes CTA, source risk, cover/title/body consistency, and
+  manual confirmation visible before copy/export.
+
 ## Suggested selectors
 
 Prefer accessible selectors:

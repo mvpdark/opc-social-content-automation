@@ -12,6 +12,8 @@ Questions:
 
 - Does this help users log in, create tasks, generate drafts, preview covers, or confirm publishing?
 - Does this reduce user confusion or operational risk?
+- For 硕升博 promotion, does it improve topic-intent alignment, persona fit,
+  evidence-backed claims, CTA clarity, or lead-generation usefulness?
 
 ## Correctness — 20 points
 
@@ -23,6 +25,8 @@ Questions:
 
 - Are loading, success, empty, and error states handled?
 - Are auth/session states explicit?
+- Does a ranking/list topic stay a ranking/list topic, and do source-check topics
+  avoid unsupported school, price, logo, ranking, or policy conclusions?
 
 ## Test coverage — 20 points
 
@@ -35,6 +39,8 @@ Questions:
 
 - Will a future regression be caught?
 - Can another engineer run the test?
+- Do tests cover at least one promotion-quality failure mode such as topic drift,
+  missing source facts, weak draft structure, cover/title mismatch, or unsafe CTA?
 
 ## Safety and security — 15 points
 
@@ -47,6 +53,8 @@ Questions:
 - Are credentials passed through environment variables only?
 - Is manual confirmation preserved?
 - Are API failures handled without exposing secrets?
+- Are current facts sourced before drafting, and are guaranteed admission, fake
+  rankings, fake logos, or fake official endorsements blocked?
 
 ## Maintainability — 10 points
 
@@ -69,6 +77,20 @@ Questions:
 
 - Does mobile work?
 - Are labels, focus states, and error messages clear?
+- Does the UI help the user understand why a draft is persuasive, source-safe, and
+  still only manual publishing preparation?
+
+## Promotion Precision Bonus Guidance
+
+For loops focused on 硕升博 Xiaohongshu lead generation:
+
+- 25-30 product value requires a measurable improvement to lead-generation precision,
+  such as intent routing, fact-ledger enforcement, promotion brief quality,
+  variant scoring, or review feedback reuse.
+- 18-24 product value is appropriate for UI copy or validation that makes an
+  existing generation path clearer or safer.
+- 0-12 product value is appropriate for pure provider/model swaps, prompt wording
+  tweaks without regression coverage, or unverified style preferences.
 
 ## Keep/revert guidance
 

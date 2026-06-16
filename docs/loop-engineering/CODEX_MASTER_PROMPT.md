@@ -30,6 +30,7 @@ Read these files if present:
 - `docs/loop-engineering/LOOP_ENGINEERING_RUNBOOK.md`
 - `docs/loop-engineering/EVAL_MATRIX.md`
 - `docs/loop-engineering/PRODUCT_ACCEPTANCE.md`
+- `docs/loop-engineering/PROMOTION_PRECISION.md`
 - `docs/loop-engineering/BACKLOG_SEEDS.md`
 - `docs/loop-engineering/PLAYWRIGHT_E2E_SPEC.md`
 
@@ -54,10 +55,20 @@ For each loop:
 1. Fix mobile auth/login-state hang or ambiguous loading state.
 2. Add reliable PC and mobile smoke tests.
 3. Improve login/session error handling.
-4. Improve draft-generation structure and checklist clarity.
-5. Improve cover preview responsiveness and empty states.
-6. Improve observability: client errors, API errors, and task lifecycle state.
-7. Improve accessibility and keyboard/mobile usability.
+4. Improve postgraduate-to-PhD promotion precision:
+   - topic intent routing;
+   - fact ledger/source cards;
+   - promotion brief;
+   - draft/cover/title alignment;
+   - quality and safety scoring before copy/export.
+5. Improve draft-generation structure and checklist clarity.
+6. Improve cover preview responsiveness and empty states.
+7. Improve observability: client errors, API errors, and task lifecycle state.
+8. Improve accessibility and keyboard/mobile usability.
+
+Promotion loops should follow `PROMOTION_PRECISION.md`: model swaps alone are not
+enough. Prefer verifiable gates that make Xiaohongshu lead-generation drafts more
+accurate, source-aware, conversion-focused, and ready for human review.
 
 ## Definition of done
 

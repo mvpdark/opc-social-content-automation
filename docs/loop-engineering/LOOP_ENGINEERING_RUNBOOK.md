@@ -42,6 +42,11 @@ Collect one concrete defect or gap. Good observations look like:
 - Draft-generation output has title/body/tags but no checklist.
 - Cover preview breaks on narrow screen.
 - No E2E smoke coverage protects the main flows.
+- A ranking/list topic drifts into mentor matching or generic scheduling.
+- A source-check topic names schools, prices, rankings, logos, or policies without
+  visible source cards.
+- A draft has copy and tags but no promotion brief, CTA, or lead-generation intent.
+- Cover direction and title promise different things.
 
 Bad observations are vague:
 
@@ -69,6 +74,12 @@ Patch rules:
 - Preserve public routes.
 - Do not remove safety confirmations.
 - Do not hard-code secrets.
+- For postgraduate-to-PhD promotion work, choose one capability from
+  `PROMOTION_PRECISION.md`: topic intent routing, fact ledger, promotion brief,
+  variants/scoring, cover/title coupling, publish-readiness review, or feedback
+  loop.
+- Do not accept a model-provider change as a complete loop unless it also adds a
+  measurable quality or safety gate.
 
 ### 4. Verify
 
@@ -92,6 +103,9 @@ If no tests exist, add the smallest relevant smoke test and document how to run 
 ### 5. Score
 
 Use `docs/loop-engineering/EVAL_MATRIX.md`. A change should normally score at least 70/100 to keep. If lower, either improve it or document why it is still worth keeping.
+Promotion loops should explicitly score whether they improve lead-generation
+precision, topic-intent alignment, source safety, CTA clarity, or manual-review
+readiness.
 
 ### 6. Record
 

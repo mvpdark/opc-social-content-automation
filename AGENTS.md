@@ -113,6 +113,26 @@ Any draft-generation feature must produce structured output:
 
 The UI must not imply that AI output is already safe to publish without human review.
 
+## Promotion precision objective
+
+For postgraduate-to-PhD Xiaohongshu lead generation, do not treat "knowledge/search
++ GPT draft + DeepSeek rewrite" as the final product quality bar. Future loops
+should improve measurable promotion precision:
+
+- classify topic intent before drafting;
+- keep ranking/list, route/decision, mentor-matching, timing/schedule,
+  sales/marketing, and source-check topics from drifting into each other;
+- build or reference a fact ledger/source cards before making current-fact claims;
+- create a promotion brief with persona, pain point, trust proof, CTA, forbidden
+  claims, source requirements, and cover angle;
+- align title, body, tags, cover direction, preview, and checklist;
+- score or flag drafts for source safety, conversion clarity, and manual-review
+  readiness;
+- preserve human confirmation and never automate publishing.
+
+Detailed promotion-loop guidance lives in
+`docs/loop-engineering/PROMOTION_PRECISION.md`.
+
 ## Commit discipline
 
 For each loop, produce a concise summary:

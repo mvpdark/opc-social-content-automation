@@ -49,6 +49,15 @@ Use `docs/loop-engineering/EVAL_MATRIX.md`:
 - UX polish: /5
 - Total: /100
 
+Promotion precision evidence, if applicable:
+
+- Topic intent:
+- Fact/source ledger:
+- Promotion brief:
+- CTA and conversion clarity:
+- Cover/title/body consistency:
+- Manual review readiness:
+
 ### Result
 
 Kept / revised / reverted.

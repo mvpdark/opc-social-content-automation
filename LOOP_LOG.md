@@ -7950,3 +7950,48 @@ If frontend service-error cleanup accepts `unknown`, extracts nested string mess
 - Structured error objects without a nested string message intentionally show a generic sentence; future flows can add user-specific copy where a safe structured code exists.
 - This loop covers source-preview structured errors in E2E; other endpoints rely on the shared sanitizer and typecheck coverage rather than dedicated browser tests.
 - Build and Playwright artifacts remain ignored and were not included in the intended commit.
+
+## Loop 115 - Promotion precision loop integration
+
+Date: 2026-06-16
+
+### Observation
+
+The current loop-engineering pack protected auth, smoke coverage, source safety, and draft recovery well, but the product direction for postgraduate-to-PhD promotion quality was mostly implicit. Without explicit loop rules, future automation could keep optimizing generic generation or provider plumbing instead of improving topic intent, factual grounding, conversion clarity, cover/title fit, and human-review readiness.
+
+### Hypothesis
+
+If Loop Engineering includes a dedicated promotion precision guide, acceptance criteria, backlog tasks, E2E smoke expectations, scoring guidance, and verifier contracts, then future scheduled loops will pick smaller, verifiable changes that make the Xiaohongshu lead-generation workflow more accurate and effective instead of merely swapping models or polishing generic copy.
+
+### Patch
+
+- Added `docs/loop-engineering/PROMOTION_PRECISION.md` as the promotion-quality guide for postgraduate-to-PhD Xiaohongshu lead generation.
+- Updated `AGENTS.md`, `CODEX_MASTER_PROMPT.md`, `LOOP_ENGINEERING_RUNBOOK.md`, `PRODUCT_ACCEPTANCE.md`, `EVAL_MATRIX.md`, `PLAYWRIGHT_E2E_SPEC.md`, `LOOP_LOG_TEMPLATE.md`, `BACKLOG_SEEDS.md`, `README.md`, and `PROJECT_MAP.md` to reference topic-intent routing, fact ledger/source cards, promotion brief, variants/scoring, cover/title coupling, publish-readiness review, and feedback labels.
+- Added new backlog seeds for promotion topic intent routing, fact-ledger source cards, promotion brief generation, bounded variants/scoring, and feedback labels.
+- Extended `scripts/verify_project.py` to require the new guide and check 61 promotion-precision documentation contracts across the loop-engineering pack.
+
+### Verification
+
+- `python scripts\verify_project.py --keep-cache` passed: required files 45; promotion precision loop docs checked 61; safety gates 162; content production contract 1575; text hygiene files 130.
+- `python -m py_compile scripts\verify_project.py` passed.
+- `git diff --check` passed.
+
+### Score
+
+- Product value: 23/30
+- Correctness: 17/20
+- Test coverage: 15/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX clarity: 3/5
+- Total: 82/100
+
+### Result
+
+- Verified. Loop Engineering now has explicit promotion-precision rules and CI-style documentation contracts that steer future scheduled loops toward better topic alignment, factual grounding, conversion clarity, cover/title fit, and manual-review readiness.
+
+### Remaining risk
+
+- This loop integrates the strategy into the engineering workflow, but it does not yet implement the product features themselves.
+- Next high-value implementation loop should start with topic-intent routing or promotion-brief payloads because those unlock fact-ledger and scoring work.
+- Documentation contracts are intentionally phrase-based; future docs rewrites should update the verifier at the same time.

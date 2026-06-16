@@ -51,6 +51,7 @@ Last updated: 2026-06-16
 - Tavily/web search is research support only; the app must not invent current facts when sources are required.
 - Backend source review notes, Model Router fallback drafts, and PC/mobile source-evidence warnings use no-model-guessing wording when required Tavily/web results are missing.
 - Backend draft saves reject conclusion-style school, price, logo, or ranking facts when required Tavily/web results are missing, while still allowing verification-framework drafts.
+- Loop Engineering promotion precision now targets topic-intent routing, fact-ledger/source cards, promotion briefs, bounded variants/scoring, cover/title coupling, publish-readiness review, and feedback labels for postgraduate-to-PhD Xiaohongshu lead generation.
 
 ## Test Setup
 

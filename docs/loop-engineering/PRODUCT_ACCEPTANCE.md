@@ -71,6 +71,35 @@ Should:
 - Show regeneration options without losing the previous draft.
 - Track task status: draft, reviewed, ready, published/submitted if supported.
 
+## C1. Postgraduate-to-PhD promotion precision
+
+Must:
+
+- Detect or preserve topic intent for ranking/list, route/decision,
+  mentor-matching, timing/schedule, sales/marketing, and source-check topics.
+- Keep generated title, body, tags, cover direction, preview, and checklist aligned
+  with the selected or custom topic intent.
+- Build or reference a promotion brief before drafting when the flow supports it:
+  target persona, pain point, trust proof, offer angle, CTA, forbidden claims,
+  source requirements, and cover angle.
+- Use collected knowledge and/or Tavily/web evidence for current facts such as
+  school lists, rankings, fees, logos, prices, policies, market data, and exchange
+  rates.
+- Fall back to a verification framework when required current-fact sources are
+  missing; do not invent factual conclusions.
+- Keep generated content as manual publishing preparation until human review.
+
+Should:
+
+- Show a fact ledger or source cards that distinguish supported claims from risky
+  or unsupported claims.
+- Offer bounded variants for title, opening hook, or cover direction, then explain
+  the recommended choice.
+- Score drafts for topic-intent alignment, source safety, Xiaohongshu stop-power,
+  persona fit, CTA clarity, and cover/title/body consistency.
+- Store human feedback labels such as title weak, fact risk, too much like an ad,
+  CTA unclear, topic drift, or cover mismatch for future generation guidance.
+
 ## D. Cover preview
 
 Must:
