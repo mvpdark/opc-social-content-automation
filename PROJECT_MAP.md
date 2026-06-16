@@ -61,6 +61,7 @@ Last updated: 2026-06-16
 - Published-status lifecycle smoke tests attach validated warning-surface screenshots while keeping publish/copy actions disabled.
 - Mobile review decision failure smoke tests attach validated detail-state screenshots while keeping failed drafts queued and publish-like calls blocked.
 - PC review queue retry smoke tests attach validated read-error and recovered-queue screenshots while keeping the queue read-only.
+- PC draft history retry smoke tests attach validated history-error and recovered-history screenshots while keeping the review queue available.
 
 ## Deployment and Build
 

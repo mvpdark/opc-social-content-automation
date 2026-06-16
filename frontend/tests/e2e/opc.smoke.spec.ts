@@ -2420,7 +2420,7 @@ test.describe("OPC smoke coverage", () => {
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 
-  test("PC draft history read error keeps review queue available", async ({ page }) => {
+  test("PC draft history read error keeps review queue available", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     const acceptedLogin = createLoginInput();
     const pendingPreset = requireTopicPreset("timeline-main");
@@ -2448,6 +2448,19 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId(`pc-review-queue-card-${E2E_PC_REVIEW_QUEUE_CONTENT_ID}`)).toContainText(
       pendingPreset.topic
     );
+    const pcDraftHistoryErrorBox = await page.getByTestId("draft-history-error").boundingBox();
+    expect(pcDraftHistoryErrorBox?.width ?? 0).toBeGreaterThan(560);
+    expect(pcDraftHistoryErrorBox?.height ?? 0).toBeGreaterThan(90);
+    const pcReviewQueueAvailableBox = await page
+      .getByTestId(`pc-review-queue-card-${E2E_PC_REVIEW_QUEUE_CONTENT_ID}`)
+      .boundingBox();
+    expect(pcReviewQueueAvailableBox?.width ?? 0).toBeGreaterThan(280);
+    expect(pcReviewQueueAvailableBox?.height ?? 0).toBeGreaterThan(80);
+    await attachScreenshotEvidence(page, testInfo, "pc-draft-history-error-with-review-queue.png", {
+      minBytes: 20_000,
+      minHeight: 700,
+      minWidth: 1000
+    });
 
     generationRequests.releaseDraftHistoryFailures();
     await page.getByTestId("draft-history-retry").click();
@@ -2456,6 +2469,14 @@ test.describe("OPC smoke coverage", () => {
       page.getByTestId("draft-history-card").filter({ hasText: pendingPreset.topic }).first()
     ).toBeVisible();
     await expect(page.getByTestId("draft-history-error")).toHaveCount(0);
+    const pcDraftHistoryRecoveredBox = await page.getByTestId("draft-history-strip").boundingBox();
+    expect(pcDraftHistoryRecoveredBox?.width ?? 0).toBeGreaterThan(560);
+    expect(pcDraftHistoryRecoveredBox?.height ?? 0).toBeGreaterThan(100);
+    await attachScreenshotEvidence(page, testInfo, "pc-draft-history-recovered.png", {
+      minBytes: 20_000,
+      minHeight: 700,
+      minWidth: 1000
+    });
 
     expect(generationRequests.contentList).toBeGreaterThan(1);
     expect(generationRequests.reviewQueue).toBeGreaterThan(0);
