@@ -975,6 +975,14 @@ async function runMobileTopicAlignmentScenario(
   await expect(preview).toContainText(`#${expectedTags[0]}`);
   await expect(preview).toContainText("发布前预览 · 不会自动发布");
   await expect(page.getByTestId("draft-preview-cover-image")).toBeVisible();
+  await expect(page.getByTestId("draft-preview-promotion-readiness")).toContainText("推广对齐检查");
+  await expect(page.getByTestId("draft-preview-promotion-readiness-score")).toContainText("83%");
+  await expect(page.getByTestId("draft-preview-promotion-readiness-score")).toContainText("可进入人工复核");
+  await expect(page.getByTestId("draft-preview-promotion-readiness-cta")).toContainText("CTA 待加强");
+  await expect(page.getByTestId("draft-preview-promotion-readiness-cta")).toContainText("E2E CTA");
+  await expect(page.getByTestId("draft-preview-promotion-readiness-human")).toContainText(
+    "不会自动发布"
+  );
   await expect(page.getByTestId("draft-preview-prepublish-check-content")).toContainText("已就绪");
   await expect(page.getByTestId("draft-preview-prepublish-check-sources")).toContainText("待核对");
   await expect(page.getByTestId("draft-open-xiaohongshu")).toContainText("人工去小红书发布");
@@ -1100,6 +1108,14 @@ async function runPcTopicAlignmentScenario(
   await expect(exportCard).toContainText(preset.desktopLabel);
   await expect(page.getByTestId("pc-export-copy-button")).toBeEnabled();
   await expect(page.getByTestId("pc-export-prepublish-check")).toContainText("发布前检查");
+  await expect(page.getByTestId("pc-export-promotion-readiness")).toContainText("推广对齐检查");
+  await expect(page.getByTestId("pc-export-promotion-readiness-score")).toContainText("83%");
+  await expect(page.getByTestId("pc-export-promotion-readiness-score")).toContainText("可进入人工复核");
+  await expect(page.getByTestId("pc-export-promotion-readiness-cta")).toContainText("CTA 待加强");
+  await expect(page.getByTestId("pc-export-promotion-readiness-cta")).toContainText("E2E CTA");
+  await expect(page.getByTestId("pc-export-promotion-readiness-human")).toContainText(
+    "不会自动发布"
+  );
   if (expectExportSafetyCopy) {
     await expect(exportCard).toContainText(
       "复制内容包含标题、正文和话题标签；不会自动发布，粘贴到小红书前仍需人工看一遍。"

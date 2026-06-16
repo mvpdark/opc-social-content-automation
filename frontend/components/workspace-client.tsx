@@ -40,6 +40,7 @@ import {
 
 import { AppShell } from "@/components/app-shell";
 import { GenerationSourceEvidenceCard } from "@/components/generation-source-evidence-card";
+import { PromotionReadinessSummary } from "@/components/promotion-readiness-summary";
 import {
   isPlatformId,
   PlatformIcon,
@@ -4447,6 +4448,16 @@ function GeneratedPostExportCard({
           发布前检查
         </div>
         <div className="mt-3 space-y-2 text-xs leading-5 text-muted">
+          <PromotionReadinessSummary
+            coverAvailable={Boolean(imageAsset && imagePreviewUrl)}
+            draft={{
+              body: content.body,
+              tags: content.tags,
+              title: content.title
+            }}
+            sourceContext={content.source_context}
+            testId="pc-export-promotion-readiness"
+          />
           <div className="grid gap-2 sm:grid-cols-2" data-testid="pc-export-prepublish-checklist">
             {prepublishChecklist.map((item) => (
               <div

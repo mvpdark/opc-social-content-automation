@@ -80,6 +80,7 @@ def validate_required_files() -> int:
         ROOT / "frontend" / "lib" / "tags.ts",
         ROOT / "frontend" / "lib" / "xhs-stickers.tsx",
         ROOT / "frontend" / "components" / "promotion-brief-summary.tsx",
+        ROOT / "frontend" / "components" / "promotion-readiness-summary.tsx",
         ROOT / "docs" / "RUNBOOK.md",
         ROOT / "docs" / "CLOUDFLARE_OPC.md",
         ROOT / "docs" / "SECURITY_NOTES.md",
@@ -1563,6 +1564,9 @@ def validate_content_production_contract() -> int:
     promotion_brief_summary_text = (
         ROOT / "frontend" / "components" / "promotion-brief-summary.tsx"
     ).read_text(encoding="utf-8")
+    promotion_readiness_summary_text = (
+        ROOT / "frontend" / "components" / "promotion-readiness-summary.tsx"
+    ).read_text(encoding="utf-8")
     service_error_text = (
         ROOT / "frontend" / "lib" / "service-error-copy.ts"
     ).read_text(encoding="utf-8")
@@ -1952,6 +1956,9 @@ def validate_content_production_contract() -> int:
                 "export type GenerationPromotionBrief",
                 "promotion_brief?: GenerationPromotionBrief | null;",
                 "export function promotionBriefDisplayItems",
+                "export function buildPromotionReadinessSummary",
+                "CTA 待加强",
+                "可进入人工复核",
                 "复制或发布准备前仍需人工确认",
             ],
             "promotion brief source-context type",
@@ -2085,6 +2092,55 @@ def validate_content_production_contract() -> int:
         ),
     ]
     for text, snippets, contract_name in promotion_brief_visibility_contracts:
+        for snippet in snippets:
+            total += 1
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
+
+    promotion_readiness_contracts = [
+        (
+            promotion_readiness_summary_text,
+            [
+                "export function PromotionReadinessSummary",
+                "buildPromotionReadinessSummary",
+                "推广对齐检查",
+                "这里只提示复核重点，不会自动发布",
+                'data-testid={`${testId}-score`}',
+            ],
+            "promotion readiness summary component",
+        ),
+        (
+            workspace_text,
+            [
+                "PromotionReadinessSummary",
+                'testId="pc-export-promotion-readiness"',
+                "sourceContext={content.source_context}",
+            ],
+            "PC promotion readiness visibility",
+        ),
+        (
+            mobile_draft_preview_text,
+            [
+                "PromotionReadinessSummary",
+                'testId="draft-preview-promotion-readiness"',
+                "sourceContext={generatedContent?.source_context}",
+                'variant="mobile"',
+            ],
+            "mobile promotion readiness visibility",
+        ),
+        (
+            e2e_text,
+            [
+                "draft-preview-promotion-readiness",
+                "pc-export-promotion-readiness",
+                "CTA 待加强",
+                "E2E CTA",
+                "可进入人工复核",
+            ],
+            "promotion readiness E2E",
+        ),
+    ]
+    for text, snippets, contract_name in promotion_readiness_contracts:
         for snippet in snippets:
             total += 1
             if snippet not in text:

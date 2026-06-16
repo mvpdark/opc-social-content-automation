@@ -54,6 +54,7 @@ Last updated: 2026-06-16
 - Loop Engineering promotion precision now targets topic-intent routing, fact-ledger/source cards, promotion briefs, bounded variants/scoring, cover/title coupling, publish-readiness review, and feedback labels for postgraduate-to-PhD Xiaohongshu lead generation.
 - Backend draft prompt packages now include a promotion brief derived from topic intent, target persona, CTA, forbidden claims, source requirements, cover angle, and manual-review quality checks.
 - PC/mobile source evidence panels and mobile review details now surface a compact promotion brief summary so operators can inspect intent, persona, CTA, source boundary, cover angle, and manual-review requirements before copy/export decisions.
+- PC/mobile draft preview and copy surfaces now include a promotion readiness check that scores draft alignment against the brief, flags weak CTA/source/cover gaps, and keeps final publishing manual-only.
 
 ## Test Setup
 
@@ -75,6 +76,7 @@ Last updated: 2026-06-16
 - Source logo-price topic smoke tests require PC/mobile source evidence viewport fit, plus narrow mobile preview/copy fit, before generation output is accepted.
 - PC/mobile custom official logo-price topic smoke tests require source evidence before one-click generation and keep preview/copy output aligned.
 - PC/mobile source evidence and mobile review smoke tests assert the promotion brief summary stays visible and preserves CTA/persona/manual-review guidance.
+- PC/mobile selected source topic smoke tests assert the promotion readiness check stays visible in draft preview/copy surfaces and flags weak CTA guidance before manual review.
 - PC/mobile source-evidence warning labels explicitly block model-guessed school, price, logo, or ranking conclusions when required Tavily/web results are missing, with direct browser assertions for the missing-results warning path.
 - PC/mobile generation failure smoke tests show source-specific recovery copy when missing required Tavily/web results make the backend reject model-guessed school, price, logo, or ranking conclusions.
 - PC/mobile source-preview smoke tests cover object-shaped backend `detail` errors and keep generation disabled with safe recovery copy.

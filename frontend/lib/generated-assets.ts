@@ -130,6 +130,159 @@ export function promotionBriefDisplayItems(
   ].filter((item) => item.value.trim().length > 0);
 }
 
+export type PromotionReadinessState = "ready" | "review" | "blocked";
+
+export type PromotionReadinessItem = {
+  detail: string;
+  key: "intent" | "persona" | "cta" | "sources" | "cover" | "human";
+  label: string;
+  state: PromotionReadinessState;
+};
+
+export type PromotionReadinessSummary = {
+  items: PromotionReadinessItem[];
+  score: number;
+  state: PromotionReadinessState;
+  stateLabel: string;
+};
+
+export type PromotionReadinessDraft = {
+  body: string;
+  tags: string[] | string | null | undefined;
+  title: string;
+};
+
+const conversionCueTerms = [
+  "私信",
+  "留言",
+  "评论",
+  "咨询",
+  "回复",
+  "预约",
+  "领取",
+  "联系",
+  "background",
+  "manual review"
+];
+
+function normalizeForPromotionMatch(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[#\s，。、“”‘’：:；;,.!?！？（）()[\]{}<>《》]/g, "");
+}
+
+function draftTextIncludes(draftText: string, value: string | null | undefined) {
+  const normalizedNeedle = normalizeForPromotionMatch(value ?? "");
+  return Boolean(normalizedNeedle && normalizeForPromotionMatch(draftText).includes(normalizedNeedle));
+}
+
+function tagsToText(tags: PromotionReadinessDraft["tags"]) {
+  return Array.isArray(tags) ? tags.join(" ") : tags ?? "";
+}
+
+export function buildPromotionReadinessSummary({
+  coverAvailable,
+  draft,
+  sourceContext
+}: {
+  coverAvailable: boolean;
+  draft: PromotionReadinessDraft;
+  sourceContext: GenerationSourceContext | null | undefined;
+}): PromotionReadinessSummary | null {
+  const brief = sourceContext?.promotion_brief;
+  if (!brief) {
+    return null;
+  }
+
+  const sourceStats = generationSourceContextStats(sourceContext);
+  const draftText = `${draft.title}\n${draft.body}\n${tagsToText(draft.tags)}`;
+  const intentLabel = brief.intent?.label ?? brief.intent?.key ?? "";
+  const persona = brief.target_persona ?? "";
+  const cta = brief.cta ?? "";
+  const sourceRequirement = firstDisplayString(brief.source_requirements);
+  const coverAngle = brief.cover_angle ?? "";
+  const hasIntent = draftTextIncludes(draftText, intentLabel);
+  const hasPersona = draftTextIncludes(draftText, persona);
+  const hasConversionCue = conversionCueTerms.some((term) => draftTextIncludes(draftText, term));
+
+  const items: PromotionReadinessItem[] = [
+    {
+      detail: hasIntent
+        ? `草稿已保留「${intentLabel || "当前"}」选题意图。`
+        : `请核对草稿是否偏离「${intentLabel || "当前"}」选题意图。`,
+      key: "intent",
+      label: "选题意图",
+      state: hasIntent ? "ready" : "review"
+    },
+    {
+      detail: hasPersona
+        ? `正文已触达目标人群：${persona}。`
+        : `目标人群需要更明显：${persona || "简报未填写"}。`,
+      key: "persona",
+      label: "人群匹配",
+      state: hasPersona ? "ready" : "review"
+    },
+    {
+      detail: hasConversionCue
+        ? "正文已有评论、私信或咨询类行动引导；发布前仍需确认语气自然。"
+        : `CTA 待加强：${cta || "需要补充清晰但不过度销售的行动引导"}。`,
+      key: "cta",
+      label: "CTA 转化",
+      state: hasConversionCue ? "ready" : "review"
+    },
+    {
+      detail: sourceStats.missingRequiredWebResults
+        ? "当前选题需要联网来源，但没有可见 Tavily 结果；不要复制成事实结论。"
+        : sourceStats.hasEvidence
+          ? `已带 ${sourceStats.totalCount} 条来源证据；使用边界：${sourceRequirement || "发布前人工核对事实"}。`
+          : `来源待补：${sourceRequirement || "没有可见知识库或联网依据"}。`,
+      key: "sources",
+      label: "来源安全",
+      state: sourceStats.missingRequiredWebResults ? "blocked" : sourceStats.hasEvidence ? "ready" : "blocked"
+    },
+    {
+      detail: coverAvailable
+        ? `封面素材已存在；请核对是否贴合「${coverAngle || "简报封面角度"}」。`
+        : `封面待核对：${coverAngle || "简报封面角度未填写"}。`,
+      key: "cover",
+      label: "封面方向",
+      state: coverAvailable ? "ready" : "review"
+    },
+    {
+      detail: brief.manual_review_required
+        ? "复制或发布准备前仍需人工确认；系统不会自动发布。"
+        : "建议仍按人工确认流程复核后再发布。",
+      key: "human",
+      label: "人工复核",
+      state: "review"
+    }
+  ];
+
+  const points = items.reduce((total, item) => {
+    if (item.state === "ready") {
+      return total + 2;
+    }
+    if (item.state === "review") {
+      return total + 1;
+    }
+    return total;
+  }, 0);
+  const score = Math.round((points / (items.length * 2)) * 100);
+  const state: PromotionReadinessState = items.some((item) => item.state === "blocked")
+    ? "blocked"
+    : score >= 80
+      ? "ready"
+      : "review";
+
+  return {
+    items,
+    score,
+    state,
+    stateLabel:
+      state === "blocked" ? "需补来源" : state === "ready" ? "可进入人工复核" : "待人工优化"
+  };
+}
+
 export type GeneratedImageAsset = {
   content_id: number;
   created_at?: string;

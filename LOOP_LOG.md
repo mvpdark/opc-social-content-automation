@@ -8092,3 +8092,51 @@ If PC/mobile source evidence and mobile review details render a compact promotio
 - The summary depends on `source_context.promotion_brief`; older drafts without that field render no brief, by design.
 - This improves review visibility but does not yet score title/body/tag/cover quality against the brief.
 - Fact-ledger/source-card UI remains a future loop for stronger current-fact traceability.
+
+## Loop 118 - Promotion readiness check before copy
+
+Date: 2026-06-17
+
+### Observation
+
+Loop 117 made the promotion brief visible in source and review surfaces, but the draft preview/copy surfaces still showed only generic publishing checks. Operators could see the brief, then still copy a draft without a visible prompt showing whether the draft actually preserved intent, target persona, CTA, source evidence, cover direction, and manual-review requirements.
+
+### Hypothesis
+
+If PC and mobile draft preview/copy surfaces include a compact promotion readiness check derived from the brief and source context, then postgraduate-to-PhD operators can spot weak CTA/source/cover alignment before manual copy/export without adding automated publishing or fake model scoring.
+
+### Patch
+
+- Added shared promotion readiness scoring helpers for brief-backed drafts.
+- Added a shared promotion readiness UI component for PC and mobile surfaces.
+- Rendered the check next to existing prepublish checklists in PC export and mobile draft preview.
+- Extended E2E and verifier contracts so the readiness check, score, weak CTA flag, and manual-review boundary remain protected.
+
+### Verification
+
+- `npm run lint` in `frontend/` passed.
+- `npm run typecheck` in `frontend/` passed.
+- `.venv\Scripts\python.exe scripts\verify_project.py --keep-cache` passed: python files compiled 86; required files 48; safety gates 174; content production contract 1638; text hygiene files 133.
+- `npm run e2e -- --grep "mobile one-click generation keeps selected source logo-price topic|PC one-click generation keeps selected source logo-price topic"` passed: 2 Playwright tests.
+- `npm run build` in `frontend/` passed; `frontend/tsconfig.json` had no diff after build.
+- `git diff --check` passed with only Windows CRLF warnings for the two touched frontend component files.
+
+### Score
+
+- Product value: 25/30
+- Correctness: 18/20
+- Test coverage: 18/20
+- Safety/security: 15/15
+- Maintainability: 8/10
+- UX clarity: 4/5
+- Total: 88/100
+
+### Result
+
+- Verified. PC export and mobile draft preview now show a promotion readiness check that scores draft alignment against the brief, keeps weak CTA guidance visible, and repeats the manual-review/no-auto-publish boundary before copy/export.
+
+### Remaining risk
+
+- The readiness score is a deterministic UI review aid, not a model-quality evaluator.
+- CTA detection is conservative; drafts without explicit comment/private-message/consultation cues are flagged for manual improvement even if the operator plans a softer CTA.
+- Fact-ledger/source-card UI remains a future loop for stronger current-fact traceability.

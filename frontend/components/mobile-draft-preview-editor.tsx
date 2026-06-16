@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { CoverImagePreview } from "@/components/mobile-cover-image-preview";
+import { PromotionReadinessSummary } from "@/components/promotion-readiness-summary";
 import { isLocalOrPrivateHostname } from "@/lib/api-base";
 import { tryCopyText } from "@/lib/clipboard";
 import {
@@ -531,6 +532,17 @@ export function DraftPreviewEditor({
                   className="mt-3 grid gap-2 rounded-[18px] border border-[#eeeeee] bg-[#fbfbfb] p-3"
                   data-testid="draft-preview-prepublish-checklist"
                 >
+                  <PromotionReadinessSummary
+                    coverAvailable={Boolean(coverImageUrl)}
+                    draft={{
+                      body: draft.body,
+                      tags: draft.tags,
+                      title: draft.title
+                    }}
+                    sourceContext={generatedContent?.source_context}
+                    testId="draft-preview-promotion-readiness"
+                    variant="mobile"
+                  />
                   {prepublishChecklist.map((item) => (
                     <div
                       className="rounded-[14px] border bg-white px-3 py-2"
