@@ -1086,6 +1086,20 @@ const prepublishChecklistStateLabel = {
   review: "待核对"
 } satisfies Record<PrepublishChecklistState, string>;
 
+function missingGeneratedContentFields(content: GeneratedContent) {
+  const missingFields: string[] = [];
+  if (!content.title.trim()) {
+    missingFields.push("标题");
+  }
+  if (!content.body.trim()) {
+    missingFields.push("正文");
+  }
+  if (!formatTagLine(content.tags)) {
+    missingFields.push("标签");
+  }
+  return missingFields;
+}
+
 function buildPrepublishChecklist({
   content,
   imageReady,
@@ -1100,6 +1114,7 @@ function buildPrepublishChecklist({
   warnings: string[];
 }): PrepublishChecklistItem[] {
   const sourceStats = generationSourceContextStats(content.source_context);
+  const missingContentFields = missingGeneratedContentFields(content);
   const sourceDetail = sourceStats.missingRequiredWebResults
     ? "当前选题需要实时来源，但没有可见 Tavily 结果，复制前先补来源。"
     : sourceStats.hasEvidence
@@ -1108,10 +1123,12 @@ function buildPrepublishChecklist({
 
   return [
     {
-      detail: "标题、正文、标签会一起复制；发布前仍需逐项读一遍。",
+      detail: missingContentFields.length
+        ? `缺少${missingContentFields.join("、")}；请回到表单补齐后重新生成，或人工补充后再复制。`
+        : "标题、正文、标签会一起复制；发布前仍需逐项读一遍。",
       key: "content",
       label: "标题/正文/标签",
-      state: content.body.trim() && content.title.trim() && (content.tags?.length ?? 0) > 0 ? "ready" : "blocked"
+      state: missingContentFields.length ? "blocked" : "ready"
     },
     {
       detail: sourceDetail,

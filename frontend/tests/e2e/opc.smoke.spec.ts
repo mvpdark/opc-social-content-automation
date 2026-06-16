@@ -35,6 +35,7 @@ const E2E_PC_CUSTOM_SOURCE_PREVIEW_FAILURE_CONTENT_ID = 8910;
 const E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID = 8911;
 const E2E_MOBILE_REVIEW_CHANGES_CONTENT_ID = 8912;
 const E2E_PC_CUSTOM_TOPIC_CONTENT_ID = 8913;
+const E2E_PC_MISSING_TAGS_CONTENT_ID = 8914;
 
 type JsonPayload = Record<string, unknown>;
 
@@ -44,6 +45,7 @@ type MobileGenerationFixtureOptions = {
   failContent?: boolean;
   failCover?: boolean;
   failSourcePreview?: boolean;
+  responseTags?: string[];
 };
 
 type MobileGenerationFixtureRequests = {
@@ -446,7 +448,8 @@ async function mockPcGenerationFixture(
     contentStatus = "draft",
     failContent = false,
     failCover = false,
-    failSourcePreview = false
+    failSourcePreview = false,
+    responseTags
   }: MobileGenerationFixtureOptions = {}
 ) {
   const requests: PcGenerationFixtureRequests = {
@@ -460,6 +463,7 @@ async function mockPcGenerationFixture(
     sourcePreview: []
   };
   const tags = parseTagText(preset.tags);
+  const generatedTags = responseTags ?? tags;
   const sourceContext = buildE2eSourceContext(preset, preset.desktopLabel);
 
   await page.route("**/api/workspace/provider-status", async (route) => {
@@ -525,7 +529,7 @@ async function mockPcGenerationFixture(
         platform: "xiaohongshu",
         source_context: sourceContext,
         status: contentStatus,
-        tags,
+        tags: generatedTags,
         title: preset.topic
       }),
       contentType: "application/json",
@@ -1543,6 +1547,46 @@ test.describe("OPC smoke coverage", () => {
     await runPcTopicAlignmentScenario(page, {
       contentId: E2E_PC_SOURCE_TOPIC_CONTENT_ID,
       presetKey: "source-official-fee-check"
+    });
+  });
+
+  test("PC generated draft missing tags shows recovery checklist", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const acceptedLogin = createLoginInput();
+    const preset = requireTopicPreset("sales-main");
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockPcGenerationFixture(page, preset, {
+      contentId: E2E_PC_MISSING_TAGS_CONTENT_ID,
+      responseTags: []
+    });
+
+    await page.goto(`${BASE_URL}/?theme=mint&tab=content&project=postgraduate-phd`);
+    await expect(page.getByTestId("pc-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("pc-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("pc-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("pc-login-submit").click();
+
+    await expect(page.getByTestId("generation-launcher")).toBeVisible();
+    await page.getByTestId("content-topic").fill(preset.topic);
+    await expect(page.getByTestId("content-tags")).toHaveValue(preset.tags);
+    await page.getByTestId("content-tags").fill("");
+    await page.getByTestId("source-preview-button").click();
+    await expect(page.getByTestId("generation-source-evidence")).toContainText("2 条");
+
+    await page.getByTestId("start-production-button").click();
+
+    const contentCheck = page.getByTestId("pc-export-prepublish-check-content");
+    await expect(contentCheck).toContainText("需补充");
+    await expect(contentCheck).toContainText("缺少标签");
+    await expect(contentCheck).toContainText("重新生成");
+    await expect(page.getByTestId("pc-export-copy-button")).toBeEnabled();
+
+    expect(generationRequests.contentGenerate).toHaveLength(1);
+    expect(generationRequests.imageGenerate).toHaveLength(1);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.contentGenerate[0]).toMatchObject({
+      tags: [],
+      topic: preset.topic
     });
   });
 

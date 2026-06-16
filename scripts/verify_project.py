@@ -1589,6 +1589,35 @@ def validate_content_production_contract() -> int:
             if snippet not in text:
                 raise SystemExit(f"Missing {contract_name} contract: {snippet}")
 
+    missing_content_recovery_contracts = [
+        (
+            workspace_text,
+            [
+                "function missingGeneratedContentFields",
+                'missingFields.push("标签")',
+                '缺少${missingContentFields.join("、")}',
+                'state: missingContentFields.length ? "blocked" : "ready"',
+            ],
+            "PC missing content recovery",
+        ),
+        (
+            e2e_text,
+            [
+                "E2E_PC_MISSING_TAGS_CONTENT_ID",
+                "PC generated draft missing tags shows recovery checklist",
+                "responseTags: []",
+                'page.getByTestId("pc-export-prepublish-check-content")',
+                "缺少标签",
+            ],
+            "PC missing tag recovery E2E",
+        ),
+    ]
+    for text, snippets, contract_name in missing_content_recovery_contracts:
+        for snippet in snippets:
+            total += 1
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
+
     mobile_stale_draft_contracts = [
         (
             mobile_create_text,

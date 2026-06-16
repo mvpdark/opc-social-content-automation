@@ -3594,3 +3594,78 @@ Kept. The PC missing-cover path now has E2E protection for visible prepublish ch
 ### Next candidate loop
 
 - Start a small recovery prompt for incomplete draft fields before preview/copy, or add a lightweight unit-style check around platform copy helpers if the frontend test harness expands.
+
+## Loop 50 - PC missing-tag recovery prompt
+
+Date: 2026-06-16
+
+### Observation
+
+The PC export checklist can mark the content item as blocked when title/body/tags are missing, but the checklist detail is generic and does not tell the user which field needs recovery. Since tags are copied separately from the body, a generated draft with an empty tags array should surface an explicit recovery prompt before copy/review.
+
+### Hypothesis
+
+If the PC prepublish content checklist names the missing field, then incomplete generated drafts are easier to repair without changing the no-auto-publish boundary or silently inventing tags.
+
+### Patch
+
+Files changed:
+
+- `frontend/components/workspace-client.tsx`
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added PC checklist recovery copy that names missing generated fields: title, body, or tags.
+- Kept copy available as a manual preparation action, while the prepublish checklist marks the content item as `需补充`.
+- Added a PC E2E that clears the tags field before generation and verifies the export checklist says `缺少标签` and asks the user to regenerate or manually补充.
+- Extended the project verifier contract for the missing-field helper and the new E2E coverage.
+
+### Verification
+
+Commands run:
+
+```bash
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC generated draft missing tags shows recovery checklist" --project=chromium
+# passed: 1 passed
+
+python scripts\verify_project.py --keep-cache
+# passed
+# content_production_contract_checked=1044
+
+npm run typecheck
+# passed
+
+npm run build
+# passed
+
+git diff --check
+# passed, with CRLF normalization warning for an existing frontend file
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 20/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 85/100
+
+### Result
+
+Kept. PC users now get a specific recovery prompt when a generated draft is missing tags, instead of a generic checklist message.
+
+### Remaining risk
+
+- This loop covers PC missing-tag recovery. Mobile missing title/body/tag recovery copy can be made similarly explicit in a later loop.
+- The first E2E draft simulated backend tag loss while the form still had tags; the UI correctly treated that as stale draft mismatch, so the test was adjusted to the intended user-missing-tags scenario.
+
+### Next candidate loop
+
+- Add equivalent mobile missing-field recovery copy, or add a focused backend guard for a too-thin draft body if a safe threshold is agreed.
