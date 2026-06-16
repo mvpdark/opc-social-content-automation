@@ -1370,7 +1370,7 @@ test.describe("OPC smoke coverage", () => {
     expect(generationRequests).toEqual([]);
   });
 
-  test("mobile draft history read error is recoverable without generation calls", async ({ page }) => {
+  test("mobile draft history read error is recoverable without generation calls", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const acceptedLogin = createLoginInput();
     const preset = requireTopicPreset("timeline-main");
@@ -1399,6 +1399,14 @@ test.describe("OPC smoke coverage", () => {
     await expect(
       page.getByTestId(`mobile-draft-history-card-${E2E_MOBILE_DRAFT_HISTORY_RETRY_CONTENT_ID}`)
     ).toHaveCount(0);
+    const mobileDraftHistoryErrorBox = await page.getByTestId("mobile-draft-history-error").boundingBox();
+    expect(mobileDraftHistoryErrorBox?.width ?? 0).toBeGreaterThan(300);
+    expect(mobileDraftHistoryErrorBox?.height ?? 0).toBeGreaterThan(90);
+    await attachScreenshotEvidence(page, testInfo, "mobile-draft-history-error.png", {
+      minBytes: 14_000,
+      minHeight: 800,
+      minWidth: 390
+    });
 
     generationRequests.releaseDraftHistoryFailures();
     await page.getByTestId("mobile-draft-history-retry").click();
@@ -1407,6 +1415,16 @@ test.describe("OPC smoke coverage", () => {
       page.getByTestId(`mobile-draft-history-card-${E2E_MOBILE_DRAFT_HISTORY_RETRY_CONTENT_ID}`)
     ).toContainText(preset.topic);
     await expect(page.getByTestId("mobile-draft-history-error")).toHaveCount(0);
+    const mobileDraftHistoryRecoveredBox = await page
+      .getByTestId(`mobile-draft-history-card-${E2E_MOBILE_DRAFT_HISTORY_RETRY_CONTENT_ID}`)
+      .boundingBox();
+    expect(mobileDraftHistoryRecoveredBox?.width ?? 0).toBeGreaterThan(200);
+    expect(mobileDraftHistoryRecoveredBox?.height ?? 0).toBeGreaterThan(90);
+    await attachScreenshotEvidence(page, testInfo, "mobile-draft-history-recovered.png", {
+      minBytes: 14_000,
+      minHeight: 800,
+      minWidth: 390
+    });
 
     expect(generationRequests.contentList).toBeGreaterThan(1);
     expect(generationRequests.sourcePreview).toHaveLength(0);

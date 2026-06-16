@@ -6346,3 +6346,70 @@ Kept. CI can now attach visual evidence for the PC draft history read-error and 
 ### Next candidate loop
 
 - Scan static publish/export copy for misleading manual-confirmation language, or add artifact evidence for mobile draft-history recovery.
+
+## Loop 91 - Mobile draft history recovery screenshot evidence
+
+Date: 2026-06-16
+
+### Observation
+
+The mobile draft history read-error E2E already proves a history read failure can recover without source preview, content generation, image generation, or publishing-like calls. Its evidence is assertion-only, so CI reviewers cannot quickly inspect the visible mobile error and recovered draft card states.
+
+### Hypothesis
+
+If the mobile draft history recovery test attaches validated screenshots before and after retry, then CI artifacts will make the mobile history recovery path easier to audit without committing brittle image baselines.
+
+### Patch
+
+- Extended the mobile draft history read-error recovery E2E with `testInfo` screenshot attachments.
+- Added visible bounding-box checks for the mobile history error card and the recovered draft history card.
+- Attached validated `mobile-draft-history-error.png` and `mobile-draft-history-recovered.png` screenshots to the Playwright report.
+- Added project verifier contracts for both mobile draft-history screenshot evidence points.
+- Updated `PROJECT_MAP.md` to document that mobile draft-history retry screenshots are report artifacts and do not trigger generation or publishing calls.
+
+### Verification
+
+```text
+cd frontend && npx --version
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile draft history read error is recoverable without generation calls" --project=chromium
+cd frontend && npm run build
+git diff --check
+```
+
+All final checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- TypeScript check passed through `npm run lint`.
+- Project verifier passed with `content_production_contract_checked=1361`.
+- The focused Chromium E2E initially caught an over-wide recovered-card threshold; after adjusting it to the actual mobile history card width, the target test passed.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 15/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 80/100
+
+### Result
+
+Kept. CI can now attach visual evidence for the mobile draft history read-error and recovery states while preserving assertions that no generation or publishing-like calls are made.
+
+### Remaining risk
+
+- These screenshots are report evidence, not pixel-diff baselines.
+- Screenshot and build artifacts remain ignored and are not committed.
+
+### Next candidate loop
+
+- Scan static publish/export copy for misleading manual-confirmation language, or add artifact evidence for mobile review-queue read-error recovery.
