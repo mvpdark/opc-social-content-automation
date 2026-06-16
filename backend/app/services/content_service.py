@@ -28,6 +28,7 @@ from app.services.web_search_service import (
 
 
 SOURCE_CONTEXT_EXCERPT_LENGTH = 420
+MIN_DRAFT_MEANINGFUL_CHARACTERS = 20
 DRAFT_METADATA_SECTION_HEADINGS = (
     "title",
     "body",
@@ -237,6 +238,16 @@ def _draft_output_schema_issue(draft: object) -> str | None:
     return None
 
 
+def _meaningful_draft_character_count(draft: str) -> int:
+    return sum(1 for char in draft if char.isalnum())
+
+
+def _draft_too_thin_issue(draft: str) -> str | None:
+    if _meaningful_draft_character_count(draft) < MIN_DRAFT_MEANINGFUL_CHARACTERS:
+        return "草稿正文过短，无法覆盖选题、受众、行动建议和人工核对提醒，请补充素材后重新生成。"
+    return None
+
+
 def _draft_metadata_section_issue(draft: str) -> str | None:
     for raw_line in draft.splitlines():
         line = raw_line.strip().lstrip("#").strip()
@@ -371,6 +382,8 @@ def generate_content_draft(
         schema_issue = _draft_metadata_section_issue(draft)
     if schema_issue is None and isinstance(draft, str):
         schema_issue = _draft_hashtag_line_issue(draft)
+    if schema_issue is None and isinstance(draft, str):
+        schema_issue = _draft_too_thin_issue(draft)
     if schema_issue:
         record_generation_log(
             db=db,

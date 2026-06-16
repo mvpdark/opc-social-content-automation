@@ -3812,3 +3812,75 @@ Kept as a small maintainability hardening. CI/project verification remains behav
 ### Next candidate loop
 
 - Continue with core workflow coverage, especially backend guards for too-thin generated drafts or broader one-click topic drift checks.
+
+## Loop 53 - Reject too-thin generated drafts
+
+Date: 2026-06-16
+
+### Observation
+
+Backend draft generation rejects blank model output, metadata sections, standalone hashtag lines, and known topic drift, but a model response with only one very short sentence can still become a saved draft for generic topics.
+
+### Hypothesis
+
+If the backend rejects model drafts with too few meaningful characters through the existing `schema_invalid` path, then users will see a recoverable generation failure instead of reviewing a nearly empty Xiaohongshu draft.
+
+### Patch
+
+Files changed:
+
+- `backend/app/services/content_service.py`
+- `backend/tests/test_content_source_context.py`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a conservative backend thin-draft guard that rejects generated drafts with fewer than 20 meaningful characters.
+- Reused the existing `schema_invalid` path so no draft is saved and no downstream cover/publish workflow starts.
+- Added a regression test confirming a one-sentence thin draft is rejected, logged, and not persisted.
+- Extended the project verifier contract for the thin-draft guard and test coverage.
+
+### Verification
+
+Commands run:
+
+```bash
+backend\.venv\Scripts\python.exe -m pytest backend\tests\test_content_source_context.py -k "too_thin or blank_ai_draft or metadata_section_ai_draft or hashtag_line_ai_draft"
+# passed: 5 passed, 4 deselected
+
+backend\.venv\Scripts\python.exe -m pytest backend\tests\test_content_source_context.py backend\tests\test_content_relevance.py
+# passed: 66 passed
+
+python scripts\verify_project.py --keep-cache
+# passed
+# content_production_contract_checked=1059
+
+backend\.venv\Scripts\python.exe -m pytest backend\tests
+# passed: 230 passed, 1 warning
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 22/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 14/15
+- Maintainability: 9/10
+- UX polish: 3/5
+- Total: 87/100
+
+### Result
+
+Kept. The backend now rejects obviously too-thin generated drafts before they can become reviewable content.
+
+### Remaining risk
+
+- The guard is intentionally conservative to avoid rejecting concise but valid ranking/list drafts; richer semantic quality scoring can be added later if needed.
+- Frontend still presents the backend error through the existing generation failure path rather than a custom thin-draft UI message.
+
+### Next candidate loop
+
+- Add broader one-click topic drift coverage for additional preset categories, or improve frontend wording for backend `schema_invalid` generation failures.

@@ -350,3 +350,46 @@ def test_generate_content_rejects_blank_ai_draft(monkeypatch) -> None:
         assert log.result == " \n\t "
         assert log.error is not None
         assert "草稿生成结果为空" in log.error
+
+
+def test_generate_content_rejects_too_thin_ai_draft(monkeypatch) -> None:
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    thin_draft = "先看官网，再人工确认。"
+
+    with Session(engine) as db:
+        user = User(id=1, phone="test", password_hash="hash", role="promoter")
+        db.add(user)
+        db.commit()
+
+        monkeypatch.setattr(
+            content_service.model_router,
+            "draft_model",
+            lambda _prompt_name, _payload: thin_draft,
+        )
+        monkeypatch.setattr(
+            "app.services.content_service.build_live_web_search_context",
+            lambda **_kwargs: None,
+        )
+
+        with pytest.raises(HTTPException) as exc:
+            generate_content_draft(
+                db,
+                ContentGenerateRequest(
+                    platform="xiaohongshu",
+                    topic="general draft quality check",
+                    tags=[],
+                ),
+                user,
+            )
+
+        assert exc.value.status_code == status.HTTP_502_BAD_GATEWAY
+        assert "草稿正文过短" in exc.value.detail
+        assert db.query(Content).count() == 0
+
+        log = db.query(GenerationLog).one()
+        assert log.status == "schema_invalid"
+        assert log.result == thin_draft
+        assert log.error is not None
+        assert "草稿正文过短" in log.error
