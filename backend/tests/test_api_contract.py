@@ -14,6 +14,7 @@ def test_documented_api_paths_are_registered() -> None:
         "/api/content/source-preview",
         "/api/content/rewrite",
         "/api/content/list",
+        "/api/content/review-queue",
         "/api/content/{content_id}",
         "/api/content/{content_id}/review-request",
         "/api/content/{content_id}/reviews",
@@ -57,6 +58,7 @@ def test_static_paths_are_registered_before_dynamic_fallbacks() -> None:
     routes = [route.path for route in app.routes]
 
     assert routes.index("/api/content/list") < routes.index("/api/content/{content_id}")
+    assert routes.index("/api/content/review-queue") < routes.index("/api/content/{content_id}")
     assert routes.index("/api/content/source-preview") < routes.index("/api/content/{content_id}")
     assert routes.index("/api/image/templates") < routes.index("/api/image/{image_id}")
     assert routes.index("/api/image/list") < routes.index("/api/image/{image_id}")

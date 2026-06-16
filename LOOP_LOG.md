@@ -5598,3 +5598,75 @@ Kept. PC operators can retry a transient review-queue read failure without leavi
 ### Next candidate loop
 
 - Add screenshot artifacts for PC/mobile lifecycle warning states, or inspect whether a dedicated read-only review queue endpoint would reduce UI coupling.
+
+## Loop 80 - Dedicated read-only review queue endpoint
+
+Date: 2026-06-16
+
+### Observation
+
+The PC pending-review queue is still derived from the same `/content/list?platform=xiaohongshu` payload that powers draft history and preview fallback. This keeps the new queue UI coupled to full history loading and means queue retry reloads broader draft state than the operator is trying to recover.
+
+### Hypothesis
+
+If the backend exposes a dedicated read-only `/content/review-queue` endpoint and the PC queue reads that endpoint separately, then queue loading/retry/error handling can be isolated from draft history while preserving the no-publish/no-approval safety boundary.
+
+### Patch
+
+- Added backend `list_human_review_queue()` using the same human-reviewable statuses: `draft`, `rewritten`, and `review_pending`.
+- Added read-only API route `GET /api/content/review-queue` with platform filtering and a bounded limit.
+- Added API contract coverage so the static route stays registered before `/{content_id}`.
+- Added backend behavior coverage proving the endpoint excludes approved content and other platforms.
+- Split PC draft-history loading from PC review-queue loading.
+- Updated the PC queue to fetch `/content/review-queue?platform=xiaohongshu`; retry now only reloads the queue endpoint.
+- Updated PC E2E mocks and assertions to track `reviewQueue` calls separately from full `contentList` calls.
+- Updated `PROJECT_MAP.md` and `scripts/verify_project.py` for the new read-only queue boundary.
+
+### Verification
+
+```text
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd backend && .\.venv\Scripts\python.exe -m pytest tests/test_api_contract.py tests/test_content_review_queue.py
+cd frontend && npx --version
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC content page shows a read-only pending review queue|PC read-only review queue shows recoverable read errors|PC read-only review queue retry reloads content list only" --project=chromium
+cd frontend && npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+All checks passed.
+
+Evidence:
+
+- Global `python -m pytest ...` was not usable because the system Python lacked `pytest`; rerunning with `backend/.venv` passed 3 targeted backend tests.
+- Backend behavior test confirmed `review-queue` returns only `draft`, `rewritten`, and `review_pending` Xiaohongshu content.
+- The three focused PC queue Playwright tests passed against the new mocked `/api/content/review-queue` route.
+- E2E confirmed queue error/retry paths still make no content generation, image generation, rewrite, or publishing-like calls.
+- Frontend typecheck/lint, production build, and project verifier passed.
+- `git diff --check` passed with only the existing CRLF-to-LF normalization warning for the touched TSX file.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 24/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 5/5
+- Total: 94/100
+
+### Result
+
+Kept. The PC pending-review queue now has a dedicated read-only backend boundary and independent frontend loading/retry state, reducing coupling with draft history while preserving human review before publishing.
+
+### Remaining risk
+
+- The endpoint is read-only and intentionally does not expose approval or request-change actions.
+- Full draft history still uses `/content/list`; future loops can decide whether it needs its own visible failure state.
+
+### Next candidate loop
+
+- Add a visible draft-history read failure state, or add screenshot artifacts for PC/mobile lifecycle warning states.

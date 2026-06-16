@@ -25,6 +25,7 @@ from app.services.content_service import (
 )
 from app.services.review_service import (
     get_content_or_404,
+    list_human_review_queue,
     list_reviews,
     record_human_review,
     request_human_review,
@@ -127,6 +128,18 @@ def list_contents(
     if status_filter:
         statement = statement.where(Content.status == status_filter)
     return [ContentRead.model_validate(item) for item in db.scalars(statement).all()]
+
+
+@router.get("/review-queue", response_model=list[ContentRead])
+def list_review_queue_contents(
+    db: Session = Depends(get_db),
+    platform: str | None = Query(default=None, max_length=40),
+    limit: int = Query(default=20, ge=1, le=50),
+) -> list[ContentRead]:
+    return [
+        ContentRead.model_validate(item)
+        for item in list_human_review_queue(db, platform=platform, limit=limit)
+    ]
 
 
 @router.get("/{content_id}", response_model=ContentRead)

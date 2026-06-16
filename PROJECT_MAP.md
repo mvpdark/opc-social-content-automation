@@ -1,6 +1,6 @@
 # OPC Project Map
 
-Last updated: 2026-06-15
+Last updated: 2026-06-16
 
 ## Runtime and Framework
 
@@ -31,6 +31,7 @@ Last updated: 2026-06-15
 - Mobile login UI lives in `frontend/app/android/page.tsx`.
 - Login calls the backend endpoint `/api/auth/mobile-login`.
 - Passwords should only be submitted to the login request and must not be persisted.
+- PC pending-review queue reads a dedicated read-only endpoint: `/api/content/review-queue`.
 
 ## Data Storage
 
@@ -65,4 +66,5 @@ Last updated: 2026-06-15
 - E2E only covers unauthenticated PC/mobile login-shell smoke paths by default; credentialed login remains skipped unless `OPC_TEST_USERNAME` and `OPC_TEST_PASSWORD` are provided.
 - The local Windows environment in this thread does not expose Bash, so `scripts/opc-loop-check.sh` is primarily for Unix/CI-style shells.
 - Mobile and PC login state rely on localStorage account markers; future auth work should keep explicit loading, expired-session, and network-error states.
+- PC pending-review queue is read-only and intentionally separate from approval/change-request actions.
 - Publishing and platform actions must remain behind human confirmation.

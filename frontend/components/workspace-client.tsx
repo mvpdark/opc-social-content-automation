@@ -2471,16 +2471,18 @@ function ContentView({
   const [previewContent, setPreviewContent] = useState<GeneratedContent | null>(null);
   const [previewImageAsset, setPreviewImageAsset] = useState<GeneratedImageAsset | null>(null);
   const [draftHistory, setDraftHistory] = useState<GeneratedContent[]>([]);
+  const [reviewQueueContents, setReviewQueueContents] = useState<GeneratedContent[]>([]);
   const [draftImagesByContentId, setDraftImagesByContentId] = useState<
     Record<number, GeneratedImageAsset | null>
   >({});
   const [pinnedDraftIds, setPinnedDraftIds] = useState<number[]>([]);
   const [draftActionError, setDraftActionError] = useState<string | null>(null);
-  const [contentListError, setContentListError] = useState<string | null>(null);
-  const [contentListReloadKey, setContentListReloadKey] = useState(0);
+  const [reviewQueueError, setReviewQueueError] = useState<string | null>(null);
+  const [reviewQueueLoading, setReviewQueueLoading] = useState(true);
+  const [reviewQueueReloadKey, setReviewQueueReloadKey] = useState(0);
   const [previewLoading, setPreviewLoading] = useState(true);
   const selectedCreationProject = findEnabledCreationProject(selectedCreationProjectId);
-  const pcReviewQueueContents = draftHistory.filter(isPcReviewQueueCandidate);
+  const pcReviewQueueContents = reviewQueueContents.filter(isPcReviewQueueCandidate);
 
   async function fetchLatestImage(contentId: number) {
     try {
@@ -2504,8 +2506,13 @@ function ContentView({
     setDraftHistory((current) =>
       sortDraftHistory(upsertDraftHistory(current, content), pinnedDraftIds)
     );
+    setReviewQueueContents((current) =>
+      isPcReviewQueueCandidate(content)
+        ? sortDraftHistory(upsertDraftHistory(current, content), pinnedDraftIds)
+        : current.filter((item) => item.id !== content.id)
+    );
     setDraftActionError(null);
-    setContentListError(null);
+    setReviewQueueError(null);
     saveStoredGeneratedContent(content);
   }
 
@@ -2555,9 +2562,11 @@ function ContentView({
         throw new Error(await readApiError(response, "草稿删除失败。"));
       }
       const nextHistory = draftHistory.filter((content) => content.id !== contentId);
+      const nextReviewQueue = reviewQueueContents.filter((content) => content.id !== contentId);
       const nextPinnedIds = pinnedDraftIds.filter((id) => id !== contentId);
       const nextContent = previewContent?.id === contentId ? nextHistory[0] ?? null : previewContent;
       setDraftHistory(sortDraftHistory(nextHistory, nextPinnedIds));
+      setReviewQueueContents(sortDraftHistory(nextReviewQueue, nextPinnedIds));
       setPinnedDraftIds(nextPinnedIds);
       savePinnedDraftIds(nextPinnedIds);
       setDraftImagesByContentId((current) => {
@@ -2590,9 +2599,9 @@ function ContentView({
   }
 
   function handleRetryContentList() {
-    setPreviewLoading(true);
-    setContentListError(null);
-    setContentListReloadKey((current) => current + 1);
+    setReviewQueueLoading(true);
+    setReviewQueueError(null);
+    setReviewQueueReloadKey((current) => current + 1);
   }
 
   useEffect(() => {
@@ -2629,16 +2638,13 @@ function ContentView({
 
     async function loadLatestContent() {
       try {
-        if (active) {
-          setContentListError(null);
-        }
         const response = await fetch(`${API_BASE}/content/list?platform=xiaohongshu`);
         if (!response.ok) {
-          throw new Error(await readApiError(response, "待人工确认队列读取失败。"));
+          return;
         }
         const contents = (await response.json()) as unknown;
         if (!Array.isArray(contents)) {
-          throw new Error("待人工确认队列格式异常，请稍后重试。");
+          return;
         }
         const history = sortDraftHistory(
           contents.filter(isGeneratedContent).filter((content) => !isTestDraft(content)),
@@ -2667,10 +2673,7 @@ function ContentView({
             }
           });
         }
-      } catch (error) {
-        if (active) {
-          setContentListError(error instanceof Error ? error.message : "待人工确认队列读取失败。");
-        }
+      } catch (_error) {
         // Keep the local draft or full example visible when the database/API is not available.
       } finally {
         if (active) {
@@ -2683,7 +2686,51 @@ function ContentView({
     return () => {
       active = false;
     };
-  }, [contentListReloadKey]);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadReviewQueue() {
+      try {
+        if (active) {
+          setReviewQueueLoading(true);
+          setReviewQueueError(null);
+        }
+        const response = await fetch(`${API_BASE}/content/review-queue?platform=xiaohongshu`);
+        if (!response.ok) {
+          throw new Error(await readApiError(response, "待人工确认队列读取失败。"));
+        }
+        const contents = (await response.json()) as unknown;
+        if (!Array.isArray(contents)) {
+          throw new Error("待人工确认队列格式异常，请稍后重试。");
+        }
+        const queue = sortDraftHistory(
+          contents
+            .filter(isGeneratedContent)
+            .filter((content) => !isTestDraft(content))
+            .filter(isPcReviewQueueCandidate),
+          pinnedDraftIds
+        );
+        if (active) {
+          setReviewQueueContents(queue);
+        }
+      } catch (error) {
+        if (active) {
+          setReviewQueueError(error instanceof Error ? error.message : "待人工确认队列读取失败。");
+        }
+      } finally {
+        if (active) {
+          setReviewQueueLoading(false);
+        }
+      }
+    }
+
+    void loadReviewQueue();
+    return () => {
+      active = false;
+    };
+  }, [pinnedDraftIds, reviewQueueReloadKey]);
 
   if (!selectedCreationProject) {
     return (
@@ -2750,8 +2797,8 @@ function ContentView({
         <div className="space-y-4">
           <PcReviewQueuePanel
             contents={pcReviewQueueContents}
-            error={contentListError}
-            loading={previewLoading}
+            error={reviewQueueError}
+            loading={reviewQueueLoading}
             onRetry={handleRetryContentList}
             onSelectContent={handleSelectDraft}
           />

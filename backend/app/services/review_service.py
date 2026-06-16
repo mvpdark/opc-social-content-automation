@@ -73,6 +73,23 @@ def list_reviews(db: Session, content_id: int) -> list[ContentReview]:
     return list(db.scalars(statement).all())
 
 
+def list_human_review_queue(
+    db: Session,
+    *,
+    limit: int,
+    platform: str | None = None,
+) -> list[Content]:
+    statement = (
+        select(Content)
+        .where(Content.status.in_(HUMAN_REVIEWABLE_STATUSES))
+        .order_by(desc(Content.created_at))
+        .limit(limit)
+    )
+    if platform:
+        statement = statement.where(Content.platform == platform)
+    return list(db.scalars(statement).all())
+
+
 def build_ai_review_prompt_package(
     content: Content,
     payload: ContentAiReviewRequest,
