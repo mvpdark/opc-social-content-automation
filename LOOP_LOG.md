@@ -7851,3 +7851,53 @@ If the backend save path rejects obvious conclusion-style facts when required we
 - The conclusion detector is intentionally heuristic and phrase-based; future source-sensitive wording may need additional terms or a structured model output contract.
 - The workflow still allows framework-only generation when Tavily results are missing; this preserves usability but should be paired with UI copy that makes source completion obvious before publishing.
 - Generated build artifacts remain ignored and were not included in the intended commit.
+
+## Loop 113 - Missing-source rejection recovery copy
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 112 added a backend save guard that rejects draft outputs containing model-guessed school, price, logo, or ranking conclusions when required Tavily/web results are missing. The shared frontend generation-error formatter already gives recovery copy for malformed drafts, but the new source-fact rejection detail would otherwise surface mostly as backend wording rather than a clear PC/mobile recovery instruction.
+
+### Hypothesis
+
+If PC and mobile format missing-required-web-source draft rejections as "generation stopped" recovery copy, and E2E verifies no draft, rewrite, cover, or publish-like follow-up occurs, users will understand they must either add sources or switch to a verification framework before generating again.
+
+### Patch
+
+- Added a source-specific branch in `formatDraftGenerationErrorMessage` for missing required Tavily/web source rejections.
+- The PC/mobile recovery copy now says generation stopped, asks the user to add sources or switch to a verification framework, and states that guessed school, price, logo, or ranking conclusions are not saved.
+- Added mobile and PC Playwright smoke tests that mock the backend `缺少可见 Tavily 来源` rejection, verify recovery copy, preserve form/source state, prevent false draft cards, and prevent cover/rewrite/publish-like follow-up calls.
+- Added a narrow mobile viewport overflow assertion for the longer recovery status message.
+- Updated the project verifier and `PROJECT_MAP.md` with the new source-fact rejection recovery contract.
+
+### Verification
+
+- `npm run lint` in `frontend/` passed after the final E2E edits.
+- `python scripts\verify_project.py --keep-cache` passed: python files compiled 85; safety gates 162; content production contract 1564; text hygiene files 129.
+- `npm run e2e -- --grep "source-fact rejection"` passed: 2 Playwright tests.
+- `npm run e2e -- --grep "missing Tavily results|source-fact rejection|schema-invalid draft failure"` passed before the final mobile overflow assertion: 6 Playwright tests.
+- `npm run build` in `frontend/` passed; `frontend/tsconfig.json` had no diff after build.
+- `git diff --check` passed.
+- `git status --short --ignored artifacts frontend\artifacts frontend\.next-build frontend\.next` showed only ignored generated directories.
+
+### Score
+
+- Product value: 21/30
+- Correctness: 18/20
+- Test coverage: 18/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX clarity: 4/5
+- Total: 85/100
+
+### Result
+
+- Verified. PC and mobile now turn the backend missing-source fact rejection into clear recovery copy, while keeping the generation pipeline stopped before any draft card, cover generation, rewrite, or publish-like action.
+
+### Remaining risk
+
+- The recovery-copy branch depends on the current backend wording markers; future backend detail text should keep one of those markers or extend the formatter.
+- Only the source-fact rejection path was added to E2E; other backend 502 categories still use the existing generic or schema-recovery messages.
+- Build and Playwright artifacts remain ignored and were not included in the intended commit.

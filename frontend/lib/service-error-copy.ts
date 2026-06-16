@@ -24,11 +24,24 @@ const DRAFT_GENERATION_RECOVERY_MARKERS = [
   "撰稿结果偏离选题"
 ] as const;
 
+const DRAFT_MISSING_REQUIRED_WEB_SOURCE_MARKERS = [
+  "缺少可见 Tavily 来源",
+  "缺少可见 Tavily 结果",
+  "不要让模型猜测学校、价格、logo 或排名结论"
+] as const;
+
 export function formatDraftGenerationErrorMessage(message: string) {
   const normalizedMessage = sanitizeServiceErrorMessage(message).trim() || "图文草稿生成失败。";
+  const missingRequiredWebSourceIssue = DRAFT_MISSING_REQUIRED_WEB_SOURCE_MARKERS.some((marker) =>
+    normalizedMessage.includes(marker)
+  );
   const needsRecoveryCopy = DRAFT_GENERATION_RECOVERY_MARKERS.some((marker) =>
     normalizedMessage.includes(marker)
   );
+
+  if (missingRequiredWebSourceIssue && !normalizedMessage.includes("生成已停止")) {
+    return `生成已停止：这个选题缺少可见 Tavily 来源，先补来源或改成核验框架；系统不会保存模型猜测的学校、价格、logo 或排名结论。${normalizedMessage}`;
+  }
 
   if (!needsRecoveryCopy || normalizedMessage.includes("生成结果需要补救")) {
     return normalizedMessage;
