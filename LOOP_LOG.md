@@ -3448,3 +3448,76 @@ Kept. PC and mobile copy/preview now share tag-line dedupe behavior, reducing du
 ### Next candidate loop
 
 - Add incomplete-output recovery for missing cover/checklist fields, or add a small frontend utility test harness for platform-copy behavior if the project grows unit-test support.
+
+## Loop 48 - Mobile missing-cover checklist coverage
+
+Date: 2026-06-16
+
+### Observation
+
+The mobile one-click flow already preserves the generated draft when cover generation fails and opens a text-only preview. The preview checklist also marks the cover item as blocked when `coverImageUrl` is missing, but the cover-failure E2E only asserted the text-only preview and did not protect the checklist recovery signal.
+
+### Hypothesis
+
+If the mobile cover-failure smoke test asserts that the publishing checklist stays visible and marks the cover item as needing补充, then future UI changes are less likely to hide missing-cover recovery guidance from users before copy/share.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Strengthened the mobile cover-failure E2E path to require the preview checklist after a failed cover generation.
+- Asserted that the cover checklist item shows `需补充` and the missing-cover explanation.
+- Added verifier contracts so this failure-path checklist coverage remains protected.
+
+### Verification
+
+Commands run:
+
+```bash
+python scripts\verify_project.py --keep-cache
+# passed
+# content_production_contract_checked=1032
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile preserves draft when cover generation fails" --project=chromium
+# passed: 1 passed
+
+npm run typecheck
+# passed
+
+npm run build
+# passed
+
+git diff --check
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 18/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 3/5
+- Total: 83/100
+
+### Result
+
+Kept. The mobile missing-cover recovery path now has E2E protection for the visible prepublish checklist and cover补充 guidance.
+
+### Remaining risk
+
+- This loop adds regression coverage for existing UI behavior rather than changing the UI copy itself.
+- PC cover-failure checklist coverage can be tightened similarly in a later small loop.
+
+### Next candidate loop
+
+- Add PC cover-failure checklist assertions, or start a small recovery prompt for incomplete draft fields before preview/copy.

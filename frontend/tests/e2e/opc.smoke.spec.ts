@@ -1302,6 +1302,11 @@ test.describe("OPC smoke coverage", () => {
     await expect(preview).toContainText("文字版");
     await expect(preview).toContainText("发布前预览 · 不会自动发布");
     await expect(page.getByTestId("draft-preview-cover-image")).toHaveCount(0);
+    await expect(page.getByTestId("draft-preview-prepublish-checklist")).toBeVisible();
+    await expect(page.getByTestId("draft-preview-prepublish-check-cover")).toContainText("需补充");
+    await expect(page.getByTestId("draft-preview-prepublish-check-cover")).toContainText(
+      "封面尚未生成"
+    );
 
     expect(generationRequests.sourcePreview).toHaveLength(0);
     expect(generationRequests.contentGenerate).toHaveLength(1);
