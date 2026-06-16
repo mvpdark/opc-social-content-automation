@@ -73,6 +73,7 @@ Last updated: 2026-06-16
 - PC/mobile custom official logo-price topic smoke tests require source evidence before one-click generation and keep preview/copy output aligned.
 - PC/mobile source-evidence warning labels explicitly block model-guessed school, price, logo, or ranking conclusions when required Tavily/web results are missing, with direct browser assertions for the missing-results warning path.
 - PC/mobile generation failure smoke tests show source-specific recovery copy when missing required Tavily/web results make the backend reject model-guessed school, price, logo, or ranking conclusions.
+- PC/mobile source-preview smoke tests cover object-shaped backend `detail` errors and keep generation disabled with safe recovery copy.
 - Mobile Xiaohongshu export buttons must label the flow as manual publishing preparation, not direct or automatic publishing.
 - Mobile Xiaohongshu export status messages must say share/download handoff still requires manual confirmation before submission.
 - Public preview invalid-link smoke tests verify `/preview/[contentId]` resolves to a clear error without content/image API calls.

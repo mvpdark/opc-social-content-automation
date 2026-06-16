@@ -53,6 +53,8 @@ const E2E_MOBILE_OFFICIAL_LOGO_PRICE_TOPIC_CONTENT_ID = 8933;
 const E2E_PC_OFFICIAL_LOGO_PRICE_TOPIC_CONTENT_ID = 8934;
 const E2E_MOBILE_SOURCE_FACT_FAILURE_CONTENT_ID = 8935;
 const E2E_PC_SOURCE_FACT_FAILURE_CONTENT_ID = 8936;
+const E2E_MOBILE_STRUCTURED_SOURCE_ERROR_CONTENT_ID = 8937;
+const E2E_PC_STRUCTURED_SOURCE_ERROR_CONTENT_ID = 8938;
 const E2E_MOBILE_PUBLISHED_STATUS_CONTENT_ID = 8919;
 const E2E_PC_REVIEW_QUEUE_CONTENT_ID = 8920;
 const E2E_PC_REVIEW_QUEUE_APPROVED_CONTENT_ID = 8921;
@@ -86,6 +88,7 @@ type MobileGenerationFixtureOptions = {
   failReviewQueue?: boolean;
   failReviewQueueUntilReleased?: boolean;
   failSourcePreview?: boolean;
+  failSourcePreviewDetail?: unknown;
   responseTags?: string[];
 };
 
@@ -356,6 +359,7 @@ async function mockMobileGenerationFixture(
     failDraftHistory = false,
     failDraftHistoryUntilReleased = false,
     failSourcePreview = false,
+    failSourcePreviewDetail,
     responseTags
   }: MobileGenerationFixtureOptions = {}
 ) {
@@ -394,7 +398,9 @@ async function mockMobileGenerationFixture(
     requests.sourcePreview.push(readJsonPayload(route.request().postData()));
     if (failSourcePreview) {
       await route.fulfill({
-        body: JSON.stringify({ detail: "E2E mobile source preview unavailable." }),
+        body: JSON.stringify({
+          detail: failSourcePreviewDetail ?? "E2E mobile source preview unavailable."
+        }),
         contentType: "application/json",
         status: 503
       });
@@ -626,6 +632,7 @@ async function mockPcGenerationFixture(
     failReviewQueue = false,
     failReviewQueueUntilReleased = false,
     failSourcePreview = false,
+    failSourcePreviewDetail,
     responseTags
   }: MobileGenerationFixtureOptions = {}
 ) {
@@ -724,7 +731,9 @@ async function mockPcGenerationFixture(
     requests.sourcePreview.push(readJsonPayload(route.request().postData()));
     if (failSourcePreview) {
       await route.fulfill({
-        body: JSON.stringify({ detail: "E2E source preview unavailable." }),
+        body: JSON.stringify({
+          detail: failSourcePreviewDetail ?? "E2E source preview unavailable."
+        }),
         contentType: "application/json",
         status: 503
       });
@@ -2176,6 +2185,57 @@ test.describe("OPC smoke coverage", () => {
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 
+  test("mobile structured source preview error stays recoverable without false draft", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const acceptedLogin = createLoginInput();
+    const preset = requireTopicPreset("source-official-fee-check");
+    const expectedTags = parseTagText(preset.tags);
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockMobileGenerationFixture(page, preset, {
+      contentId: E2E_MOBILE_STRUCTURED_SOURCE_ERROR_CONTENT_ID,
+      failSourcePreview: true,
+      failSourcePreviewDetail: {
+        missing_content_ids: [E2E_MOBILE_STRUCTURED_SOURCE_ERROR_CONTENT_ID]
+      }
+    });
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=create`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+    await page.getByTestId("mobile-creation-project-postgraduate-phd").click();
+
+    await page.getByTestId("mobile-topic").fill(preset.topic);
+    await expect(page.getByTestId("mobile-topic")).toHaveValue(preset.topic);
+    await expect(page.getByTestId("mobile-audience")).toHaveValue(preset.audience);
+    await expect(page.getByTestId("mobile-tags")).toHaveValue(preset.tags);
+
+    await page.getByTestId("mobile-source-preview-button").click();
+    await expect(page.getByTestId("mobile-source-evidence")).toContainText(
+      "服务返回了需要人工处理的错误，请刷新当前数据后重试。"
+    );
+    await expect(page.getByTestId("mobile-source-preview-button")).toBeEnabled();
+    await expect(page.getByTestId("mobile-generate-draft")).toBeDisabled();
+    await expect(
+      page.getByTestId(`mobile-draft-history-card-${E2E_MOBILE_STRUCTURED_SOURCE_ERROR_CONTENT_ID}`)
+    ).toHaveCount(0);
+
+    expect(generationRequests.sourcePreview).toHaveLength(1);
+    expect(generationRequests.contentGenerate).toHaveLength(0);
+    expect(generationRequests.imageGenerate).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.sourcePreview[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: preset.knowledgeQuery,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: preset.audience,
+      topic: preset.topic
+    });
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
   test("mobile missing Tavily results warns against model-guessed current facts", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const acceptedLogin = createLoginInput();
@@ -3457,6 +3517,60 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("source-preview-button")).toBeEnabled();
     await expect(page.getByTestId("start-production-button")).toBeDisabled();
     await expect(page.getByTestId("start-production-button")).toContainText("先重新查看依据");
+    await expect(page.getByTestId("draft-history-card")).toHaveCount(0);
+
+    expect(generationRequests.providerStatus).toBeGreaterThan(0);
+    expect(generationRequests.contentList).toBeGreaterThan(0);
+    expect(generationRequests.sourcePreview).toHaveLength(1);
+    expect(generationRequests.contentGenerate).toHaveLength(0);
+    expect(generationRequests.imageGenerate).toHaveLength(0);
+    expect(generationRequests.rewrite).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.sourcePreview[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: preset.knowledgeQuery,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: preset.audience,
+      topic: preset.topic
+    });
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("PC structured source preview error stays recoverable without false draft", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const acceptedLogin = createLoginInput();
+    const preset = requireTopicPreset("source-official-fee-check");
+    const expectedTags = parseTagText(preset.tags);
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockPcGenerationFixture(page, preset, {
+      contentId: E2E_PC_STRUCTURED_SOURCE_ERROR_CONTENT_ID,
+      failSourcePreview: true,
+      failSourcePreviewDetail: {
+        missing_content_ids: [E2E_PC_STRUCTURED_SOURCE_ERROR_CONTENT_ID]
+      }
+    });
+
+    await page.goto(`${BASE_URL}/?theme=mint&tab=content&project=postgraduate-phd`);
+    await expect(page.getByTestId("pc-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("pc-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("pc-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("pc-login-submit").click();
+
+    await expect(page.getByTestId("creation-project-return")).toBeVisible();
+    await expect(page.getByTestId("generation-launcher")).toBeVisible();
+    await page.getByTestId("content-topic").fill(preset.topic);
+    await expect(page.getByTestId("content-topic")).toHaveValue(preset.topic);
+    await expect(page.getByTestId("content-knowledge-query")).toHaveValue(preset.knowledgeQuery);
+    await expect(page.getByTestId("content-target-audience")).toHaveValue(preset.audience);
+    await expect(page.getByTestId("content-tags")).toHaveValue(preset.tags);
+
+    await page.getByTestId("source-preview-button").click();
+    await expect(page.getByTestId("generation-source-evidence")).toContainText(
+      "服务返回了需要人工处理的错误，请刷新当前数据后重试。"
+    );
+    await expect(page.getByTestId("source-preview-button")).toBeEnabled();
+    await expect(page.getByTestId("start-production-button")).toBeDisabled();
     await expect(page.getByTestId("draft-history-card")).toHaveCount(0);
 
     expect(generationRequests.providerStatus).toBeGreaterThan(0);

@@ -199,8 +199,8 @@ type CredentialSettings = {
 };
 
 type ApiErrorBody = {
-  detail?: string;
-  message?: string;
+  detail?: unknown;
+  message?: unknown;
 };
 
 type DependencyItem = {

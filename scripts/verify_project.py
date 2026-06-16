@@ -1826,6 +1826,11 @@ def validate_content_production_contract() -> int:
         (
             service_error_text,
             [
+                "GENERIC_STRUCTURED_SERVICE_ERROR",
+                "function normalizeServiceErrorMessage(message: unknown)",
+                "nestedMessage = errorObject.message ?? errorObject.detail ?? errorObject.error",
+                "export function sanitizeServiceErrorMessage(message: unknown)",
+                "服务返回了需要人工处理的错误，请刷新当前数据后重试。",
                 "DRAFT_GENERATION_RECOVERY_MARKERS",
                 "DRAFT_MISSING_REQUIRED_WEB_SOURCE_MARKERS",
                 "formatDraftGenerationErrorMessage",
@@ -1844,6 +1849,8 @@ def validate_content_production_contract() -> int:
         (
             workspace_text,
             [
+                "detail?: unknown",
+                "message?: unknown",
                 "formatDraftGenerationErrorMessage(rawMessage)",
                 "setStatusText(message)",
             ],
@@ -1861,6 +1868,10 @@ def validate_content_production_contract() -> int:
             e2e_text,
             [
                 "failContentDetail?: string",
+                "failSourcePreviewDetail?: unknown",
+                "mobile structured source preview error stays recoverable without false draft",
+                "PC structured source preview error stays recoverable without false draft",
+                "服务返回了需要人工处理的错误，请刷新当前数据后重试。",
                 "mobile schema-invalid draft failure gives recovery copy without false draft",
                 "PC schema-invalid draft failure gives recovery copy without false draft",
                 "mobile source-fact rejection gives source recovery copy without false draft",

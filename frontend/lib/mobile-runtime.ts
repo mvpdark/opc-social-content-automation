@@ -40,7 +40,7 @@ export function authHeaders(credentials: CredentialSettings) {
 
 export async function readApiError(response: Response, fallback: string) {
   const errorBody = (await response.json().catch(() => null)) as
-    | { detail?: string; message?: string }
+    | { detail?: unknown; message?: unknown }
     | null;
   return sanitizeServiceErrorMessage(errorBody?.message ?? errorBody?.detail ?? fallback);
 }

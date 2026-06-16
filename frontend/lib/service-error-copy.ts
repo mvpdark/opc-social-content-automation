@@ -1,7 +1,30 @@
 export const SERVICE_CONFIG_READ_ERROR = "服务配置读取失败。";
+const GENERIC_STRUCTURED_SERVICE_ERROR =
+  "服务返回了需要人工处理的错误，请刷新当前数据后重试。";
 
-export function sanitizeServiceErrorMessage(message: string) {
-  return message
+function normalizeServiceErrorMessage(message: unknown): string {
+  if (typeof message === "string") {
+    return message;
+  }
+  if (message instanceof Error) {
+    return message.message;
+  }
+  if (message === null || message === undefined) {
+    return "";
+  }
+  if (typeof message === "object") {
+    const errorObject = message as { detail?: unknown; error?: unknown; message?: unknown };
+    const nestedMessage = errorObject.message ?? errorObject.detail ?? errorObject.error;
+    if (typeof nestedMessage === "string") {
+      return nestedMessage;
+    }
+    return GENERIC_STRUCTURED_SERVICE_ERROR;
+  }
+  return String(message);
+}
+
+export function sanitizeServiceErrorMessage(message: unknown) {
+  return normalizeServiceErrorMessage(message)
     .replace(/Failed to fetch/gi, "服务暂时连接不上，请确认应用服务已启动。")
     .replace(/NetworkError/gi, "网络连接异常，请稍后重试。")
     .replace(/Load failed/gi, "服务加载失败，请稍后重试。")

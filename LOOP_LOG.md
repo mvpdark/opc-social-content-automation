@@ -7901,3 +7901,52 @@ If PC and mobile format missing-required-web-source draft rejections as "generat
 - The recovery-copy branch depends on the current backend wording markers; future backend detail text should keep one of those markers or extend the formatter.
 - Only the source-fact rejection path was added to E2E; other backend 502 categories still use the existing generic or schema-recovery messages.
 - Build and Playwright artifacts remain ignored and were not included in the intended commit.
+
+## Loop 114 - Structured API error detail fallback
+
+Date: 2026-06-16
+
+### Observation
+
+FastAPI endpoints can return object-shaped `detail` values, for example workspace export errors with `missing_content_ids` or `blocked_content_ids`. PC and mobile API error readers passed `detail` directly into `sanitizeServiceErrorMessage`, whose implementation expected a string and called `.replace()`. That could turn a recoverable API failure into a client-side runtime error.
+
+### Hypothesis
+
+If frontend service-error cleanup accepts `unknown`, extracts nested string messages, and falls back to a safe generic recovery sentence for structured details, then PC/mobile source-preview failures and similar backend object errors will remain visible and recoverable without leaking structured internals or enabling generation.
+
+### Patch
+
+- Changed `sanitizeServiceErrorMessage` to accept `unknown`, extract nested string `message`/`detail`/`error` values, and return a safe generic recovery sentence for structured objects.
+- Updated PC, mobile runtime, and mobile review API error body types from string-only details to `unknown` details.
+- Added PC and mobile source-preview E2E cases where the backend returns object-shaped `detail`; both keep source preview recoverable, keep generation disabled, and avoid false drafts or downstream generation calls.
+- Extended the project verifier and `PROJECT_MAP.md` with the structured API error contract.
+
+### Verification
+
+- `npm run lint` in `frontend/` passed.
+- `python scripts\verify_project.py --keep-cache` passed: python files compiled 85; safety gates 162; content production contract 1575; text hygiene files 129.
+- `npm run e2e -- --grep "structured source preview error"` passed: 2 Playwright tests.
+- `npm run e2e -- --grep "source preview failure|structured source preview error"` passed: 6 Playwright tests.
+- `npm run build` in `frontend/` passed; `frontend/tsconfig.json` had no diff after build.
+- `git diff --check` passed with only the existing Windows CRLF warning for `frontend/components/workspace-client.tsx`.
+- `git status --short --ignored artifacts frontend\artifacts frontend\.next-build frontend\.next` showed only ignored generated directories.
+
+### Score
+
+- Product value: 18/30
+- Correctness: 18/20
+- Test coverage: 18/20
+- Safety/security: 14/15
+- Maintainability: 9/10
+- UX clarity: 4/5
+- Total: 81/100
+
+### Result
+
+- Verified. Object-shaped backend API error details now show a safe recovery message instead of risking a client-side `.replace()` failure, and PC/mobile generation remains blocked after structured source-preview errors.
+
+### Remaining risk
+
+- Structured error objects without a nested string message intentionally show a generic sentence; future flows can add user-specific copy where a safe structured code exists.
+- This loop covers source-preview structured errors in E2E; other endpoints rely on the shared sanitizer and typecheck coverage rather than dedicated browser tests.
+- Build and Playwright artifacts remain ignored and were not included in the intended commit.
