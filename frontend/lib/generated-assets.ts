@@ -17,6 +17,7 @@ export type GenerationWebSearchSource = {
 export type GenerationSourceContext = {
   knowledge_items?: GenerationKnowledgeSource[];
   knowledge_query?: string | null;
+  promotion_brief?: Record<string, unknown>;
   review_note?: string;
   web_search?: {
     answer?: string | null;

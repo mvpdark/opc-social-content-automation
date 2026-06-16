@@ -9,6 +9,12 @@ If `style_reference` is provided, use it for structure, hook style, mobile
 pacing, expression layer, and platform fit. Do not treat provisional style
 reference as factual source material.
 
+If `promotion_brief` is provided, use it before drafting. Keep the post aligned
+with its intent, persona, pain point, trust proof, CTA, forbidden claims, source
+requirements, cover angle, and quality checks. Do not print the brief as a
+separate section; turn it into the hook, body logic, soft CTA, and review-safe
+claim boundaries.
+
 Return only the final post body that can be pasted into the target platform.
 
 Do not output separate `Title`, `Body`, `Tags`, `Platform fit notes`, `Source

@@ -15,6 +15,81 @@ from app.services.content_service import (
     build_draft_prompt_package,
     generate_content_draft,
 )
+from app.services.promotion_brief import build_promotion_brief
+
+
+@pytest.mark.parametrize(
+    ("topic", "tags", "expected_intent", "expected_success_signal"),
+    [
+        (
+            "\u5168\u7403\u6c34\u535a\u6392\u540d\u5fc5\u770b",
+            ["\u6c34\u535a", "\u6392\u540d"],
+            "list_filter",
+            "saves",
+        ),
+        (
+            "\u7855\u5347\u535a\u7533\u8bf7\u8def\u7ebf\u600e\u4e48\u9009",
+            ["\u7855\u5347\u535a", "\u8def\u7ebf\u89c4\u5212"],
+            "route",
+            "route uncertainty",
+        ),
+        (
+            "\u5bfc\u5e08\u5339\u914d\u524d\u8981\u505a\u7684\u65b9\u5411\u81ea\u67e5",
+            ["\u5bfc\u5e08\u5339\u914d", "\u7814\u7a76\u65b9\u5411"],
+            "mentor",
+            "direction-fit",
+        ),
+        (
+            "\u5728\u804c\u535a\u58eb\u7533\u8bf7\u65f6\u95f4\u7ebf\u600e\u4e48\u6392",
+            ["\u7533\u8bf7\u65f6\u95f4\u7ebf", "DDL"],
+            "timeline",
+            "stage",
+        ),
+        (
+            "\u9002\u5408\u4e0a\u73ed\u65cf\u7684\u535a\u58eb\u9879\u76ee\u600e\u4e48\u54a8\u8be2",
+            ["\u535a\u58eb\u54a8\u8be2", "\u79c1\u57df\u8f6c\u5316"],
+            "sales",
+            "private messages",
+        ),
+    ],
+)
+def test_promotion_brief_maps_topic_intent_to_marketing_plan(
+    topic: str,
+    tags: list[str],
+    expected_intent: str,
+    expected_success_signal: str,
+) -> None:
+    brief = build_promotion_brief(
+        ContentGenerateRequest(
+            platform="xiaohongshu",
+            topic=topic,
+            tags=tags,
+        ),
+        {"web_search": {"required": False, "results": []}},
+    )
+
+    assert brief["intent"]["key"] == expected_intent
+    assert brief["manual_review_required"] is True
+    assert expected_success_signal in brief["success_metric"]
+    assert "guaranteed admission" in brief["forbidden_claims"]
+    assert "CTA is clear and compliant" in brief["quality_checks"]
+
+
+def test_promotion_brief_downgrades_missing_source_topics_to_verification_framework() -> None:
+    brief = build_promotion_brief(
+        ContentGenerateRequest(
+            platform="xiaohongshu",
+            topic="\u6c34\u535a\u9879\u76ee\u6821\u5fbd\u548c\u4ef7\u683c\u600e\u4e48\u6838\u9a8c",
+            tags=["\u6c34\u535a", "\u4ef7\u683c", "\u6821\u5fbd"],
+        ),
+        {"web_search": {"required": True, "results": []}},
+    )
+
+    assert brief["intent"]["key"] == "source_check"
+    source_requirements = "\n".join(brief["source_requirements"])
+    assert "verification framework only" in source_requirements
+    assert "do not name schools" in source_requirements
+    assert "unsupported tuition or price conclusions" in brief["forbidden_claims"]
 
 
 def test_source_context_exposes_knowledge_and_web_sources(monkeypatch) -> None:
@@ -124,6 +199,13 @@ def test_draft_prompt_marks_missing_required_web_search(monkeypatch) -> None:
     assert isinstance(package.payload["source_context"], dict)
     assert "没有可见 Tavily 结果" in package.payload["source_context"]["review_note"]
     assert "不要让模型猜测学校、价格、logo 或排名结论" in package.payload["source_context"]["review_note"]
+    promotion_brief = package.payload["promotion_brief"]
+    assert isinstance(promotion_brief, dict)
+    assert promotion_brief == package.payload["source_context"]["promotion_brief"]
+    assert promotion_brief["intent"]["key"] == "source_check"
+    assert promotion_brief["manual_review_required"] is True
+    assert "guaranteed admission" in promotion_brief["forbidden_claims"]
+    assert "verification framework only" in "\n".join(promotion_brief["source_requirements"])
 
 
 def test_generate_content_rejects_conclusion_facts_when_required_web_sources_are_missing(

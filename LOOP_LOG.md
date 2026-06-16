@@ -7995,3 +7995,52 @@ If Loop Engineering includes a dedicated promotion precision guide, acceptance c
 - This loop integrates the strategy into the engineering workflow, but it does not yet implement the product features themselves.
 - Next high-value implementation loop should start with topic-intent routing or promotion-brief payloads because those unlock fact-ledger and scoring work.
 - Documentation contracts are intentionally phrase-based; future docs rewrites should update the verifier at the same time.
+
+## Loop 116 - Promotion brief payload for draft generation
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 115 added the promotion-precision operating model, and the backend already had topic-intent routing plus source-safety guards. The next missing product link was that draft generation still lacked an explicit promotion brief carrying persona, pain point, CTA, forbidden claims, source requirements, cover angle, and manual-review checks into the prompt payload.
+
+### Hypothesis
+
+If the backend builds a promotion brief from the detected topic intent and source context before drafting, then GPT/DeepSeek-style generation has a clearer marketing plan and source boundary without changing the manual publishing flow.
+
+### Patch
+
+- Added `backend/app/services/promotion_brief.py` to build structured promotion briefs for list/ranking, source-check, route, mentor, timeline, background, sales, and general topics.
+- Attached the promotion brief to both `source_context` and the `promotion_brief` field in draft prompt packages.
+- Updated the draft prompt to require using the brief for intent, persona, CTA, forbidden claims, source requirements, cover angle, and quality checks without printing it as a separate section.
+- Added frontend source-context typing for the new optional `promotion_brief` field.
+- Added backend tests for intent-to-brief mapping, missing-source downgrade behavior, and prompt/source-context consistency.
+- Extended `scripts/verify_project.py` contracts so future checks require the promotion brief builder, prompt guidance, payload wiring, source-context type, and tests.
+
+### Verification
+
+- `.venv\Scripts\python.exe -m pytest backend\tests\test_content_source_context.py` passed: 17 tests.
+- `.venv\Scripts\python.exe -m pytest backend\tests` passed: 244 tests, 1 existing Starlette deprecation warning.
+- `.venv\Scripts\python.exe scripts\verify_project.py --keep-cache` passed: required files 46; safety gates 174; content production contract 1596; text hygiene files 131.
+- `npm run typecheck` in `frontend/` passed.
+- `git diff --check` passed.
+
+### Score
+
+- Product value: 24/30
+- Correctness: 18/20
+- Test coverage: 18/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX clarity: 3/5
+- Total: 87/100
+
+### Result
+
+- Verified. Draft generation now receives a structured promotion brief before writing, so postgraduate-to-PhD Xiaohongshu content can stay closer to the selected topic intent, source requirements, CTA, cover promise, and manual-review safety boundary.
+
+### Remaining risk
+
+- The brief is currently payload/log/source-context data rather than a visible UI summary.
+- Local deterministic draft output does not yet surface all brief fields in copy; next loops can add UI summary, fact-ledger cards, or draft scoring.
+- Brief templates are rule-based and should be refined with reviewed campaign feedback.

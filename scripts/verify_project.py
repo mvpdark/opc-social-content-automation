@@ -65,6 +65,7 @@ def validate_required_files() -> int:
         ROOT / ".env.example",
         ROOT / "docker-compose.yml",
         ROOT / "backend" / "app" / "main.py",
+        ROOT / "backend" / "app" / "services" / "promotion_brief.py",
         ROOT / "backend" / "alembic" / "versions" / "0008_content_source_context.py",
         ROOT / "frontend" / "app" / "page.tsx",
         ROOT / "frontend" / "playwright.config.ts",
@@ -376,6 +377,20 @@ def validate_safety_gates() -> int:
             '"费用页"',
             '"学费表"',
             "价格/校徽/认证字段",
+        ],
+        "backend/app/services/promotion_brief.py": [
+            "def build_promotion_brief",
+            "FORBIDDEN_PROMOTION_CLAIMS",
+            "QUALITY_CHECKS",
+            '"manual_review_required": True',
+            '"source_check"',
+            '"list_filter"',
+            '"route"',
+            '"mentor"',
+            '"timeline"',
+            '"sales"',
+            "verification framework only",
+            "guaranteed admission",
         ],
         "backend/app/services/web_search_service.py": [
             '"校徽"',
@@ -1505,6 +1520,9 @@ def validate_content_production_contract() -> int:
     content_service_text = (
         ROOT / "backend" / "app" / "services" / "content_service.py"
     ).read_text(encoding="utf-8")
+    promotion_brief_text = (
+        ROOT / "backend" / "app" / "services" / "promotion_brief.py"
+    ).read_text(encoding="utf-8")
     content_source_context_test_text = (
         ROOT / "backend" / "tests" / "test_content_source_context.py"
     ).read_text(encoding="utf-8")
@@ -1891,6 +1909,57 @@ def validate_content_production_contract() -> int:
                 raise SystemExit(f"Missing {contract_name} contract: {snippet}")
 
     draft_schema_contracts = [
+        (
+            promotion_brief_text,
+            [
+                "def build_promotion_brief",
+                "BRIEF_BY_INTENT",
+                "DEFAULT_BRIEF",
+                "FORBIDDEN_PROMOTION_CLAIMS",
+                "QUALITY_CHECKS",
+                "manual_review_required",
+                "verification framework only",
+                "unsupported tuition or price conclusions",
+            ],
+            "promotion brief builder",
+        ),
+        (
+            content_service_text,
+            [
+                "from app.services.promotion_brief import build_promotion_brief",
+                "def _source_context_with_promotion_brief",
+                '"promotion_brief": promotion_brief',
+                '"promotion_brief": source_context["promotion_brief"]',
+            ],
+            "promotion brief draft payload",
+        ),
+        (
+            draft_prompt_text,
+            [
+                "If `promotion_brief` is provided",
+                "intent, persona, pain point, trust proof, CTA, forbidden claims",
+                "Do not print the brief as a",
+            ],
+            "promotion brief prompt guidance",
+        ),
+        (
+            generated_assets_text,
+            [
+                "promotion_brief?: Record<string, unknown>;",
+            ],
+            "promotion brief source-context type",
+        ),
+        (
+            content_source_context_test_text,
+            [
+                "test_promotion_brief_maps_topic_intent_to_marketing_plan",
+                "test_promotion_brief_downgrades_missing_source_topics_to_verification_framework",
+                'promotion_brief == package.payload["source_context"]["promotion_brief"]',
+                "guaranteed admission",
+                "verification framework only",
+            ],
+            "promotion brief backend tests",
+        ),
         (
             content_service_text,
             [

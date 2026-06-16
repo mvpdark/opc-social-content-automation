@@ -13,6 +13,7 @@ from app.models.user import User
 from app.schemas.content import ContentGenerateRequest, ContentRewriteRequest
 from app.services.knowledge_service import latest_knowledge_compilation, search_knowledge_items
 from app.services.model_router import load_platform_style_reference, load_prompt, model_router
+from app.services.promotion_brief import build_promotion_brief
 from app.services.topic_intent import (
     RANKING_DRAFT_TERMS,
     WATER_ROUTE_TOPIC_TERMS,
@@ -201,6 +202,17 @@ def _public_source_context(
     }
 
 
+def _source_context_with_promotion_brief(
+    payload: ContentGenerateRequest,
+    source_context: dict[str, object],
+) -> dict[str, object]:
+    promotion_brief = build_promotion_brief(payload, source_context)
+    return {
+        **source_context,
+        "promotion_brief": promotion_brief,
+    }
+
+
 def build_content_source_context(
     db: Session,
     payload: ContentGenerateRequest,
@@ -211,7 +223,8 @@ def build_content_source_context(
         topic=payload.topic,
         tags=payload.tags,
     )
-    return _public_source_context(payload, knowledge_context, web_search_context)
+    source_context = _public_source_context(payload, knowledge_context, web_search_context)
+    return _source_context_with_promotion_brief(payload, source_context)
 
 
 def _prompt_web_search_context(
@@ -332,7 +345,10 @@ def build_draft_prompt_package(
         topic=payload.topic,
         tags=payload.tags,
     )
-    source_context = _public_source_context(payload, knowledge_context, web_search_context)
+    source_context = _source_context_with_promotion_brief(
+        payload,
+        _public_source_context(payload, knowledge_context, web_search_context),
+    )
     return PromptPackage(
         prompt_name="draft_generation",
         prompt_template=load_prompt("draft_generation"),
@@ -346,6 +362,7 @@ def build_draft_prompt_package(
             "knowledge_context": knowledge_context,
             "web_search_context": _prompt_web_search_context(source_context, web_search_context),
             "source_context": source_context,
+            "promotion_brief": source_context["promotion_brief"],
             "style_reference": load_platform_style_reference(payload.platform),
             "user": {
                 "id": current_user.id,
