@@ -1372,7 +1372,7 @@ def validate_content_production_contract() -> int:
         'data-testid="cover-generate-button"',
         'data-testid="cover-generate-button-secondary"',
         'data-testid="xhs-preview-real-cover"',
-        'const unsafeGeneratedContentStatuses = new Set(["published", "submitted"]);',
+        'generatedContentLifecycleWarning,',
         "generatedContentLifecycleWarning(data.status)",
         "const canCopy = !testDraft && !generationBusy && !lifecycleWarning;",
         "const canGenerateImage = canCopy && !imageBusy && !lifecycleWarning;",
@@ -1677,6 +1677,22 @@ def validate_content_production_contract() -> int:
         total += 1
         if snippet not in e2e_text:
             raise SystemExit(f"Missing mobile multi-topic E2E contract: {snippet}")
+
+    mobile_lifecycle_e2e_contracts = [
+        "mobile published generation status stops at manual lifecycle review",
+        "E2E_MOBILE_PUBLISHED_STATUS_CONTENT_ID",
+        'contentStatus: "published"',
+        'page.getByTestId("draft-preview-lifecycle-warning")).toContainText(',
+        'page.getByTestId("draft-open-xiaohongshu")).toBeDisabled()',
+        'page.getByTestId("draft-preview-copy")).toBeDisabled()',
+        'page.getByTestId("draft-copy-preview-link")).toBeDisabled()',
+        'page.getByTestId("draft-preview-copy")).toContainText("需先核对状态")',
+        "expect(generationRequests.forbiddenPublishing).toEqual([])",
+    ]
+    for snippet in mobile_lifecycle_e2e_contracts:
+        total += 1
+        if snippet not in e2e_text:
+            raise SystemExit(f"Missing mobile lifecycle E2E contract: {snippet}")
 
     mobile_review_e2e_contracts = [
         "mobile review queue submits human decisions without platform publishing",
@@ -2027,7 +2043,10 @@ def validate_content_production_contract() -> int:
     status_label_contract_snippets = [
         "export function collectionJobStatusLabel",
         "export function generatedContentStatusLabel",
+        "export function isUnsafeGeneratedContentStatus",
+        "export function generatedContentLifecycleWarning",
         "export function generatedImageStatusLabel",
+        'const unsafeGeneratedContentStatuses = new Set(["published", "submitted"]);',
         'case "needs_operator_review"',
         "return \"待确认\"",
     ]
@@ -2260,7 +2279,13 @@ def validate_content_production_contract() -> int:
         "isLocalOrPrivateHostname(window.location.hostname)",
         "setManualCopyText(copied ? null : previewUrl)",
         "async function copyDraftTextOnly()",
+        "const lifecycleWarning = generatedContent ? generatedContentLifecycleWarning(generatedContent.status) : null;",
+        "const exportLocked = Boolean(lifecycleWarning);",
+        'data-testid="draft-preview-lifecycle-warning"',
+        'disabled={xhsExporting || exportLocked}',
+        'disabled={!generatedContent || exportLocked}',
         "function buildMobilePreviewChecklist",
+        "state: lifecycleWarning ? \"blocked\" : generatedContent ? \"review\" : \"blocked\"",
         "generationSourceContextStats(generatedContent?.source_context)",
         "}, [generatedContent?.id]);",
         'data-testid="draft-preview-copy"',

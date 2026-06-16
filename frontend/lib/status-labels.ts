@@ -35,6 +35,20 @@ export function generatedContentStatusLabel(status: string) {
   }
 }
 
+const unsafeGeneratedContentStatuses = new Set(["published", "submitted"]);
+
+export function isUnsafeGeneratedContentStatus(status: string) {
+  return unsafeGeneratedContentStatuses.has(status);
+}
+
+export function generatedContentLifecycleWarning(status: string) {
+  if (!isUnsafeGeneratedContentStatus(status)) {
+    return null;
+  }
+  const statusLabel = status === "published" ? generatedContentStatusLabel(status) : status;
+  return `后端返回状态为「${statusLabel}」，发布前请先核对人工确认记录；OPC 不会自动发布。`;
+}
+
 export function generatedImageStatusLabel(status: string) {
   switch (status) {
     case "approved":

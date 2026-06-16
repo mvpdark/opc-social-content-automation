@@ -5201,3 +5201,70 @@ Kept. PC already-published content can no longer be copied through either the ge
 ### Next candidate loop
 
 - Inspect mobile draft preview copy for matching unsafe lifecycle protection, or add a compact screenshot artifact for one high-risk review surface.
+
+## Loop 74 - Mobile preview lifecycle export guard
+
+Date: 2026-06-16
+
+### Observation
+
+PC export and preview copy paths now honor unsafe generated-content lifecycle states such as backend `published` and `submitted`. The mobile draft preview editor receives `GeneratedContent.status`, but its "复制文案+封面，去小红书", "只复制文案", and "复制预览链接" actions only check whether export is busy or content exists. A mobile user could therefore export or share already-published backend content from the preview surface without first seeing the lifecycle review warning.
+
+### Hypothesis
+
+If lifecycle warnings are shared through `status-labels`, and the mobile draft preview editor displays that warning while disabling all export/share actions for unsafe content statuses, then mobile preview cannot bypass the same human-review boundary already enforced on PC.
+
+### Patch
+
+- Moved generated-content unsafe lifecycle detection and warning copy into shared `frontend/lib/status-labels.ts`.
+- Updated the PC workspace to reuse the shared lifecycle warning helper instead of keeping local duplicate logic.
+- Added lifecycle warning handling to the mobile draft preview editor.
+- Disabled mobile "复制文案+封面，去小红书", "只复制文案", and "复制预览链接" when the generated content status is unsafe.
+- Marked the mobile preview human-review checklist item as blocked when a lifecycle warning is present.
+- Added a focused mobile E2E for backend `published` status and extended the project verifier contracts.
+
+### Verification
+
+```text
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx --version
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile published generation status stops at manual lifecycle review" --project=chromium
+cd frontend && npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+All checks passed.
+
+Evidence:
+
+- The focused mobile Playwright test passed after generating a backend-published draft, opening mobile preview, and verifying the lifecycle warning plus disabled export/share actions.
+- Frontend typecheck and production build passed.
+- The project verifier now checks the shared lifecycle helper, mobile preview lock, and mobile E2E lifecycle guard.
+- `git diff --check` passed with only CRLF-to-LF normalization warnings for touched TSX files.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 25/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 5/5
+- Total: 95/100
+
+### Result
+
+Kept. Mobile and PC preview/export surfaces now share the same unsafe generated-content lifecycle guard, keeping already-published or submitted backend content behind manual status review.
+
+### Remaining risk
+
+- Mobile one-click generation still creates a cover asset before the preview lock is visible when the mocked content-generation response is already `published`; this loop only blocks export/share actions.
+- A future loop can decide whether mobile automatic cover generation should also halt immediately on unsafe lifecycle statuses.
+
+### Next candidate loop
+
+- Inspect mobile automatic cover generation after unsafe content statuses, or add screenshot artifacts for the lifecycle warning surfaces.

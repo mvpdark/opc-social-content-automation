@@ -105,6 +105,7 @@ import {
   sanitizeServiceErrorMessage
 } from "@/lib/service-error-copy";
 import {
+  generatedContentLifecycleWarning,
   generatedContentStatusLabel,
   generatedImageStatusLabel
 } from "@/lib/status-labels";
@@ -1050,20 +1051,6 @@ function complianceWarnings(content: GeneratedContent) {
 
 function isTestDraft(content: GeneratedContent) {
   return localDraftMarkers.some((marker) => content.body.includes(marker));
-}
-
-const unsafeGeneratedContentStatuses = new Set(["published", "submitted"]);
-
-function isUnsafeGeneratedContentStatus(status: string) {
-  return unsafeGeneratedContentStatuses.has(status);
-}
-
-function generatedContentLifecycleWarning(status: string) {
-  if (!isUnsafeGeneratedContentStatus(status)) {
-    return null;
-  }
-  const statusLabel = status === "published" ? generatedContentStatusLabel(status) : status;
-  return `后端返回状态为「${statusLabel}」，发布前请先核对人工确认记录；OPC 不会自动发布。`;
 }
 
 type PrepublishChecklistState = "ready" | "review" | "blocked";

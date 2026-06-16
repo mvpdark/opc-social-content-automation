@@ -24,6 +24,7 @@ import {
   type DraftPreviewState
 } from "@/lib/mobile-draft-storage";
 import { stripDuplicateStandaloneTagLines } from "@/lib/platform-copy";
+import { generatedContentLifecycleWarning } from "@/lib/status-labels";
 import {
   buildXhsCoverFile,
   downloadFile,
@@ -91,6 +92,7 @@ function buildMobilePreviewChecklist({
   generatedContent: GeneratedContent | null;
 }): MobilePreviewChecklistItem[] {
   const sourceStats = generationSourceContextStats(generatedContent?.source_context);
+  const lifecycleWarning = generatedContent ? generatedContentLifecycleWarning(generatedContent.status) : null;
   const draftText = `${draft.title}\n${draft.body}\n${draft.tags}`;
   const missingContentFields = missingMobileDraftFields(draft);
   const riskyTerms = mobileBlockedPublishTerms.filter((term) => draftText.includes(term));
@@ -134,12 +136,14 @@ function buildMobilePreviewChecklist({
       state: riskyTerms.length ? "blocked" : "ready"
     },
     {
-      detail: generatedContent
-        ? "当前仍是草稿素材；复制或分享只做准备，最终发布必须人工确认。"
-        : "本地草稿不可直接发布，请先生成正式草稿并人工确认。",
+      detail: lifecycleWarning
+        ? lifecycleWarning
+        : generatedContent
+          ? "当前仍是草稿素材；复制或分享只做准备，最终发布必须人工确认。"
+          : "本地草稿不可直接发布，请先生成正式草稿并人工确认。",
       key: "human",
       label: "人工确认",
-      state: generatedContent ? "review" : "blocked"
+      state: lifecycleWarning ? "blocked" : generatedContent ? "review" : "blocked"
     }
   ];
 }
@@ -175,6 +179,8 @@ export function DraftPreviewEditor({
     .split(/\s+/)
     .map((tag) => tag.trim())
     .filter(Boolean);
+  const lifecycleWarning = generatedContent ? generatedContentLifecycleWarning(generatedContent.status) : null;
+  const exportLocked = Boolean(lifecycleWarning);
   const prepublishChecklist = buildMobilePreviewChecklist({
     coverImageUrl,
     draft,
@@ -214,6 +220,12 @@ export function DraftPreviewEditor({
   }
 
   async function copyDraftTextOnly() {
+    if (lifecycleWarning) {
+      setEditing(false);
+      setManualCopyText(null);
+      publishExportStatus(lifecycleWarning);
+      return;
+    }
     setEditing(false);
     const draftText = buildEditableDraftCopy(draft);
     const copied = await onCopy();
@@ -225,6 +237,12 @@ export function DraftPreviewEditor({
   }
 
   async function handleOpenXiaohongshu() {
+    if (lifecycleWarning) {
+      setEditing(false);
+      setManualCopyText(null);
+      publishExportStatus(lifecycleWarning);
+      return;
+    }
     const draftText = buildEditableDraftCopy(draft);
     setEditing(false);
     setManualCopyText(draftText);
@@ -309,6 +327,11 @@ export function DraftPreviewEditor({
   }
 
   async function copyPreviewLink() {
+    if (lifecycleWarning) {
+      setManualCopyText(null);
+      publishExportStatus(lifecycleWarning);
+      return;
+    }
     if (!generatedContent) {
       const message = "先生成草稿，才会有可分享的预览链接。";
       publishExportStatus(message);
@@ -495,6 +518,14 @@ export function DraftPreviewEditor({
                   复制或分享只会准备标题、正文、标签和封面素材；发布前仍需人工确认，不会自动发布。
                 </div>
               ) : null}
+              {!editing && lifecycleWarning ? (
+                <div
+                  className="mt-3 rounded-[18px] border border-[#ffb3b3] bg-[#fff1f1] px-3 py-2 text-[11px] font-semibold leading-5 text-[#a63636]"
+                  data-testid="draft-preview-lifecycle-warning"
+                >
+                  {lifecycleWarning}
+                </div>
+              ) : null}
               {!editing ? (
                 <div
                   className="mt-3 grid gap-2 rounded-[18px] border border-[#eeeeee] bg-[#fbfbfb] p-3"
@@ -527,32 +558,32 @@ export function DraftPreviewEditor({
           <button
             className="mb-2 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#ff2442] px-4 text-sm font-semibold text-white active:scale-[0.99] disabled:opacity-60"
             data-testid="draft-open-xiaohongshu"
-            disabled={xhsExporting}
+            disabled={xhsExporting || exportLocked}
             onClick={handleOpenXiaohongshu}
             type="button"
           >
             {xhsExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
-            {xhsExporting ? "正在准备" : "复制文案+封面，去小红书"}
+            {exportLocked ? "需先核对状态" : xhsExporting ? "正在准备" : "复制文案+封面，去小红书"}
           </button>
           <button
             className="mb-2 flex h-10 w-full items-center justify-center gap-2 rounded-full border border-[#eeeeee] bg-white px-4 text-sm font-semibold text-ink active:scale-[0.99] disabled:opacity-50"
             data-testid="draft-preview-copy"
-            disabled={xhsExporting}
+            disabled={xhsExporting || exportLocked}
             onClick={copyDraftTextOnly}
             type="button"
           >
             <Clipboard className="h-4 w-4" />
-            {XHS_COPY_TEXT_ONLY_LABEL}
+            {exportLocked ? "需先核对状态" : XHS_COPY_TEXT_ONLY_LABEL}
           </button>
           <button
             className="mb-2 flex h-10 w-full items-center justify-center gap-2 rounded-full border border-[#eeeeee] bg-white px-4 text-sm font-semibold text-ink active:scale-[0.99] disabled:opacity-50"
             data-testid="draft-copy-preview-link"
-            disabled={!generatedContent}
+            disabled={!generatedContent || exportLocked}
             onClick={copyPreviewLink}
             type="button"
           >
             <ExternalLink className="h-4 w-4" />
-            复制预览链接
+            {exportLocked ? "需先核对状态" : "复制预览链接"}
           </button>
           {xhsExportMessage ? (
             <div
