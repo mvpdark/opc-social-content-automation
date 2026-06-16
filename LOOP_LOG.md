@@ -7175,3 +7175,73 @@ Kept. Public preview now has CI coverage for malformed draft payloads, proving i
 ### Next candidate loop
 
 - Add malformed-image public preview coverage, or expand one-click alignment checks to another custom current-facts topic such as official logo/price on both PC and mobile.
+
+## Loop 103 - Public preview malformed-image coverage
+
+Date: 2026-06-16
+
+### Observation
+
+Public preview now covers invalid links, valid cover assets, cover lookup failures, backend content errors, and malformed content payloads. It still lacks focused coverage for a successful image-list response that returns malformed image asset objects; that path should keep the draft readable with the text-cover fallback and preserve the no-auto-publishing safety copy.
+
+### Hypothesis
+
+If the public-preview E2E mocks a valid draft plus malformed image-list payload and asserts the fallback cover, readable draft body, no error shell, and no publishing-like calls, CI will catch regressions where bad cover payloads blank the preview or hide the manual review warning.
+
+### Patch
+
+- Added a malformed-image public preview E2E that returns a valid draft plus a 200 OK image-list payload missing the required `image_url`.
+- Verified the public preview renders the ready page with the text-cover fallback, keeps the draft body and tags readable, preserves the no-auto-publishing safety copy, and does not call publishing-like endpoints.
+- Added verifier contracts and updated `PROJECT_MAP.md` to document malformed-image public preview smoke coverage.
+
+### Verification
+
+```text
+cd frontend && npx --version
+node UTF-8 hygiene scan for touched files
+python scripts\verify_project.py --keep-cache
+cd frontend && npm run lint
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "public preview uses text cover when image payload is malformed" --project=chromium
+cd frontend && npm run build
+git diff --check
+git diff -- frontend\tsconfig.json
+git status --short --ignored artifacts frontend\artifacts frontend\.next-build frontend\.next
+```
+
+All final checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- Touched-file UTF-8 hygiene scan found no replacement characters or mojibake markers.
+- Project verifier passed with `content_production_contract_checked=1486`.
+- TypeScript check passed through `npm run lint`.
+- Focused Chromium E2E passed for malformed image payload fallback.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed and `frontend/tsconfig.json` had no build-generated diff.
+- Only ignored artifact/build directories are present under `artifacts/`, `frontend/.next-build/`, and `frontend/.next/`.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 17/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 82/100
+
+### Result
+
+Kept. Public preview now has CI coverage for malformed image-list payloads, proving bad cover assets degrade to the text-cover fallback while the draft and manual review warning remain visible.
+
+### Remaining risk
+
+- This loop covers malformed image asset objects in an array; non-array image payloads are handled by the same fallback branch but can be covered separately if that API surface changes.
+- Screenshot/build artifacts remain ignored and are not committed.
+
+### Next candidate loop
+
+- Add non-array image payload public preview coverage, or expand one-click alignment checks to another custom current-facts topic such as official logo/price on both PC and mobile.

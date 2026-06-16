@@ -57,6 +57,7 @@ const E2E_PUBLIC_PREVIEW_CONTENT_ID = 8923;
 const E2E_PUBLIC_PREVIEW_FALLBACK_CONTENT_ID = 8924;
 const E2E_PUBLIC_PREVIEW_ERROR_CONTENT_ID = 8925;
 const E2E_PUBLIC_PREVIEW_MALFORMED_CONTENT_ID = 8930;
+const E2E_PUBLIC_PREVIEW_MALFORMED_IMAGE_CONTENT_ID = 8931;
 
 type JsonPayload = Record<string, unknown>;
 
@@ -1317,6 +1318,81 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("public-preview-tags")).toContainText(expectedTags[1]);
     await expect(page.getByTestId("public-preview-safety-message")).toContainText("不会自动发布");
     await expectNoHorizontalViewportOverflow(page, "public preview missing cover fallback", [
+      { label: "page", testId: "public-preview-page" },
+      { label: "fallback cover", testId: "public-preview-fallback-cover" },
+      { label: "body", testId: "public-preview-body" },
+      { label: "safety message", testId: "public-preview-safety-message" }
+    ]);
+    expect(contentRequests).toHaveLength(1);
+    expect(imageRequests).toHaveLength(1);
+    expect(forbiddenPublishing).toEqual([]);
+  });
+
+  test("public preview uses text cover when image payload is malformed", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const previewTitle = "E2E public preview malformed image topic";
+    const expectedTags = ["#E2E", "#FallbackCover"];
+    const contentRequests: string[] = [];
+    const imageRequests: string[] = [];
+    const forbiddenPublishing: string[] = [];
+
+    await page.route(`**/api/content/${E2E_PUBLIC_PREVIEW_MALFORMED_IMAGE_CONTENT_ID}`, async (route) => {
+      contentRequests.push(route.request().url());
+      await route.fulfill({
+        body: JSON.stringify({
+          body: [
+            `E2E public preview remains readable for ${previewTitle}.`,
+            "Malformed image payload should use the text cover fallback before manual review."
+          ].join("\n\n"),
+          created_at: "2026-06-16T00:10:00.000Z",
+          id: E2E_PUBLIC_PREVIEW_MALFORMED_IMAGE_CONTENT_ID,
+          platform: "xiaohongshu",
+          status: "draft",
+          tags: expectedTags,
+          title: previewTitle
+        }),
+        contentType: "application/json",
+        status: 200
+      });
+    });
+    await page.route(/\/api\/image\/list(?:\?|$)/, async (route) => {
+      imageRequests.push(route.request().url());
+      await route.fulfill({
+        body: JSON.stringify([
+          {
+            content_id: E2E_PUBLIC_PREVIEW_MALFORMED_IMAGE_CONTENT_ID,
+            error: "E2E image list returned malformed asset.",
+            id: E2E_PUBLIC_PREVIEW_MALFORMED_IMAGE_CONTENT_ID + 1000,
+            status: "generated"
+          }
+        ]),
+        contentType: "application/json",
+        status: 200
+      });
+    });
+    await page.route(/\/api\/[^?]*(publish|submit)/i, async (route) => {
+      forbiddenPublishing.push(route.request().url());
+      await route.fulfill({
+        body: JSON.stringify({ detail: "E2E guard blocked public preview publishing-like call." }),
+        contentType: "application/json",
+        status: 500
+      });
+    });
+
+    await page.goto(`${BASE_URL}/preview/${E2E_PUBLIC_PREVIEW_MALFORMED_IMAGE_CONTENT_ID}`);
+
+    await expect(page.getByTestId("public-preview-page")).toBeVisible({ timeout: 7000 });
+    await expect(page.getByTestId("public-preview-state")).toHaveCount(0);
+    await expect(page.getByTestId("public-preview-cover")).toHaveCount(0);
+    await expect(page.getByTestId("public-preview-fallback-cover")).toBeVisible();
+    await expect(page.getByTestId("public-preview-fallback-cover")).toContainText("\u5c01\u9762\u9884\u89c8");
+    await expect(page.getByTestId("public-preview-fallback-cover")).toContainText(previewTitle);
+    await expect(page.getByTestId("public-preview-title")).toContainText(previewTitle);
+    await expect(page.getByTestId("public-preview-body")).toContainText("Malformed image payload");
+    await expect(page.getByTestId("public-preview-tags")).toContainText(expectedTags[0]);
+    await expect(page.getByTestId("public-preview-tags")).toContainText(expectedTags[1]);
+    await expect(page.getByTestId("public-preview-safety-message")).toContainText("\u4e0d\u4f1a\u81ea\u52a8\u53d1\u5e03");
+    await expectNoHorizontalViewportOverflow(page, "public preview malformed image fallback", [
       { label: "page", testId: "public-preview-page" },
       { label: "fallback cover", testId: "public-preview-fallback-cover" },
       { label: "body", testId: "public-preview-body" },
