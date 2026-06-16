@@ -6824,3 +6824,73 @@ Kept. Public preview cover lookup failures now have CI-protected coverage that k
 ### Next candidate loop
 
 - Add public preview content backend-error smoke coverage, or continue with one-click generation topic alignment checks.
+
+## Loop 98 - Public preview content backend-error coverage
+
+Date: 2026-06-16
+
+### Observation
+
+Public preview now covers invalid IDs, valid drafts, and cover lookup failures, but it still lacks a focused smoke test for the case where the content API itself returns an error. That path should resolve to a clear error state, avoid infinite loading, and not continue into cover lookup or any publishing-like request.
+
+### Hypothesis
+
+If a public-preview E2E mocks a failed `/content/[id]` response and asserts the recoverable error shell plus no image/publish calls, CI will catch regressions where backend errors leave shared preview links stuck or trigger unnecessary follow-up requests.
+
+### Patch
+
+- Added a focused public-preview E2E for content API failure.
+- Verified the route resolves to the public preview error shell, hides the ready preview, stays within mobile viewport bounds, skips cover lookup after the content error, and does not call publishing-like endpoints.
+- Added project verifier contracts and updated `PROJECT_MAP.md` to document content-error public preview coverage.
+
+### Verification
+
+```text
+cd frontend && npx --version
+node UTF-8 hygiene scan for touched files
+python scripts\verify_project.py --keep-cache
+cd frontend && npm run lint
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "public preview resolves content backend errors without follow-up calls" --project=chromium
+cd frontend && npm run build
+git diff --check
+git diff -- frontend\tsconfig.json
+git status --short --ignored artifacts frontend\artifacts frontend\.next-build frontend\.next
+```
+
+All final checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- Touched-file UTF-8 hygiene scan found no replacement characters or mojibake markers.
+- Project verifier passed with `content_production_contract_checked=1436`.
+- TypeScript check passed through `npm run lint`.
+- Focused Chromium E2E passed for content backend-error public preview fallback.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed and `frontend/tsconfig.json` had no build-generated diff.
+- Only ignored artifact/build directories are present under `artifacts/`, `frontend/.next-build/`, and `frontend/.next/`.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 15/30
+- Correctness: 19/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 81/100
+
+### Result
+
+Kept. Public preview content backend failures now have CI-protected coverage that resolves to a clear mobile-safe error state without image lookup or publishing-like follow-up calls.
+
+### Remaining risk
+
+- This loop covers non-OK content responses; malformed content payloads can still use a focused smoke check.
+- Screenshot/build artifacts remain ignored and are not committed.
+
+### Next candidate loop
+
+- Add public preview malformed-content smoke coverage, or return to one-click generation topic alignment checks.

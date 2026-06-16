@@ -1674,6 +1674,23 @@ def validate_content_production_contract() -> int:
             ],
             "public preview missing-cover E2E",
         ),
+        (
+            e2e_text,
+            [
+                "public preview resolves content backend errors without follow-up calls",
+                "E2E_PUBLIC_PREVIEW_ERROR_CONTENT_ID = 8925",
+                "E2E content service temporarily unavailable.",
+                "E2E guard blocked image lookup after content error.",
+                "public preview content backend error",
+                'page.getByTestId("public-preview-state")).toHaveAttribute("data-state", "error"',
+                'page.getByTestId("public-preview-status-message")).toContainText("暂时无法打开")',
+                'page.getByTestId("public-preview-page")).toHaveCount(0)',
+                "expect(contentRequests).toHaveLength(1)",
+                "expect(imageRequests).toEqual([])",
+                "expect(forbiddenPublishing).toEqual([])",
+            ],
+            "public preview content-error E2E",
+        ),
     ]
     for text, snippets, contract_name in public_preview_contracts:
         for snippet in snippets:

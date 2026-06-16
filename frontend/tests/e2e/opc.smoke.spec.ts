@@ -51,6 +51,7 @@ const E2E_PC_REVIEW_QUEUE_APPROVED_CONTENT_ID = 8921;
 const E2E_MOBILE_DRAFT_HISTORY_RETRY_CONTENT_ID = 8922;
 const E2E_PUBLIC_PREVIEW_CONTENT_ID = 8923;
 const E2E_PUBLIC_PREVIEW_FALLBACK_CONTENT_ID = 8924;
+const E2E_PUBLIC_PREVIEW_ERROR_CONTENT_ID = 8925;
 
 type JsonPayload = Record<string, unknown>;
 
@@ -1318,6 +1319,54 @@ test.describe("OPC smoke coverage", () => {
     ]);
     expect(contentRequests).toHaveLength(1);
     expect(imageRequests).toHaveLength(1);
+    expect(forbiddenPublishing).toEqual([]);
+  });
+
+  test("public preview resolves content backend errors without follow-up calls", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const contentRequests: string[] = [];
+    const imageRequests: string[] = [];
+    const forbiddenPublishing: string[] = [];
+
+    await page.route(`**/api/content/${E2E_PUBLIC_PREVIEW_ERROR_CONTENT_ID}`, async (route) => {
+      contentRequests.push(route.request().url());
+      await route.fulfill({
+        body: JSON.stringify({ detail: "E2E content service temporarily unavailable." }),
+        contentType: "application/json",
+        status: 503
+      });
+    });
+    await page.route(/\/api\/image\/list(?:\?|$)/, async (route) => {
+      imageRequests.push(route.request().url());
+      await route.fulfill({
+        body: JSON.stringify({ detail: "E2E guard blocked image lookup after content error." }),
+        contentType: "application/json",
+        status: 500
+      });
+    });
+    await page.route(/\/api\/[^?]*(publish|submit)/i, async (route) => {
+      forbiddenPublishing.push(route.request().url());
+      await route.fulfill({
+        body: JSON.stringify({ detail: "E2E guard blocked public preview publishing-like call." }),
+        contentType: "application/json",
+        status: 500
+      });
+    });
+
+    await page.goto(`${BASE_URL}/preview/${E2E_PUBLIC_PREVIEW_ERROR_CONTENT_ID}`);
+
+    await expect(page.getByTestId("public-preview-state")).toHaveAttribute("data-state", "error", {
+      timeout: 7000
+    });
+    await expect(page.getByTestId("public-preview-status-title")).toContainText("预览打不开");
+    await expect(page.getByTestId("public-preview-status-message")).toContainText("暂时无法打开");
+    await expect(page.getByTestId("public-preview-page")).toHaveCount(0);
+    await expectNoHorizontalViewportOverflow(page, "public preview content backend error", [
+      { label: "status shell", testId: "public-preview-state" },
+      { label: "status card", testId: "public-preview-status-card" }
+    ]);
+    expect(contentRequests).toHaveLength(1);
+    expect(imageRequests).toEqual([]);
     expect(forbiddenPublishing).toEqual([]);
   });
 
