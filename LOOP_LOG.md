@@ -4817,3 +4817,67 @@ Kept. Mobile custom source-required draft preview coverage now protects basic vi
 ### Next candidate loop
 
 - Add a 360px viewport guard for one source-required mobile preview path, or continue hardening review-page source evidence visibility.
+
+## Loop 68 - Mobile source preview 360px guard
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 67 added a 390px viewport-fit guard for the mobile custom fact-topic preview. Backlog acceptance still calls out 360px mobile widths, and the selected ranking/project-list path has source evidence checks but does not assert the opened draft preview stays within the narrowest common viewport.
+
+### Hypothesis
+
+If the mobile multi-topic E2E helper can run one source-required ranking/project-list scenario at 360px and check the opened draft preview surface, cover, checklist, and bottom actions, then narrow-phone preview regressions will be caught without adding a separate broad test.
+
+### Patch
+
+- Parameterized the mobile topic-alignment helper with an optional viewport and preview viewport-fit guard.
+- Ran the selected ranking/project-list source-required scenario at 360px wide.
+- Added preview-fit assertions for the opened draft preview editor, cover image, checklist, copy action, and preview-link action.
+- Extended the verifier contract so the 360px source-required preview guard cannot be removed silently.
+
+### Verification
+
+```text
+npm run lint
+python scripts\verify_project.py --keep-cache
+npx --version
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile one-click generation keeps selected ranking project-list topic aligned" --project=chromium
+npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+All checks passed.
+
+Evidence:
+
+- The focused Playwright run passed the 360px mobile ranking/project-list source-required preview-copy test.
+- The scenario still verifies source preview evidence and now also verifies the opened draft preview surface and bottom actions stay within the narrow viewport.
+- The verifier now fails if the 360px viewport override, selected preview viewport guard, or preview-link target assertion is removed.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 18/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 5/5
+- Total: 85/100
+
+### Result
+
+Kept. A source-required mobile ranking/project-list draft preview now has 360px viewport coverage for the evidence-to-preview-to-copy path.
+
+### Remaining risk
+
+- This is a bounds check, not a screenshot baseline for visual spacing or typography.
+- 414px source-required preview behavior is still covered indirectly by responsive layout rather than a dedicated focused E2E viewport.
+
+### Next candidate loop
+
+- Add a 414px viewport guard for one mobile preview path, or shift to review-page source-evidence visibility and manual confirmation states.

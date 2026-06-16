@@ -92,8 +92,10 @@ type MobileReviewFixtureRequests = {
 
 type MobileTopicAlignmentScenarioOptions = {
   contentId: number;
+  expectPreviewViewportFit?: boolean;
   expectSourceEvidenceViewportFit?: boolean;
   presetKey: string;
+  viewport?: { height: number; width: number };
 };
 
 type PcTopicAlignmentScenarioOptions = {
@@ -694,9 +696,15 @@ function requireTopicPreset(key: string) {
 
 async function runMobileTopicAlignmentScenario(
   page: Page,
-  { contentId, expectSourceEvidenceViewportFit = false, presetKey }: MobileTopicAlignmentScenarioOptions
+  {
+    contentId,
+    expectPreviewViewportFit = false,
+    expectSourceEvidenceViewportFit = false,
+    presetKey,
+    viewport = { height: 844, width: 390 }
+  }: MobileTopicAlignmentScenarioOptions
 ) {
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setViewportSize(viewport);
   const acceptedLogin = createLoginInput();
   const preset = requireTopicPreset(presetKey);
   const expectedTags = parseTagText(preset.tags);
@@ -749,6 +757,15 @@ async function runMobileTopicAlignmentScenario(
   await expect(page.getByTestId("draft-preview-prepublish-check-sources")).toContainText("待核对");
   await expect(page.getByTestId("draft-preview-copy")).toBeEnabled();
   await expect(page.getByTestId("draft-copy-preview-link")).toBeEnabled();
+  if (expectPreviewViewportFit) {
+    await expectNoHorizontalViewportOverflow(page, "mobile selected draft preview", [
+      { label: "editor", testId: "draft-preview-editor" },
+      { label: "cover image", testId: "draft-preview-cover-image" },
+      { label: "checklist", testId: "draft-preview-prepublish-checklist" },
+      { label: "copy action", testId: "draft-preview-copy" },
+      { label: "preview link action", testId: "draft-copy-preview-link" }
+    ]);
+  }
 
   await page.getByTestId("draft-preview-copy").click();
   await expect(page.getByTestId("draft-export-status")).toBeVisible();
@@ -1263,8 +1280,10 @@ test.describe("OPC smoke coverage", () => {
   test("mobile one-click generation keeps selected ranking project-list topic aligned through preview copy", async ({ page }) => {
     await runMobileTopicAlignmentScenario(page, {
       contentId: E2E_MOBILE_RANKING_PROGRAMS_CONTENT_ID,
+      expectPreviewViewportFit: true,
       expectSourceEvidenceViewportFit: true,
-      presetKey: "ranking-water-programs"
+      presetKey: "ranking-water-programs",
+      viewport: { height: 780, width: 360 }
     });
   });
 
