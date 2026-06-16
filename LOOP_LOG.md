@@ -4498,3 +4498,66 @@ Kept. Exchange-rate and currency-conversion custom topics now require source evi
 ### Next candidate loop
 
 - Add screenshot-level source evidence visual QA for one focused viewport, or inspect copy/preview flow for topic drift on another non-source preset family.
+
+## Loop 63 - PC multi-topic alignment contract guard
+
+Date: 2026-06-16
+
+### Observation
+
+Mobile multi-topic E2E coverage is explicitly guarded by the project verifier for sales, route, mentor, timing, and source presets. PC has matching one-click generation E2E tests for the same non-source topic families, but the verifier does not yet lock those PC contracts in place.
+
+### Hypothesis
+
+If the verifier explicitly requires the PC sales, route, mentor, and timing alignment tests plus their export, preview, copy, and no-publishing assertions, then future edits are less likely to remove PC topic-intent coverage or let one-click generation drift silently on desktop.
+
+### Patch
+
+- Added a PC multi-topic E2E contract block to `scripts/verify_project.py`.
+- Required the existing PC sales, route, mentor, and timing alignment tests to remain present.
+- Required desktop export card, pre-publish checklist, preview modal, preview-copy button, no rewrite, and no publishing/submission assertions to stay protected.
+
+### Verification
+
+```text
+npm run lint
+python scripts\verify_project.py --keep-cache
+npx --version
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC one-click generation keeps selected (sales|route|mentor|timing) topic aligned" --project=chromium
+npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+All checks passed.
+
+Evidence:
+
+- The focused Playwright run passed 4 tests covering PC sales, route, mentor, and timing one-click generation.
+- Each covered path still keeps selected topic, audience, tags, cover direction, export card, preview modal, and copy action aligned.
+- The verifier now fails if the PC multi-topic desktop coverage or no-publishing guard is removed.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 18/30
+- Correctness: 18/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 4/5
+- Total: 85/100
+
+### Result
+
+Kept. Desktop sales, route, mentor, and timing one-click generation coverage is now protected by the project verifier, matching the existing mobile multi-topic guard.
+
+### Remaining risk
+
+- This loop protects existing PC E2E coverage rather than adding a new rendered UI assertion.
+- Screenshot-level visual QA for source evidence remains a separate future improvement.
+
+### Next candidate loop
+
+- Add screenshot-level source evidence visual QA for one focused viewport, or inspect another desktop preview/copy edge state.

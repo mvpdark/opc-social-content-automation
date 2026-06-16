@@ -1659,6 +1659,35 @@ def validate_content_production_contract() -> int:
         if snippet not in e2e_text:
             raise SystemExit(f"Missing mobile multi-topic E2E contract: {snippet}")
 
+    pc_multi_topic_e2e_contracts = [
+        "runPcTopicAlignmentScenario",
+        "E2E_PC_GENERATED_CONTENT_ID",
+        "E2E_PC_ROUTE_TOPIC_CONTENT_ID",
+        "E2E_PC_MENTOR_TOPIC_CONTENT_ID",
+        "E2E_PC_TIMELINE_TOPIC_CONTENT_ID",
+        "PC one-click generation keeps selected sales topic aligned through preview copy",
+        "PC one-click generation keeps selected route topic aligned through preview copy",
+        "PC one-click generation keeps selected mentor topic aligned through preview copy",
+        "PC one-click generation keeps selected timing topic aligned through preview copy",
+        "expectExportSafetyCopy: true",
+        "presetKey: \"sales-main\"",
+        "presetKey: \"route-main\"",
+        "presetKey: \"mentor-direction-check\"",
+        "presetKey: \"timeline-main\"",
+        'page.getByTestId("pc-generated-export-card")',
+        'page.getByTestId("pc-export-prepublish-check")',
+        'page.getByTestId("xhs-preview-modal")',
+        'page.getByTestId("pc-preview-modal-copy-button")',
+        "expect(generationRequests.contentGenerate).toHaveLength(1)",
+        "expect(generationRequests.imageGenerate).toHaveLength(1)",
+        "expect(generationRequests.rewrite).toHaveLength(0)",
+        "expect(generationRequests.forbiddenPublishing).toEqual([])",
+    ]
+    for snippet in pc_multi_topic_e2e_contracts:
+        total += 1
+        if snippet not in e2e_text:
+            raise SystemExit(f"Missing PC multi-topic E2E contract: {snippet}")
+
     copy_dedupe_contracts = [
         (
             platform_copy_text,
