@@ -141,7 +141,7 @@ export function GenerationSourceEvidenceCard({
           className="mt-3 rounded-md border border-amber/40 bg-amber/10 px-3 py-2 text-[11px] leading-5 text-[#8a6110]"
           data-testid="source-required-web-warning"
         >
-          此选题需要联网来源；未拿到 Tavily 结果前，不要写学校、价格、logo 或排名结论。
+          此选题需要联网来源；未拿到 Tavily 结果前，不要让模型猜测学校、价格、logo 或排名结论。
         </div>
       ) : null}
       <div className="workspace-evidence-switcher mt-3 rounded-md border border-line bg-mist/45 p-1.5" data-testid="source-evidence-switcher">
@@ -270,7 +270,7 @@ export function GenerationSourceEvidenceCard({
           ) : (
             <p className="rounded-md border border-amber/40 bg-amber/10 px-3 py-2 text-[11px] leading-5 text-[#8a6110]">
               {webRequired
-                ? "这个选题需要实时资料，但本次还没有可见联网搜索结果；请先换关键词、检查 Tavily，或只写核验框架，不要直接写学校、价格、logo 或排名结论。"
+                ? "这个选题需要实时资料，但本次还没有可见联网搜索结果；请先换关键词、检查 Tavily，或只写核验框架，不要让模型猜测学校、价格、logo 或排名结论。"
                 : "当前选题未触发联网搜索；如涉及学校、价格、logo、排名或市场信息，请先重新查看依据。"}
             </p>
           )}

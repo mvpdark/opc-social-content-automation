@@ -128,7 +128,7 @@ export function MobileSourceEvidencePanel({
           className="mt-3 rounded-[18px] border border-[#f3dca3] bg-[#fff8e6] px-3 py-2 text-[11px] font-semibold leading-5 text-[#8a6110]"
           data-testid="mobile-source-required-web-warning"
         >
-          此选题需要联网来源；未拿到 Tavily 结果前，不要写学校、价格、logo 或排名结论。
+          此选题需要联网来源；未拿到 Tavily 结果前，不要让模型猜测学校、价格、logo 或排名结论。
         </div>
       ) : null}
       <div
@@ -265,7 +265,7 @@ export function MobileSourceEvidencePanel({
           ) : (
             <p className="rounded-[18px] border border-[#f3dca3] bg-[#fff8e6] px-3 py-2 text-[11px] font-medium leading-5 text-[#8a6110]">
               {webRequired
-                ? "这个选题需要实时资料，但本次还没拿到可见联网搜索结果；请换关键词、检查 Tavily，或只写核验框架，不要直接写学校、价格、logo 或排名结论。"
+                ? "这个选题需要实时资料，但本次还没拿到可见联网搜索结果；请换关键词、检查 Tavily，或只写核验框架，不要让模型猜测学校、价格、logo 或排名结论。"
                 : "当前选题未触发联网搜索；如涉及学校、价格、logo、排名或市场信息，请先重新查看依据。"}
             </p>
           )}

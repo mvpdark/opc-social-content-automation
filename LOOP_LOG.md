@@ -7526,3 +7526,70 @@ Kept. PC custom official logo-price topics now have CI coverage proving source e
 ### Next candidate loop
 
 - Audit prompt/runtime labels for current-facts source requirements, or add another custom current-facts topic class if a new high-risk wording appears.
+
+## Loop 108 - Current-facts source warning labels
+
+Date: 2026-06-16
+
+### Observation
+
+PC and mobile source-evidence panels already warn that current-facts topics need Tavily/web evidence and should not directly state school, price, logo, or ranking conclusions when results are missing. The fallback wording still says "do not directly write" rather than explicitly blocking model-guessed facts, leaving a small ambiguity in the runtime safety label.
+
+### Hypothesis
+
+If the PC and mobile no-source-result warnings explicitly say not to let the model guess school, price, logo, or ranking conclusions, and the project verifier locks that text, future changes will be more likely to preserve the data-first rule for current-facts topics without adding new UI surface area.
+
+### Patch
+
+- Updated PC and mobile source-evidence warnings to say not to let the model guess school, price, logo, or ranking conclusions when Tavily/web results are missing.
+- Added verifier snippets so the project check locks both the visible required-web warning and the no-result fallback copy.
+- Updated `PROJECT_MAP.md` to document the protected source-evidence warning-label contract.
+
+### Verification
+
+```text
+python scripts\verify_project.py --keep-cache
+cd frontend && npm run lint
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "source preview failure" --project=chromium
+cd frontend && npm run build
+git diff --check
+git diff -- frontend\tsconfig.json
+git status --short --ignored artifacts frontend\artifacts frontend\.next-build frontend\.next
+```
+
+All final checks passed.
+
+Evidence:
+
+- Project verifier passed with `content_production_contract_checked=1531` and `text_hygiene_files_checked=129`.
+- TypeScript check passed through `npm run lint`.
+- Focused Chromium E2E passed 4/4 source-preview-failure tests for mobile, mobile custom, PC, and PC custom flows.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed and `frontend/tsconfig.json` had no build-generated diff.
+- Only ignored artifact/build directories are present under `artifacts/`, `frontend/.next-build/`, and `frontend/.next/`.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 16/30
+- Correctness: 17/20
+- Test coverage: 18/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 79/100
+
+### Result
+
+Kept. PC and mobile current-facts source warnings now explicitly block model-guessed school, price, logo, and ranking conclusions when required Tavily/web evidence is missing, and the verifier protects those labels from drifting.
+
+### Remaining risk
+
+- E2E failure tests protect no-false-draft behavior, while the exact warning text is locked by the verifier rather than a browser text assertion.
+- Live official logos, prices, rankings, and market facts still depend on collected knowledge or the configured Tavily/web-search support path.
+- Screenshot/build artifacts remain ignored and are not committed.
+
+### Next candidate loop
+
+- Add a direct PC/mobile browser assertion for the missing-web-results warning text, or audit backend review-note copy for the same no-model-guessing wording.
