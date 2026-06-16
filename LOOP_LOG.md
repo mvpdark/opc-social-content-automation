@@ -5464,3 +5464,70 @@ Kept. PC operators now have a visible pending-review queue without any publishin
 ### Next candidate loop
 
 - Add screenshot artifacts for lifecycle warning surfaces, or inspect PC read-only queue empty/error states.
+
+## Loop 78 - PC review queue read-error state
+
+Date: 2026-06-16
+
+### Observation
+
+The PC content page now shows a read-only pending-review queue from `/content/list?platform=xiaohongshu`. If that list request fails or returns an invalid payload, `loadLatestContent()` currently falls through to the empty/local state, which can make a service outage look like there is simply no work waiting for review.
+
+### Hypothesis
+
+If the PC read-only review queue carries an explicit loading/error state from content-list loading, then operators can distinguish "no pending review content" from "review queue could not be read" without adding any publishing or approval shortcut.
+
+### Patch
+
+- Added `contentListError` state to the PC content page so `/content/list?platform=xiaohongshu` failures are not silently treated as an empty queue.
+- Kept local/stored draft fallback behavior, but surfaced a recoverable read-error state in `PcReviewQueuePanel`.
+- Added loading and error views for the read-only pending-review queue, with explicit copy that OPC will not auto-publish while the queue is unreadable.
+- Extended the PC E2E fixture with a controlled content-list failure mode.
+- Added a focused Playwright E2E for the queue read-error state, including no generation, image, rewrite, or publishing-like calls.
+- Extended `scripts/verify_project.py` contracts for the queue error UI and E2E coverage.
+
+### Verification
+
+```text
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx --version
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC read-only review queue shows recoverable read errors" --project=chromium
+cd frontend && npm run build
+git diff --check
+```
+
+All checks passed.
+
+Evidence:
+
+- The focused PC Playwright test passed and confirmed the read-only queue shows the service error and the no-auto-publish warning.
+- The same E2E confirmed zero content generation, image generation, rewrite, or publishing-like requests.
+- Frontend typecheck/lint and production build passed.
+- Project verifier passed after adding the new UI/E2E contract checks.
+- `git diff --check` passed with only the existing CRLF-to-LF normalization warning for the touched TSX file.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 22/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 5/5
+- Total: 91/100
+
+### Result
+
+Kept. PC operators can now tell the difference between an empty review queue and a queue-read outage, while the UI remains read-only and does not add any publish or approval shortcut.
+
+### Remaining risk
+
+- The message is recoverable but passive; a later loop could add a read-only retry button that only reloads the content list.
+- The PC queue still intentionally does not expose approval/change-request actions.
+
+### Next candidate loop
+
+- Add screenshot artifacts for PC/mobile lifecycle warning states, or add a retry-only queue reload control with E2E coverage.

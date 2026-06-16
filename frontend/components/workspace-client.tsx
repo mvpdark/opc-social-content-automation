@@ -2476,6 +2476,7 @@ function ContentView({
   >({});
   const [pinnedDraftIds, setPinnedDraftIds] = useState<number[]>([]);
   const [draftActionError, setDraftActionError] = useState<string | null>(null);
+  const [contentListError, setContentListError] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(true);
   const selectedCreationProject = findEnabledCreationProject(selectedCreationProjectId);
   const pcReviewQueueContents = draftHistory.filter(isPcReviewQueueCandidate);
@@ -2503,6 +2504,7 @@ function ContentView({
       sortDraftHistory(upsertDraftHistory(current, content), pinnedDraftIds)
     );
     setDraftActionError(null);
+    setContentListError(null);
     saveStoredGeneratedContent(content);
   }
 
@@ -2620,13 +2622,16 @@ function ContentView({
 
     async function loadLatestContent() {
       try {
+        if (active) {
+          setContentListError(null);
+        }
         const response = await fetch(`${API_BASE}/content/list?platform=xiaohongshu`);
         if (!response.ok) {
-          return;
+          throw new Error(await readApiError(response, "待人工确认队列读取失败。"));
         }
         const contents = (await response.json()) as unknown;
         if (!Array.isArray(contents)) {
-          return;
+          throw new Error("待人工确认队列格式异常，请稍后重试。");
         }
         const history = sortDraftHistory(
           contents.filter(isGeneratedContent).filter((content) => !isTestDraft(content)),
@@ -2655,7 +2660,10 @@ function ContentView({
             }
           });
         }
-      } catch (_error) {
+      } catch (error) {
+        if (active) {
+          setContentListError(error instanceof Error ? error.message : "待人工确认队列读取失败。");
+        }
         // Keep the local draft or full example visible when the database/API is not available.
       } finally {
         if (active) {
@@ -2735,6 +2743,8 @@ function ContentView({
         <div className="space-y-4">
           <PcReviewQueuePanel
             contents={pcReviewQueueContents}
+            error={contentListError}
+            loading={previewLoading}
             onSelectContent={handleSelectDraft}
           />
           <Panel helper="生成前需要明确输入、改写和确认边界。" title="生产控制">
@@ -2767,9 +2777,13 @@ function ContentView({
 
 function PcReviewQueuePanel({
   contents,
+  error,
+  loading,
   onSelectContent
 }: {
   contents: GeneratedContent[];
+  error: string | null;
+  loading: boolean;
   onSelectContent: (content: GeneratedContent) => void;
 }) {
   const visibleContents = contents.slice(0, 4);
@@ -2791,7 +2805,25 @@ function PcReviewQueuePanel({
             <div className="text-xs text-muted">待处理</div>
           </div>
         </div>
-        {visibleContents.length ? (
+        {loading ? (
+          <div
+            className="rounded-md border border-dashed border-line px-3 py-4 text-sm font-medium leading-6 text-muted"
+            data-testid="pc-review-queue-loading"
+          >
+            正在读取待人工确认队列...
+          </div>
+        ) : error ? (
+          <div
+            className="rounded-md border border-coral/30 bg-coral/10 px-3 py-4 text-sm leading-6 text-ink"
+            data-testid="pc-review-queue-error"
+          >
+            <div className="font-semibold text-coral">待人工确认队列读取失败</div>
+            <p className="mt-1 text-muted">{error}</p>
+            <p className="mt-2 text-xs font-medium text-muted">
+              请稍后刷新，或先检查服务连接；OPC 不会在队列不可读时自动发布。
+            </p>
+          </div>
+        ) : visibleContents.length ? (
           <div className="space-y-2" data-testid="pc-review-queue-list">
             {visibleContents.map((content) => (
               <button

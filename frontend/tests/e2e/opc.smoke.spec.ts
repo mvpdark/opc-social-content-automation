@@ -63,6 +63,7 @@ type MobileGenerationFixtureOptions = {
   contentStatus?: string;
   failContent?: boolean;
   failContentDetail?: string;
+  failContentList?: boolean;
   failCover?: boolean;
   failSourcePreview?: boolean;
   responseTags?: string[];
@@ -503,6 +504,7 @@ async function mockPcGenerationFixture(
     contentStatus = "draft",
     failContent = false,
     failContentDetail,
+    failContentList = false,
     failCover = false,
     failSourcePreview = false,
     responseTags
@@ -546,6 +548,14 @@ async function mockPcGenerationFixture(
   });
   await page.route(/\/api\/content\/list(?:\?|$)/, async (route) => {
     requests.contentList += 1;
+    if (failContentList) {
+      await route.fulfill({
+        body: JSON.stringify({ detail: "E2E PC review queue unavailable." }),
+        contentType: "application/json",
+        status: 503
+      });
+      return;
+    }
     await route.fulfill({
       body: JSON.stringify(contentList),
       contentType: "application/json",
@@ -1996,6 +2006,37 @@ test.describe("OPC smoke coverage", () => {
 
     await page.getByTestId(`pc-review-queue-card-${E2E_PC_REVIEW_QUEUE_CONTENT_ID}`).click();
     await expect(page.getByTestId("draft-history-card").filter({ hasText: pendingPreset.topic })).toBeVisible();
+
+    expect(generationRequests.contentList).toBeGreaterThan(0);
+    expect(generationRequests.contentGenerate).toHaveLength(0);
+    expect(generationRequests.imageGenerate).toHaveLength(0);
+    expect(generationRequests.rewrite).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("PC read-only review queue shows recoverable read errors", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const acceptedLogin = createLoginInput();
+    const preset = requireTopicPreset("timeline-main");
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockPcGenerationFixture(page, preset, {
+      failContentList: true
+    });
+
+    await page.goto(`${BASE_URL}/?theme=mint&tab=content&project=postgraduate-phd`);
+    await expect(page.getByTestId("pc-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("pc-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("pc-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("pc-login-submit").click();
+
+    await expect(page.getByTestId("pc-review-queue")).toBeVisible();
+    await expect(page.getByTestId("pc-review-queue-error")).toContainText(
+      "E2E PC review queue unavailable."
+    );
+    await expect(page.getByTestId("pc-review-queue-error")).toContainText(
+      "不会在队列不可读时自动发布"
+    );
 
     expect(generationRequests.contentList).toBeGreaterThan(0);
     expect(generationRequests.contentGenerate).toHaveLength(0);
