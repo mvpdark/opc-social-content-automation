@@ -1846,6 +1846,26 @@ test.describe("OPC smoke coverage", () => {
       score: 95
     });
 
+    await page.getByTestId("mobile-review-detail-request-changes").click();
+    await expect(page.getByTestId("mobile-review-detail")).toBeVisible();
+    await expect(page.getByTestId("mobile-review-status")).toContainText(
+      "E2E 人工确认服务暂时不可用，请稍后重试。"
+    );
+    await expect(page.getByTestId("mobile-review-source-evidence")).toContainText(preset.topic);
+    await expectNoHorizontalViewportOverflow(page, "mobile review request-changes failure detail evidence", [
+      { label: "detail sheet", testId: "mobile-review-detail" },
+      { label: "source evidence", testId: "mobile-review-source-evidence" },
+      { label: "approve action", testId: "mobile-review-detail-approve" },
+      { label: "request changes action", testId: "mobile-review-detail-request-changes" }
+    ]);
+    expect(reviewRequests.reviews).toHaveLength(2);
+    expect(reviewRequests.reviewUrls[1]).toContain(`/content/${E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID}/reviews`);
+    expect(reviewRequests.reviews[1]).toMatchObject({
+      decision: "changes_requested",
+      risk_flags: ["needs_revision"],
+      score: 60
+    });
+
     await page.getByRole("button", { name: /关闭确认详情/ }).click();
     await expect(page.getByTestId("mobile-review-card")).toHaveCount(1);
     await expect(page.getByTestId("mobile-review-card").first()).toContainText(preset.topic);

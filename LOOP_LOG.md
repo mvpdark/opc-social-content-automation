@@ -5007,3 +5007,67 @@ Kept. Mobile review failure handling now protects source-evidence context and ma
 ### Next candidate loop
 
 - Add request-changes failure coverage for mobile review, or inspect PC/manual-review source-evidence safeguards if that surface is available.
+
+## Loop 71 - Mobile review request-changes failure guard
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 70 protects source-evidence retention after a failed approve request in mobile review. The same failure test does not exercise a failed request-changes decision, so the second manual recovery action could regress without losing the current approve-failure coverage.
+
+### Hypothesis
+
+If the mobile review failure E2E also submits a request-changes decision after the approve failure and verifies the detail stays open with source evidence and manual controls, then both human-review decision failures will be protected without introducing automated publishing behavior.
+
+### Patch
+
+- Extended the mobile review decision-failure E2E to click request changes after the failed approve attempt.
+- Asserted the second failed review request sends `changes_requested` with the expected revision risk flag and keeps the detail sheet open.
+- Added a viewport-fit guard after the failed request-changes action for the retained detail, source evidence, approve action, and request-changes action.
+- Extended the verifier contract so request-changes failure coverage cannot be removed silently.
+
+### Verification
+
+```text
+npm run lint
+python scripts\verify_project.py --keep-cache
+npx --version
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile review decision failure keeps draft queued" --project=chromium
+npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+All checks passed.
+
+Evidence:
+
+- The focused Playwright run passed the mobile review decision-failure test after exercising both failed approve and failed request-changes submissions.
+- The test now verifies the retained detail remains visible, source evidence stays present, and manual controls remain inside the mobile viewport after the second failure.
+- The verifier now fails if the request-changes failure click, `changes_requested` payload assertion, or viewport guard are removed.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 22/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 5/5
+- Total: 91/100
+
+### Result
+
+Kept. Mobile review failure coverage now protects both approve and request-changes service failures while preserving human review context.
+
+### Remaining risk
+
+- This is still a regression guard around existing behavior, not a screenshot baseline for visual detail quality.
+- PC-side manual review, if present, still needs separate source-evidence and decision-failure coverage.
+
+### Next candidate loop
+
+- Inspect PC/manual-review source-evidence safeguards, or add a compact screenshot artifact for one mobile review detail if visual QA becomes higher priority.
