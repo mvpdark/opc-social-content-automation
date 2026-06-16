@@ -872,6 +872,9 @@ def validate_frontend_design_contract() -> int:
     android_text = (ROOT / "frontend" / "app" / "android" / "page.tsx").read_text(
         encoding="utf-8"
     )
+    e2e_text = (
+        ROOT / "frontend" / "tests" / "e2e" / "opc.smoke.spec.ts"
+    ).read_text(encoding="utf-8")
     middleware_text = (ROOT / "frontend" / "middleware.ts").read_text(encoding="utf-8")
 
     frontend_new_window_links: list[tuple[Path, int, str]] = []
@@ -1201,6 +1204,28 @@ def validate_frontend_design_contract() -> int:
         if marker in android_text:
             raise SystemExit(f"Fake mobile status marker is not allowed: {marker}")
 
+    mobile_home_metric_contracts = [
+        'const quickMetrics = [',
+        '{ label: "趋势素材", value: "待采集"',
+        '{ label: "知识条目", value: "待检索"',
+        'metric.tab === "review" ? { ...metric, value: String(reviewPendingCount) } : metric',
+        'page.getByTestId("metric-collect").locator("div").first()).toHaveText("待采集")',
+        'page.getByTestId("metric-knowledge").locator("div").first()).toHaveText("待检索")',
+        'page.getByTestId("metric-review").locator("div").first()).toHaveText("0")',
+        "mobile home metrics use workflow status instead of stale counts",
+    ]
+    for snippet in mobile_home_metric_contracts:
+        if snippet not in f"{android_text}\n{e2e_text}":
+            raise SystemExit(f"Missing mobile home metric contract: {snippet}")
+
+    stale_mobile_metric_markers = [
+        '{ label: "趋势素材", value: "0"',
+        '{ label: "知识条目", value: "查看"',
+    ]
+    for marker in stale_mobile_metric_markers:
+        if marker in android_text:
+            raise SystemExit(f"Stale mobile home metric marker is not allowed: {marker}")
+
     return (
         len(tab_ids)
         + len(style_ids)
@@ -1214,6 +1239,8 @@ def validate_frontend_design_contract() -> int:
         + sum(len(snippets) for _text, snippets, _name in mobile_focus_contracts)
         + len(mobile_shell_contracts)
         + sum(len(snippets) for _text, snippets, _name in knowledge_visibility_contracts)
+        + len(mobile_home_metric_contracts)
+        + len(stale_mobile_metric_markers)
     )
 
 

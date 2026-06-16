@@ -1230,6 +1230,26 @@ test.describe("OPC smoke coverage", () => {
     await expect(page).toHaveURL(`${BASE_ORIGIN}/`);
   });
 
+  test("mobile home metrics use workflow status instead of stale counts", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const acceptedLogin = createLoginInput();
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await trackGenerationServiceRequests(page);
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=home`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+
+    await expect(page.getByTestId("mobile-tab-home")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("metric-collect").locator("div").first()).toHaveText("待采集");
+    await expect(page.getByTestId("metric-knowledge").locator("div").first()).toHaveText("待检索");
+    await expect(page.getByTestId("metric-review").locator("div").first()).toHaveText("0");
+    await expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+    expect(generationRequests).toEqual([]);
+  });
+
   test("mobile create project exposes topic controls without generation calls", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const acceptedLogin = createLoginInput();

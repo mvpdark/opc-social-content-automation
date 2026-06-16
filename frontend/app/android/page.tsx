@@ -203,8 +203,8 @@ const progressSteps = [
 }>;
 
 const quickMetrics = [
-  { label: "趋势素材", value: "0", tone: "blue", tab: "collect" },
-  { label: "知识条目", value: "查看", tone: "green", tab: "knowledge" },
+  { label: "趋势素材", value: "待采集", tone: "blue", tab: "collect" },
+  { label: "知识条目", value: "待检索", tone: "green", tab: "knowledge" },
   { label: "待确认", value: "0", tone: "coral", tab: "review" }
 ] satisfies Array<{
   label: string;

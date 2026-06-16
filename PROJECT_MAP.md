@@ -34,6 +34,7 @@ Last updated: 2026-06-16
 - PC pending-review queue reads a dedicated read-only endpoint: `/api/content/review-queue`.
 - Mobile creation draft history reads `/api/content/list` and has a visible retry state when history loading fails.
 - Mobile pending-review queue reads `/api/content/list` and has a visible retry state when queue loading fails.
+- Mobile home production metrics use status labels for collection/knowledge until real counts are wired; review shows the live pending count.
 
 ## Data Storage
 

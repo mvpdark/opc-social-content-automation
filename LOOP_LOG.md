@@ -5873,3 +5873,70 @@ Kept. Mobile operators now get a visible, recoverable pending-review queue read 
 ### Next candidate loop
 
 - Inspect stale demo metrics in the mobile home dashboard, or add screenshot-backed evidence for the PC/mobile login shell.
+
+## Loop 84 - Mobile home stale metric copy
+
+Date: 2026-06-16
+
+### Observation
+
+The mobile home production rhythm panel still shows fixed placeholder metric values for collection and knowledge (`0` and a generic view label). The review metric is already backed by live pending-review state, but the other two can look like real operational counts even before any collection or knowledge read has happened.
+
+### Hypothesis
+
+If collection and knowledge quick metrics use explicit status copy instead of fake counts, then the mobile home screen will avoid stale demo metrics while still giving operators clear entry points into collection and knowledge workflows.
+
+### Patch
+
+- Changed mobile home quick metrics from stale placeholder values to status copy: collection now shows `待采集`, knowledge now shows `待检索`.
+- Kept the review quick metric wired to the live pending-review count.
+- Added focused Chromium E2E coverage that logs into the mobile home route and verifies the metric values without triggering generation calls.
+- Added project verifier contracts that reject the old stale mobile metric markers.
+- Updated `PROJECT_MAP.md` to document the status-label behavior.
+
+### Verification
+
+```text
+cd frontend && npx --version
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile home metrics use workflow status instead of stale counts" --project=chromium
+cd frontend && npm run build
+git diff --check
+```
+
+All checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- TypeScript check passed through `npm run lint`.
+- Project verifier passed with `frontend_design_contract_checked=128`.
+- The focused Chromium E2E passed: `mobile home metrics use workflow status instead of stale counts`.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` exited successfully; Git emitted a line-ending normalization warning for the touched mobile page.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 18/30
+- Correctness: 18/20
+- Test coverage: 18/20
+- Safety/security: 13/15
+- Maintainability: 9/10
+- UX polish: 5/5
+- Total: 81/100
+
+### Result
+
+Kept. Mobile home no longer presents collection or knowledge placeholders as fake counts, and the review metric remains the only quick metric displaying a live count.
+
+### Remaining risk
+
+- Collection and knowledge quick metrics still do not show real counts; they now intentionally show workflow status until count endpoints are wired.
+- This loop did not change the desktop `frontend/lib/dashboard-data.ts` fallback data.
+
+### Next candidate loop
+
+- Replace unused/public dashboard fallback zeros with status labels, or add screenshot-backed login-shell evidence.
