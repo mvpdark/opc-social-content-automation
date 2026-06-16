@@ -251,6 +251,17 @@ def _draft_metadata_section_issue(draft: str) -> str | None:
     return None
 
 
+def _draft_hashtag_line_issue(draft: str) -> str | None:
+    for raw_line in draft.splitlines():
+        line = raw_line.strip()
+        normalized_line = line.lstrip("-*•0123456789.、) ").strip()
+        if normalized_line.startswith(("#", "＃")) and any(
+            char.isalnum() for char in normalized_line[1:]
+        ):
+            return "草稿正文包含独立话题标签行，请重新生成不带标签行的正文草稿。"
+    return None
+
+
 def build_draft_prompt_package(
     db: Session,
     payload: ContentGenerateRequest,
@@ -358,6 +369,8 @@ def generate_content_draft(
     schema_issue = _draft_output_schema_issue(draft)
     if schema_issue is None and isinstance(draft, str):
         schema_issue = _draft_metadata_section_issue(draft)
+    if schema_issue is None and isinstance(draft, str):
+        schema_issue = _draft_hashtag_line_issue(draft)
     if schema_issue:
         record_generation_log(
             db=db,

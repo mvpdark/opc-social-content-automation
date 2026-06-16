@@ -3300,3 +3300,72 @@ Kept. Chinese metadata-section draft failures now have explicit backend coverage
 ### Next candidate loop
 
 - Continue incomplete-output recovery for draft generation, or add a focused guard for another observed malformed-output pattern.
+
+## Loop 46 - Draft hashtag line guard
+
+Date: 2026-06-16
+
+### Observation
+
+The draft-generation schema guard rejects empty draft output and metadata-section leakage such as title/body/tags headings. A related malformed-output pattern remains possible: the model can place standalone Xiaohongshu hashtag lines directly in the body, while the app already stores and appends tags separately in preview/copy flows.
+
+### Hypothesis
+
+If the backend rejects standalone hashtag/tag lines in AI draft bodies before saving content, then preview/copy output is less likely to duplicate tags or treat metadata as body content.
+
+### Patch
+
+Files changed:
+
+- `backend/app/services/content_service.py`
+- `backend/tests/test_content_source_context.py`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a backend draft schema guard for standalone hashtag lines such as `#海外博士 #官方来源`.
+- Kept inline body text untouched while rejecting tag-only lines before content is saved.
+- Added regression coverage that verifies the response fails safely, no `Content` row is created, and `GenerationLog` records `schema_invalid`.
+- Extended the fast project verifier so the hashtag-line guard and test remain part of the content-production contract.
+
+### Verification
+
+Commands run:
+
+```bash
+backend\.venv\Scripts\python.exe -m pytest backend\tests\test_content_source_context.py -q
+# passed: 8 passed
+
+python scripts\verify_project.py --keep-cache
+# passed
+# content_production_contract_checked=1020
+
+backend\.venv\Scripts\python.exe -m pytest backend\tests -q
+# passed: 229 passed, 1 warning
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 19/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 2/5
+- Total: 84/100
+
+### Result
+
+Kept. AI draft bodies with standalone hashtag lines now fail safely before preview/copy persistence, reducing duplicated tag output while preserving the separate tags field and manual review flow.
+
+### Remaining risk
+
+- This guard rejects standalone tag lines rather than attempting automatic cleanup; a future recovery path could strip the line and ask the user to review.
+- Inline hashtags inside normal prose are not blocked by this loop.
+
+### Next candidate loop
+
+- Continue incomplete-output recovery for missing cover/checklist fields, or add focused E2E coverage that confirms preview/copy appends tags only once.

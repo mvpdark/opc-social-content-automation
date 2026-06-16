@@ -268,6 +268,49 @@ def test_generate_content_rejects_chinese_metadata_section_ai_draft(monkeypatch)
         assert "元数据段落" in log.error
 
 
+def test_generate_content_rejects_hashtag_line_ai_draft(monkeypatch) -> None:
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    bad_draft = "先看官网来源，再决定项目名单。\n\n#海外博士 #官方来源"
+
+    with Session(engine) as db:
+        user = User(id=1, phone="test", password_hash="hash", role="promoter")
+        db.add(user)
+        db.commit()
+
+        monkeypatch.setattr(
+            content_service.model_router,
+            "draft_model",
+            lambda _prompt_name, _payload: bad_draft,
+        )
+        monkeypatch.setattr(
+            "app.services.content_service.build_live_web_search_context",
+            lambda **_kwargs: None,
+        )
+
+        with pytest.raises(HTTPException) as exc:
+            generate_content_draft(
+                db,
+                ContentGenerateRequest(
+                    platform="xiaohongshu",
+                    topic="海外博士官方来源核验",
+                    tags=["海外博士", "官方来源"],
+                ),
+                user,
+            )
+
+        assert exc.value.status_code == status.HTTP_502_BAD_GATEWAY
+        assert "独立话题标签行" in exc.value.detail
+        assert db.query(Content).count() == 0
+
+        log = db.query(GenerationLog).one()
+        assert log.status == "schema_invalid"
+        assert log.result == bad_draft
+        assert log.error is not None
+        assert "独立话题标签行" in log.error
+
+
 def test_generate_content_rejects_blank_ai_draft(monkeypatch) -> None:
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
