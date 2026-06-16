@@ -1270,6 +1270,7 @@ test.describe("OPC smoke coverage", () => {
 
     await page.getByTestId("mobile-generate-draft").click();
     await expect(page.getByTestId("mobile-generate-draft")).toContainText("重新一键生成");
+    await expect(page.getByTestId("mobile-generation-progress")).toContainText("需先核对状态");
     await page.getByTestId(`mobile-draft-history-card-${E2E_MOBILE_PUBLISHED_STATUS_CONTENT_ID}`).click();
 
     const preview = page.getByTestId("draft-preview-editor");
@@ -1289,7 +1290,7 @@ test.describe("OPC smoke coverage", () => {
 
     expect(generationRequests.sourcePreview).toHaveLength(1);
     expect(generationRequests.contentGenerate).toHaveLength(1);
-    expect(generationRequests.imageGenerate).toHaveLength(1);
+    expect(generationRequests.imageGenerate).toHaveLength(0);
     expect(generationRequests.forbiddenPublishing).toEqual([]);
     expect(generationRequests.contentGenerate[0]).toMatchObject({
       knowledge_limit: 5,

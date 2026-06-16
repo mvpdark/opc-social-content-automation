@@ -37,6 +37,7 @@ import {
   formatDraftGenerationErrorMessage,
   sanitizeServiceErrorMessage
 } from "@/lib/service-error-copy";
+import { generatedContentLifecycleWarning } from "@/lib/status-labels";
 import { formatTagLine, parseTagText, tagsMatchText } from "@/lib/tags";
 import {
   buildEditableDraftCopy,
@@ -994,6 +995,14 @@ export function CreateScreen({
       saveStoredMobileContent(data);
       syncDraftIntoHistory(data, null);
       clearStoredMobileCover();
+      const lifecycleWarning = generatedContentLifecycleWarning(data.status);
+      if (lifecycleWarning) {
+        stopProgressTimer();
+        setProgressPercent(100);
+        setProgressLabel("需先核对状态");
+        onAction(lifecycleWarning);
+        return;
+      }
       setProgressStage("封面图生成中", 68, 94);
 
       const isDouyinPost = platform === "douyin";

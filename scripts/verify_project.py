@@ -1687,6 +1687,8 @@ def validate_content_production_contract() -> int:
         'page.getByTestId("draft-preview-copy")).toBeDisabled()',
         'page.getByTestId("draft-copy-preview-link")).toBeDisabled()',
         'page.getByTestId("draft-preview-copy")).toContainText("需先核对状态")',
+        'page.getByTestId("mobile-generation-progress")).toContainText("需先核对状态")',
+        "expect(generationRequests.imageGenerate).toHaveLength(0)",
         "expect(generationRequests.forbiddenPublishing).toEqual([])",
     ]
     for snippet in mobile_lifecycle_e2e_contracts:
@@ -2260,6 +2262,27 @@ def validate_content_production_contract() -> int:
             total += 1
             if snippet not in text:
                 raise SystemExit(f"Missing {contract_name} contract: {snippet}")
+
+    mobile_generate_start = mobile_create_text.index("async function generateDraftAndCover")
+    mobile_generate_end = mobile_create_text.index("async function copyDraft", mobile_generate_start)
+    mobile_generate_text = mobile_create_text[mobile_generate_start:mobile_generate_end]
+    mobile_generate_lifecycle_contract_snippets = [
+        "const lifecycleWarning = generatedContentLifecycleWarning(data.status);",
+        'setProgressLabel("需先核对状态");',
+        "onAction(lifecycleWarning);",
+        'fetch(`${apiBase}/image/generate`',
+    ]
+    for snippet in mobile_generate_lifecycle_contract_snippets:
+        total += 1
+        if snippet not in mobile_generate_text:
+            raise SystemExit(f"Missing mobile generation lifecycle contract: {snippet}")
+    total += 1
+    if mobile_generate_text.index("generatedContentLifecycleWarning(data.status)") > mobile_generate_text.index(
+        'fetch(`${apiBase}/image/generate`'
+    ):
+        raise SystemExit(
+            "Mobile generation must check unsafe generated-content lifecycle status before image generation."
+        )
 
     mobile_xhs_copy_contract_snippets = [
         "tryCopyText(draftText)",

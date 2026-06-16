@@ -5268,3 +5268,69 @@ Kept. Mobile and PC preview/export surfaces now share the same unsafe generated-
 ### Next candidate loop
 
 - Inspect mobile automatic cover generation after unsafe content statuses, or add screenshot artifacts for the lifecycle warning surfaces.
+
+## Loop 75 - Mobile unsafe lifecycle cover-generation guard
+
+Date: 2026-06-16
+
+### Observation
+
+Mobile preview and export actions now block backend `published` or `submitted` generated content. However, `generateDraftAndCover()` still saves the backend content response and then immediately calls `/image/generate`, so an already-published/submitted content response can still create a fresh cover asset before the manual lifecycle warning is visible.
+
+### Hypothesis
+
+If mobile one-click generation stops immediately after saving unsafe lifecycle content, surfaces the shared lifecycle warning, and skips `/image/generate`, then mobile users cannot accidentally create a new cover asset for content that already needs manual status review.
+
+### Patch
+
+- Reused `generatedContentLifecycleWarning` inside mobile one-click generation.
+- Saved the unsafe backend content response to local/mobile history, then stopped progress at `需先核对状态`.
+- Skipped `/image/generate` when generated content status is unsafe, so no new cover asset is created for backend `published` or `submitted` content.
+- Extended the focused mobile lifecycle E2E to assert the progress warning and `imageGenerate` request count of `0`.
+- Extended `scripts/verify_project.py` to require the lifecycle check before the mobile image-generation fetch.
+
+### Verification
+
+```text
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx --version
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile published generation status stops at manual lifecycle review" --project=chromium
+cd frontend && npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+All checks passed.
+
+Evidence:
+
+- The focused mobile Playwright test passed with backend `published` content and confirmed no `/image/generate` request was made.
+- Frontend typecheck and production build passed.
+- The project verifier now checks the mobile lifecycle progress warning, zero image-generation request expectation, and code ordering before `/image/generate`.
+- `git diff --check` passed with only the existing CRLF-to-LF normalization warning for the touched TSX file.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 26/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 5/5
+- Total: 96/100
+
+### Result
+
+Kept. Mobile one-click generation now preserves the draft for manual review but does not create a new cover asset when the backend says the content is already published or submitted.
+
+### Remaining risk
+
+- This protects unsafe generated-content lifecycle statuses only after `/content/generate` returns; future review-queue and approval decision flows still need their own dedicated failure-mode coverage.
+- Screenshot artifacts for lifecycle warning surfaces are still optional future evidence.
+
+### Next candidate loop
+
+- Inspect review-queue decision failure handling across mobile and PC, or add screenshot artifacts for the highest-risk lifecycle warning surfaces.
