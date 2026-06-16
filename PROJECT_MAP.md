@@ -73,6 +73,7 @@ Last updated: 2026-06-16
 - Public preview valid-draft smoke tests render mocked content, cover, tags, and no-auto-publish safety copy without publishing calls.
 - Public preview missing-cover smoke tests keep the draft readable with the text-cover fallback when cover lookup fails.
 - Public preview content-error smoke tests resolve backend failures to a clear error state without image or publishing follow-up calls.
+- Public preview malformed-content smoke tests resolve invalid payloads to a clear error state without image or publishing follow-up calls.
 
 ## Deployment and Build
 

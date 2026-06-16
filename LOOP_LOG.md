@@ -7105,3 +7105,73 @@ Kept. PC custom exchange-rate/currency-conversion topics now have CI coverage pr
 ### Next candidate loop
 
 - Add malformed-content public preview coverage, or add another custom current-facts topic such as official logo/price on both PC and mobile.
+
+## Loop 102 - Public preview malformed-content coverage
+
+Date: 2026-06-16
+
+### Observation
+
+Public preview has invalid-link, valid-draft, missing-cover, and content backend-error coverage, but a 200 OK response with malformed draft content is not yet protected by focused E2E coverage. That branch should resolve to a clear data-incomplete error and avoid cover lookup or publishing-like follow-up calls.
+
+### Hypothesis
+
+If the public-preview E2E mocks a malformed content payload and asserts the error shell plus no image/publish calls, CI will catch regressions where invalid draft payloads appear as ready previews or linger on loading.
+
+### Patch
+
+- Added a malformed-content public preview E2E that returns a 200 OK draft payload missing required generated-content fields.
+- Verified the public preview resolves to the error shell, shows the data-incomplete message, never renders the ready preview, and does not call image lookup or publishing-like endpoints.
+- Added verifier contracts and updated `PROJECT_MAP.md` to document the malformed-content public preview smoke coverage.
+
+### Verification
+
+```text
+cd frontend && npx --version
+node UTF-8 hygiene scan for touched files
+python scripts\verify_project.py --keep-cache
+cd frontend && npm run lint
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "public preview resolves malformed content without cover lookup" --project=chromium
+cd frontend && npm run build
+git diff --check
+git diff -- frontend\tsconfig.json
+git status --short --ignored artifacts frontend\artifacts frontend\.next-build frontend\.next
+```
+
+All final checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- Touched-file UTF-8 hygiene scan found no replacement characters or mojibake markers.
+- Project verifier passed with `content_production_contract_checked=1473`.
+- TypeScript check passed through `npm run lint`.
+- Focused Chromium E2E passed for malformed public preview content.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed and `frontend/tsconfig.json` had no build-generated diff.
+- Only ignored artifact/build directories are present under `artifacts/`, `frontend/.next-build/`, and `frontend/.next/`.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 17/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 82/100
+
+### Result
+
+Kept. Public preview now has CI coverage for malformed draft payloads, proving invalid content resolves to a clear error state and does not continue into cover lookup or any publishing-like calls.
+
+### Remaining risk
+
+- This loop covers malformed content payloads, but malformed image payload variants can still be expanded if public preview cover handling changes.
+- Screenshot/build artifacts remain ignored and are not committed.
+
+### Next candidate loop
+
+- Add malformed-image public preview coverage, or expand one-click alignment checks to another custom current-facts topic such as official logo/price on both PC and mobile.

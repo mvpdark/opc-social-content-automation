@@ -1691,6 +1691,23 @@ def validate_content_production_contract() -> int:
             ],
             "public preview content-error E2E",
         ),
+        (
+            e2e_text,
+            [
+                "public preview resolves malformed content without cover lookup",
+                "E2E_PUBLIC_PREVIEW_MALFORMED_CONTENT_ID = 8930",
+                "E2E malformed public preview draft",
+                "E2E guard blocked image lookup after malformed content.",
+                "public preview malformed content",
+                'page.getByTestId("public-preview-state")).toHaveAttribute("data-state", "error"',
+                'page.getByTestId("public-preview-status-message")).toContainText("\\u6570\\u636e\\u4e0d\\u5b8c\\u6574")',
+                'page.getByTestId("public-preview-page")).toHaveCount(0)',
+                "expect(contentRequests).toHaveLength(1)",
+                "expect(imageRequests).toEqual([])",
+                "expect(forbiddenPublishing).toEqual([])",
+            ],
+            "public preview malformed-content E2E",
+        ),
     ]
     for text, snippets, contract_name in public_preview_contracts:
         for snippet in snippets:
