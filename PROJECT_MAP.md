@@ -35,6 +35,7 @@ Last updated: 2026-06-16
 - Mobile creation draft history reads `/api/content/list` and has a visible retry state when history loading fails.
 - Mobile pending-review queue reads `/api/content/list` and has a visible retry state when queue loading fails.
 - Mobile home production metrics use status labels for collection/knowledge until real counts are wired; review shows the live pending count.
+- Desktop dashboard/delivery fallback metrics use status labels until real counts are wired; disabled publishing actions remain manual-only.
 
 ## Data Storage
 

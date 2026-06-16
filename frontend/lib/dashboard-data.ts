@@ -237,10 +237,10 @@ export const tabMeta: Record<WorkspaceTab, { title: string; description: string 
 };
 
 export const stats = [
-  { label: "趋势素材", value: "0", helper: "公开图文样本", tone: "steel" },
-  { label: "知识条目", value: "0", helper: "可检索资产", tone: "moss" },
-  { label: "待确认稿件", value: "0", helper: "发布前确认", tone: "coral" },
-  { label: "发布准备", value: "0", helper: "确认后可用", tone: "amber" }
+  { label: "趋势素材", value: "待采集", helper: "公开图文样本", tone: "steel" },
+  { label: "知识条目", value: "待入库", helper: "可检索资产", tone: "moss" },
+  { label: "待确认稿件", value: "待确认", helper: "发布前确认", tone: "coral" },
+  { label: "发布准备", value: "手动", helper: "确认后可用", tone: "amber" }
 ] as const;
 
 export const pipeline = [
@@ -283,17 +283,17 @@ export const pipeline = [
 ] as const;
 
 export const queues = [
-  { name: "采集记录", count: 0, owner: "运营", status: "待样本" },
-  { name: "知识上传", count: 0, owner: "管理员", status: "等待" },
-  { name: "草稿生成", count: 0, owner: "投放", status: "待生成" },
-  { name: "确认清单", count: 0, owner: "负责人", status: "待确认" }
+  { name: "采集记录", count: "待采集", owner: "运营", status: "待样本" },
+  { name: "知识上传", count: "待入库", owner: "管理员", status: "等待" },
+  { name: "草稿生成", count: "待生成", owner: "投放", status: "待生成" },
+  { name: "确认清单", count: "待确认", owner: "负责人", status: "待确认" }
 ];
 
 export const promoterActions = [
   {
     title: "已确认内容",
     description: "人工确认后进入发布清单。",
-    status: "0 条已确认",
+    status: "待确认后启用",
     icon: CheckCircle2,
     command: "打开"
   },
@@ -307,7 +307,7 @@ export const promoterActions = [
   {
     title: "发布记录",
     description: "记录平台、链接和发布状态。",
-    status: "0 条记录",
+    status: "待人工记录",
     icon: FileText,
     command: "记录"
   }

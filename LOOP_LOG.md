@@ -5940,3 +5940,72 @@ Kept. Mobile home no longer presents collection or knowledge placeholders as fak
 ### Next candidate loop
 
 - Replace unused/public dashboard fallback zeros with status labels, or add screenshot-backed login-shell evidence.
+
+## Loop 85 - Desktop delivery stale fallback metrics
+
+Date: 2026-06-16
+
+### Observation
+
+The desktop delivery fallback data still contains hard-coded zero counts for the public stat strip, delivery queues, confirmed-content action, and publishing records. These are placeholders, not live operational counts, and can be mistaken for real workflow metrics.
+
+### Hypothesis
+
+If desktop fallback delivery metrics use explicit status copy instead of fixed zero counts, then the PC publishing area will better preserve the human-review boundary and avoid presenting fake operational data.
+
+### Patch
+
+- Changed desktop fallback stat strip values from fixed zeroes to workflow status labels.
+- Changed delivery queue fallback counts from `0` to status labels such as `待采集`, `待入库`, `待生成`, and `待确认`.
+- Changed disabled delivery action statuses from `0 条已确认` / `0 条记录` to `待确认后启用` / `待人工记录`.
+- Added stable test IDs for delivery action statuses and queue counts.
+- Added focused Chromium E2E coverage proving the PC delivery fallback labels render without generation or publishing-like calls.
+- Added project verifier contracts that reject the old desktop fallback zero markers.
+- Updated `PROJECT_MAP.md` to document the status-label fallback behavior.
+
+### Verification
+
+```text
+cd frontend && npx --version
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC delivery fallback metrics use status labels without publishing" --project=chromium
+cd frontend && npm run build
+git diff --check
+```
+
+All checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- TypeScript check passed through `npm run lint`.
+- Project verifier passed with `frontend_design_contract_checked=155`.
+- The focused Chromium E2E passed: `PC delivery fallback metrics use status labels without publishing`.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` exited successfully; Git emitted a line-ending normalization warning for the touched workspace client.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 18/30
+- Correctness: 18/20
+- Test coverage: 18/20
+- Safety/security: 14/15
+- Maintainability: 9/10
+- UX polish: 5/5
+- Total: 82/100
+
+### Result
+
+Kept. Desktop delivery fallback data no longer presents fixed zero counts as if they were real operational metrics, and the disabled publishing area remains explicitly manual.
+
+### Remaining risk
+
+- These desktop fallback labels still are not live counts; they intentionally avoid pretending to be live data until count endpoints are wired.
+- The public `StatStrip` component remains unused in the current workspace shell, but its shared fallback data is now safer if reused.
+
+### Next candidate loop
+
+- Add screenshot-backed PC/mobile login-shell evidence, or inspect remaining static queue/publishing fallback copy for hidden stale metrics.

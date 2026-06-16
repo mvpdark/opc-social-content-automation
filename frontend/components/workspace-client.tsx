@@ -4640,14 +4640,23 @@ function DeliveryView() {
       <Panel helper="没有已确认内容时保持禁用；确认后再生成复制包和发布记录。" title="发布动作">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
           {promoterActions.map((action, index) => (
-            <div key={`promoter-action-${index}-${action.title}`} className={`${subtleCardClass} p-4`}>
+            <div
+              className={`${subtleCardClass} p-4`}
+              data-testid={`delivery-action-${index}`}
+              key={`promoter-action-${index}-${action.title}`}
+            >
               <IconBox tone="green">
                 <action.icon className="h-4 w-4" />
               </IconBox>
               <div className="mt-3 text-sm font-semibold">{action.title}</div>
               <div className="mt-1 text-xs leading-5 text-muted">{action.description}</div>
               <div className="mt-3 flex items-center justify-between gap-3">
-                <span className="text-xs font-medium text-muted">{action.status}</span>
+                <span
+                  className="text-xs font-medium text-muted"
+                  data-testid={`delivery-action-status-${index}`}
+                >
+                  {action.status}
+                </span>
                 <button
                   aria-label={`${action.command}，需有已确认内容后启用`}
                   className="glass-control flex h-8 items-center gap-2 rounded-md border px-2 text-xs font-medium text-ink disabled:cursor-not-allowed disabled:opacity-55"
@@ -4668,14 +4677,23 @@ function DeliveryView() {
         <Panel helper="运营队列里的待处理事项。" title="工作队列">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {queues.map((queue, index) => (
-              <div key={`publish-queue-${index}-${queue.name}`} className={`${subtleCardClass} px-4 py-3`}>
+              <div
+                className={`${subtleCardClass} px-4 py-3`}
+                data-testid={`delivery-queue-${index}`}
+                key={`publish-queue-${index}-${queue.name}`}
+              >
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="text-sm font-semibold">{queue.name}</div>
                     <div className="mt-1 text-xs text-muted">{queue.owner}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-semibold">{queue.count}</div>
+                    <div
+                      className="text-2xl font-semibold"
+                      data-testid={`delivery-queue-count-${index}`}
+                    >
+                      {queue.count}
+                    </div>
                     <div className="text-xs text-muted">{queue.status}</div>
                   </div>
                 </div>

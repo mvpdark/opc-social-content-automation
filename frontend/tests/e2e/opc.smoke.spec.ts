@@ -1250,6 +1250,38 @@ test.describe("OPC smoke coverage", () => {
     expect(generationRequests).toEqual([]);
   });
 
+  test("PC delivery fallback metrics use status labels without publishing", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const acceptedLogin = createLoginInput();
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await trackGenerationServiceRequests(page);
+    const forbiddenPublishing: string[] = [];
+    await page.route(/\/api\/[^?]*(publish|submit)/i, async (route) => {
+      forbiddenPublishing.push(route.request().url());
+      await route.fulfill({
+        body: JSON.stringify({ detail: "E2E guard blocked publishing-like call." }),
+        contentType: "application/json",
+        status: 500
+      });
+    });
+
+    await page.goto(`${BASE_URL}/?theme=mint&tab=delivery`);
+    await expect(page.getByTestId("pc-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("pc-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("pc-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("pc-login-submit").click();
+
+    await expect(page.getByTestId("delivery-action-status-0")).toHaveText("待确认后启用");
+    await expect(page.getByTestId("delivery-action-status-2")).toHaveText("待人工记录");
+    await expect(page.getByTestId("delivery-queue-count-0")).toHaveText("待采集");
+    await expect(page.getByTestId("delivery-queue-count-1")).toHaveText("待入库");
+    await expect(page.getByTestId("delivery-queue-count-2")).toHaveText("待生成");
+    await expect(page.getByTestId("delivery-queue-count-3")).toHaveText("待确认");
+    await expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+    expect(generationRequests).toEqual([]);
+    expect(forbiddenPublishing).toEqual([]);
+  });
+
   test("mobile create project exposes topic controls without generation calls", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const acceptedLogin = createLoginInput();

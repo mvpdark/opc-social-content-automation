@@ -1226,6 +1226,45 @@ def validate_frontend_design_contract() -> int:
         if marker in android_text:
             raise SystemExit(f"Stale mobile home metric marker is not allowed: {marker}")
 
+    desktop_delivery_fallback_contracts = [
+        '{ label: "趋势素材", value: "待采集"',
+        '{ label: "知识条目", value: "待入库"',
+        '{ label: "待确认稿件", value: "待确认"',
+        '{ label: "发布准备", value: "手动"',
+        '{ name: "采集记录", count: "待采集"',
+        '{ name: "知识上传", count: "待入库"',
+        '{ name: "草稿生成", count: "待生成"',
+        '{ name: "确认清单", count: "待确认"',
+        'status: "待确认后启用"',
+        'status: "待人工记录"',
+        'data-testid={`delivery-action-status-${index}`}',
+        'data-testid={`delivery-queue-count-${index}`}',
+        "PC delivery fallback metrics use status labels without publishing",
+        'page.getByTestId("delivery-action-status-0")).toHaveText("待确认后启用")',
+        'page.getByTestId("delivery-action-status-2")).toHaveText("待人工记录")',
+        'page.getByTestId("delivery-queue-count-0")).toHaveText("待采集")',
+        'page.getByTestId("delivery-queue-count-1")).toHaveText("待入库")',
+        'page.getByTestId("delivery-queue-count-2")).toHaveText("待生成")',
+        'page.getByTestId("delivery-queue-count-3")).toHaveText("待确认")',
+        "expect(forbiddenPublishing).toEqual([])",
+    ]
+    for snippet in desktop_delivery_fallback_contracts:
+        if snippet not in f"{data_text}\n{workspace_text}\n{e2e_text}":
+            raise SystemExit(f"Missing desktop delivery fallback contract: {snippet}")
+
+    stale_desktop_metric_markers = [
+        '{ label: "趋势素材", value: "0"',
+        '{ label: "知识条目", value: "0"',
+        '{ label: "待确认稿件", value: "0"',
+        '{ label: "发布准备", value: "0"',
+        "count: 0",
+        'status: "0 条已确认"',
+        'status: "0 条记录"',
+    ]
+    for marker in stale_desktop_metric_markers:
+        if marker in data_text:
+            raise SystemExit(f"Stale desktop fallback metric marker is not allowed: {marker}")
+
     return (
         len(tab_ids)
         + len(style_ids)
@@ -1241,6 +1280,8 @@ def validate_frontend_design_contract() -> int:
         + sum(len(snippets) for _text, snippets, _name in knowledge_visibility_contracts)
         + len(mobile_home_metric_contracts)
         + len(stale_mobile_metric_markers)
+        + len(desktop_delivery_fallback_contracts)
+        + len(stale_desktop_metric_markers)
     )
 
 
