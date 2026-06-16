@@ -68,6 +68,7 @@ Last updated: 2026-06-16
 - Mobile exchange-rate custom topic smoke tests require source evidence before one-click generation and keep preview/copy output aligned.
 - PC exchange-rate custom topic smoke tests require source evidence before one-click generation and keep preview/copy output aligned.
 - Source logo-price topic smoke tests require PC/mobile source evidence viewport fit, plus narrow mobile preview/copy fit, before generation output is accepted.
+- Mobile custom official logo-price topic smoke tests require source evidence before one-click generation and keep preview/copy output aligned.
 - Mobile Xiaohongshu export buttons must label the flow as manual publishing preparation, not direct or automatic publishing.
 - Mobile Xiaohongshu export status messages must say share/download handoff still requires manual confirmation before submission.
 - Public preview invalid-link smoke tests verify `/preview/[contentId]` resolves to a clear error without content/image API calls.

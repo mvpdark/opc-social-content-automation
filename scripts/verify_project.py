@@ -2464,6 +2464,30 @@ def validate_content_production_contract() -> int:
         if snippet not in e2e_text:
             raise SystemExit(f"Missing exchange-rate custom topic E2E contract: {snippet}")
 
+    official_logo_price_custom_e2e_contracts = [
+        "E2E_MOBILE_OFFICIAL_LOGO_PRICE_TOPIC_CONTENT_ID",
+        "mobile one-click generation keeps official logo-price custom topic evidence aligned",
+        "official overseas doctoral logo authorization and tuition price verification",
+        "Custom mobile source verification checklist for official logo authorization and tuition price evidence.",
+        "e2e-mobile-official-logo-price-topic",
+        "mobile official logo-price source evidence",
+        "mobile official logo-price draft preview",
+        "mobile-source-knowledge-list",
+        "mobile-source-web-list",
+        "draft-preview-prepublish-check-sources",
+        "draft-copy-preview-link",
+        "expect(generationRequests.sourcePreview).toHaveLength(1)",
+        "expect(generationRequests.contentGenerate).toHaveLength(1)",
+        "expect(generationRequests.imageGenerate).toHaveLength(1)",
+        "expect(generationRequests.forbiddenPublishing).toEqual([])",
+        "content_id: E2E_MOBILE_OFFICIAL_LOGO_PRICE_TOPIC_CONTENT_ID",
+        'requireTopicPreset("source-logo-price").coverDirection',
+    ]
+    for snippet in official_logo_price_custom_e2e_contracts:
+        total += 1
+        if snippet not in e2e_text:
+            raise SystemExit(f"Missing official logo-price custom topic E2E contract: {snippet}")
+
     source_preview_failure_viewport_contracts = [
         "mobile source preview failure",
         "mobile custom source preview failure",

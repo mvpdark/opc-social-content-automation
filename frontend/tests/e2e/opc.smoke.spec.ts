@@ -49,6 +49,7 @@ const E2E_MOBILE_GLOBAL_RANKING_CONTENT_ID = 8926;
 const E2E_PC_GLOBAL_RANKING_CONTENT_ID = 8927;
 const E2E_MOBILE_EXCHANGE_RATE_TOPIC_CONTENT_ID = 8928;
 const E2E_PC_EXCHANGE_RATE_TOPIC_CONTENT_ID = 8929;
+const E2E_MOBILE_OFFICIAL_LOGO_PRICE_TOPIC_CONTENT_ID = 8933;
 const E2E_MOBILE_PUBLISHED_STATUS_CONTENT_ID = 8919;
 const E2E_PC_REVIEW_QUEUE_CONTENT_ID = 8920;
 const E2E_PC_REVIEW_QUEUE_APPROVED_CONTENT_ID = 8921;
@@ -2446,6 +2447,124 @@ test.describe("OPC smoke coverage", () => {
     });
     expect(String(generationRequests.imageGenerate[0].style_notes)).not.toContain(
       requireTopicPreset("source-official-fee-check").coverDirection
+    );
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("mobile one-click generation keeps official logo-price custom topic evidence aligned", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 780 });
+    const acceptedLogin = createLoginInput();
+    const customSourceTopic = "official overseas doctoral logo authorization and tuition price verification";
+    const expectedAudience = buildCustomTopicAudience(customSourceTopic);
+    const expectedTagsText = buildCustomTopicTags(customSourceTopic);
+    const expectedTags = parseTagText(expectedTagsText);
+    const customCoverDirection =
+      "Custom mobile source verification checklist for official logo authorization and tuition price evidence.";
+    const customPreset: GenerationTopicPreset = {
+      ...requireTopicPreset("source-logo-price"),
+      audience: expectedAudience,
+      coverDirection: customCoverDirection,
+      desktopHelper: "Custom official logo-price source verification",
+      desktopLabel: "自定义",
+      key: "e2e-mobile-official-logo-price-topic",
+      knowledgeQuery: customSourceTopic,
+      mobileHelper: "Custom logo price",
+      mobileLabel: "自定义",
+      tags: expectedTagsText,
+      topic: customSourceTopic
+    };
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockMobileGenerationFixture(page, customPreset, {
+      contentId: E2E_MOBILE_OFFICIAL_LOGO_PRICE_TOPIC_CONTENT_ID
+    });
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=create`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+    await page.getByTestId("mobile-creation-project-postgraduate-phd").click();
+
+    await page.getByTestId("mobile-topic").fill(customSourceTopic);
+    await expect(page.getByTestId("mobile-topic")).toHaveValue(customSourceTopic);
+    await expect(page.getByTestId("mobile-audience")).toHaveValue(expectedAudience);
+    await expect(page.getByTestId("mobile-tags")).toHaveValue(expectedTagsText);
+
+    await page.getByTestId("mobile-source-preview-button").click();
+    await expect(page.getByTestId("mobile-source-evidence")).toContainText("2 条");
+    await page.getByTestId("mobile-source-knowledge-toggle").click();
+    await expect(page.getByTestId("mobile-source-knowledge-list")).toContainText(customSourceTopic);
+    await expectNoHorizontalViewportOverflow(page, "mobile official logo-price source evidence", [
+      { label: "card", testId: "mobile-source-evidence" },
+      { label: "knowledge list", testId: "mobile-source-knowledge-list" }
+    ]);
+    await page.getByTestId("mobile-source-web-toggle").click();
+    await expect(page.getByTestId("mobile-source-web-list")).toContainText(customSourceTopic);
+    await expectNoHorizontalViewportOverflow(page, "mobile official logo-price source evidence", [
+      { label: "card", testId: "mobile-source-evidence" },
+      { label: "web list", testId: "mobile-source-web-list" }
+    ]);
+
+    await page.getByTestId("mobile-generate-draft").click();
+    await expect(page.getByTestId("mobile-generate-draft")).toContainText("重新一键生成");
+    await page
+      .getByTestId(`mobile-draft-history-card-${E2E_MOBILE_OFFICIAL_LOGO_PRICE_TOPIC_CONTENT_ID}`)
+      .click();
+
+    const preview = page.getByTestId("draft-preview-editor");
+    await expect(preview).toBeVisible();
+    await expect(preview).toContainText(customSourceTopic);
+    await expect(preview).toContainText(expectedAudience);
+    await expect(preview).toContainText("必须保持自定义选题意图");
+    await expect(preview).toContainText(`#${expectedTags[0]}`);
+    await expect(preview).toContainText("不会自动发布");
+    await expect(page.getByTestId("draft-preview-cover-image")).toBeVisible();
+    await expect(page.getByTestId("draft-preview-prepublish-check-sources")).toContainText("待核对");
+    await expectNoHorizontalViewportOverflow(page, "mobile official logo-price draft preview", [
+      { label: "editor", testId: "draft-preview-editor" },
+      { label: "cover image", testId: "draft-preview-cover-image" },
+      { label: "checklist", testId: "draft-preview-prepublish-checklist" },
+      { label: "copy action", testId: "draft-preview-copy" },
+      { label: "preview link action", testId: "draft-copy-preview-link" }
+    ]);
+
+    await captureNextClipboardWrite(page);
+    await page.getByTestId("draft-preview-copy").click();
+    await expect(page.getByTestId("draft-export-status")).toBeVisible();
+    const copiedMobileDraftText = await readCapturedClipboardText(page);
+    expect(copiedMobileDraftText).toContain(customSourceTopic);
+    expect(copiedMobileDraftText).toContain(`#${expectedTags[0]}`);
+    const manualCopyText = await page.getByTestId("draft-manual-copy-text").inputValue();
+    expect(manualCopyText).toContain(customSourceTopic);
+    expect(manualCopyText).toContain(`#${expectedTags[0]}`);
+
+    expect(generationRequests.sourcePreview).toHaveLength(1);
+    expect(generationRequests.contentGenerate).toHaveLength(1);
+    expect(generationRequests.imageGenerate).toHaveLength(1);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.sourcePreview[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: customSourceTopic,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: expectedAudience,
+      topic: customSourceTopic
+    });
+    expect(generationRequests.contentGenerate[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: customSourceTopic,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: expectedAudience,
+      topic: customSourceTopic
+    });
+    expect(generationRequests.imageGenerate[0]).toMatchObject({
+      aspect_ratio: "3:4",
+      content_id: E2E_MOBILE_OFFICIAL_LOGO_PRICE_TOPIC_CONTENT_ID,
+      template: "xiaohongshu-cover"
+    });
+    expect(String(generationRequests.imageGenerate[0].style_notes)).not.toContain(
+      requireTopicPreset("source-logo-price").coverDirection
     );
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
