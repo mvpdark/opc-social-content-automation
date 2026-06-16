@@ -50,6 +50,7 @@ Last updated: 2026-06-16
 - Draft generation, image generation, review, and Tavily/web search support are separated by service modules.
 - Tavily/web search is research support only; the app must not invent current facts when sources are required.
 - Backend source review notes, Model Router fallback drafts, and PC/mobile source-evidence warnings use no-model-guessing wording when required Tavily/web results are missing.
+- Backend draft saves reject conclusion-style school, price, logo, or ranking facts when required Tavily/web results are missing, while still allowing verification-framework drafts.
 
 ## Test Setup
 

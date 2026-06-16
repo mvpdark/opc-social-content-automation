@@ -44,6 +44,34 @@ DRAFT_METADATA_SECTION_HEADINGS = (
     "风险说明",
     "风险备注",
 )
+MISSING_REQUIRED_WEB_RESULT_FRAMEWORK_TERMS = (
+    "核验",
+    "来源",
+    "待复核",
+    "框架",
+    "维度",
+    "官方",
+    "官网",
+    "人工",
+    "补来源",
+)
+MISSING_REQUIRED_WEB_RESULT_FACT_CONCLUSION_TERMS = (
+    "排名第",
+    "排行第",
+    "第1",
+    "第一名",
+    "学费是",
+    "价格是",
+    "费用是",
+    "总价是",
+    "logo 可直接用",
+    "logo可以直接用",
+    "校徽可直接用",
+    "校徽可以直接用",
+    "官方结论",
+    "已确认",
+    "确定是",
+)
 
 
 @dataclass(frozen=True)
@@ -273,6 +301,26 @@ def _draft_hashtag_line_issue(draft: str) -> str | None:
     return None
 
 
+def _source_context_missing_required_web_results(source_context: object) -> bool:
+    if not isinstance(source_context, dict):
+        return False
+    web_search = source_context.get("web_search")
+    if not isinstance(web_search, dict) or not web_search.get("required"):
+        return False
+    results = web_search.get("results")
+    return not isinstance(results, list) or len(results) == 0
+
+
+def _draft_missing_required_web_source_issue(source_context: object, draft: str) -> str | None:
+    if not _source_context_missing_required_web_results(source_context):
+        return None
+    if contains_any(draft, MISSING_REQUIRED_WEB_RESULT_FACT_CONCLUSION_TERMS):
+        return "缺少可见 Tavily 来源时，草稿只能提供核验框架；不要让模型猜测学校、价格、logo 或排名结论。"
+    if not contains_any(draft, MISSING_REQUIRED_WEB_RESULT_FRAMEWORK_TERMS):
+        return "缺少可见 Tavily 来源时，草稿必须明确保留核验框架和人工补来源提醒。"
+    return None
+
+
 def build_draft_prompt_package(
     db: Session,
     payload: ContentGenerateRequest,
@@ -415,6 +463,26 @@ def generate_content_draft(
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=relevance_issue,
+        )
+
+    source_fact_issue = _draft_missing_required_web_source_issue(
+        package.payload.get("source_context"),
+        draft,
+    )
+    if source_fact_issue:
+        record_generation_log(
+            db=db,
+            current_user=current_user,
+            purpose="draft_generation",
+            model="draft_model",
+            package=package,
+            result=draft,
+            status="source_fact_invalid",
+            error=source_fact_issue,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=source_fact_issue,
         )
 
     content = Content(

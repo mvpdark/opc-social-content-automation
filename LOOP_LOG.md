@@ -7801,3 +7801,53 @@ Kept. Model Router fallback drafts now use no-model-guessing language when requi
 ### Next candidate loop
 
 - Decide whether missing required web results should block generation, or add a backend guard/test that limits missing-source drafts to verification-framework content only.
+
+## Loop 112 - Missing-source draft framework guard
+
+Date: 2026-06-16
+
+### Observation
+
+OPC currently allows a framework-only draft when a current-facts topic requires Tavily/web evidence but no web results are visible. That policy is safer than inventing facts, but the backend save path only checks schema and topic relevance; it does not yet reject an otherwise relevant draft that presents specific school, price, logo, or ranking conclusions despite missing required web results.
+
+### Hypothesis
+
+If the backend save path rejects obvious conclusion-style facts when required web results are missing, while still accepting verification-framework drafts, OPC can keep the current framework-only generation policy without saving model-guessed school, price, logo, or ranking conclusions.
+
+### Patch
+
+- Added a backend missing-source draft guard that detects when source context requires Tavily/web evidence but has no visible results.
+- Rejected saved drafts that contain obvious conclusion-style school, price, logo, or ranking facts under missing required web results, recording `source_fact_invalid` generation logs.
+- Kept framework-only drafts allowed when they explicitly present source verification, manual review, or source-completion guidance instead of invented conclusions.
+- Added backend regression tests for both rejection and allowed framework paths, plus verifier coverage for the guard and tests.
+- Updated `PROJECT_MAP.md` with the new missing-source draft save policy.
+
+### Verification
+
+- `python scripts\verify_project.py --keep-cache` passed: python files compiled 85; safety gates 162; content production contract 1555; text hygiene files 129.
+- `.\.venv\Scripts\python.exe -m pytest backend\tests\test_content_source_context.py -q` passed: 11 tests.
+- `.\.venv\Scripts\python.exe -m pytest backend\tests\test_content_relevance.py backend\tests\test_content_source_context.py -q` passed: 68 tests.
+- `git diff --check` passed.
+- `npm run lint` in `frontend/` passed.
+- `npm run build` in `frontend/` passed; `frontend/tsconfig.json` had no diff after build.
+- `git status --short --ignored artifacts frontend\artifacts frontend\.next-build frontend\.next` showed only ignored generated directories.
+
+### Score
+
+- Product value: 20/30
+- Correctness: 18/20
+- Test coverage: 18/20
+- Safety/security: 15/15
+- Maintainability: 8/10
+- UX clarity: 4/5
+- Total: 83/100
+
+### Result
+
+- Verified. Missing required Tavily/web results no longer permit saving obvious model-guessed school, price, logo, or ranking conclusions, while still preserving a usable verification-framework draft path for human review.
+
+### Remaining risk
+
+- The conclusion detector is intentionally heuristic and phrase-based; future source-sensitive wording may need additional terms or a structured model output contract.
+- The workflow still allows framework-only generation when Tavily results are missing; this preserves usability but should be paired with UI copy that makes source completion obvious before publishing.
+- Generated build artifacts remain ignored and were not included in the intended commit.

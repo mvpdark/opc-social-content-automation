@@ -126,6 +126,103 @@ def test_draft_prompt_marks_missing_required_web_search(monkeypatch) -> None:
     assert "不要让模型猜测学校、价格、logo 或排名结论" in package.payload["source_context"]["review_note"]
 
 
+def test_generate_content_rejects_conclusion_facts_when_required_web_sources_are_missing(
+    monkeypatch,
+) -> None:
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    bad_draft = (
+        "官网来源已确认：A University 排名第一名，学费是 20000 美元。\n"
+        "官方 logo 可直接用，价格是当前结论。\n"
+        "这条内容已经可以作为学校榜单结论发布。"
+    )
+
+    with Session(engine) as db:
+        user = User(id=1, phone="test", password_hash="hash", role="promoter")
+        db.add(user)
+        db.commit()
+
+        monkeypatch.setattr(
+            content_service.model_router,
+            "draft_model",
+            lambda _prompt_name, _payload: bad_draft,
+        )
+        monkeypatch.setattr(
+            "app.services.content_service.build_live_web_search_context",
+            lambda **_kwargs: None,
+        )
+
+        with pytest.raises(HTTPException) as exc:
+            generate_content_draft(
+                db,
+                ContentGenerateRequest(
+                    platform="xiaohongshu",
+                    topic="水博项目校徽和价格怎么对比",
+                    tags=["水博", "价格", "校徽"],
+                ),
+                user,
+            )
+
+        assert exc.value.status_code == status.HTTP_502_BAD_GATEWAY
+        assert "不要让模型猜测学校、价格、logo 或排名结论" in exc.value.detail
+        assert db.query(Content).count() == 0
+
+        log = db.query(GenerationLog).one()
+        assert log.status == "source_fact_invalid"
+        assert log.result == bad_draft
+        assert log.error is not None
+        assert "核验框架" in log.error
+
+
+def test_generate_content_allows_framework_draft_when_required_web_sources_are_missing(
+    monkeypatch,
+) -> None:
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    framework_draft = (
+        "这个选题先做官网来源核验框架，不写学校名单或价格结论。\n"
+        "第一步看学校官网项目页，第二步看费用页，第三步把 logo/校徽和认证政策标成待复核字段。\n"
+        "等 Tavily 或知识库补齐可见来源后，再由人工核对学校、价格、logo 和排名。"
+    )
+
+    with Session(engine) as db:
+        user = User(id=1, phone="test", password_hash="hash", role="promoter")
+        db.add(user)
+        db.commit()
+
+        monkeypatch.setattr(
+            content_service.model_router,
+            "draft_model",
+            lambda _prompt_name, _payload: framework_draft,
+        )
+        monkeypatch.setattr(
+            "app.services.content_service.build_live_web_search_context",
+            lambda **_kwargs: None,
+        )
+
+        content = generate_content_draft(
+            db,
+            ContentGenerateRequest(
+                platform="xiaohongshu",
+                topic="水博项目校徽和价格怎么对比",
+                tags=["水博", "价格", "校徽"],
+            ),
+            user,
+        )
+
+        assert db.query(Content).count() == 1
+        assert content.body == framework_draft
+        assert content.source_context is not None
+        assert content.source_context["web_search"]["required"] is True
+        assert content.source_context["web_search"]["results"] == []
+
+        log = db.query(GenerationLog).one()
+        assert log.status == "success"
+        assert log.result == framework_draft
+
+
 def test_generated_content_persists_visible_source_context(monkeypatch) -> None:
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
