@@ -563,7 +563,7 @@ export function DraftPreviewEditor({
             type="button"
           >
             {xhsExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
-            {exportLocked ? "需先核对状态" : xhsExporting ? "正在准备" : "复制文案+封面，去小红书"}
+            {exportLocked ? "需先核对状态" : xhsExporting ? "正在准备" : "复制文案+封面，人工去小红书发布"}
           </button>
           <button
             className="mb-2 flex h-10 w-full items-center justify-center gap-2 rounded-full border border-[#eeeeee] bg-white px-4 text-sm font-semibold text-ink active:scale-[0.99] disabled:opacity-50"

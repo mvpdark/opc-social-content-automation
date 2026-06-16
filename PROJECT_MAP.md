@@ -63,6 +63,7 @@ Last updated: 2026-06-16
 - PC review queue retry smoke tests attach validated read-error and recovered-queue screenshots while keeping the queue read-only.
 - PC draft history retry smoke tests attach validated history-error and recovered-history screenshots while keeping the review queue available.
 - Mobile draft history retry smoke tests attach validated history-error and recovered-card screenshots without triggering generation or publishing calls.
+- Mobile Xiaohongshu export buttons must label the flow as manual publishing preparation, not direct or automatic publishing.
 
 ## Deployment and Build
 

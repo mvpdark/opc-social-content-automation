@@ -911,6 +911,7 @@ async function runMobileTopicAlignmentScenario(
   await expect(page.getByTestId("draft-preview-cover-image")).toBeVisible();
   await expect(page.getByTestId("draft-preview-prepublish-check-content")).toContainText("已就绪");
   await expect(page.getByTestId("draft-preview-prepublish-check-sources")).toContainText("待核对");
+  await expect(page.getByTestId("draft-open-xiaohongshu")).toContainText("人工去小红书发布");
   await expect(page.getByTestId("draft-preview-copy")).toBeEnabled();
   await expect(page.getByTestId("draft-copy-preview-link")).toBeEnabled();
   if (expectPreviewViewportFit) {

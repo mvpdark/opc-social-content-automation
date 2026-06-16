@@ -2612,12 +2612,17 @@ def validate_content_production_contract() -> int:
         "浏览器拦截了剪贴板，预览链接已展开，可长按全选复制。",
         "已重新尝试复制文案",
         "文案已展开，可长按全选复制，也可以点“${XHS_COPY_TEXT_ONLY_LABEL}”重试。",
-        "复制文案+封面，去小红书",
+        "复制文案+封面，人工去小红书发布",
     ]
     for snippet in mobile_xhs_copy_contract_snippets:
         total += 1
         if snippet not in mobile_create_contract_text:
             raise SystemExit(f"Missing mobile Xiaohongshu copy contract: {snippet}")
+    total += 1
+    if "复制文案+封面，去小红书" in mobile_create_contract_text:
+        raise SystemExit(
+            "Mobile Xiaohongshu export button must make manual publishing explicit."
+        )
 
     mobile_static_reference_contract_snippets = [
         "先补高赞参考，再启动草稿和封面",

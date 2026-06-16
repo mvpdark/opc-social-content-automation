@@ -6413,3 +6413,69 @@ Kept. CI can now attach visual evidence for the mobile draft history read-error 
 ### Next candidate loop
 
 - Scan static publish/export copy for misleading manual-confirmation language, or add artifact evidence for mobile review-queue read-error recovery.
+
+## Loop 92 - Mobile export button manual-publish copy
+
+Date: 2026-06-16
+
+### Observation
+
+Most static publish/export copy explicitly says OPC will not auto-publish, but the primary mobile export button still said "复制文案+封面，去小红书". The behavior remains copy/share preparation, yet the label can read like a direct publishing action at the most sensitive step.
+
+### Hypothesis
+
+If the primary mobile export button explicitly says it prepares a manual Xiaohongshu publish, then users will be less likely to mistake the assisted export flow for automated or already-approved publishing.
+
+### Patch
+
+- Changed the primary mobile Xiaohongshu export button from "复制文案+封面，去小红书" to "复制文案+封面，人工去小红书发布".
+- Added a mobile E2E assertion that generated preview users see the new manual-publish label.
+- Updated the project verifier to require the explicit manual-publish label and reject the old ambiguous label.
+- Updated `PROJECT_MAP.md` to document the mobile export labeling rule.
+
+### Verification
+
+```text
+cd frontend && npx --version
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile one-click generation keeps selected timing topic aligned through preview copy" --project=chromium
+cd frontend && npm run build
+git diff --check
+```
+
+All final checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- TypeScript check passed through `npm run lint`.
+- Project verifier passed with `content_production_contract_checked=1362`.
+- The focused Chromium E2E passed and verified the new mobile export button label in a generated draft preview.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 18/30
+- Correctness: 18/20
+- Test coverage: 18/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 82/100
+
+### Result
+
+Kept. The mobile export action now labels the step as manual Xiaohongshu publishing preparation while preserving the existing copy/share behavior and no-auto-publish guardrails.
+
+### Remaining risk
+
+- This is a copy and regression-contract improvement; it does not change the underlying share/copy flow.
+- Further static-copy scanning may still find smaller labels worth tightening.
+
+### Next candidate loop
+
+- Continue scanning static publish/export copy, or add artifact evidence for mobile review-queue read-error recovery.
