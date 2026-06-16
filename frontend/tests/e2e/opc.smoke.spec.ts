@@ -1454,8 +1454,13 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("draft-preview-copy")).toBeEnabled();
     await expect(page.getByTestId("draft-copy-preview-link")).toBeEnabled();
 
+    await captureNextClipboardWrite(page);
     await page.getByTestId("draft-preview-copy").click();
     await expect(page.getByTestId("draft-export-status")).toBeVisible();
+    const copiedMobileDraftText = await readCapturedClipboardText(page);
+    expect(copiedMobileDraftText).toContain(customSourceTopic);
+    expect(copiedMobileDraftText).toContain(`#${expectedTags[0]}`);
+    expect(countTextOccurrences(copiedMobileDraftText, `#${expectedTags[0]}`)).toBe(1);
     const manualCopyText = await page.getByTestId("draft-manual-copy-text").inputValue();
     expect(manualCopyText).toContain(customSourceTopic);
     expect(manualCopyText).toContain(`#${expectedTags[0]}`);

@@ -4689,3 +4689,68 @@ Kept. PC custom fact-topic preview-copy smoke coverage now verifies the actual c
 ### Next candidate loop
 
 - Inspect mobile custom fact-topic copy fallback behavior, or add a screenshot-level source evidence visual QA for one focused viewport.
+
+## Loop 66 - Mobile custom copy payload guard
+
+Date: 2026-06-16
+
+### Observation
+
+The mobile custom fact-topic test checks the manual copy text shown after tapping copy, but it does not inspect the actual clipboard write when the browser copy path succeeds. PC custom fact-topic copy now has payload-level clipboard assertions.
+
+### Hypothesis
+
+If the mobile custom fact-topic copy flow captures the clipboard payload and still checks the manual fallback text, then mobile custom source-required topics will be protected against both copied-text drift and fallback-text drift.
+
+### Patch
+
+- Reused the shared clipboard capture helpers in the mobile custom fact-topic preview-copy path.
+- Added payload-level assertions that the mobile copied text contains the custom source-required topic and a deduplicated first tag.
+- Kept the manual fallback copy-text assertions so browser clipboard and fallback UI drift are both covered.
+- Extended the project verifier contract to require the mobile copied-payload and manual fallback tag-deduplication checks.
+
+### Verification
+
+```text
+npm run lint
+npm run typecheck
+npx --version
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "custom fact topic aligned" --project=chromium
+npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+All checks passed.
+
+Evidence:
+
+- The focused Playwright run passed 2 tests covering mobile and PC custom fact-topic generation.
+- The mobile custom fact-topic copy flow now has to write copied text containing the custom market-data topic and only one first-tag occurrence.
+- The manual copy fallback still has to expose the same custom topic and deduplicated first tag.
+- The verifier now fails if the mobile copied-payload assertions or manual fallback tag-deduplication assertion are removed.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 19/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 4/5
+- Total: 87/100
+
+### Result
+
+Kept. Mobile custom fact-topic preview-copy smoke coverage now verifies the actual copied text and the manual fallback text stay aligned with the custom source-required topic.
+
+### Remaining risk
+
+- This protects text payload and fallback copy behavior, but it does not add screenshot-level visual evidence for the mobile preview layout.
+- Real browser clipboard permission changes may still need occasional manual spot checks.
+
+### Next candidate loop
+
+- Add focused visual QA for one mobile custom fact-topic preview viewport, or continue hardening source-evidence display for fact-sensitive topics.

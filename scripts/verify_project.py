@@ -1627,6 +1627,9 @@ def validate_content_production_contract() -> int:
         "captureNextClipboardWrite(page)",
         "readCapturedClipboardText(page)",
         "expect(copiedPreviewText).toContain(customSourceTopic)",
+        "expect(copiedMobileDraftText).toContain(customSourceTopic)",
+        "countTextOccurrences(copiedMobileDraftText, `#${expectedTags[0]}`)",
+        "countTextOccurrences(manualCopyText, `#${expectedTags[0]}`)",
         "countTextOccurrences(copiedPreviewText, `#${expectedTags[0]}`)",
         "expect(generationRequests.forbiddenPublishing).toEqual([])",
     ]
