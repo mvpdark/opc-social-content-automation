@@ -154,8 +154,10 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
             <span className="rounded-full bg-[#ff2442] px-4 py-2 text-xs font-semibold text-white">关注</span>
           </div>
 
-          <h1 className="mt-4 text-xl font-bold leading-7">{content.title}</h1>
-          <div className="mt-3 space-y-3 text-[15px] leading-7 text-ink">
+          <h1 className="mt-4 text-xl font-bold leading-7" data-testid="public-preview-title">
+            {content.title}
+          </h1>
+          <div className="mt-3 space-y-3 text-[15px] leading-7 text-ink" data-testid="public-preview-body">
             {paragraphs.length ? (
               paragraphs.map((paragraph, index) => (
                 <p key={`${index}-${paragraph}`}>{renderXhsExpressionText(paragraph)}</p>
@@ -166,14 +168,19 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
           </div>
 
           {tags.length ? (
-            <div className="mt-4 flex flex-wrap gap-2 text-sm font-medium text-[#346cb0]">
+            <div
+              className="mt-4 flex flex-wrap gap-2 text-sm font-medium text-[#346cb0]"
+              data-testid="public-preview-tags"
+            >
               {tags.map((tag, index) => (
                 <span key={`tag-${index}-${tag}`}>{tag}</span>
               ))}
             </div>
           ) : null}
 
-          <div className="mt-5 text-xs text-muted">{message}</div>
+          <div className="mt-5 text-xs text-muted" data-testid="public-preview-safety-message">
+            {message}
+          </div>
         </section>
 
         <footer className="sticky bottom-0 flex items-center justify-between border-t border-[#eeeeee] bg-white/95 px-4 py-2 backdrop-blur">

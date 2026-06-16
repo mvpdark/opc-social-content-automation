@@ -6684,3 +6684,73 @@ Kept. Public preview invalid links now have CI-protected, viewport-safe error re
 ### Next candidate loop
 
 - Add focused valid public preview rendering coverage with a mocked content/image response, or continue scanning PC preview copy for missing manual-confirmation wording.
+
+## Loop 96 - Public preview valid draft smoke coverage
+
+Date: 2026-06-16
+
+### Observation
+
+Public preview invalid links now have E2E protection, but valid public preview rendering still lacks standalone coverage proving a shared draft link can render a real title, body, tags, cover, and the no-auto-publish safety message from mocked content and image responses.
+
+### Hypothesis
+
+If valid public preview rendering is protected by a focused E2E and stable selectors for the rendered content, CI will catch regressions that break shared preview links or silently drop the manual-review safety message.
+
+### Patch
+
+- Added stable ready-state selectors for public preview title, body, tags, and safety message.
+- Added a focused Chromium E2E for `/preview/[contentId]` that mocks the content and cover APIs, checks the rendered draft fields, verifies mobile viewport fit, and blocks publishing-like calls.
+- Added project verifier contracts for the public preview valid-draft E2E and updated `PROJECT_MAP.md` with the new smoke coverage.
+
+### Verification
+
+```text
+cd frontend && npx --version
+node UTF-8 hygiene scan for touched files
+python scripts\verify_project.py --keep-cache
+cd frontend && npm run lint
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "public preview renders draft content and cover without publishing" --project=chromium
+cd frontend && npm run build
+git diff --check
+git diff -- frontend\tsconfig.json
+git status --short --ignored artifacts frontend\artifacts frontend\.next-build frontend\.next
+```
+
+All final checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- Touched-file UTF-8 hygiene scan found no replacement characters or mojibake markers.
+- Project verifier passed with `content_production_contract_checked=1411`.
+- TypeScript check passed through `npm run lint`.
+- Focused Chromium E2E passed for the valid public preview draft.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed and `frontend/tsconfig.json` had no build-generated diff.
+- Only ignored artifact/build directories are present under `artifacts/`, `frontend/.next-build/`, and `frontend/.next/`.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 15/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 80/100
+
+### Result
+
+Kept. Public preview valid drafts now have CI-protected coverage for rendered title, body, tags, cover, mobile viewport fit, and the no-auto-publish safety message without invoking publishing-like endpoints.
+
+### Remaining risk
+
+- This loop covers one mocked valid public preview path; image-missing and backend-error public preview states can still use focused coverage.
+- Screenshot/build artifacts remain ignored and are not committed.
+
+### Next candidate loop
+
+- Add public preview image-missing/backend-error smoke coverage, or continue with one-click generation topic alignment checks.

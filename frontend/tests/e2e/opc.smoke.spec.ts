@@ -49,6 +49,7 @@ const E2E_MOBILE_PUBLISHED_STATUS_CONTENT_ID = 8919;
 const E2E_PC_REVIEW_QUEUE_CONTENT_ID = 8920;
 const E2E_PC_REVIEW_QUEUE_APPROVED_CONTENT_ID = 8921;
 const E2E_MOBILE_DRAFT_HISTORY_RETRY_CONTENT_ID = 8922;
+const E2E_PUBLIC_PREVIEW_CONTENT_ID = 8923;
 
 type JsonPayload = Record<string, unknown>;
 
@@ -1168,6 +1169,84 @@ test.describe("OPC smoke coverage", () => {
       { label: "status card", testId: "public-preview-status-card" }
     ]);
     expect(previewApiRequests).toEqual([]);
+  });
+
+  test("public preview renders draft content and cover without publishing", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const previewTitle = "E2E public preview timeline topic";
+    const expectedTags = ["#硕升博", "#时间规划"];
+    const contentRequests: string[] = [];
+    const imageRequests: string[] = [];
+    const forbiddenPublishing: string[] = [];
+
+    await page.route(`**/api/content/${E2E_PUBLIC_PREVIEW_CONTENT_ID}`, async (route) => {
+      contentRequests.push(route.request().url());
+      await route.fulfill({
+        body: JSON.stringify({
+          body: [
+            `这是一条公共预览草稿：${previewTitle}`,
+            "预览只用于人工核对标题、正文、标签和封面。"
+          ].join("\n\n"),
+          created_at: "2026-06-16T00:00:00.000Z",
+          id: E2E_PUBLIC_PREVIEW_CONTENT_ID,
+          platform: "xiaohongshu",
+          status: "draft",
+          tags: expectedTags,
+          title: previewTitle
+        }),
+        contentType: "application/json",
+        status: 200
+      });
+    });
+    await page.route(/\/api\/image\/list(?:\?|$)/, async (route) => {
+      imageRequests.push(route.request().url());
+      await route.fulfill({
+        body: JSON.stringify([
+          {
+            content_id: E2E_PUBLIC_PREVIEW_CONTENT_ID,
+            created_at: "2026-06-16T00:00:01.000Z",
+            id: E2E_PUBLIC_PREVIEW_CONTENT_ID + 1000,
+            image_url: buildFixtureCoverDataUri(previewTitle),
+            prompt: `E2E public preview cover: ${previewTitle}`,
+            status: "generated",
+            template: "xiaohongshu-cover"
+          }
+        ]),
+        contentType: "application/json",
+        status: 200
+      });
+    });
+    await page.route(/\/api\/[^?]*(publish|submit)/i, async (route) => {
+      forbiddenPublishing.push(route.request().url());
+      await route.fulfill({
+        body: JSON.stringify({ detail: "E2E guard blocked public preview publishing-like call." }),
+        contentType: "application/json",
+        status: 500
+      });
+    });
+
+    await page.goto(`${BASE_URL}/preview/${E2E_PUBLIC_PREVIEW_CONTENT_ID}`);
+
+    await expect(page.getByTestId("public-preview-page")).toBeVisible({ timeout: 7000 });
+    await expect(page.getByTestId("public-preview-state")).toHaveCount(0);
+    await expect(page.getByTestId("public-preview-cover")).toBeVisible();
+    await expect(page.getByTestId("public-preview-cover")).toHaveAttribute("src", /data:image\/svg\+xml/);
+    await expect(page.getByTestId("public-preview-title")).toContainText(previewTitle);
+    await expect(page.getByTestId("public-preview-body")).toContainText(`这是一条公共预览草稿：${previewTitle}`);
+    await expect(page.getByTestId("public-preview-body")).toContainText("预览只用于人工核对");
+    await expect(page.getByTestId("public-preview-tags")).toContainText(expectedTags[0]);
+    await expect(page.getByTestId("public-preview-tags")).toContainText(expectedTags[1]);
+    await expect(page.getByTestId("public-preview-safety-message")).toContainText("发布前预览");
+    await expect(page.getByTestId("public-preview-safety-message")).toContainText("不会自动发布");
+    await expectNoHorizontalViewportOverflow(page, "public preview valid draft", [
+      { label: "page", testId: "public-preview-page" },
+      { label: "cover", testId: "public-preview-cover" },
+      { label: "body", testId: "public-preview-body" },
+      { label: "safety message", testId: "public-preview-safety-message" }
+    ]);
+    expect(contentRequests).toHaveLength(1);
+    expect(imageRequests).toHaveLength(1);
+    expect(forbiddenPublishing).toEqual([]);
   });
 
   for (const width of [360, 390, 414]) {

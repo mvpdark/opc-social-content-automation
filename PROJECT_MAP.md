@@ -67,6 +67,7 @@ Last updated: 2026-06-16
 - Mobile Xiaohongshu export buttons must label the flow as manual publishing preparation, not direct or automatic publishing.
 - Mobile Xiaohongshu export status messages must say share/download handoff still requires manual confirmation before submission.
 - Public preview invalid-link smoke tests verify `/preview/[contentId]` resolves to a clear error without content/image API calls.
+- Public preview valid-draft smoke tests render mocked content, cover, tags, and no-auto-publish safety copy without publishing calls.
 
 ## Deployment and Build
 
