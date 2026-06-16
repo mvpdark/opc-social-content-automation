@@ -1039,6 +1039,24 @@ def validate_frontend_design_contract() -> int:
         if snippet not in workspace_text:
             raise SystemExit(f"Missing PC login contract snippet: {snippet}")
 
+    login_shell_screenshot_contracts = [
+        "function expectPngScreenshotEvidence",
+        "function attachScreenshotEvidence",
+        'test("PC and mobile login shells attach screenshot evidence"',
+        'testInfo.attach(name, {',
+        'contentType: "image/png"',
+        'expect(screenshot.toString("ascii", 1, 4)).toBe("PNG")',
+        "expect(screenshot.readUInt32BE(16)).toBeGreaterThanOrEqual(minWidth)",
+        "expect(screenshot.readUInt32BE(20)).toBeGreaterThanOrEqual(minHeight)",
+        'attachScreenshotEvidence(page, testInfo, "pc-login-shell.png"',
+        'attachScreenshotEvidence(page, testInfo, "mobile-login-shell.png"',
+        'page.getByTestId("pc-login-form").boundingBox()',
+        'page.getByTestId("mobile-login-form").boundingBox()',
+    ]
+    for snippet in login_shell_screenshot_contracts:
+        if snippet not in e2e_text:
+            raise SystemExit(f"Missing login shell screenshot contract: {snippet}")
+
     app_shell_login_snippets = [
         "accountLabel?: string",
         "onLogout?: () => void",
@@ -1273,6 +1291,7 @@ def validate_frontend_design_contract() -> int:
         + len(generation_flow_snippets)
         + len(terminal_routing_snippets)
         + len(pc_login_snippets)
+        + len(login_shell_screenshot_contracts)
         + len(app_shell_login_snippets)
         + sum(len(snippets) for _text, snippets, _name in one_click_entry_contracts)
         + sum(len(snippets) for _text, snippets, _name in mobile_focus_contracts)

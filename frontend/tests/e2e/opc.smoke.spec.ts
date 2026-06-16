@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 import { parseTagText } from "../../lib/tags";
 import {
@@ -219,6 +219,35 @@ async function trackGenerationServiceRequests(page: Page) {
     });
   });
   return requests;
+}
+
+function expectPngScreenshotEvidence(
+  screenshot: Buffer,
+  {
+    minBytes,
+    minHeight,
+    minWidth
+  }: { minBytes: number; minHeight: number; minWidth: number }
+) {
+  expect(screenshot.byteLength).toBeGreaterThan(minBytes);
+  expect(screenshot[0]).toBe(0x89);
+  expect(screenshot.toString("ascii", 1, 4)).toBe("PNG");
+  expect(screenshot.readUInt32BE(16)).toBeGreaterThanOrEqual(minWidth);
+  expect(screenshot.readUInt32BE(20)).toBeGreaterThanOrEqual(minHeight);
+}
+
+async function attachScreenshotEvidence(
+  page: Page,
+  testInfo: TestInfo,
+  name: string,
+  options: { minBytes: number; minHeight: number; minWidth: number }
+) {
+  const screenshot = await page.screenshot({ fullPage: true });
+  expectPngScreenshotEvidence(screenshot, options);
+  await testInfo.attach(name, {
+    body: screenshot,
+    contentType: "image/png"
+  });
 }
 
 function buildE2eSourceContext(preset: GenerationTopicPreset, label: string) {
@@ -1080,6 +1109,37 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("pc-login-account")).toBeVisible();
     await expect(page.getByTestId("pc-login-password")).toBeVisible();
     await expect(page.getByRole("button", { name: /登录并进入工作台|正在检查登录状态|正在登录/ })).toBeVisible();
+  });
+
+  test("PC and mobile login shells attach screenshot evidence", async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`${BASE_URL}/?theme=mint`);
+    await expect(page.getByTestId("pc-login-form")).toBeVisible({ timeout: 7000 });
+    await expect(page.getByTestId("pc-login-account")).toBeVisible();
+    await expect(page.getByTestId("pc-login-password")).toBeVisible();
+    const pcLoginBox = await page.getByTestId("pc-login-form").boundingBox();
+    expect(pcLoginBox?.width ?? 0).toBeGreaterThan(360);
+    expect(pcLoginBox?.height ?? 0).toBeGreaterThan(440);
+    await attachScreenshotEvidence(page, testInfo, "pc-login-shell.png", {
+      minBytes: 20_000,
+      minHeight: 700,
+      minWidth: 1000
+    });
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=home`);
+    await expect(page.getByText("正在检查登录状态")).toBeHidden({ timeout: 7000 });
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await expect(page.getByTestId("mobile-login-account")).toBeVisible();
+    await expect(page.getByTestId("mobile-login-password")).toBeVisible();
+    const mobileLoginBox = await page.getByTestId("mobile-login-form").boundingBox();
+    expect(mobileLoginBox?.width ?? 0).toBeGreaterThan(300);
+    expect(mobileLoginBox?.height ?? 0).toBeGreaterThan(220);
+    await attachScreenshotEvidence(page, testInfo, "mobile-login-shell.png", {
+      minBytes: 12_000,
+      minHeight: 800,
+      minWidth: 390
+    });
   });
 
   for (const width of [360, 390, 414]) {

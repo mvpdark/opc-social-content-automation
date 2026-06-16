@@ -6009,3 +6009,71 @@ Kept. Desktop delivery fallback data no longer presents fixed zero counts as if 
 ### Next candidate loop
 
 - Add screenshot-backed PC/mobile login-shell evidence, or inspect remaining static queue/publishing fallback copy for hidden stale metrics.
+
+## Loop 86 - Login shell screenshot evidence
+
+Date: 2026-06-16
+
+### Observation
+
+PC and mobile login-shell smoke tests verify text fields and loading resolution, but CI artifacts currently only capture screenshots on failure. There is no passing-run screenshot evidence attached for the two unauthenticated entry shells that protect the first user-visible contract.
+
+### Hypothesis
+
+If the smoke suite attaches validated PC and mobile login-shell screenshots during a passing run, then regressions in the public/login shell can be reviewed from CI artifacts without adding brittle visual baselines or storing credentials.
+
+### Patch
+
+- Added screenshot evidence helpers to the Playwright smoke suite.
+- Added a focused PC/mobile login-shell test that attaches `pc-login-shell.png` and `mobile-login-shell.png` to the Playwright report.
+- Validated each screenshot as PNG data with minimum byte size and viewport dimensions.
+- Added bounding-box checks for PC and mobile login forms so the screenshots are tied to visible login UI.
+- Added project verifier contracts for the screenshot evidence helper and both login-shell attachments.
+- Updated `PROJECT_MAP.md` to document that screenshots are report artifacts, not committed baselines.
+
+### Verification
+
+```text
+cd frontend && npx --version
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC and mobile login shells attach screenshot evidence" --project=chromium
+cd frontend && npm run build
+git diff --check
+```
+
+All checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- TypeScript check passed through `npm run lint`.
+- Project verifier passed with `frontend_design_contract_checked=167`.
+- The focused Chromium E2E passed: `PC and mobile login shells attach screenshot evidence`.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 17/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 14/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 81/100
+
+### Result
+
+Kept. Passing CI runs can now include PC and mobile login-shell screenshots as reviewable evidence while still avoiding credential storage and brittle visual baselines.
+
+### Remaining risk
+
+- This is artifact-backed smoke evidence, not a pixel-diff visual baseline.
+- Screenshots are stored in ignored Playwright result artifacts and are not committed to git.
+
+### Next candidate loop
+
+- Add screenshot evidence for one high-risk review/lifecycle warning surface, or continue scanning static publishing copy for misleading fallback labels.

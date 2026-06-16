@@ -57,6 +57,7 @@ Last updated: 2026-06-16
 - Frontend verification: run from `frontend/` with `npm run typecheck`, `npm run build`, or `npm run verify`.
 - E2E smoke tests: run from `frontend/` with `npm run e2e`; specs live in `frontend/tests/e2e/`.
 - Playwright starts the local Next dev server automatically when `OPC_BASE_URL` is not provided.
+- The PC/mobile login-shell smoke test attaches validated screenshot evidence to Playwright results without committing image baselines.
 
 ## Deployment and Build
 
