@@ -1298,7 +1298,7 @@ test.describe("OPC smoke coverage", () => {
   test("mobile custom fact topic source preview failure blocks generation without false draft", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const acceptedLogin = createLoginInput();
-    const customSourceTopic = "official tuition fees and logo verification for overseas doctoral programs";
+    const customSourceTopic = "overseas doctoral exchange rate and currency conversion check";
     const preset = requireTopicPreset("source-official-fee-check");
     await mockSuccessfulLogin(page, acceptedLogin.account);
     const generationRequests = await mockMobileGenerationFixture(page, preset, {
@@ -1925,7 +1925,7 @@ test.describe("OPC smoke coverage", () => {
   test("PC custom fact topic source preview failure blocks generation without false draft", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     const acceptedLogin = createLoginInput();
-    const customSourceTopic = "official tuition fees and logo verification for overseas doctoral programs";
+    const customSourceTopic = "overseas doctoral exchange rate and currency conversion check";
     const preset = requireTopicPreset("source-official-fee-check");
     await mockSuccessfulLogin(page, acceptedLogin.account);
     const generationRequests = await mockPcGenerationFixture(page, preset, {

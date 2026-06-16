@@ -593,6 +593,9 @@ def validate_topic_presets_contract() -> int:
         "market data",
         "market rates",
         "pricing benchmarks",
+        "汇率",
+        "exchange rate",
+        "currency conversion",
     ]
     missing_source_keywords = sorted(
         keyword for keyword in required_source_keywords if keyword not in source_evidence_keywords
@@ -621,6 +624,8 @@ def validate_topic_presets_contract() -> int:
         ("official tuition fees and logo verification", True),
         ("overseas doctoral consulting market data benchmarks", True),
         ("博士项目市场行情和最新价格", True),
+        ("overseas doctoral exchange rate and currency conversion check", True),
+        ("博士项目汇率和币种换算怎么核验", True),
         ("marketing content conversion hooks", False),
         ("how to choose domestic or overseas PhD route", False),
     ]
@@ -1860,6 +1865,7 @@ def validate_content_production_contract() -> int:
         "mobile custom source preview failure",
         "PC source preview failure",
         "PC custom source preview failure",
+        "overseas doctoral exchange rate and currency conversion check",
         "mobile-source-preview-button",
         "source-preview-button",
         "E2E source preview unavailable.",

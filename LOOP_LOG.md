@@ -4435,3 +4435,66 @@ Kept. Custom market-data and pricing-benchmark topics now require source evidenc
 ### Next candidate loop
 
 - Add a source-required guard for exchange-rate or platform-fee wording, or add screenshot-level source evidence visual QA for one focused viewport.
+
+## Loop 62 - Exchange-rate source detection guard
+
+Date: 2026-06-16
+
+### Observation
+
+The source-evidence classifier now covers market data and pricing benchmarks, and generic platform-fee wording is already caught by existing fee keywords. Exchange-rate and currency-conversion topics are also current-facts inputs, but they were not explicitly covered by the classifier or the focused failure-state E2E topic.
+
+### Hypothesis
+
+If exchange-rate and currency-conversion phrases are included in the shared source-evidence classifier, and the PC/mobile custom source-preview failure tests use an exchange-rate topic, then currency-sensitive custom topics will be blocked from generating when source evidence fails.
+
+### Patch
+
+- Added exchange-rate, currency-rate, currency-conversion, foreign-exchange, FX-rate, and Chinese currency phrases to the shared source-evidence keyword classifier.
+- Retargeted the PC and mobile custom source-preview failure E2E topics to an exchange-rate/currency-conversion custom topic.
+- Extended the verifier contract with exchange-rate keyword samples and an E2E contract string for the focused failure topic.
+
+### Verification
+
+```text
+npm run lint
+python scripts\verify_project.py --keep-cache
+npx --version
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "source preview failure" --project=chromium
+npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+All checks passed.
+
+Evidence:
+
+- The focused Playwright run passed 4 tests covering PC/mobile source-preview failure and PC/mobile custom source-preview failure.
+- The custom failure path now uses an exchange-rate/currency-conversion topic and still blocks draft generation, creates no false draft, and keeps recovery UI inside the viewport.
+- The verifier now fails if exchange-rate or currency-conversion source detection is removed.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 21/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 4/5
+- Total: 89/100
+
+### Result
+
+Kept. Exchange-rate and currency-conversion custom topics now require source evidence, and source-preview failure blocks generation on both PC and mobile.
+
+### Remaining risk
+
+- E2E still uses fixture-backed source-preview responses; live exchange-rate source quality should be sampled when real provider credentials are configured.
+- Future fee-schedule phrases that avoid the existing fee keywords may need additional explicit coverage.
+
+### Next candidate loop
+
+- Add screenshot-level source evidence visual QA for one focused viewport, or inspect copy/preview flow for topic drift on another non-source preset family.

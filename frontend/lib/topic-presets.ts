@@ -63,7 +63,18 @@ const SOURCE_EVIDENCE_REQUIRED_KEYWORDS = [
   "pricing benchmarks",
   "current price",
   "latest price",
-  "live price"
+  "live price",
+  "汇率",
+  "外汇",
+  "币种换算",
+  "exchange rate",
+  "exchange rates",
+  "currency rate",
+  "currency rates",
+  "currency conversion",
+  "foreign exchange",
+  "fx rate",
+  "fx rates"
 ];
 
 export const generationTopicPresets: GenerationTopicPreset[] = [
