@@ -2361,7 +2361,7 @@ test.describe("OPC smoke coverage", () => {
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 
-  test("PC read-only review queue retry reloads content list only", async ({ page }) => {
+  test("PC read-only review queue retry reloads content list only", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     const acceptedLogin = createLoginInput();
     const pendingPreset = requireTopicPreset("timeline-main");
@@ -2386,6 +2386,14 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("pc-review-queue-error")).toContainText(
       "E2E PC review queue unavailable."
     );
+    const pcReviewQueueErrorBox = await page.getByTestId("pc-review-queue-error").boundingBox();
+    expect(pcReviewQueueErrorBox?.width ?? 0).toBeGreaterThan(280);
+    expect(pcReviewQueueErrorBox?.height ?? 0).toBeGreaterThan(90);
+    await attachScreenshotEvidence(page, testInfo, "pc-review-queue-error.png", {
+      minBytes: 20_000,
+      minHeight: 700,
+      minWidth: 1000
+    });
     generationRequests.releaseReviewQueueFailures();
     await page.getByTestId("pc-review-queue-retry").click();
 
@@ -2394,6 +2402,14 @@ test.describe("OPC smoke coverage", () => {
       pendingPreset.topic
     );
     await expect(page.getByTestId("pc-review-queue-error")).toHaveCount(0);
+    const pcReviewQueueRecoveredBox = await page.getByTestId("pc-review-queue-list").boundingBox();
+    expect(pcReviewQueueRecoveredBox?.width ?? 0).toBeGreaterThan(280);
+    expect(pcReviewQueueRecoveredBox?.height ?? 0).toBeGreaterThan(90);
+    await attachScreenshotEvidence(page, testInfo, "pc-review-queue-recovered.png", {
+      minBytes: 20_000,
+      minHeight: 700,
+      minWidth: 1000
+    });
 
     expect(generationRequests.reviewQueue).toBeGreaterThan(1);
     expect(generationRequests.contentList).toBeGreaterThan(0);

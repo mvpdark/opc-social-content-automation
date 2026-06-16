@@ -6212,3 +6212,70 @@ Kept. CI can now attach visual evidence for mobile human-review decision failure
 ### Next candidate loop
 
 - Inspect PC review-queue error and retry screenshots, or scan static publish/export copy for misleading manual-confirmation language.
+
+## Loop 89 - PC review queue retry screenshot evidence
+
+Date: 2026-06-16
+
+### Observation
+
+The PC read-only review queue retry E2E already proves a queue read failure can recover without content generation, image generation, rewrite, or publishing-like calls. Its evidence is assertion-only, so CI reviewers cannot quickly inspect the visible error state and the recovered queue state.
+
+### Hypothesis
+
+If the PC review queue retry test attaches validated screenshots before and after retry, then CI artifacts will make the read-only manual review boundary easier to audit without adding committed image baselines.
+
+### Patch
+
+- Extended the PC review queue retry E2E with `testInfo` screenshot attachments.
+- Added visible bounding-box checks for the queue read-error state and the recovered queue list.
+- Attached validated `pc-review-queue-error.png` and `pc-review-queue-recovered.png` screenshots to the Playwright report.
+- Added project verifier contracts for both PC queue screenshot evidence points.
+- Updated `PROJECT_MAP.md` to document that PC review queue retry screenshots are report artifacts and the queue remains read-only.
+
+### Verification
+
+```text
+cd frontend && npx --version
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC read-only review queue retry reloads content list only" --project=chromium
+cd frontend && npm run build
+git diff --check
+```
+
+All final checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- TypeScript check passed through `npm run lint`.
+- Project verifier passed with `content_production_contract_checked=1342`.
+- The focused Chromium E2E initially caught an over-wide queue card threshold; after adjusting it to the actual PC sidebar width, the target test passed.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 16/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 81/100
+
+### Result
+
+Kept. CI can now attach visual evidence for the PC review queue read-error and recovery states while preserving assertions that the queue is read-only and does not trigger generation or publishing-like calls.
+
+### Remaining risk
+
+- These screenshots are report evidence, not pixel-diff baselines.
+- Screenshot and build artifacts remain ignored and are not committed.
+
+### Next candidate loop
+
+- Scan static publish/export copy for misleading manual-confirmation language, or add artifact evidence for PC draft-history read-error recovery.
