@@ -3087,3 +3087,76 @@ Kept. Draft generation now fails safely when a model returns app-level metadata 
 ### Next candidate loop
 
 - Continue draft completeness/checklist normalization, especially user-visible checklist state and incomplete-output recovery.
+
+## Loop 43 - PC prepublish checklist state
+
+Date: 2026-06-16
+
+### Observation
+
+The PC export card already warned that generated drafts require human review and showed risk/lifecycle notices. However, the "发布前检查" area did not expose a clear itemized checklist for title/body/tags, source evidence, cover material, safety wording, and human confirmation. Users could copy a draft without an explicit view of which items were ready, pending review, or blocked.
+
+### Hypothesis
+
+If the PC export card shows a stable prepublish checklist with per-item states, then users can see exactly what needs human confirmation before copying, while OPC still avoids any automated publishing behavior.
+
+### Patch
+
+Files changed:
+
+- `frontend/components/workspace-client.tsx`
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a data-driven PC prepublish checklist for content fields, source evidence, cover material, safety wording, and human confirmation.
+- Derived source-evidence state from the existing generation source context stats.
+- Kept copy behavior unchanged and preserved the no-automated-publishing boundary.
+- Extended the PC custom fact-topic E2E to assert checklist visibility and expected states.
+- Added fast verifier contracts for the checklist component and E2E protection.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed
+
+python scripts\verify_project.py --keep-cache
+# passed
+# content_production_contract_checked=1006
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC one-click generation keeps custom fact topic aligned" --project=chromium
+# passed: 1 passed
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 23/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 88/100
+
+### Result
+
+Kept. PC users now see a concrete prepublish checklist before copying generated content, including source and cover review reminders, without introducing any publish automation.
+
+### Remaining risk
+
+- This loop covers PC export; mobile has a human-review note but not the same itemized checklist.
+- The checklist is advisory and does not block copying; hard blocking should be considered carefully so manual review workflows do not get stuck.
+
+### Next candidate loop
+
+- Add a compact mobile preview checklist, or continue incomplete-output recovery for draft generation.

@@ -53,6 +53,7 @@ import { copyText } from "@/lib/clipboard";
 import {
   isGeneratedContent,
   isGeneratedImageAsset,
+  generationSourceContextStats,
   sourceContextMatchesKnowledgeQuery,
   type GeneratedContent,
   type GeneratedImageAsset,
@@ -1058,6 +1059,89 @@ function generatedContentLifecycleWarning(status: string) {
   }
   const statusLabel = status === "published" ? generatedContentStatusLabel(status) : status;
   return `后端返回状态为「${statusLabel}」，发布前请先核对人工确认记录；OPC 不会自动发布。`;
+}
+
+type PrepublishChecklistState = "ready" | "review" | "blocked";
+
+type PrepublishChecklistItem = {
+  detail: string;
+  key: "content" | "sources" | "cover" | "risk" | "human";
+  label: string;
+  state: PrepublishChecklistState;
+};
+
+const prepublishChecklistTone = {
+  blocked: "red",
+  ready: "green",
+  review: "amber"
+} satisfies Record<PrepublishChecklistState, keyof typeof pillTone>;
+
+const prepublishChecklistStateLabel = {
+  blocked: "需补充",
+  ready: "已就绪",
+  review: "待核对"
+} satisfies Record<PrepublishChecklistState, string>;
+
+function buildPrepublishChecklist({
+  content,
+  imageReady,
+  lifecycleWarning,
+  testDraft,
+  warnings
+}: {
+  content: GeneratedContent;
+  imageReady: boolean;
+  lifecycleWarning: string | null;
+  testDraft: boolean;
+  warnings: string[];
+}): PrepublishChecklistItem[] {
+  const sourceStats = generationSourceContextStats(content.source_context);
+  const sourceDetail = sourceStats.missingRequiredWebResults
+    ? "当前选题需要实时来源，但没有可见 Tavily 结果，复制前先补来源。"
+    : sourceStats.hasEvidence
+      ? `已带 ${sourceStats.totalCount} 条来源证据，复制前核对学校、价格、logo、排名等事实。`
+      : "未带来源证据，只能作为通用草稿，复制前请人工补充可信依据。";
+
+  return [
+    {
+      detail: "标题、正文、标签会一起复制；发布前仍需逐项读一遍。",
+      key: "content",
+      label: "标题/正文/标签",
+      state: content.body.trim() && content.title.trim() && (content.tags?.length ?? 0) > 0 ? "ready" : "blocked"
+    },
+    {
+      detail: sourceDetail,
+      key: "sources",
+      label: "来源证据",
+      state: sourceStats.missingRequiredWebResults ? "blocked" : sourceStats.hasEvidence ? "review" : "blocked"
+    },
+    {
+      detail: imageReady
+        ? "封面素材已生成；仍需核对是否含假校徽、假录取或误导视觉。"
+        : "封面尚未生成或不可用；复制正文前先决定是否补封面。",
+      key: "cover",
+      label: "封面素材",
+      state: imageReady ? "review" : "blocked"
+    },
+    {
+      detail: warnings.length
+        ? `发现高风险词：${warnings.join("、")}。请修改后再复制。`
+        : "未发现保录、包过、内部名额等高风险承诺词。",
+      key: "risk",
+      label: "安全用语",
+      state: warnings.length ? "blocked" : "ready"
+    },
+    {
+      detail: testDraft
+        ? "这是本地检查草稿，不可直接发布。"
+        : lifecycleWarning
+          ? lifecycleWarning
+          : "当前仍是草稿状态；复制只准备素材，最终发布必须人工确认。",
+      key: "human",
+      label: "人工确认",
+      state: testDraft || lifecycleWarning ? "blocked" : "review"
+    }
+  ];
 }
 
 function loadStoredGeneratedContent() {
@@ -3986,6 +4070,13 @@ function GeneratedPostExportCard({
         ? "生成封面图"
         : "检测并生成封面";
   const statusTone = lifecycleWarning ? "red" : content.status === "draft" ? "amber" : "green";
+  const prepublishChecklist = buildPrepublishChecklist({
+    content,
+    imageReady: Boolean(imageAsset && imagePreviewUrl),
+    lifecycleWarning,
+    testDraft,
+    warnings
+  });
 
   useEffect(() => {
     currentContentIdRef.current = content.id;
@@ -4159,6 +4250,23 @@ function GeneratedPostExportCard({
           发布前检查
         </div>
         <div className="mt-3 space-y-2 text-xs leading-5 text-muted">
+          <div className="grid gap-2 sm:grid-cols-2" data-testid="pc-export-prepublish-checklist">
+            {prepublishChecklist.map((item) => (
+              <div
+                className="rounded-md border border-line bg-paper p-3"
+                data-testid={`pc-export-prepublish-check-${item.key}`}
+                key={`pc-export-prepublish-check-${item.key}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-ink">{item.label}</span>
+                  <Pill tone={prepublishChecklistTone[item.state]}>
+                    {prepublishChecklistStateLabel[item.state]}
+                  </Pill>
+                </div>
+                <p className="mt-2 text-[11px] leading-5 text-muted">{item.detail}</p>
+              </div>
+            ))}
+          </div>
           {testDraft ? (
             <div className="rounded-md border border-amber/40 bg-amber/10 p-3 text-ink">
               这是本地检查草稿，不可直接发布。

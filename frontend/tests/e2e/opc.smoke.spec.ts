@@ -1692,6 +1692,12 @@ test.describe("OPC smoke coverage", () => {
     await expect(exportCard).toContainText(expectedAudience);
     await expect(page.getByTestId("pc-export-copy-button")).toBeEnabled();
     await expect(page.getByTestId("pc-export-prepublish-check")).toContainText("发布前检查");
+    await expect(page.getByTestId("pc-export-prepublish-checklist")).toBeVisible();
+    await expect(page.getByTestId("pc-export-prepublish-check-content")).toContainText("已就绪");
+    await expect(page.getByTestId("pc-export-prepublish-check-sources")).toContainText("待核对");
+    await expect(page.getByTestId("pc-export-prepublish-check-cover")).toContainText("待核对");
+    await expect(page.getByTestId("pc-export-prepublish-check-risk")).toContainText("已就绪");
+    await expect(page.getByTestId("pc-export-prepublish-check-human")).toContainText("待核对");
 
     const draftCard = page.getByTestId("draft-history-card").filter({ hasText: customSourceTopic }).first();
     await expect(page.getByTestId("draft-history-strip")).toBeVisible();
