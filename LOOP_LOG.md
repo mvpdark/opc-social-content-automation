@@ -3884,3 +3884,73 @@ Kept. The backend now rejects obviously too-thin generated drafts before they ca
 ### Next candidate loop
 
 - Add broader one-click topic drift coverage for additional preset categories, or improve frontend wording for backend `schema_invalid` generation failures.
+
+## Loop 54 - Mobile multi-topic alignment E2E
+
+Date: 2026-06-16
+
+### Observation
+
+PC E2E covers one-click generation alignment across sales, route, mentor, timing, and source topics. Mobile E2E covers ranking and custom source topics, but it does not yet protect route/decision, mentor-matching, timing/schedule, or sales/marketing topic types through preview copy.
+
+### Hypothesis
+
+If mobile one-click generation has the same multi-topic E2E coverage as PC for sales, route, mentor, and timing topics, then future regressions that drift mobile output intent or request payloads will be caught before users see mismatched drafts.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a reusable mobile topic-alignment E2E helper covering login, project entry, topic inputs, source preview, draft generation, preview, copy, and no-publish guards.
+- Added mobile one-click E2E coverage for sales/marketing, route/decision, mentor-matching, and timing/schedule topics.
+- Extended the project verifier contract so these mobile multi-topic tests and request checks remain in CI.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed
+
+python scripts\verify_project.py --keep-cache
+# passed
+# content_production_contract_checked=1077
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile one-click generation keeps selected (sales|route|mentor|timing) topic aligned through preview copy" --project=chromium
+# passed: 4 passed
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 24/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 91/100
+
+### Result
+
+Kept. Mobile one-click generation now has regression coverage for the same core non-ranking topic families as PC: sales, route, mentor, and timing.
+
+### Remaining risk
+
+- This loop adds E2E protection, not new production behavior.
+- Source-heavy/current-fact mobile custom topics are already covered separately; future loops can add more source-required preset variants if needed.
+
+### Next candidate loop
+
+- Improve frontend wording for backend `schema_invalid` generation failures, or add narrower checks for source-required custom topics.

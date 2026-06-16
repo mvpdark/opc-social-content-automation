@@ -23,6 +23,10 @@ const E2E_MOBILE_SOURCE_PREVIEW_FAILURE_CONTENT_ID = 8804;
 const E2E_MOBILE_CUSTOM_SOURCE_PREVIEW_FAILURE_CONTENT_ID = 8805;
 const E2E_MOBILE_CUSTOM_TOPIC_CONTENT_ID = 8806;
 const E2E_MOBILE_MISSING_TAGS_CONTENT_ID = 8807;
+const E2E_MOBILE_SALES_TOPIC_CONTENT_ID = 8808;
+const E2E_MOBILE_ROUTE_TOPIC_CONTENT_ID = 8809;
+const E2E_MOBILE_MENTOR_TOPIC_CONTENT_ID = 8810;
+const E2E_MOBILE_TIMELINE_TOPIC_CONTENT_ID = 8811;
 const E2E_PC_GENERATED_CONTENT_ID = 8901;
 const E2E_PC_CONTENT_FAILURE_CONTENT_ID = 8902;
 const E2E_PC_COVER_FAILURE_CONTENT_ID = 8903;
@@ -79,6 +83,11 @@ type MobileReviewFixtureRequests = {
   imageList: number[];
   reviewUrls: string[];
   reviews: JsonPayload[];
+};
+
+type MobileTopicAlignmentScenarioOptions = {
+  contentId: number;
+  presetKey: string;
 };
 
 type PcTopicAlignmentScenarioOptions = {
@@ -632,6 +641,88 @@ function requireTopicPreset(key: string) {
   return preset!;
 }
 
+async function runMobileTopicAlignmentScenario(
+  page: Page,
+  { contentId, presetKey }: MobileTopicAlignmentScenarioOptions
+) {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const acceptedLogin = createLoginInput();
+  const preset = requireTopicPreset(presetKey);
+  const expectedTags = parseTagText(preset.tags);
+  await mockSuccessfulLogin(page, acceptedLogin.account);
+  const generationRequests = await mockMobileGenerationFixture(page, preset, { contentId });
+
+  await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=create`);
+  await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+  await page.getByTestId("mobile-login-account").fill(acceptedLogin.account);
+  await page.getByTestId("mobile-login-password").fill(acceptedLogin.password);
+  await page.getByTestId("mobile-login-submit").click();
+  await page.getByTestId("mobile-creation-project-postgraduate-phd").click();
+
+  await page.getByTestId("mobile-topic").fill(preset.topic);
+  await expect(page.getByTestId("mobile-topic")).toHaveValue(preset.topic);
+  await expect(page.getByTestId("mobile-audience")).toHaveValue(preset.audience);
+  await expect(page.getByTestId("mobile-tags")).toHaveValue(preset.tags);
+
+  await page.getByTestId("mobile-source-preview-button").click();
+  await expect(page.getByTestId("mobile-source-evidence")).toContainText("2 条");
+  await page.getByTestId("mobile-source-knowledge-toggle").click();
+  await expect(page.getByTestId("mobile-source-knowledge-list")).toContainText(preset.topic);
+  await page.getByTestId("mobile-source-web-toggle").click();
+  await expect(page.getByTestId("mobile-source-web-list")).toContainText(preset.topic);
+
+  await page.getByTestId("mobile-generate-draft").click();
+  await expect(page.getByTestId("mobile-generate-draft")).toContainText("重新一键生成");
+  await page.getByTestId(`mobile-draft-history-card-${contentId}`).click();
+
+  const preview = page.getByTestId("draft-preview-editor");
+  await expect(preview).toBeVisible();
+  await expect(preview).toContainText(preset.topic);
+  await expect(preview).toContainText(`必须保持${preset.mobileLabel}选题意图`);
+  await expect(preview).toContainText(`#${expectedTags[0]}`);
+  await expect(preview).toContainText("发布前预览 · 不会自动发布");
+  await expect(page.getByTestId("draft-preview-cover-image")).toBeVisible();
+  await expect(page.getByTestId("draft-preview-prepublish-check-content")).toContainText("已就绪");
+  await expect(page.getByTestId("draft-preview-prepublish-check-sources")).toContainText("待核对");
+  await expect(page.getByTestId("draft-preview-copy")).toBeEnabled();
+  await expect(page.getByTestId("draft-copy-preview-link")).toBeEnabled();
+
+  await page.getByTestId("draft-preview-copy").click();
+  await expect(page.getByTestId("draft-export-status")).toBeVisible();
+  const manualCopyText = await page.getByTestId("draft-manual-copy-text").inputValue();
+  expect(manualCopyText).toContain(preset.topic);
+  expect(manualCopyText).toContain(`#${expectedTags[0]}`);
+  expect(countTextOccurrences(manualCopyText, `#${expectedTags[0]}`)).toBe(1);
+
+  expect(generationRequests.sourcePreview).toHaveLength(1);
+  expect(generationRequests.contentGenerate).toHaveLength(1);
+  expect(generationRequests.imageGenerate).toHaveLength(1);
+  expect(generationRequests.forbiddenPublishing).toEqual([]);
+  expect(generationRequests.sourcePreview[0]).toMatchObject({
+    knowledge_limit: 5,
+    knowledge_query: preset.knowledgeQuery,
+    platform: "xiaohongshu",
+    tags: expectedTags,
+    target_audience: preset.audience,
+    topic: preset.topic
+  });
+  expect(generationRequests.contentGenerate[0]).toMatchObject({
+    knowledge_limit: 5,
+    knowledge_query: preset.knowledgeQuery,
+    platform: "xiaohongshu",
+    tags: expectedTags,
+    target_audience: preset.audience,
+    topic: preset.topic
+  });
+  expect(generationRequests.imageGenerate[0]).toMatchObject({
+    aspect_ratio: "3:4",
+    content_id: contentId,
+    template: "xiaohongshu-cover"
+  });
+  expect(String(generationRequests.imageGenerate[0].style_notes)).toContain(preset.coverDirection);
+  expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+}
+
 async function runPcTopicAlignmentScenario(
   page: Page,
   { contentId, expectExportSafetyCopy = false, presetKey }: PcTopicAlignmentScenarioOptions
@@ -1047,6 +1138,34 @@ test.describe("OPC smoke coverage", () => {
     });
     expect(String(generationRequests.imageGenerate[0].style_notes)).toContain(preset.coverDirection);
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("mobile one-click generation keeps selected sales topic aligned through preview copy", async ({ page }) => {
+    await runMobileTopicAlignmentScenario(page, {
+      contentId: E2E_MOBILE_SALES_TOPIC_CONTENT_ID,
+      presetKey: "sales-main"
+    });
+  });
+
+  test("mobile one-click generation keeps selected route topic aligned through preview copy", async ({ page }) => {
+    await runMobileTopicAlignmentScenario(page, {
+      contentId: E2E_MOBILE_ROUTE_TOPIC_CONTENT_ID,
+      presetKey: "route-main"
+    });
+  });
+
+  test("mobile one-click generation keeps selected mentor topic aligned through preview copy", async ({ page }) => {
+    await runMobileTopicAlignmentScenario(page, {
+      contentId: E2E_MOBILE_MENTOR_TOPIC_CONTENT_ID,
+      presetKey: "mentor-direction-check"
+    });
+  });
+
+  test("mobile one-click generation keeps selected timing topic aligned through preview copy", async ({ page }) => {
+    await runMobileTopicAlignmentScenario(page, {
+      contentId: E2E_MOBILE_TIMELINE_TOPIC_CONTENT_ID,
+      presetKey: "timeline-main"
+    });
   });
 
   test("mobile source preview failure blocks source topic generation without false draft", async ({ page }) => {

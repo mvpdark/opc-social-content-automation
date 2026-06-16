@@ -1554,6 +1554,31 @@ def validate_content_production_contract() -> int:
         if snippet not in e2e_text:
             raise SystemExit(f"Missing custom topic E2E contract: {snippet}")
 
+    mobile_multi_topic_e2e_contracts = [
+        "runMobileTopicAlignmentScenario",
+        "E2E_MOBILE_SALES_TOPIC_CONTENT_ID",
+        "E2E_MOBILE_ROUTE_TOPIC_CONTENT_ID",
+        "E2E_MOBILE_MENTOR_TOPIC_CONTENT_ID",
+        "E2E_MOBILE_TIMELINE_TOPIC_CONTENT_ID",
+        "mobile one-click generation keeps selected sales topic aligned through preview copy",
+        "mobile one-click generation keeps selected route topic aligned through preview copy",
+        "mobile one-click generation keeps selected mentor topic aligned through preview copy",
+        "mobile one-click generation keeps selected timing topic aligned through preview copy",
+        'page.getByTestId("draft-preview-prepublish-check-content")',
+        'page.getByTestId("draft-preview-prepublish-check-sources")',
+        "presetKey: \"sales-main\"",
+        "presetKey: \"route-main\"",
+        "presetKey: \"mentor-direction-check\"",
+        "presetKey: \"timeline-main\"",
+        "expect(generationRequests.sourcePreview).toHaveLength(1)",
+        "expect(generationRequests.contentGenerate).toHaveLength(1)",
+        "expect(generationRequests.imageGenerate).toHaveLength(1)",
+    ]
+    for snippet in mobile_multi_topic_e2e_contracts:
+        total += 1
+        if snippet not in e2e_text:
+            raise SystemExit(f"Missing mobile multi-topic E2E contract: {snippet}")
+
     copy_dedupe_contracts = [
         (
             platform_copy_text,
