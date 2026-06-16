@@ -3160,3 +3160,76 @@ Kept. PC users now see a concrete prepublish checklist before copying generated 
 ### Next candidate loop
 
 - Add a compact mobile preview checklist, or continue incomplete-output recovery for draft generation.
+
+## Loop 44 - Mobile preview prepublish checklist
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 43 added a concrete PC prepublish checklist, but the mobile Xiaohongshu preview still only showed a single human-review note. Mobile users could copy text, copy a preview link, or prepare a cover handoff without seeing a compact itemized view of content fields, source evidence, cover material, safety wording, and human confirmation.
+
+### Hypothesis
+
+If the mobile draft preview shows the same core prepublish checklist states as PC, then mobile users get clearer review guidance before copying or sharing, while the app still avoids automated publishing.
+
+### Patch
+
+Files changed:
+
+- `frontend/components/mobile-draft-preview-editor.tsx`
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added a compact mobile preview checklist for content fields, source evidence, cover material, safety wording, and human confirmation.
+- Reused generation source-context stats to classify source evidence as ready for review or blocked.
+- Added local safety-wording checks for high-risk promise terms before mobile copy/share.
+- Extended the mobile custom fact-topic E2E to assert checklist visibility and expected states.
+- Added fast verifier contracts for the mobile checklist and E2E protection.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed
+
+python scripts\verify_project.py --keep-cache
+# passed
+# content_production_contract_checked=1012
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile one-click generation keeps custom fact topic aligned" --project=chromium
+# passed: 1 passed
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 23/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 8/10
+- UX polish: 4/5
+- Total: 87/100
+
+### Result
+
+Kept. Mobile preview now surfaces a compact prepublish checklist before copy/share actions, preserving the existing manual review and no-automated-publishing boundary.
+
+### Remaining risk
+
+- The checklist is advisory and does not block mobile copy/share; a blocking workflow would need separate product decisions.
+- Existing mobile preview text still contains historical encoding artifacts in several older strings; this loop did not rewrite those unrelated labels.
+
+### Next candidate loop
+
+- Continue incomplete-output recovery for draft generation, or isolate and repair one visible mobile mojibake cluster at a time with E2E coverage.

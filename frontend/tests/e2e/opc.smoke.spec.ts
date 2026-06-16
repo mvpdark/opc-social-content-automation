@@ -1197,6 +1197,12 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("draft-preview-human-review-note")).toContainText(
       "发布前仍需人工确认，不会自动发布"
     );
+    await expect(page.getByTestId("draft-preview-prepublish-checklist")).toBeVisible();
+    await expect(page.getByTestId("draft-preview-prepublish-check-content")).toContainText("已就绪");
+    await expect(page.getByTestId("draft-preview-prepublish-check-sources")).toContainText("待核对");
+    await expect(page.getByTestId("draft-preview-prepublish-check-cover")).toContainText("待核对");
+    await expect(page.getByTestId("draft-preview-prepublish-check-risk")).toContainText("已就绪");
+    await expect(page.getByTestId("draft-preview-prepublish-check-human")).toContainText("待核对");
     await expect(page.getByTestId("draft-preview-copy")).toBeEnabled();
     await expect(page.getByTestId("draft-copy-preview-link")).toBeEnabled();
 
