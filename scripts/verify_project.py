@@ -2352,6 +2352,22 @@ def validate_content_production_contract() -> int:
         if snippet not in e2e_text:
             raise SystemExit(f"Missing ranking project-list E2E contract: {snippet}")
 
+    global_ranking_e2e_contracts = [
+        "E2E_PC_GLOBAL_RANKING_CONTENT_ID",
+        "E2E_MOBILE_GLOBAL_RANKING_CONTENT_ID",
+        "mobile one-click generation keeps selected global ranking topic aligned through preview copy",
+        "PC one-click generation keeps selected global ranking topic aligned through preview copy",
+        "presetKey: \"ranking-water-global\"",
+        "expectSourceEvidenceViewportFit: true",
+        "expectPreviewViewportFit: true",
+        "expect(generationRequests.sourcePreview).toHaveLength(1)",
+        "expect(String(generationRequests.imageGenerate[0].style_notes)).toContain(preset.coverDirection)",
+    ]
+    for snippet in global_ranking_e2e_contracts:
+        total += 1
+        if snippet not in e2e_text:
+            raise SystemExit(f"Missing global ranking E2E contract: {snippet}")
+
     custom_source_viewport_e2e_contracts = [
         "mobile one-click generation keeps custom fact topic aligned through preview copy",
         "PC one-click generation keeps custom fact topic aligned through preview copy",

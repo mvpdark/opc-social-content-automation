@@ -45,6 +45,8 @@ const E2E_MOBILE_SOURCE_LOGO_PRICE_CONTENT_ID = 8915;
 const E2E_PC_SOURCE_LOGO_PRICE_CONTENT_ID = 8916;
 const E2E_MOBILE_RANKING_PROGRAMS_CONTENT_ID = 8917;
 const E2E_PC_RANKING_PROGRAMS_CONTENT_ID = 8918;
+const E2E_MOBILE_GLOBAL_RANKING_CONTENT_ID = 8926;
+const E2E_PC_GLOBAL_RANKING_CONTENT_ID = 8927;
 const E2E_MOBILE_PUBLISHED_STATUS_CONTENT_ID = 8919;
 const E2E_PC_REVIEW_QUEUE_CONTENT_ID = 8920;
 const E2E_PC_REVIEW_QUEUE_APPROVED_CONTENT_ID = 8921;
@@ -1885,6 +1887,16 @@ test.describe("OPC smoke coverage", () => {
     });
   });
 
+  test("mobile one-click generation keeps selected global ranking topic aligned through preview copy", async ({ page }) => {
+    await runMobileTopicAlignmentScenario(page, {
+      contentId: E2E_MOBILE_GLOBAL_RANKING_CONTENT_ID,
+      expectPreviewViewportFit: true,
+      expectSourceEvidenceViewportFit: true,
+      presetKey: "ranking-water-global",
+      viewport: { height: 780, width: 360 }
+    });
+  });
+
   test("mobile source preview failure blocks source topic generation without false draft", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const acceptedLogin = createLoginInput();
@@ -2797,6 +2809,14 @@ test.describe("OPC smoke coverage", () => {
       contentId: E2E_PC_RANKING_PROGRAMS_CONTENT_ID,
       expectSourceEvidenceViewportFit: true,
       presetKey: "ranking-water-programs"
+    });
+  });
+
+  test("PC one-click generation keeps selected global ranking topic aligned through preview copy", async ({ page }) => {
+    await runPcTopicAlignmentScenario(page, {
+      contentId: E2E_PC_GLOBAL_RANKING_CONTENT_ID,
+      expectSourceEvidenceViewportFit: true,
+      presetKey: "ranking-water-global"
     });
   });
 

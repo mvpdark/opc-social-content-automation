@@ -6894,3 +6894,73 @@ Kept. Public preview content backend failures now have CI-protected coverage tha
 ### Next candidate loop
 
 - Add public preview malformed-content smoke coverage, or return to one-click generation topic alignment checks.
+
+## Loop 99 - Global ranking topic one-click alignment coverage
+
+Date: 2026-06-16
+
+### Observation
+
+One-click generation already covers ranking budget topics and water-program project-list topics, but the curated `ranking-water-global` preset is the most direct "ranking/list" topic that can require current ranking, school, program, and accreditation facts. It does not yet have the same PC/mobile preview-copy E2E coverage as the project-list ranking preset.
+
+### Hypothesis
+
+If PC and mobile E2E flows run the global water-PhD ranking preset through source evidence, generation, cover direction, preview, and copy assertions, CI will catch generic drift where ranking content turns into mentor matching, time planning, or unsupported fact claims.
+
+### Patch
+
+- Added mobile and PC E2E coverage for the `ranking-water-global` recommended topic.
+- Reused existing one-click topic alignment helpers to verify source evidence, generation requests, cover direction, preview/copy output, tags, viewport fit, and no publishing-like calls.
+- Added verifier contracts and updated `PROJECT_MAP.md` to document global ranking topic smoke coverage.
+
+### Verification
+
+```text
+cd frontend && npx --version
+node UTF-8 hygiene scan for touched files
+python scripts\verify_project.py --keep-cache
+cd frontend && npm run lint
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "global ranking topic aligned" --project=chromium
+cd frontend && npm run build
+git diff --check
+git diff -- frontend\tsconfig.json
+git status --short --ignored artifacts frontend\artifacts frontend\.next-build frontend\.next
+```
+
+All final checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- Touched-file UTF-8 hygiene scan found no replacement characters or mojibake markers.
+- Project verifier passed with `content_production_contract_checked=1445`.
+- TypeScript check passed through `npm run lint`.
+- Focused Chromium E2E passed 2 tests for mobile and PC global ranking topic alignment.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed and `frontend/tsconfig.json` had no build-generated diff.
+- Only ignored artifact/build directories are present under `artifacts/`, `frontend/.next-build/`, and `frontend/.next/`.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 17/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 82/100
+
+### Result
+
+Kept. The global ranking/list recommended topic now has PC and mobile CI coverage proving source evidence, generation payloads, cover direction, preview/copy text, tags, viewport fit, and no-publishing guard stay aligned with the selected topic.
+
+### Remaining risk
+
+- This loop uses mocked evidence/generation responses; live ranking facts still depend on the configured source collection or Tavily/web-search path.
+- Screenshot/build artifacts remain ignored and are not committed.
+
+### Next candidate loop
+
+- Add malformed-content public preview coverage, or expand one-click alignment checks to another high-risk custom current-facts topic such as exchange-rate pricing.
