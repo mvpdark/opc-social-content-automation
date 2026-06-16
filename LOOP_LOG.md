@@ -5396,3 +5396,71 @@ Kept. Direct backend human-review writes now follow the same lifecycle boundary 
 ### Next candidate loop
 
 - Inspect whether PC should expose a small read-only review queue or add screenshot artifacts for the mobile lifecycle warning surfaces.
+
+## Loop 77 - PC read-only review queue visibility
+
+Date: 2026-06-16
+
+### Observation
+
+Mobile has a review queue for `draft`, `rewritten`, and `review_pending` content, and the backend now rejects direct human-review writes outside those states. The PC content page already loads `/content/list?platform=xiaohongshu`, but it only uses that list as draft history and does not give operators a clear read-only view of which content still needs human review before any publishing preparation.
+
+### Hypothesis
+
+If the PC content page surfaces a compact read-only pending-review queue from the already-loaded content list, then operators can see review workload and status without adding any publishing or approval shortcut.
+
+### Patch
+
+- Added a PC-side reviewable status filter for `draft`, `rewritten`, and `review_pending` content.
+- Added a compact `PcReviewQueuePanel` to the PC content page side rail.
+- Kept the panel read-only: selecting a card only opens the existing draft preview/history path, and the panel contains no approval, submit, publish, or export action.
+- Extended the PC E2E fixture to return controlled content-list items.
+- Added a focused PC E2E that verifies only pending-review content appears, approved content is filtered out, and no generate/image/rewrite/publishing calls occur.
+- Extended `scripts/verify_project.py` contracts for the PC read-only queue and E2E.
+
+### Verification
+
+```text
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx --version
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC content page shows a read-only pending review queue" --project=chromium
+cd frontend && npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+All checks passed.
+
+Evidence:
+
+- The focused PC Playwright test passed and confirmed the read-only queue shows one `review_pending` item while filtering an `approved` item.
+- The same E2E confirmed zero content generation, image generation, rewrite, or publishing-like requests.
+- Frontend typecheck and production build passed.
+- Project verifier passed and now checks the PC queue UI plus E2E contracts.
+- `git diff --check` passed with only the existing CRLF-to-LF normalization warning for the touched TSX file.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 23/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 5/5
+- Total: 92/100
+
+### Result
+
+Kept. PC operators now have a visible pending-review queue without any publishing shortcut, aligning PC visibility with the mobile review workflow and backend lifecycle guard.
+
+### Remaining risk
+
+- The PC queue is intentionally read-only; actual approval/change-request actions still live on mobile.
+- A later loop can add PC decision actions only if it includes the same backend lifecycle/error E2E coverage.
+
+### Next candidate loop
+
+- Add screenshot artifacts for lifecycle warning surfaces, or inspect PC read-only queue empty/error states.

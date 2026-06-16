@@ -46,11 +46,20 @@ const E2E_PC_SOURCE_LOGO_PRICE_CONTENT_ID = 8916;
 const E2E_MOBILE_RANKING_PROGRAMS_CONTENT_ID = 8917;
 const E2E_PC_RANKING_PROGRAMS_CONTENT_ID = 8918;
 const E2E_MOBILE_PUBLISHED_STATUS_CONTENT_ID = 8919;
+const E2E_PC_REVIEW_QUEUE_CONTENT_ID = 8920;
+const E2E_PC_REVIEW_QUEUE_APPROVED_CONTENT_ID = 8921;
 
 type JsonPayload = Record<string, unknown>;
 
+type PcContentListFixtureItem = {
+  contentId: number;
+  preset: GenerationTopicPreset;
+  status: string;
+};
+
 type MobileGenerationFixtureOptions = {
   contentId?: number;
+  contentListItems?: PcContentListFixtureItem[];
   contentStatus?: string;
   failContent?: boolean;
   failContentDetail?: string;
@@ -490,6 +499,7 @@ async function mockPcGenerationFixture(
   preset: GenerationTopicPreset,
   {
     contentId = E2E_PC_GENERATED_CONTENT_ID,
+    contentListItems = [],
     contentStatus = "draft",
     failContent = false,
     failContentDetail,
@@ -511,6 +521,20 @@ async function mockPcGenerationFixture(
   const tags = parseTagText(preset.tags);
   const generatedTags = responseTags ?? tags;
   const sourceContext = buildE2eSourceContext(preset, preset.desktopLabel);
+  const contentList = contentListItems.map((item, index) => ({
+    body: [
+      `PC 待审核队列夹具：${item.preset.topic}`,
+      `这条内容服务于${item.preset.audience}，只用于验证人工确认前的只读队列。`,
+      "不会自动发布，也不会提交审核结论。"
+    ].join("\n\n"),
+    created_at: `2026-06-16T00:0${index}:00.000Z`,
+    id: item.contentId,
+    platform: "xiaohongshu",
+    source_context: buildE2eSourceContext(item.preset, item.preset.desktopLabel),
+    status: item.status,
+    tags: parseTagText(item.preset.tags),
+    title: item.preset.topic
+  }));
 
   await page.route("**/api/workspace/provider-status", async (route) => {
     requests.providerStatus += 1;
@@ -523,7 +547,7 @@ async function mockPcGenerationFixture(
   await page.route(/\/api\/content\/list(?:\?|$)/, async (route) => {
     requests.contentList += 1;
     await route.fulfill({
-      body: JSON.stringify([]),
+      body: JSON.stringify(contentList),
       contentType: "application/json",
       status: 200
     });
@@ -1931,6 +1955,53 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("mobile-review-card")).toHaveCount(1);
     await expect(page.getByTestId("mobile-review-card").first()).toContainText(preset.topic);
     expect(reviewRequests.forbiddenPublishing).toEqual([]);
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("PC content page shows a read-only pending review queue", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const acceptedLogin = createLoginInput();
+    const pendingPreset = requireTopicPreset("timeline-main");
+    const approvedPreset = requireTopicPreset("sales-main");
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockPcGenerationFixture(page, pendingPreset, {
+      contentListItems: [
+        {
+          contentId: E2E_PC_REVIEW_QUEUE_CONTENT_ID,
+          preset: pendingPreset,
+          status: "review_pending"
+        },
+        {
+          contentId: E2E_PC_REVIEW_QUEUE_APPROVED_CONTENT_ID,
+          preset: approvedPreset,
+          status: "approved"
+        }
+      ]
+    });
+
+    await page.goto(`${BASE_URL}/?theme=mint&tab=content&project=postgraduate-phd`);
+    await expect(page.getByTestId("pc-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("pc-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("pc-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("pc-login-submit").click();
+
+    const reviewQueue = page.getByTestId("pc-review-queue");
+    await expect(reviewQueue).toBeVisible();
+    await expect(page.getByTestId("pc-review-queue-count")).toContainText("1");
+    await expect(page.getByTestId(`pc-review-queue-card-${E2E_PC_REVIEW_QUEUE_CONTENT_ID}`)).toContainText(
+      pendingPreset.topic
+    );
+    await expect(reviewQueue).toContainText("只读预览，不会自动发布");
+    await expect(reviewQueue).not.toContainText(approvedPreset.topic);
+
+    await page.getByTestId(`pc-review-queue-card-${E2E_PC_REVIEW_QUEUE_CONTENT_ID}`).click();
+    await expect(page.getByTestId("draft-history-card").filter({ hasText: pendingPreset.topic })).toBeVisible();
+
+    expect(generationRequests.contentList).toBeGreaterThan(0);
+    expect(generationRequests.contentGenerate).toHaveLength(0);
+    expect(generationRequests.imageGenerate).toHaveLength(0);
+    expect(generationRequests.rewrite).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 

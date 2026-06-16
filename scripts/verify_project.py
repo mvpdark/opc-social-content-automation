@@ -1729,6 +1729,42 @@ def validate_content_production_contract() -> int:
         if snippet not in e2e_text:
             raise SystemExit(f"Missing mobile review E2E contract: {snippet}")
 
+    pc_review_queue_contracts = [
+        (
+            workspace_text,
+            [
+                'const pcReviewQueueStatuses = new Set(["draft", "rewritten", "review_pending"]);',
+                "function isPcReviewQueueCandidate",
+                "function PcReviewQueuePanel",
+                'data-testid="pc-review-queue"',
+                'data-testid="pc-review-queue-count"',
+                "只读查看待人工确认草稿；这里不会提交审核、发布或外发内容。",
+            ],
+            "PC read-only review queue UI",
+        ),
+        (
+            e2e_text,
+            [
+                "PC content page shows a read-only pending review queue",
+                "E2E_PC_REVIEW_QUEUE_CONTENT_ID",
+                "E2E_PC_REVIEW_QUEUE_APPROVED_CONTENT_ID",
+                "contentListItems:",
+                'status: "review_pending"',
+                'status: "approved"',
+                'page.getByTestId("pc-review-queue-count")).toContainText("1")',
+                "expect(generationRequests.contentGenerate).toHaveLength(0)",
+                "expect(generationRequests.imageGenerate).toHaveLength(0)",
+                "expect(generationRequests.forbiddenPublishing).toEqual([])",
+            ],
+            "PC read-only review queue E2E",
+        ),
+    ]
+    for text, snippets, contract_name in pc_review_queue_contracts:
+        for snippet in snippets:
+            total += 1
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
+
     pc_multi_topic_e2e_contracts = [
         "runPcTopicAlignmentScenario",
         "E2E_PC_GENERATED_CONTENT_ID",
