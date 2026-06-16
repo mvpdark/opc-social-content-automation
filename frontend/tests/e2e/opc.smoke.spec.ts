@@ -48,6 +48,7 @@ const E2E_PC_RANKING_PROGRAMS_CONTENT_ID = 8918;
 const E2E_MOBILE_PUBLISHED_STATUS_CONTENT_ID = 8919;
 const E2E_PC_REVIEW_QUEUE_CONTENT_ID = 8920;
 const E2E_PC_REVIEW_QUEUE_APPROVED_CONTENT_ID = 8921;
+const E2E_MOBILE_DRAFT_HISTORY_RETRY_CONTENT_ID = 8922;
 
 type JsonPayload = Record<string, unknown>;
 
@@ -73,9 +74,11 @@ type MobileGenerationFixtureOptions = {
 };
 
 type MobileGenerationFixtureRequests = {
+  contentList: number;
   contentGenerate: JsonPayload[];
   forbiddenPublishing: string[];
   imageGenerate: JsonPayload[];
+  releaseDraftHistoryFailures: () => void;
   sourcePreview: JsonPayload[];
 };
 
@@ -288,23 +291,45 @@ async function mockMobileGenerationFixture(
   preset: GenerationTopicPreset,
   {
     contentId = E2E_GENERATED_CONTENT_ID,
+    contentListItems = [],
     contentStatus = "draft",
     failContent = false,
     failContentDetail,
     failCover = false,
+    failDraftHistory = false,
+    failDraftHistoryUntilReleased = false,
     failSourcePreview = false,
     responseTags
   }: MobileGenerationFixtureOptions = {}
 ) {
+  let draftHistoryFailuresReleased = false;
   const requests: MobileGenerationFixtureRequests = {
+    contentList: 0,
     contentGenerate: [],
     forbiddenPublishing: [],
     imageGenerate: [],
+    releaseDraftHistoryFailures: () => {
+      draftHistoryFailuresReleased = true;
+    },
     sourcePreview: []
   };
   const tags = parseTagText(preset.tags);
   const generatedTags = responseTags ?? tags;
   const sourceContext = buildE2eSourceContext(preset, preset.mobileLabel);
+  const contentList = contentListItems.map((item, index) => ({
+    body: [
+      `E2E 移动端历史草稿：${item.preset.topic}`,
+      `这条草稿服务于 ${item.preset.audience}，只用于验证历史读取恢复。`,
+      "不会自动发布，也不会提交审核结论。"
+    ].join("\n\n"),
+    created_at: `2026-06-16T00:0${index}:00.000Z`,
+    id: item.contentId,
+    platform: "xiaohongshu",
+    source_context: buildE2eSourceContext(item.preset, item.preset.mobileLabel),
+    status: item.status,
+    tags: parseTagText(item.preset.tags),
+    title: item.preset.topic
+  }));
 
   await page.route(/\/api\/content\/source-preview(?:\?|$)/, async (route) => {
     requests.sourcePreview.push(readJsonPayload(route.request().postData()));
@@ -323,8 +348,17 @@ async function mockMobileGenerationFixture(
     });
   });
   await page.route(/\/api\/content\/list(?:\?|$)/, async (route) => {
+    requests.contentList += 1;
+    if (failDraftHistory || (failDraftHistoryUntilReleased && !draftHistoryFailuresReleased)) {
+      await route.fulfill({
+        body: JSON.stringify({ detail: "E2E mobile draft history unavailable." }),
+        contentType: "application/json",
+        status: 503
+      });
+      return;
+    }
     await route.fulfill({
-      body: JSON.stringify([]),
+      body: JSON.stringify(contentList),
       contentType: "application/json",
       status: 200
     });
@@ -1203,6 +1237,52 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByText("会先生成文案，再自动生成封面图；不会自动发布。")).toBeVisible();
     await expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
     expect(generationRequests).toEqual([]);
+  });
+
+  test("mobile draft history read error is recoverable without generation calls", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const acceptedLogin = createLoginInput();
+    const preset = requireTopicPreset("timeline-main");
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockMobileGenerationFixture(page, preset, {
+      failDraftHistoryUntilReleased: true,
+      contentListItems: [
+        {
+          contentId: E2E_MOBILE_DRAFT_HISTORY_RETRY_CONTENT_ID,
+          preset,
+          status: "draft"
+        }
+      ]
+    });
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=create`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+    await page.getByTestId("mobile-creation-project-postgraduate-phd").click();
+
+    await expect(page.getByTestId("mobile-draft-history-error")).toContainText(
+      "E2E mobile draft history unavailable."
+    );
+    await expect(
+      page.getByTestId(`mobile-draft-history-card-${E2E_MOBILE_DRAFT_HISTORY_RETRY_CONTENT_ID}`)
+    ).toHaveCount(0);
+
+    generationRequests.releaseDraftHistoryFailures();
+    await page.getByTestId("mobile-draft-history-retry").click();
+
+    await expect(
+      page.getByTestId(`mobile-draft-history-card-${E2E_MOBILE_DRAFT_HISTORY_RETRY_CONTENT_ID}`)
+    ).toContainText(preset.topic);
+    await expect(page.getByTestId("mobile-draft-history-error")).toHaveCount(0);
+
+    expect(generationRequests.contentList).toBeGreaterThan(1);
+    expect(generationRequests.sourcePreview).toHaveLength(0);
+    expect(generationRequests.contentGenerate).toHaveLength(0);
+    expect(generationRequests.imageGenerate).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 
   test("mobile recommended topic keeps audience and tags aligned", async ({ page }) => {

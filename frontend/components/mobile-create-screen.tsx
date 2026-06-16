@@ -137,6 +137,8 @@ export function CreateScreen({
   const [sourcePreviewBusy, setSourcePreviewBusy] = useState(false);
   const [sourcePreviewError, setSourcePreviewError] = useState<string | null>(null);
   const [draftHistory, setDraftHistory] = useState<MobileDraftHistoryItem[]>([]);
+  const [draftHistoryError, setDraftHistoryError] = useState<string | null>(null);
+  const [draftHistoryReloadKey, setDraftHistoryReloadKey] = useState(0);
   const [selectedDraftIds, setSelectedDraftIds] = useState<number[]>([]);
   const [draftPreview, setDraftPreview] = useState<DraftPreviewState>(defaultMobileDraftPreview);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -215,6 +217,7 @@ export function CreateScreen({
   }
 
   function syncDraftIntoHistory(content: GeneratedContent, cover: GeneratedImageAsset | null) {
+    setDraftHistoryError(null);
     const savedAt = content.created_at ?? new Date().toISOString();
     let normalized: MobileDraftHistoryItem[] = [];
     setDraftHistory((currentItems) => {
@@ -280,6 +283,12 @@ export function CreateScreen({
   function clearMobileSourceEvidence() {
     setSourceContext(null);
     setSourcePreviewError(null);
+  }
+
+  function retryMobileDraftHistory() {
+    setDraftHistoryError(null);
+    setDraftHistoryReloadKey((current) => current + 1);
+    onAction("正在重新读取草稿历史。");
   }
 
   function updateMobileTopicAndAutoContext(nextTopic: string) {
@@ -585,11 +594,14 @@ export function CreateScreen({
       try {
         const response = await fetch(`${apiBase}/content/list?platform=${platform}`);
         if (!response.ok) {
-          return;
+          throw new Error(await readApiError(response, "草稿历史读取失败。"));
         }
         const data: unknown = await response.json();
         if (!Array.isArray(data)) {
-          return;
+          throw new Error("草稿历史格式异常，请稍后重试。");
+        }
+        if (active) {
+          setDraftHistoryError(null);
         }
 
         const deletedDraftIds = readStoredDeletedDraftIds();
@@ -638,7 +650,10 @@ export function CreateScreen({
           void hydrateMissingHistoryCovers(normalized);
           void loadLatestCover(latestContent.id);
         }
-      } catch (_error) {
+      } catch (error) {
+        if (active) {
+          setDraftHistoryError(error instanceof Error ? error.message : "草稿历史读取失败。");
+        }
         // The generate action below remains usable even if history cannot be loaded.
       }
     }
@@ -693,7 +708,7 @@ export function CreateScreen({
         window.clearTimeout(coverHydrationRetryTimer);
       }
     };
-  }, [platform, onAction]);
+  }, [platform, onAction, draftHistoryReloadKey]);
 
   useEffect(() => {
     return () => {
@@ -1364,9 +1379,11 @@ export function CreateScreen({
 
       <DraftHistoryCarousel
         activeContentId={generatedContentMatchesCurrentInputs ? generatedContent?.id ?? null : null}
+        error={draftHistoryError}
         items={draftHistory}
         onLongPress={beginDraftSelection}
         onOpen={openOrToggleDraftHistoryItem}
+        onRetry={retryMobileDraftHistory}
         onToggleSelection={toggleDraftSelection}
         selectedDraftIds={selectedDraftIds}
         selectionMode={selectionMode}

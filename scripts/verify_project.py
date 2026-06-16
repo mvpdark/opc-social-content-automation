@@ -1656,6 +1656,55 @@ def validate_content_production_contract() -> int:
         if snippet not in e2e_text:
             raise SystemExit(f"Missing custom topic E2E contract: {snippet}")
 
+    mobile_draft_history_error_contracts = [
+        (
+            mobile_create_text,
+            [
+                "draftHistoryError",
+                "draftHistoryReloadKey",
+                "retryMobileDraftHistory",
+                'readApiError(response, "草稿历史读取失败。")',
+                "草稿历史格式异常，请稍后重试。",
+                "setDraftHistoryError(error instanceof Error ? error.message : \"草稿历史读取失败。\")",
+                "onRetry={retryMobileDraftHistory}",
+            ],
+            "mobile draft-history read-error state",
+        ),
+        (
+            mobile_draft_history_text,
+            [
+                'data-testid="mobile-draft-history-error"',
+                'data-testid="mobile-draft-history-retry"',
+                "草稿历史读取失败",
+                "这不会触发生成、改写、确认或发布",
+                "重新读取草稿",
+            ],
+            "mobile draft-history read-error UI",
+        ),
+        (
+            e2e_text,
+            [
+                "mobile draft history read error is recoverable without generation calls",
+                "E2E_MOBILE_DRAFT_HISTORY_RETRY_CONTENT_ID",
+                "failDraftHistoryUntilReleased: true",
+                "E2E mobile draft history unavailable.",
+                "generationRequests.releaseDraftHistoryFailures()",
+                'page.getByTestId("mobile-draft-history-retry").click()',
+                "expect(generationRequests.contentList).toBeGreaterThan(1)",
+                "expect(generationRequests.sourcePreview).toHaveLength(0)",
+                "expect(generationRequests.contentGenerate).toHaveLength(0)",
+                "expect(generationRequests.imageGenerate).toHaveLength(0)",
+                "expect(generationRequests.forbiddenPublishing).toEqual([])",
+            ],
+            "mobile draft-history read-error E2E",
+        ),
+    ]
+    for text, snippets, contract_name in mobile_draft_history_error_contracts:
+        for snippet in snippets:
+            total += 1
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
+
     mobile_multi_topic_e2e_contracts = [
         "runMobileTopicAlignmentScenario",
         "E2E_MOBILE_SALES_TOPIC_CONTENT_ID",

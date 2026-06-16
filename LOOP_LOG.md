@@ -5737,3 +5737,71 @@ Kept. PC operators now get a visible, recoverable draft-history read failure whi
 ### Next candidate loop
 
 - Add a mobile-side history/read-error affordance or broaden E2E around source-preview failures for current-fact topics.
+
+## Loop 82 - Mobile draft history read-error state
+
+Date: 2026-06-16
+
+### Observation
+
+The PC draft-history path now exposes a visible read failure and retry, but the mobile creation page still silently ignores `/content/list?platform=...` failures while showing cached or empty draft history. That can make a mobile operator think there are no drafts when the history API is unavailable.
+
+### Hypothesis
+
+If the mobile draft-history carousel gets its own read-error state and retry action, then mobile operators can recover history loading without triggering generation, image generation, rewrite, review, or publishing calls.
+
+### Patch
+
+- Added `draftHistoryError` and `draftHistoryReloadKey` to the mobile creation screen.
+- Changed mobile `/content/list?platform=...` history failures from silent fallback into a visible, recoverable history error while preserving cached/local drafts.
+- Added a mobile draft-history error card and retry button that explicitly says it does not trigger generation, rewrite, confirmation, or publishing.
+- Extended the mobile E2E fixture to simulate draft-history failures and release them independently.
+- Added focused Chromium E2E coverage for mobile history failure/retry without generation, image, source-preview, or publishing calls.
+- Updated `PROJECT_MAP.md` and `scripts/verify_project.py` so the mobile history retry contract is documented and guarded.
+
+### Verification
+
+```text
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx --version
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile draft history read error is recoverable without generation calls" --project=chromium
+cd frontend && npm run build
+git diff --check
+```
+
+All checks passed.
+
+Evidence:
+
+- TypeScript check passed through `npm run lint`.
+- Project verifier passed with `content_production_contract_checked=1302`.
+- `npx` is available at `11.12.1`.
+- The focused Chromium E2E passed: `mobile draft history read error is recoverable without generation calls`.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed with only the existing CRLF-to-LF normalization warnings for the touched mobile TSX files.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 23/30
+- Correctness: 19/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 5/5
+- Total: 90/100
+
+### Result
+
+Kept. Mobile operators now get a visible, recoverable draft-history read failure, and retry remains a read-only history action with no generation or publishing-like side effects.
+
+### Remaining risk
+
+- The mobile history retry reloads `/content/list` for the active platform; it does not add a dedicated mobile history endpoint.
+- This loop did not change review approval/change-request flows.
+
+### Next candidate loop
+
+- Add a narrow mobile E2E around review queue read failure recovery, or inspect stale demo metrics in the mobile home dashboard.

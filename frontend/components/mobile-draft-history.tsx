@@ -105,17 +105,21 @@ ${titleSvg}
 
 export function DraftHistoryCarousel({
   activeContentId,
+  error,
   items,
   onLongPress,
   onOpen,
+  onRetry,
   onToggleSelection,
   selectedDraftIds,
   selectionMode
 }: {
   activeContentId: number | null;
+  error: string | null;
   items: MobileDraftHistoryItem[];
   onLongPress: (item: MobileDraftHistoryItem) => void;
   onOpen: (item: MobileDraftHistoryItem) => void;
+  onRetry: () => void;
   onToggleSelection: (item: MobileDraftHistoryItem) => void;
   selectedDraftIds: number[];
   selectionMode: boolean;
@@ -134,10 +138,37 @@ export function DraftHistoryCarousel({
             横向滑动浏览，长按多选
           </div>
         </div>
-        <span className="rounded-full bg-[#e7f2ea]/[0.90] px-2.5 py-1 text-xs font-black text-moss">
-          {selectionMode ? `已选 ${selectedDraftIds.length}` : items.length ? `${items.length} 篇` : "暂无"}
+        <span
+          className={[
+            "rounded-full px-2.5 py-1 text-xs font-black",
+            error ? "bg-[#fff4f6] text-[#a2152c]" : "bg-[#e7f2ea]/[0.90] text-moss"
+          ].join(" ")}
+        >
+          {error ? "读取失败" : selectionMode ? `已选 ${selectedDraftIds.length}` : items.length ? `${items.length} 篇` : "暂无"}
         </span>
       </div>
+
+      {error ? (
+        <div
+          className="mb-3 rounded-[22px] border border-[#ffcfda] bg-[#fff4f6] px-3 py-3 text-xs font-bold leading-5 text-[#a2152c]"
+          data-testid="mobile-draft-history-error"
+          role="alert"
+        >
+          <div>草稿历史读取失败</div>
+          <p className="mt-1 text-[#6f5960]">{error}</p>
+          <p className="mt-1 text-[#6f5960]">
+            这不会触发生成、改写、确认或发布；可以重新读取历史草稿。
+          </p>
+          <button
+            className="mt-3 h-9 rounded-full bg-[#111111] px-4 text-xs font-black text-white active:scale-[0.99]"
+            data-testid="mobile-draft-history-retry"
+            onClick={onRetry}
+            type="button"
+          >
+            重新读取草稿
+          </button>
+        </div>
+      ) : null}
 
       {items.length ? (
         <div

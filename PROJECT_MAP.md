@@ -32,6 +32,7 @@ Last updated: 2026-06-16
 - Login calls the backend endpoint `/api/auth/mobile-login`.
 - Passwords should only be submitted to the login request and must not be persisted.
 - PC pending-review queue reads a dedicated read-only endpoint: `/api/content/review-queue`.
+- Mobile creation draft history reads `/api/content/list` and has a visible retry state when history loading fails.
 
 ## Data Storage
 
