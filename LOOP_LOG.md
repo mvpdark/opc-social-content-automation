@@ -4754,3 +4754,66 @@ Kept. Mobile custom fact-topic preview-copy smoke coverage now verifies the actu
 ### Next candidate loop
 
 - Add focused visual QA for one mobile custom fact-topic preview viewport, or continue hardening source-evidence display for fact-sensitive topics.
+
+## Loop 67 - Mobile custom preview viewport guard
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 66 protects the mobile custom fact-topic copied payload and manual fallback text. The same path still lacks a focused mobile viewport-fit assertion after the draft preview opens, so a long custom market-data topic could regress into horizontal overflow without being caught.
+
+### Hypothesis
+
+If the mobile custom fact-topic E2E checks the opened draft preview editor, cover image, checklist, and bottom copy actions against the 390px viewport, then the custom source-required preview flow will catch layout regressions before users see clipped preview or copy controls.
+
+### Patch
+
+- Added a viewport-fit assertion to the mobile custom fact-topic draft preview after the preview opens.
+- Covered the preview editor, cover image, prepublish checklist, copy button, and preview-link action in the 390px viewport.
+- Extended the verifier contract so the mobile custom preview viewport guard cannot be removed silently.
+
+### Verification
+
+```text
+npm run lint
+python scripts\verify_project.py --keep-cache
+npx --version
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile one-click generation keeps custom fact topic aligned" --project=chromium
+npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+All checks passed.
+
+Evidence:
+
+- The focused Playwright run passed the mobile custom fact-topic preview-copy test with the new viewport-fit guard.
+- The custom market-data topic preview now has to keep the editor, generated cover, checklist, copy action, and preview-link action within the 390px viewport.
+- The verifier now fails if the custom preview viewport guard or its key targets are removed.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 18/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 5/5
+- Total: 85/100
+
+### Result
+
+Kept. Mobile custom source-required draft preview coverage now protects basic viewport fit for the preview surface and bottom copy actions.
+
+### Remaining risk
+
+- This checks layout bounds but does not create a screenshot baseline for typography or visual theme details.
+- The guard uses a 390px viewport; 360px and 414px still rely on broader mobile shell and source-evidence checks.
+
+### Next candidate loop
+
+- Add a 360px viewport guard for one source-required mobile preview path, or continue hardening review-page source evidence visibility.

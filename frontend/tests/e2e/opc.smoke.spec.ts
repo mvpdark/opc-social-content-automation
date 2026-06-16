@@ -1453,6 +1453,13 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("draft-preview-prepublish-check-human")).toContainText("待核对");
     await expect(page.getByTestId("draft-preview-copy")).toBeEnabled();
     await expect(page.getByTestId("draft-copy-preview-link")).toBeEnabled();
+    await expectNoHorizontalViewportOverflow(page, "mobile custom draft preview", [
+      { label: "editor", testId: "draft-preview-editor" },
+      { label: "cover image", testId: "draft-preview-cover-image" },
+      { label: "checklist", testId: "draft-preview-prepublish-checklist" },
+      { label: "copy action", testId: "draft-preview-copy" },
+      { label: "preview link action", testId: "draft-copy-preview-link" }
+    ]);
 
     await captureNextClipboardWrite(page);
     await page.getByTestId("draft-preview-copy").click();
