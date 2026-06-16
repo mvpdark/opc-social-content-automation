@@ -1624,6 +1624,10 @@ def validate_content_production_contract() -> int:
         "content-cover-direction-type",
         "knowledge_query: customSourceTopic",
         "target_audience: expectedAudience",
+        "captureNextClipboardWrite(page)",
+        "readCapturedClipboardText(page)",
+        "expect(copiedPreviewText).toContain(customSourceTopic)",
+        "countTextOccurrences(copiedPreviewText, `#${expectedTags[0]}`)",
         "expect(generationRequests.forbiddenPublishing).toEqual([])",
     ]
     for snippet in custom_topic_e2e_contracts:
@@ -1678,7 +1682,9 @@ def validate_content_production_contract() -> int:
         'page.getByTestId("pc-export-prepublish-check")',
         'page.getByTestId("xhs-preview-modal")',
         'page.getByTestId("pc-preview-modal-copy-button")',
-        "__opcPcPreviewCopiedText",
+        "__opcCapturedClipboardText",
+        "captureNextClipboardWrite(page)",
+        "readCapturedClipboardText(page)",
         "expect(copiedPreviewText).toContain(preset.topic)",
         "expect(copiedPreviewText).toContain(`#${expectedTags[0]}`)",
         "countTextOccurrences(copiedPreviewText, `#${expectedTags[0]}`)",

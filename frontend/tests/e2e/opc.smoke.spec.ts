@@ -107,6 +107,27 @@ function countTextOccurrences(text: string, needle: string) {
   return text.split(needle).length - 1;
 }
 
+async function captureNextClipboardWrite(page: Page) {
+  await page.evaluate(() => {
+    const windowWithCopy = window as Window & { __opcCapturedClipboardText?: string };
+    windowWithCopy.__opcCapturedClipboardText = "";
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (text: string) => {
+          windowWithCopy.__opcCapturedClipboardText = text;
+        }
+      }
+    });
+  });
+}
+
+async function readCapturedClipboardText(page: Page) {
+  return page.evaluate(
+    () => (window as Window & { __opcCapturedClipboardText?: string }).__opcCapturedClipboardText ?? ""
+  );
+}
+
 async function resetLocalAuth(page: Page) {
   await page.addInitScript(() => {
     [
@@ -860,24 +881,11 @@ async function runPcTopicAlignmentScenario(
   await expect(previewModal).toContainText("这是发布效果预览，不会自动发布");
   await expect(page.getByTestId("xhs-preview-real-cover")).toBeVisible();
 
-  await page.evaluate(() => {
-    const windowWithCopy = window as Window & { __opcPcPreviewCopiedText?: string };
-    windowWithCopy.__opcPcPreviewCopiedText = "";
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: {
-        writeText: async (text: string) => {
-          windowWithCopy.__opcPcPreviewCopiedText = text;
-        }
-      }
-    });
-  });
+  await captureNextClipboardWrite(page);
   const copyButton = page.getByTestId("pc-preview-modal-copy-button");
   await copyButton.click();
   await expect(copyButton).toContainText(/\u5df2\u590d\u5236/);
-  const copiedPreviewText = await page.evaluate(
-    () => (window as Window & { __opcPcPreviewCopiedText?: string }).__opcPcPreviewCopiedText ?? ""
-  );
+  const copiedPreviewText = await readCapturedClipboardText(page);
   expect(copiedPreviewText).toContain(preset.topic);
   expect(copiedPreviewText).toContain(`#${expectedTags[0]}`);
   expect(countTextOccurrences(copiedPreviewText, `#${expectedTags[0]}`)).toBe(1);
@@ -2083,9 +2091,14 @@ test.describe("OPC smoke coverage", () => {
     await expect(previewModal).toContainText(`#${expectedTags[0]}`);
     await expect(page.getByTestId("xhs-preview-real-cover")).toBeVisible();
 
+    await captureNextClipboardWrite(page);
     const copyButton = page.getByTestId("pc-preview-modal-copy-button");
     await copyButton.click();
     await expect(copyButton).toContainText(/\u5df2\u590d\u5236/);
+    const copiedPreviewText = await readCapturedClipboardText(page);
+    expect(copiedPreviewText).toContain(customSourceTopic);
+    expect(copiedPreviewText).toContain(`#${expectedTags[0]}`);
+    expect(countTextOccurrences(copiedPreviewText, `#${expectedTags[0]}`)).toBe(1);
 
     expect(generationRequests.providerStatus).toBeGreaterThan(0);
     expect(generationRequests.contentList).toBeGreaterThan(0);

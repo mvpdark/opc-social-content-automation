@@ -4625,3 +4625,67 @@ Kept. PC preview-copy smoke coverage now verifies the actual copied text stays a
 ### Next candidate loop
 
 - Add the same payload-level copy guard to the PC custom fact-topic preview path, or inspect mobile copy fallback behavior for custom fact topics.
+
+## Loop 65 - PC custom preview copy payload guard
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 64 added payload-level clipboard assertions to the shared PC multi-topic preview-copy helper. The PC custom fact-topic flow still only checked visible preview alignment and the copied button state, leaving actual copied text unchecked for market-data custom topics.
+
+### Hypothesis
+
+If the PC custom fact-topic preview path shares the same clipboard capture helper and asserts the copied payload contains the custom topic and a deduplicated first tag, then custom source-required desktop topics will get the same copy-flow regression guard as preset topics.
+
+### Patch
+
+- Extracted the PC preview clipboard capture into shared E2E helpers.
+- Reused the helpers in the PC multi-topic preview path.
+- Added payload-level copy assertions to the PC custom fact-topic preview path.
+- Extended the verifier contract so the custom fact-topic copy payload guard cannot be removed silently.
+
+### Verification
+
+```text
+npm run lint
+python scripts\verify_project.py --keep-cache
+npx --version
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "custom fact topic aligned" --project=chromium
+npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+All checks passed.
+
+Evidence:
+
+- The focused Playwright run passed 2 tests covering mobile and PC custom fact-topic generation.
+- The PC custom fact-topic preview copy now has to contain the custom market-data topic and a deduplicated first tag.
+- The verifier now fails if the shared clipboard capture helper or custom copied-payload assertions are removed.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 19/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 4/5
+- Total: 87/100
+
+### Result
+
+Kept. PC custom fact-topic preview-copy smoke coverage now verifies the actual copied text stays aligned with the custom source-required topic and avoids duplicate first-tag output.
+
+### Remaining risk
+
+- Mobile custom fact-topic copy already checks the manual copy text after copy, but it does not use the same clipboard interception helper.
+- Real browser clipboard permission changes may still need occasional manual spot checks.
+
+### Next candidate loop
+
+- Inspect mobile custom fact-topic copy fallback behavior, or add a screenshot-level source evidence visual QA for one focused viewport.
