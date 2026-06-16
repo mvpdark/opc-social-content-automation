@@ -1778,6 +1778,42 @@ def validate_content_production_contract() -> int:
         if snippet not in e2e_text:
             raise SystemExit(f"Missing mobile review E2E contract: {snippet}")
 
+    mobile_review_queue_error_contracts = [
+        (
+            mobile_review_text,
+            [
+                "queueError",
+                "setQueueError(null)",
+                "setQueueError(message)",
+                'data-testid="mobile-review-queue-error"',
+                'data-testid="mobile-review-queue-retry"',
+                "待确认队列读取失败",
+                "这只会重新读取待人工确认草稿；不会生成、改写、确认或发布",
+                "重新读取队列",
+            ],
+            "mobile review queue read-error UI",
+        ),
+        (
+            e2e_text,
+            [
+                "mobile review queue read error is recoverable without publishing",
+                "failContentListUntilReleased: true",
+                "E2E mobile review queue unavailable.",
+                "reviewRequests.releaseContentListFailures()",
+                'page.getByTestId("mobile-review-queue-retry").click()',
+                "expect(reviewRequests.contentList).toBeGreaterThan(1)",
+                "expect(reviewRequests.reviews).toHaveLength(0)",
+                "expect(reviewRequests.forbiddenPublishing).toEqual([])",
+            ],
+            "mobile review queue read-error E2E",
+        ),
+    ]
+    for text, snippets, contract_name in mobile_review_queue_error_contracts:
+        for snippet in snippets:
+            total += 1
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
+
     pc_review_queue_contracts = [
         (
             workspace_text,

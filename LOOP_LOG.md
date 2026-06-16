@@ -5805,3 +5805,71 @@ Kept. Mobile operators now get a visible, recoverable draft-history read failure
 ### Next candidate loop
 
 - Add a narrow mobile E2E around review queue read failure recovery, or inspect stale demo metrics in the mobile home dashboard.
+
+## Loop 83 - Mobile review queue read-error recovery
+
+Date: 2026-06-16
+
+### Observation
+
+The mobile review tab can already refresh the pending-review queue, but a `/content/list?platform=xiaohongshu` read failure is only reflected in the generic status text. There is no dedicated error affordance or E2E proving that retrying the review queue stays read-only and does not submit, generate, or publish anything.
+
+### Hypothesis
+
+If the mobile review queue shows a dedicated read-error card with a retry action, then operators can recover the human-review queue safely while preserving the no-automated-publishing boundary.
+
+### Patch
+
+- Added `queueError` state to the mobile review screen and clear it on successful queue reads.
+- Added a dedicated mobile review queue read-error card with an explicit retry button.
+- Made the error copy clarify that retry only rereads pending human-review drafts and does not generate, rewrite, confirm, or publish.
+- Extended the mobile review E2E fixture so `/content/list` can fail until the test releases it.
+- Added focused Chromium E2E coverage for review queue read failure recovery without review submission or publishing-like calls.
+- Updated `PROJECT_MAP.md` and `scripts/verify_project.py` so the mobile review queue error contract is documented and guarded.
+
+### Verification
+
+```text
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx --version
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile review queue read error is recoverable without publishing" --project=chromium
+cd frontend && npm run build
+git diff --check
+```
+
+All checks passed.
+
+Evidence:
+
+- TypeScript check passed through `npm run lint`.
+- Project verifier passed with `content_production_contract_checked=1318`.
+- `npx` is available at `11.12.1`.
+- The focused Chromium E2E passed: `mobile review queue read error is recoverable without publishing`.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 24/30
+- Correctness: 19/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 5/5
+- Total: 91/100
+
+### Result
+
+Kept. Mobile operators now get a visible, recoverable pending-review queue read failure, and retry stays a read-only queue refresh with no approval, generation, or publishing side effects.
+
+### Remaining risk
+
+- The mobile review queue still uses the shared `/content/list` read path; this loop did not add a dedicated review queue endpoint.
+- This loop did not change approval/change-request submission behavior beyond proving retry does not call it.
+
+### Next candidate loop
+
+- Inspect stale demo metrics in the mobile home dashboard, or add screenshot-backed evidence for the PC/mobile login shell.

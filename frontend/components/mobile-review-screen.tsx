@@ -286,6 +286,7 @@ export function ReviewScreen({
   const [selectedItem, setSelectedItem] = useState<MobileReviewQueueItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyContentId, setBusyContentId] = useState<number | null>(null);
+  const [queueError, setQueueError] = useState<string | null>(null);
   const [status, setStatus] = useState("正在读取待确认草稿...");
 
   useEffect(() => {
@@ -301,10 +302,12 @@ export function ReviewScreen({
 
   async function loadReviewQueue(announce = false) {
     setLoading(true);
+    setQueueError(null);
     setStatus("正在读取待确认草稿...");
     try {
       const nextItems = await fetchMobileReviewQueue(credentials);
       setItems(nextItems);
+      setQueueError(null);
       onPendingCountChange(nextItems.length);
       const message = nextItems.length
         ? `已加载 ${nextItems.length} 篇待确认草稿。`
@@ -317,6 +320,7 @@ export function ReviewScreen({
       const message = error instanceof Error ? error.message : "待确认草稿读取失败。";
       setItems([]);
       onPendingCountChange(0);
+      setQueueError(message);
       setStatus(message);
       if (announce) {
         onAction(message);
@@ -392,7 +396,7 @@ export function ReviewScreen({
       <MobilePanel
         action={
           <span className="rounded-full bg-[#e7f2ea]/[0.90] px-2.5 py-1 text-xs font-black text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]">
-            {loading ? "读取中" : `${items.length} 篇`}
+            {queueError ? "读取失败" : loading ? "读取中" : `${items.length} 篇`}
           </span>
         }
         title="待确认草稿"
@@ -400,6 +404,28 @@ export function ReviewScreen({
         <p className="mb-3 text-xs font-semibold leading-5 text-muted" data-testid="mobile-review-status">
           {status}
         </p>
+        {queueError ? (
+          <div
+            className="mb-3 rounded-[22px] border border-[#ffcfda] bg-[#fff4f6] px-3 py-3 text-xs font-bold leading-5 text-[#a2152c]"
+            data-testid="mobile-review-queue-error"
+            role="alert"
+          >
+            <div>待确认队列读取失败</div>
+            <p className="mt-1 text-[#6f5960]">{queueError}</p>
+            <p className="mt-1 text-[#6f5960]">
+              这只会重新读取待人工确认草稿；不会生成、改写、确认或发布。
+            </p>
+            <button
+              className="mt-3 h-9 rounded-full bg-[#111111] px-4 text-xs font-black text-white active:scale-[0.99] disabled:opacity-60"
+              data-testid="mobile-review-queue-retry"
+              disabled={loading}
+              onClick={() => void loadReviewQueue(true)}
+              type="button"
+            >
+              重新读取队列
+            </button>
+          </div>
+        ) : null}
         {items.length ? (
           <div className="space-y-3" data-testid="mobile-review-list">
             {items.map((item) => (

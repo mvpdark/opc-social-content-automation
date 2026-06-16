@@ -99,6 +99,8 @@ type MobileReviewFixtureItem = {
 };
 
 type MobileReviewFixtureOptions = {
+  failContentList?: boolean;
+  failContentListUntilReleased?: boolean;
   failReviewForContentIds?: number[];
 };
 
@@ -106,6 +108,7 @@ type MobileReviewFixtureRequests = {
   contentList: number;
   forbiddenPublishing: string[];
   imageList: number[];
+  releaseContentListFailures: () => void;
   reviewUrls: string[];
   reviews: JsonPayload[];
 };
@@ -440,12 +443,20 @@ async function mockMobileGenerationFixture(
 async function mockMobileReviewQueueFixture(
   page: Page,
   items: MobileReviewFixtureItem[],
-  { failReviewForContentIds = [] }: MobileReviewFixtureOptions = {}
+  {
+    failContentList = false,
+    failContentListUntilReleased = false,
+    failReviewForContentIds = []
+  }: MobileReviewFixtureOptions = {}
 ) {
+  let contentListFailuresReleased = false;
   const requests: MobileReviewFixtureRequests = {
     contentList: 0,
     forbiddenPublishing: [],
     imageList: [],
+    releaseContentListFailures: () => {
+      contentListFailuresReleased = true;
+    },
     reviewUrls: [],
     reviews: []
   };
@@ -470,6 +481,14 @@ async function mockMobileReviewQueueFixture(
 
   await page.route(/\/api\/content\/list(?:\?|$)/, async (route) => {
     requests.contentList += 1;
+    if (failContentList || (failContentListUntilReleased && !contentListFailuresReleased)) {
+      await route.fulfill({
+        body: JSON.stringify({ detail: "E2E mobile review queue unavailable." }),
+        contentType: "application/json",
+        status: 503
+      });
+      return;
+    }
     await route.fulfill({
       body: JSON.stringify(contents),
       contentType: "application/json",
@@ -2000,6 +2019,48 @@ test.describe("OPC smoke coverage", () => {
         E2E_MOBILE_REVIEW_CHANGES_CONTENT_ID
       ])
     );
+    expect(reviewRequests.forbiddenPublishing).toEqual([]);
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("mobile review queue read error is recoverable without publishing", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const acceptedLogin = createLoginInput();
+    const preset = requireTopicPreset("timeline-main");
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const reviewRequests = await mockMobileReviewQueueFixture(
+      page,
+      [
+        {
+          contentId: E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID,
+          preset,
+          status: "review_pending"
+        }
+      ],
+      { failContentListUntilReleased: true }
+    );
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=review`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+
+    await expect(page.getByTestId("mobile-review-queue-error")).toContainText(
+      "E2E mobile review queue unavailable."
+    );
+    await expect(page.getByTestId("mobile-review-card")).toHaveCount(0);
+
+    reviewRequests.releaseContentListFailures();
+    await page.getByTestId("mobile-review-queue-retry").click();
+
+    await expect(page.getByTestId("mobile-review-list")).toBeVisible();
+    await expect(page.getByTestId("mobile-review-card").first()).toContainText(preset.topic);
+    await expect(page.getByTestId("mobile-review-queue-error")).toHaveCount(0);
+
+    expect(reviewRequests.contentList).toBeGreaterThan(1);
+    expect(reviewRequests.imageList).toContain(E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID);
+    expect(reviewRequests.reviews).toHaveLength(0);
     expect(reviewRequests.forbiddenPublishing).toEqual([]);
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
