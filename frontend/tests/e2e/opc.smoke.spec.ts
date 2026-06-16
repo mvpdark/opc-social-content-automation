@@ -2076,7 +2076,10 @@ test.describe("OPC smoke coverage", () => {
   test("mobile one-click generation keeps selected source logo-price topic aligned through preview copy", async ({ page }) => {
     await runMobileTopicAlignmentScenario(page, {
       contentId: E2E_MOBILE_SOURCE_LOGO_PRICE_CONTENT_ID,
-      presetKey: "source-logo-price"
+      expectPreviewViewportFit: true,
+      expectSourceEvidenceViewportFit: true,
+      presetKey: "source-logo-price",
+      viewport: { height: 780, width: 360 }
     });
   });
 
@@ -3107,6 +3110,7 @@ test.describe("OPC smoke coverage", () => {
   test("PC one-click generation keeps selected source logo-price topic aligned through preview copy", async ({ page }) => {
     await runPcTopicAlignmentScenario(page, {
       contentId: E2E_PC_SOURCE_LOGO_PRICE_CONTENT_ID,
+      expectSourceEvidenceViewportFit: true,
       presetKey: "source-logo-price"
     });
   });

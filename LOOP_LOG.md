@@ -7315,3 +7315,73 @@ Kept. Public preview now has CI coverage for non-array image-list payloads, prov
 ### Next candidate loop
 
 - Expand one-click alignment checks to another custom current-facts topic such as official logo/price on both PC and mobile, or audit prompt/runtime labels for current-facts source requirements.
+
+## Loop 105 - Source logo-price topic viewport evidence coverage
+
+Date: 2026-06-16
+
+### Observation
+
+Recommended source logo-price topics already have PC and mobile one-click alignment tests, but they do not yet require the source evidence panel to fit the viewport the way ranking current-facts tests do. This leaves a small regression gap for a high-risk topic class that mentions official URLs, logos, and prices.
+
+### Hypothesis
+
+If the existing source logo-price PC/mobile E2E scenarios assert source evidence viewport fit, and the mobile case also runs at a narrow viewport with preview fit checks, CI will catch regressions where current-facts evidence becomes clipped or hard to review before generation/copy.
+
+### Patch
+
+- Strengthened the existing mobile source logo-price E2E to run at a 360 px viewport and assert both source evidence and preview/copy viewport fit.
+- Strengthened the existing PC source logo-price E2E to assert source evidence viewport fit before generation output is accepted.
+- Added verifier contracts and updated `PROJECT_MAP.md` to document stricter source logo-price current-facts coverage.
+
+### Verification
+
+```text
+cd frontend && npx --version
+node UTF-8 hygiene scan for touched files
+python scripts\verify_project.py --keep-cache
+cd frontend && npm run lint
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "source logo-price topic aligned" --project=chromium
+cd frontend && npm run build
+git diff --check
+git diff -- frontend\tsconfig.json
+git status --short --ignored artifacts frontend\artifacts frontend\.next-build frontend\.next
+```
+
+All final checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- Touched-file UTF-8 hygiene scan found no replacement characters or mojibake markers.
+- Project verifier passed with `content_production_contract_checked=1502`.
+- TypeScript check passed through `npm run lint`.
+- Focused Chromium E2E passed for both mobile and PC source logo-price topic alignment.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed and `frontend/tsconfig.json` had no build-generated diff.
+- Only ignored artifact/build directories are present under `artifacts/`, `frontend/.next-build/`, and `frontend/.next/`.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 18/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 83/100
+
+### Result
+
+Kept. Source logo-price current-facts recommended topics now have stronger PC/mobile CI coverage proving source evidence remains reviewable, mobile preview/copy stays within a narrow viewport, and generation still carries the selected topic, tags, cover direction, and no-publishing guard.
+
+### Remaining risk
+
+- This loop strengthens recommended source logo-price topics; custom official logo/price wording could still be covered separately if needed.
+- Screenshot/build artifacts remain ignored and are not committed.
+
+### Next candidate loop
+
+- Add a custom official logo/price current-facts topic success path, or audit prompt/runtime labels for current-facts source requirements.

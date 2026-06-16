@@ -2381,6 +2381,9 @@ def validate_content_production_contract() -> int:
         "mobile one-click generation keeps selected source logo-price topic aligned through preview copy",
         "PC one-click generation keeps selected source logo-price topic aligned through preview copy",
         "presetKey: \"source-logo-price\"",
+        "contentId: E2E_MOBILE_SOURCE_LOGO_PRICE_CONTENT_ID,\n      expectPreviewViewportFit: true,\n      expectSourceEvidenceViewportFit: true,",
+        "contentId: E2E_PC_SOURCE_LOGO_PRICE_CONTENT_ID,\n      expectSourceEvidenceViewportFit: true,",
+        "viewport: { height: 780, width: 360 }",
         "expect(generationRequests.sourcePreview).toHaveLength(1)",
         "expect(String(generationRequests.imageGenerate[0].style_notes)).toContain(preset.coverDirection)",
     ]
