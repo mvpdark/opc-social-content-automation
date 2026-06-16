@@ -66,6 +66,7 @@ Last updated: 2026-06-16
 - Mobile review queue retry smoke tests attach validated read-error and recovered-list screenshots without triggering review decisions or publishing calls.
 - One-click global ranking topic smoke tests keep source evidence, preview/copy, tags, and cover direction aligned on mobile and PC.
 - Mobile exchange-rate custom topic smoke tests require source evidence before one-click generation and keep preview/copy output aligned.
+- PC exchange-rate custom topic smoke tests require source evidence before one-click generation and keep preview/copy output aligned.
 - Mobile Xiaohongshu export buttons must label the flow as manual publishing preparation, not direct or automatic publishing.
 - Mobile Xiaohongshu export status messages must say share/download handoff still requires manual confirmation before submission.
 - Public preview invalid-link smoke tests verify `/preview/[contentId]` resolves to a clear error without content/image API calls.

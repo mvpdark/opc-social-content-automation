@@ -2384,12 +2384,18 @@ def validate_content_production_contract() -> int:
 
     exchange_rate_custom_e2e_contracts = [
         "E2E_MOBILE_EXCHANGE_RATE_TOPIC_CONTENT_ID",
+        "E2E_PC_EXCHANGE_RATE_TOPIC_CONTENT_ID",
         "mobile one-click generation keeps exchange-rate custom topic evidence aligned",
+        "PC one-click generation keeps exchange-rate custom topic evidence aligned",
         "overseas doctoral exchange rate and currency conversion check",
         "Custom mobile source verification checklist for current exchange rates and currency conversion.",
+        "Custom PC source verification checklist for current exchange rates and currency conversion.",
         "mobile exchange-rate source evidence",
+        "PC exchange-rate source evidence",
         "mobile-source-web-list",
+        "source-web-list",
         "draft-preview-prepublish-check-sources",
+        "pc-export-prepublish-check-sources",
         "expect(generationRequests.sourcePreview).toHaveLength(1)",
         "expect(generationRequests.contentGenerate).toHaveLength(1)",
         "expect(generationRequests.imageGenerate).toHaveLength(1)",

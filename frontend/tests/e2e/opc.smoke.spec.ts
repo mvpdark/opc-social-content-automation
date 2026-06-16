@@ -48,6 +48,7 @@ const E2E_PC_RANKING_PROGRAMS_CONTENT_ID = 8918;
 const E2E_MOBILE_GLOBAL_RANKING_CONTENT_ID = 8926;
 const E2E_PC_GLOBAL_RANKING_CONTENT_ID = 8927;
 const E2E_MOBILE_EXCHANGE_RATE_TOPIC_CONTENT_ID = 8928;
+const E2E_PC_EXCHANGE_RATE_TOPIC_CONTENT_ID = 8929;
 const E2E_MOBILE_PUBLISHED_STATUS_CONTENT_ID = 8919;
 const E2E_PC_REVIEW_QUEUE_CONTENT_ID = 8920;
 const E2E_PC_REVIEW_QUEUE_APPROVED_CONTENT_ID = 8921;
@@ -3199,6 +3200,120 @@ test.describe("OPC smoke coverage", () => {
     expect(generationRequests.imageGenerate[0]).toMatchObject({
       aspect_ratio: "3:4",
       content_id: E2E_PC_CUSTOM_TOPIC_CONTENT_ID,
+      template: "xiaohongshu-cover"
+    });
+    expect(String(generationRequests.imageGenerate[0].style_notes)).not.toContain(
+      requireTopicPreset("source-official-fee-check").coverDirection
+    );
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("PC one-click generation keeps exchange-rate custom topic evidence aligned", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const acceptedLogin = createLoginInput();
+    const customSourceTopic = "overseas doctoral exchange rate and currency conversion check";
+    const expectedAudience = buildCustomTopicAudience(customSourceTopic);
+    const expectedTagsText = buildCustomTopicTags(customSourceTopic);
+    const expectedTags = parseTagText(expectedTagsText);
+    const customPreset: GenerationTopicPreset = {
+      ...requireTopicPreset("source-official-fee-check"),
+      audience: expectedAudience,
+      coverDirection:
+        "Custom PC source verification checklist for current exchange rates and currency conversion.",
+      desktopHelper: "Custom exchange-rate source verification",
+      desktopLabel: "自定义",
+      key: "e2e-pc-exchange-rate-topic",
+      knowledgeQuery: customSourceTopic,
+      mobileHelper: "Custom exchange rate",
+      mobileLabel: "自定义",
+      tags: expectedTagsText,
+      topic: customSourceTopic
+    };
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockPcGenerationFixture(page, customPreset, {
+      contentId: E2E_PC_EXCHANGE_RATE_TOPIC_CONTENT_ID
+    });
+
+    await page.goto(`${BASE_URL}/?theme=mint&tab=content&project=postgraduate-phd`);
+    await expect(page.getByTestId("pc-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("pc-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("pc-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("pc-login-submit").click();
+
+    await expect(page.getByTestId("creation-project-return")).toBeVisible();
+    await expect(page.getByTestId("generation-launcher")).toBeVisible();
+    await page.getByTestId("content-topic").fill(customSourceTopic);
+    await expect(page.getByTestId("content-topic")).toHaveValue(customSourceTopic);
+    await expect(page.getByTestId("content-knowledge-query")).toHaveValue(customSourceTopic);
+    await expect(page.getByTestId("content-target-audience")).toHaveValue(expectedAudience);
+    await expect(page.getByTestId("content-tags")).toHaveValue(expectedTagsText);
+
+    await page.getByTestId("source-preview-button").click();
+    await expect(page.getByTestId("generation-source-evidence")).toBeVisible();
+    await page.getByTestId("source-knowledge-toggle").click();
+    await expect(page.getByTestId("source-knowledge-list")).toContainText(customSourceTopic);
+    await page.getByTestId("source-web-toggle").click();
+    await expect(page.getByTestId("source-web-list")).toContainText(customSourceTopic);
+    await expectNoHorizontalViewportOverflow(page, "PC exchange-rate source evidence", [
+      { label: "card", testId: "generation-source-evidence" },
+      { label: "web list", testId: "source-web-list" }
+    ]);
+
+    await page.getByTestId("start-production-button").click();
+
+    const exportCard = page.getByTestId("pc-generated-export-card");
+    await expect(exportCard).toBeVisible();
+    await expect(exportCard).toContainText(customSourceTopic);
+    await expect(exportCard).toContainText(expectedAudience);
+    await expect(page.getByTestId("pc-export-copy-button")).toBeEnabled();
+    await expect(page.getByTestId("pc-export-prepublish-check-sources")).toContainText("待核对");
+
+    const draftCard = page.getByTestId("draft-history-card").filter({ hasText: customSourceTopic }).first();
+    await expect(page.getByTestId("draft-history-strip")).toBeVisible();
+    await expect(draftCard).toBeVisible();
+    await draftCard.locator("button").first().click();
+
+    const previewModal = page.getByTestId("xhs-preview-modal");
+    await expect(previewModal).toBeVisible();
+    await expect(previewModal).toContainText(customSourceTopic);
+    await expect(previewModal).toContainText(expectedAudience);
+    await expect(previewModal).toContainText(`#${expectedTags[0]}`);
+    await expect(page.getByTestId("xhs-preview-real-cover")).toBeVisible();
+
+    await captureNextClipboardWrite(page);
+    const copyButton = page.getByTestId("pc-preview-modal-copy-button");
+    await copyButton.click();
+    await expect(copyButton).toContainText(/\u5df2\u590d\u5236/);
+    const copiedPreviewText = await readCapturedClipboardText(page);
+    expect(copiedPreviewText).toContain(customSourceTopic);
+    expect(copiedPreviewText).toContain(`#${expectedTags[0]}`);
+
+    expect(generationRequests.providerStatus).toBeGreaterThan(0);
+    expect(generationRequests.contentList).toBeGreaterThan(0);
+    expect(generationRequests.sourcePreview).toHaveLength(1);
+    expect(generationRequests.contentGenerate).toHaveLength(1);
+    expect(generationRequests.imageGenerate).toHaveLength(1);
+    expect(generationRequests.rewrite).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.sourcePreview[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: customSourceTopic,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: expectedAudience,
+      topic: customSourceTopic
+    });
+    expect(generationRequests.contentGenerate[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: customSourceTopic,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: expectedAudience,
+      topic: customSourceTopic
+    });
+    expect(generationRequests.imageGenerate[0]).toMatchObject({
+      aspect_ratio: "3:4",
+      content_id: E2E_PC_EXCHANGE_RATE_TOPIC_CONTENT_ID,
       template: "xiaohongshu-cover"
     });
     expect(String(generationRequests.imageGenerate[0].style_notes)).not.toContain(
