@@ -4881,3 +4881,66 @@ Kept. A source-required mobile ranking/project-list draft preview now has 360px 
 ### Next candidate loop
 
 - Add a 414px viewport guard for one mobile preview path, or shift to review-page source-evidence visibility and manual confirmation states.
+
+## Loop 69 - Mobile review evidence viewport guard
+
+Date: 2026-06-16
+
+### Observation
+
+The mobile review queue E2E opens a review detail sheet and checks that source evidence includes the topic before approving. It does not explicitly guard the knowledge source list, web source list, or the approve/request-changes controls against mobile viewport overflow in the human-review step.
+
+### Hypothesis
+
+If the mobile review E2E asserts the detail source evidence lists and both human-decision buttons stay inside the mobile viewport, then review-page regressions that hide source evidence or manual confirmation controls will be caught without changing publishing behavior.
+
+### Patch
+
+- Added mobile review detail assertions for the knowledge source list and web source list.
+- Added a viewport-fit guard for the review detail sheet, source evidence panel, knowledge/web evidence lists, approve action, and request-changes action.
+- Extended the verifier contract so the review source-evidence and manual-decision viewport guard cannot be removed silently.
+
+### Verification
+
+```text
+npm run lint
+python scripts\verify_project.py --keep-cache
+npx --version
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile review queue submits human decisions" --project=chromium
+npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+All checks passed.
+
+Evidence:
+
+- The focused Playwright run passed the mobile review queue test while checking source evidence lists and manual decision controls.
+- The review detail now has to keep the evidence panel, knowledge/web lists, approve button, and request-changes button inside the mobile viewport.
+- The verifier now fails if the source-list checks, review detail viewport guard, or publishing-block assertion are removed.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 22/30
+- Correctness: 19/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 5/5
+- Total: 90/100
+
+### Result
+
+Kept. Mobile human-review coverage now protects the evidence-to-decision step without adding any automated publishing behavior.
+
+### Remaining risk
+
+- This guards visibility and viewport bounds, but not a screenshot baseline for source-card typography.
+- The failure-path review test still checks queued retention, but does not reuse this viewport guard.
+
+### Next candidate loop
+
+- Add the same evidence/detail viewport guard to the mobile review failure path, or add a PC review/manual-confirmation source-evidence guard if the product surface exposes one.

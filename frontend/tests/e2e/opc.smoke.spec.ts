@@ -1745,6 +1745,16 @@ test.describe("OPC smoke coverage", () => {
     await expect(reviewDetail).toBeVisible();
     await expect(reviewDetail).toContainText(approvePreset.topic);
     await expect(page.getByTestId("mobile-review-source-evidence")).toContainText(approvePreset.topic);
+    await expect(page.getByTestId("mobile-review-knowledge-list")).toContainText(approvePreset.topic);
+    await expect(page.getByTestId("mobile-review-web-list")).toContainText(approvePreset.topic);
+    await expectNoHorizontalViewportOverflow(page, "mobile review detail evidence", [
+      { label: "detail sheet", testId: "mobile-review-detail" },
+      { label: "source evidence", testId: "mobile-review-source-evidence" },
+      { label: "knowledge list", testId: "mobile-review-knowledge-list" },
+      { label: "web list", testId: "mobile-review-web-list" },
+      { label: "approve action", testId: "mobile-review-detail-approve" },
+      { label: "request changes action", testId: "mobile-review-detail-request-changes" }
+    ]);
     await page.getByTestId("mobile-review-detail-approve").click();
 
     await expect(page.getByTestId("mobile-review-detail")).toHaveCount(0);

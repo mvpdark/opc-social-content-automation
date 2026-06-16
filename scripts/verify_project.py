@@ -1673,6 +1673,21 @@ def validate_content_production_contract() -> int:
         if snippet not in e2e_text:
             raise SystemExit(f"Missing mobile multi-topic E2E contract: {snippet}")
 
+    mobile_review_e2e_contracts = [
+        "mobile review queue submits human decisions without platform publishing",
+        'page.getByTestId("mobile-review-knowledge-list")).toContainText(approvePreset.topic)',
+        'page.getByTestId("mobile-review-web-list")).toContainText(approvePreset.topic)',
+        'expectNoHorizontalViewportOverflow(page, "mobile review detail evidence"',
+        '{ label: "source evidence", testId: "mobile-review-source-evidence" }',
+        '{ label: "approve action", testId: "mobile-review-detail-approve" }',
+        '{ label: "request changes action", testId: "mobile-review-detail-request-changes" }',
+        "expect(reviewRequests.forbiddenPublishing).toEqual([])",
+    ]
+    for snippet in mobile_review_e2e_contracts:
+        total += 1
+        if snippet not in e2e_text:
+            raise SystemExit(f"Missing mobile review E2E contract: {snippet}")
+
     pc_multi_topic_e2e_contracts = [
         "runPcTopicAlignmentScenario",
         "E2E_PC_GENERATED_CONTENT_ID",
