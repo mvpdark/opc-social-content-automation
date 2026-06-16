@@ -9,7 +9,7 @@
     "e2e": "playwright test",
     "lint": "npm run typecheck",
     "start": "node scripts/next-with-dist.mjs start",
-    "typecheck": "tsc --noEmit --noUnusedLocals --noUnusedParameters",
+    "typecheck": "tsc --noEmit --noUnusedLocals --noUnusedParameters --incremental false",
     "verify": "npm run typecheck && npm run build"
   },
   "dependencies": {

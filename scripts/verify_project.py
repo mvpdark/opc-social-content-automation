@@ -311,6 +311,7 @@ def validate_safety_gates() -> int:
         ],
         "frontend/package.json": [
             '"dev:lan": "next dev -H 0.0.0.0"',
+            '"typecheck": "tsc --noEmit --noUnusedLocals --noUnusedParameters --incremental false"',
         ],
         "scripts/start_local.py": [
             "0.0.0.0",
@@ -1610,16 +1611,19 @@ def validate_content_production_contract() -> int:
         "E2E_MOBILE_ROUTE_TOPIC_CONTENT_ID",
         "E2E_MOBILE_MENTOR_TOPIC_CONTENT_ID",
         "E2E_MOBILE_TIMELINE_TOPIC_CONTENT_ID",
+        "E2E_MOBILE_SOURCE_LOGO_PRICE_CONTENT_ID",
         "mobile one-click generation keeps selected sales topic aligned through preview copy",
         "mobile one-click generation keeps selected route topic aligned through preview copy",
         "mobile one-click generation keeps selected mentor topic aligned through preview copy",
         "mobile one-click generation keeps selected timing topic aligned through preview copy",
+        "mobile one-click generation keeps selected source logo-price topic aligned through preview copy",
         'page.getByTestId("draft-preview-prepublish-check-content")',
         'page.getByTestId("draft-preview-prepublish-check-sources")',
         "presetKey: \"sales-main\"",
         "presetKey: \"route-main\"",
         "presetKey: \"mentor-direction-check\"",
         "presetKey: \"timeline-main\"",
+        "presetKey: \"source-logo-price\"",
         "expect(generationRequests.sourcePreview).toHaveLength(1)",
         "expect(generationRequests.contentGenerate).toHaveLength(1)",
         "expect(generationRequests.imageGenerate).toHaveLength(1)",
@@ -1781,6 +1785,20 @@ def validate_content_production_contract() -> int:
         total += 1
         if snippet not in topic_presets_text:
             raise SystemExit(f"Missing shared topic preset contract: {snippet}")
+
+    source_logo_price_e2e_contracts = [
+        "E2E_PC_SOURCE_LOGO_PRICE_CONTENT_ID",
+        "E2E_MOBILE_SOURCE_LOGO_PRICE_CONTENT_ID",
+        "mobile one-click generation keeps selected source logo-price topic aligned through preview copy",
+        "PC one-click generation keeps selected source logo-price topic aligned through preview copy",
+        "presetKey: \"source-logo-price\"",
+        "expect(generationRequests.sourcePreview).toHaveLength(1)",
+        "expect(String(generationRequests.imageGenerate[0].style_notes)).toContain(preset.coverDirection)",
+    ]
+    for snippet in source_logo_price_e2e_contracts:
+        total += 1
+        if snippet not in e2e_text:
+            raise SystemExit(f"Missing source logo-price E2E contract: {snippet}")
 
     expected_topic_preset_prefixes = {"ranking", "route", "mentor", "timeline", "source", "sales"}
     actual_topic_preset_keys = set(re.findall(r'key: "([^"]+)"', topic_presets_text))

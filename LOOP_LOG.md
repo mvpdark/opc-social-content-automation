@@ -4037,3 +4037,86 @@ Kept. PC and mobile now explain draft-quality generation failures as recoverable
 ### Next candidate loop
 
 - Add source-required preset coverage for more current-fact topics, or add a small unit-level contract for the recovery-copy helper if E2E runtime becomes too heavy.
+
+## Loop 56 - Source logo-price preset E2E coverage
+
+Date: 2026-06-16
+
+### Observation
+
+Source-heavy E2E coverage protects the official-fee preset and custom fact topics, but the separate `source-logo-price` preset directly mentions校徽/logo、价格、学费 and is not individually covered through PC and mobile one-click generation.
+
+### Hypothesis
+
+If PC and mobile E2E cover the `source-logo-price` preset through source preview, generation, preview/copy, and no-publish assertions, then regressions that skip collected evidence or drift this current-fact topic will be caught before users see invented school, price, or logo conclusions.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `frontend/package.json`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added PC and mobile E2E coverage for the `source-logo-price` preset using the existing topic-alignment helpers.
+- The new tests verify source preview, generation request payloads, cover-direction alignment, preview/copy flow, and no publishing-like calls.
+- Hardened the frontend typecheck script with `--incremental false` after verification exposed stale `.next-build/types` entries in the local TypeScript cache when running lint after build.
+- Extended the project verifier contract for the new source-logo-price coverage and cache-stable typecheck command.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed
+
+python scripts\verify_project.py --keep-cache
+# passed
+# safety_gates_checked=149
+# content_production_contract_checked=1105
+
+npx --version
+# passed: 11.12.1
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "source logo-price topic" --project=chromium
+# passed: 2 passed
+
+npm run build
+# passed
+
+git diff --check
+# passed
+
+npm run lint
+# initially failed after build due stale tsconfig.tsbuildinfo entries for .next-build/types
+# passed after disabling incremental typecheck cache
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 22/30
+- Correctness: 18/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 3/5
+- Total: 87/100
+
+### Result
+
+Kept. PC and mobile now have direct CI E2E protection for the source/logo/price preset, and the frontend quality gate is stable even when lint/typecheck runs after a production build.
+
+### Remaining risk
+
+- This loop adds regression coverage, not new production behavior for source retrieval.
+- The source-logo-price tests use controlled fixture evidence; live Tavily/provider behavior remains covered by service-level paths and needs environment-backed checks when credentials are available.
+
+### Next candidate loop
+
+- Add a small source-required ranking/project-list preset guard, or inspect the live mobile/PC source evidence UI for any copy overflow at 390 px and 1280 px.

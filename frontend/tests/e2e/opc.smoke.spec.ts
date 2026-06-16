@@ -41,6 +41,8 @@ const E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID = 8911;
 const E2E_MOBILE_REVIEW_CHANGES_CONTENT_ID = 8912;
 const E2E_PC_CUSTOM_TOPIC_CONTENT_ID = 8913;
 const E2E_PC_MISSING_TAGS_CONTENT_ID = 8914;
+const E2E_MOBILE_SOURCE_LOGO_PRICE_CONTENT_ID = 8915;
+const E2E_PC_SOURCE_LOGO_PRICE_CONTENT_ID = 8916;
 
 type JsonPayload = Record<string, unknown>;
 
@@ -1171,6 +1173,13 @@ test.describe("OPC smoke coverage", () => {
     });
   });
 
+  test("mobile one-click generation keeps selected source logo-price topic aligned through preview copy", async ({ page }) => {
+    await runMobileTopicAlignmentScenario(page, {
+      contentId: E2E_MOBILE_SOURCE_LOGO_PRICE_CONTENT_ID,
+      presetKey: "source-logo-price"
+    });
+  });
+
   test("mobile source preview failure blocks source topic generation without false draft", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const acceptedLogin = createLoginInput();
@@ -1721,6 +1730,13 @@ test.describe("OPC smoke coverage", () => {
     await runPcTopicAlignmentScenario(page, {
       contentId: E2E_PC_SOURCE_TOPIC_CONTENT_ID,
       presetKey: "source-official-fee-check"
+    });
+  });
+
+  test("PC one-click generation keeps selected source logo-price topic aligned through preview copy", async ({ page }) => {
+    await runPcTopicAlignmentScenario(page, {
+      contentId: E2E_PC_SOURCE_LOGO_PRICE_CONTENT_ID,
+      presetKey: "source-logo-price"
     });
   });
 
