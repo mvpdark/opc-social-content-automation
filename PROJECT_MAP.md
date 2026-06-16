@@ -68,6 +68,7 @@ Last updated: 2026-06-16
 - Mobile Xiaohongshu export status messages must say share/download handoff still requires manual confirmation before submission.
 - Public preview invalid-link smoke tests verify `/preview/[contentId]` resolves to a clear error without content/image API calls.
 - Public preview valid-draft smoke tests render mocked content, cover, tags, and no-auto-publish safety copy without publishing calls.
+- Public preview missing-cover smoke tests keep the draft readable with the text-cover fallback when cover lookup fails.
 
 ## Deployment and Build
 

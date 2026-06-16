@@ -1616,6 +1616,7 @@ def validate_content_production_contract() -> int:
                 'data-testid="public-preview-body"',
                 'data-testid="public-preview-tags"',
                 'data-testid="public-preview-safety-message"',
+                'data-testid="public-preview-fallback-cover"',
                 "预览链接无效。",
                 "发布前预览 · 不会自动发布",
             ],
@@ -1653,6 +1654,25 @@ def validate_content_production_contract() -> int:
                 "expect(forbiddenPublishing).toEqual([])",
             ],
             "public preview valid-draft E2E",
+        ),
+        (
+            e2e_text,
+            [
+                "public preview keeps draft readable when cover lookup fails",
+                "E2E_PUBLIC_PREVIEW_FALLBACK_CONTENT_ID = 8924",
+                "E2E public preview missing cover topic",
+                "E2E cover lookup temporarily unavailable.",
+                "public-preview-fallback-cover",
+                "public preview missing cover fallback",
+                'page.getByTestId("public-preview-cover")).toHaveCount(0)',
+                'page.getByTestId("public-preview-fallback-cover")).toContainText("封面预览")',
+                'page.getByTestId("public-preview-body")).toContainText("封面接口失败")',
+                'page.getByTestId("public-preview-safety-message")).toContainText("不会自动发布")',
+                "expect(contentRequests).toHaveLength(1)",
+                "expect(imageRequests).toHaveLength(1)",
+                "expect(forbiddenPublishing).toEqual([])",
+            ],
+            "public preview missing-cover E2E",
         ),
     ]
     for text, snippets, contract_name in public_preview_contracts:

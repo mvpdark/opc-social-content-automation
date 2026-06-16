@@ -6754,3 +6754,73 @@ Kept. Public preview valid drafts now have CI-protected coverage for rendered ti
 ### Next candidate loop
 
 - Add public preview image-missing/backend-error smoke coverage, or continue with one-click generation topic alignment checks.
+
+## Loop 97 - Public preview missing cover fallback coverage
+
+Date: 2026-06-16
+
+### Observation
+
+Public preview now has invalid-link and valid-cover E2E coverage, but the product acceptance criteria also require cover preview failure/empty states to render safely. `PublicPreviewClient` already falls back to a text cover when `/image/list` fails or returns no usable image, but that branch is not protected by focused E2E coverage.
+
+### Hypothesis
+
+If a public-preview E2E mocks a successful draft response with a failed cover-list response, CI will catch regressions where a missing cover breaks the shared preview or hides the manual-review safety message.
+
+### Patch
+
+- Added a focused public-preview E2E for successful draft content with a failed cover lookup.
+- Verified the text-cover fallback stays visible, the real cover image is absent, the title/body/tags and no-auto-publish message remain readable, and publishing-like endpoints are not called.
+- Added project verifier contracts and updated `PROJECT_MAP.md` to document missing-cover public preview coverage.
+
+### Verification
+
+```text
+cd frontend && npx --version
+node UTF-8 hygiene scan for touched files
+python scripts\verify_project.py --keep-cache
+cd frontend && npm run lint
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "public preview keeps draft readable when cover lookup fails" --project=chromium
+cd frontend && npm run build
+git diff --check
+git diff -- frontend\tsconfig.json
+git status --short --ignored artifacts frontend\artifacts frontend\.next-build frontend\.next
+```
+
+All final checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- Touched-file UTF-8 hygiene scan found no replacement characters or mojibake markers.
+- Project verifier passed with `content_production_contract_checked=1425`.
+- TypeScript check passed through `npm run lint`.
+- Focused Chromium E2E passed for missing-cover public preview fallback.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed and `frontend/tsconfig.json` had no build-generated diff.
+- Only ignored artifact/build directories are present under `artifacts/`, `frontend/.next-build/`, and `frontend/.next/`.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 14/30
+- Correctness: 19/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 80/100
+
+### Result
+
+Kept. Public preview cover lookup failures now have CI-protected coverage that keeps draft text, tags, text-cover fallback, and the no-auto-publish safety message visible without invoking publishing-like endpoints.
+
+### Remaining risk
+
+- This loop covers cover-list failure after a successful content response; malformed image payloads and content backend failures can still use focused coverage.
+- Screenshot/build artifacts remain ignored and are not committed.
+
+### Next candidate loop
+
+- Add public preview content backend-error smoke coverage, or continue with one-click generation topic alignment checks.
