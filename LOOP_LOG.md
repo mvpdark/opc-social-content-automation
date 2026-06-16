@@ -7593,3 +7593,73 @@ Kept. PC and mobile current-facts source warnings now explicitly block model-gue
 ### Next candidate loop
 
 - Add a direct PC/mobile browser assertion for the missing-web-results warning text, or audit backend review-note copy for the same no-model-guessing wording.
+
+## Loop 109 - Missing-web warning browser assertions
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 108 locked the no-model-guessing source warning through the project verifier, while the focused browser tests only protected the no-false-draft behavior after source preview failure. The E2E source-preview fixture always returns one Tavily result, so PC/mobile browser coverage does not yet exercise the visible "required web evidence but no results" warning path.
+
+### Hypothesis
+
+If the Playwright fixture can return required web search with an empty result list and PC/mobile tests assert the no-model-guessing warning text, CI will catch regressions where the current-facts source warning disappears or drifts while keeping the workflow data-first and no-publishing-safe.
+
+### Patch
+
+- Added an `emptySourcePreviewWebResults` E2E fixture option so source preview can return required Tavily/web search with an empty result list.
+- Added mobile and PC Playwright assertions that the missing-results warning is visible and includes "不要让模型猜测学校、价格、logo 或排名结论".
+- Kept the tests preview-only: no content generation, image generation, rewrite, or publishing-like request is triggered.
+- Extended verifier contracts and `PROJECT_MAP.md` to document the browser-level missing-web warning coverage.
+
+### Verification
+
+```text
+python scripts\verify_project.py --keep-cache
+cd frontend && npx --version
+cd frontend && npm run lint
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "missing Tavily results" --project=chromium
+cd frontend && npm run build
+git diff --check
+git diff -- frontend\tsconfig.json
+git status --short --ignored artifacts frontend\artifacts frontend\.next-build frontend\.next
+```
+
+All final checks passed.
+
+Evidence:
+
+- Project verifier passed with `content_production_contract_checked=1543` and `text_hygiene_files_checked=129`.
+- `npx` is available at `11.12.1`.
+- TypeScript check passed through `npm run lint`.
+- Focused Chromium E2E passed 2/2 missing-Tavily-results tests for mobile and PC warning visibility.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed and `frontend/tsconfig.json` had no build-generated diff.
+- Only ignored artifact/build directories are present under `artifacts/`, `frontend/.next-build/`, and `frontend/.next/`.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 17/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 8/10
+- UX polish: 4/5
+- Total: 81/100
+
+### Result
+
+Kept. PC and mobile now have direct browser coverage for the required-web-but-empty-results warning, so CI can catch visible warning drift for current-facts topics before draft generation.
+
+### Remaining risk
+
+- This loop verifies warning visibility and no generation calls during preview; it does not change the existing policy that a user may still generate a verification-framework style draft after seeing source evidence.
+- Backend review-note copy still uses "不能编学校、价格、logo 或排名"; it remains aligned in meaning but could be audited for the exact no-model-guessing phrasing later.
+- Screenshot/build artifacts remain ignored and are not committed.
+
+### Next candidate loop
+
+- Audit backend review-note copy for the same no-model-guessing wording, or decide whether missing required web results should block generation instead of allowing framework-only drafts.

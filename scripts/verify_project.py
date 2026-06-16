@@ -2514,6 +2514,25 @@ def validate_content_production_contract() -> int:
         if snippet not in e2e_text:
             raise SystemExit(f"Missing source preview failure viewport E2E contract: {snippet}")
 
+    missing_web_warning_e2e_contracts = [
+        "MISSING_WEB_RESULTS_MODEL_GUESS_WARNING",
+        "emptySourcePreviewWebResults?: boolean",
+        "emptySourcePreviewWebResults = false",
+        "emptyWebResults: emptySourcePreviewWebResults",
+        "mobile missing Tavily results warns against model-guessed current facts",
+        "PC missing Tavily results warns against model-guessed current facts",
+        "mobile-source-required-web-warning",
+        "source-required-web-warning",
+        "mobile-source-web-list",
+        "source-web-list",
+        'expect(generationRequests.contentGenerate).toHaveLength(0)',
+        'expect(generationRequests.imageGenerate).toHaveLength(0)',
+    ]
+    for snippet in missing_web_warning_e2e_contracts:
+        total += 1
+        if snippet not in e2e_text:
+            raise SystemExit(f"Missing missing-web warning E2E contract: {snippet}")
+
     expected_topic_preset_prefixes = {"ranking", "route", "mentor", "timeline", "source", "sales"}
     actual_topic_preset_keys = set(re.findall(r'key: "([^"]+)"', topic_presets_text))
     actual_topic_preset_prefixes = {key.split("-", 1)[0] for key in actual_topic_preset_keys}

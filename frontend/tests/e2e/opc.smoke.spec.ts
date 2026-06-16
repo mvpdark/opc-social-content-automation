@@ -61,6 +61,7 @@ const E2E_PUBLIC_PREVIEW_ERROR_CONTENT_ID = 8925;
 const E2E_PUBLIC_PREVIEW_MALFORMED_CONTENT_ID = 8930;
 const E2E_PUBLIC_PREVIEW_MALFORMED_IMAGE_CONTENT_ID = 8931;
 const E2E_PUBLIC_PREVIEW_NON_ARRAY_IMAGE_CONTENT_ID = 8932;
+const MISSING_WEB_RESULTS_MODEL_GUESS_WARNING = "不要让模型猜测学校、价格、logo 或排名结论";
 
 type JsonPayload = Record<string, unknown>;
 
@@ -74,6 +75,7 @@ type MobileGenerationFixtureOptions = {
   contentId?: number;
   contentListItems?: PcContentListFixtureItem[];
   contentStatus?: string;
+  emptySourcePreviewWebResults?: boolean;
   failContent?: boolean;
   failContentDetail?: string;
   failCover?: boolean;
@@ -262,7 +264,22 @@ async function attachScreenshotEvidence(
   });
 }
 
-function buildE2eSourceContext(preset: GenerationTopicPreset, label: string) {
+function buildE2eSourceContext(
+  preset: GenerationTopicPreset,
+  label: string,
+  { emptyWebResults = false }: { emptyWebResults?: boolean } = {}
+) {
+  const webResults = emptyWebResults
+    ? []
+    : [
+        {
+          content: "受控测试联网结果：只验证 UI 展示和请求契约，不代表真实排名、价格或录取结论。",
+          score: 0.84,
+          title: `E2E 联网来源：${preset.topic}`,
+          url: "https://example.edu/e2e-source"
+        }
+      ];
+
   return {
     knowledge_items: [
       {
@@ -281,14 +298,7 @@ function buildE2eSourceContext(preset: GenerationTopicPreset, label: string) {
       provider: "tavily",
       query: preset.knowledgeQuery,
       required: true,
-      results: [
-        {
-          content: "受控测试联网结果：只验证 UI 展示和请求契约，不代表真实排名、价格或录取结论。",
-          score: 0.84,
-          title: `E2E 联网来源：${preset.topic}`,
-          url: "https://example.edu/e2e-source"
-        }
-      ]
+      results: webResults
     }
   };
 }
@@ -337,6 +347,7 @@ async function mockMobileGenerationFixture(
     contentId = E2E_GENERATED_CONTENT_ID,
     contentListItems = [],
     contentStatus = "draft",
+    emptySourcePreviewWebResults = false,
     failContent = false,
     failContentDetail,
     failCover = false,
@@ -359,7 +370,9 @@ async function mockMobileGenerationFixture(
   };
   const tags = parseTagText(preset.tags);
   const generatedTags = responseTags ?? tags;
-  const sourceContext = buildE2eSourceContext(preset, preset.mobileLabel);
+  const sourceContext = buildE2eSourceContext(preset, preset.mobileLabel, {
+    emptyWebResults: emptySourcePreviewWebResults
+  });
   const contentList = contentListItems.map((item, index) => ({
     body: [
       `E2E 移动端历史草稿：${item.preset.topic}`,
@@ -602,6 +615,7 @@ async function mockPcGenerationFixture(
     contentId = E2E_PC_GENERATED_CONTENT_ID,
     contentListItems = [],
     contentStatus = "draft",
+    emptySourcePreviewWebResults = false,
     failContent = false,
     failContentDetail,
     failCover = false,
@@ -634,7 +648,9 @@ async function mockPcGenerationFixture(
   };
   const tags = parseTagText(preset.tags);
   const generatedTags = responseTags ?? tags;
-  const sourceContext = buildE2eSourceContext(preset, preset.desktopLabel);
+  const sourceContext = buildE2eSourceContext(preset, preset.desktopLabel, {
+    emptyWebResults: emptySourcePreviewWebResults
+  });
   const contentList = contentListItems.map((item, index) => ({
     body: [
       `PC 待审核队列夹具：${item.preset.topic}`,
@@ -2158,6 +2174,53 @@ test.describe("OPC smoke coverage", () => {
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 
+  test("mobile missing Tavily results warns against model-guessed current facts", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const acceptedLogin = createLoginInput();
+    const preset = requireTopicPreset("source-official-fee-check");
+    const expectedTags = parseTagText(preset.tags);
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockMobileGenerationFixture(page, preset, {
+      emptySourcePreviewWebResults: true
+    });
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=create`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+    await page.getByTestId("mobile-creation-project-postgraduate-phd").click();
+
+    await page.getByTestId("mobile-topic").fill(preset.topic);
+    await expect(page.getByTestId("mobile-topic")).toHaveValue(preset.topic);
+    await expect(page.getByTestId("mobile-audience")).toHaveValue(preset.audience);
+    await expect(page.getByTestId("mobile-tags")).toHaveValue(preset.tags);
+
+    await page.getByTestId("mobile-source-preview-button").click();
+    await expect(page.getByTestId("mobile-source-evidence")).toContainText("缺联网");
+    await expect(page.getByTestId("mobile-source-required-web-warning")).toContainText(
+      MISSING_WEB_RESULTS_MODEL_GUESS_WARNING
+    );
+    await page.getByTestId("mobile-source-web-toggle").click();
+    await expect(page.getByTestId("mobile-source-web-list")).toContainText(
+      MISSING_WEB_RESULTS_MODEL_GUESS_WARNING
+    );
+
+    expect(generationRequests.sourcePreview).toHaveLength(1);
+    expect(generationRequests.contentGenerate).toHaveLength(0);
+    expect(generationRequests.imageGenerate).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.sourcePreview[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: preset.knowledgeQuery,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: preset.audience,
+      topic: preset.topic
+    });
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
   test("mobile custom fact topic source preview failure blocks generation without false draft", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const acceptedLogin = createLoginInput();
@@ -3328,6 +3391,58 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("start-production-button")).toBeDisabled();
     await expect(page.getByTestId("start-production-button")).toContainText("先重新查看依据");
     await expect(page.getByTestId("draft-history-card")).toHaveCount(0);
+
+    expect(generationRequests.providerStatus).toBeGreaterThan(0);
+    expect(generationRequests.contentList).toBeGreaterThan(0);
+    expect(generationRequests.sourcePreview).toHaveLength(1);
+    expect(generationRequests.contentGenerate).toHaveLength(0);
+    expect(generationRequests.imageGenerate).toHaveLength(0);
+    expect(generationRequests.rewrite).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.sourcePreview[0]).toMatchObject({
+      knowledge_limit: 5,
+      knowledge_query: preset.knowledgeQuery,
+      platform: "xiaohongshu",
+      tags: expectedTags,
+      target_audience: preset.audience,
+      topic: preset.topic
+    });
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("PC missing Tavily results warns against model-guessed current facts", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const acceptedLogin = createLoginInput();
+    const preset = requireTopicPreset("source-official-fee-check");
+    const expectedTags = parseTagText(preset.tags);
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockPcGenerationFixture(page, preset, {
+      emptySourcePreviewWebResults: true
+    });
+
+    await page.goto(`${BASE_URL}/?theme=mint&tab=content&project=postgraduate-phd`);
+    await expect(page.getByTestId("pc-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("pc-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("pc-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("pc-login-submit").click();
+
+    await expect(page.getByTestId("creation-project-return")).toBeVisible();
+    await expect(page.getByTestId("generation-launcher")).toBeVisible();
+    await page.getByTestId("content-topic").fill(preset.topic);
+    await expect(page.getByTestId("content-topic")).toHaveValue(preset.topic);
+    await expect(page.getByTestId("content-knowledge-query")).toHaveValue(preset.knowledgeQuery);
+    await expect(page.getByTestId("content-target-audience")).toHaveValue(preset.audience);
+    await expect(page.getByTestId("content-tags")).toHaveValue(preset.tags);
+
+    await page.getByTestId("source-preview-button").click();
+    await expect(page.getByTestId("generation-source-evidence")).toContainText("缺联网");
+    await expect(page.getByTestId("source-required-web-warning")).toContainText(
+      MISSING_WEB_RESULTS_MODEL_GUESS_WARNING
+    );
+    await page.getByTestId("source-web-toggle").click();
+    await expect(page.getByTestId("source-web-list")).toContainText(
+      MISSING_WEB_RESULTS_MODEL_GUESS_WARNING
+    );
 
     expect(generationRequests.providerStatus).toBeGreaterThan(0);
     expect(generationRequests.contentList).toBeGreaterThan(0);
