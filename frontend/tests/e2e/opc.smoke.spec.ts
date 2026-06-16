@@ -22,6 +22,7 @@ const E2E_CONTENT_FAILURE_CONTENT_ID = 8803;
 const E2E_MOBILE_SOURCE_PREVIEW_FAILURE_CONTENT_ID = 8804;
 const E2E_MOBILE_CUSTOM_SOURCE_PREVIEW_FAILURE_CONTENT_ID = 8805;
 const E2E_MOBILE_CUSTOM_TOPIC_CONTENT_ID = 8806;
+const E2E_MOBILE_MISSING_TAGS_CONTENT_ID = 8807;
 const E2E_PC_GENERATED_CONTENT_ID = 8901;
 const E2E_PC_CONTENT_FAILURE_CONTENT_ID = 8902;
 const E2E_PC_COVER_FAILURE_CONTENT_ID = 8903;
@@ -233,7 +234,8 @@ async function mockMobileGenerationFixture(
     contentId = E2E_GENERATED_CONTENT_ID,
     failContent = false,
     failCover = false,
-    failSourcePreview = false
+    failSourcePreview = false,
+    responseTags
   }: MobileGenerationFixtureOptions = {}
 ) {
   const requests: MobileGenerationFixtureRequests = {
@@ -243,6 +245,7 @@ async function mockMobileGenerationFixture(
     sourcePreview: []
   };
   const tags = parseTagText(preset.tags);
+  const generatedTags = responseTags ?? tags;
   const sourceContext = buildE2eSourceContext(preset, preset.mobileLabel);
 
   await page.route(/\/api\/content\/source-preview(?:\?|$)/, async (route) => {
@@ -299,7 +302,7 @@ async function mockMobileGenerationFixture(
         platform: "xiaohongshu",
         source_context: sourceContext,
         status: "draft",
-        tags,
+        tags: generatedTags,
         title: preset.topic
       }),
       contentType: "application/json",
@@ -1259,6 +1262,50 @@ test.describe("OPC smoke coverage", () => {
       requireTopicPreset("source-official-fee-check").coverDirection
     );
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("mobile generated draft missing tags shows recovery checklist", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const acceptedLogin = createLoginInput();
+    const preset = requireTopicPreset("sales-main");
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockMobileGenerationFixture(page, preset, {
+      contentId: E2E_MOBILE_MISSING_TAGS_CONTENT_ID,
+      responseTags: []
+    });
+
+    await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=create`);
+    await expect(page.getByTestId("mobile-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("mobile-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("mobile-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("mobile-login-submit").click();
+    await page.getByTestId("mobile-creation-project-postgraduate-phd").click();
+
+    await page.getByTestId("mobile-topic").fill(preset.topic);
+    await expect(page.getByTestId("mobile-audience")).toHaveValue(preset.audience);
+    await expect(page.getByTestId("mobile-tags")).toHaveValue(preset.tags);
+    await page.getByTestId("mobile-tags").fill("");
+
+    await page.getByTestId("mobile-generate-draft").click();
+    await expect(page.getByTestId("mobile-generate-draft")).toContainText("重新一键生成");
+    await page.getByTestId(`mobile-draft-history-card-${E2E_MOBILE_MISSING_TAGS_CONTENT_ID}`).click();
+
+    const contentCheck = page.getByTestId("draft-preview-prepublish-check-content");
+    await expect(contentCheck).toContainText("需补充");
+    await expect(contentCheck).toContainText("缺少标签");
+    await expect(contentCheck).toContainText("重新生成");
+    await expect(page.getByTestId("draft-preview-copy")).toBeEnabled();
+
+    expect(generationRequests.sourcePreview).toHaveLength(0);
+    expect(generationRequests.contentGenerate).toHaveLength(1);
+    expect(generationRequests.imageGenerate).toHaveLength(1);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(generationRequests.contentGenerate[0]).toMatchObject({
+      platform: "xiaohongshu",
+      tags: [],
+      target_audience: preset.audience,
+      topic: preset.topic
+    });
   });
 
   test("mobile preserves draft when cover generation fails", async ({ page }) => {

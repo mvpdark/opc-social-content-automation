@@ -3669,3 +3669,75 @@ Kept. PC users now get a specific recovery prompt when a generated draft is miss
 ### Next candidate loop
 
 - Add equivalent mobile missing-field recovery copy, or add a focused backend guard for a too-thin draft body if a safe threshold is agreed.
+
+## Loop 51 - Mobile missing-tag recovery prompt
+
+Date: 2026-06-16
+
+### Observation
+
+The mobile draft preview has a prepublish checklist and can block the content item when title/body/tags are missing, but the content checklist detail is generic. After Loop 50, PC tells users exactly which field is missing; mobile should give the same recovery path.
+
+### Hypothesis
+
+If the mobile draft preview checklist names missing draft fields, then mobile users can repair incomplete generated drafts without assuming the draft is publish-ready or needing to guess whether title, body, or tags failed.
+
+### Patch
+
+Files changed:
+
+- `frontend/components/mobile-draft-preview-editor.tsx`
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added mobile draft-preview recovery copy that names missing title, body, or tags.
+- Kept copy/export actions as manual preparation only; the checklist marks incomplete content as `需补充`.
+- Added a mobile E2E that clears the tags field before generation and verifies the preview checklist says `缺少标签` and asks the user to regenerate or manually补充.
+- Extended the project verifier contract for the mobile missing-field helper and E2E coverage.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile generated draft missing tags shows recovery checklist" --project=chromium
+# passed: 1 passed
+
+python scripts\verify_project.py --keep-cache
+# passed
+# content_production_contract_checked=1053
+
+npm run build
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 20/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 85/100
+
+### Result
+
+Kept. Mobile users now get the same explicit missing-tag recovery prompt as PC users before preview copy/export.
+
+### Remaining risk
+
+- This loop covers mobile missing tags through the generated draft preview. Separate tests for missing title/body can be added if the backend starts returning those cases often.
+- Existing historical documentation still contains some mojibake display artifacts and should be cleaned in a separate focused loop.
+
+### Next candidate loop
+
+- Clean historical mojibake in Loop Engineering docs and visible frontend copy, or add a focused backend guard for too-thin generated draft bodies.

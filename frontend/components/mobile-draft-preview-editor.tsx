@@ -67,6 +67,20 @@ const mobileBlockedPublishTerms = [
   "必上岸"
 ];
 
+function missingMobileDraftFields(draft: DraftPreviewState) {
+  const missingFields: string[] = [];
+  if (!draft.title.trim()) {
+    missingFields.push("标题");
+  }
+  if (!draft.body.trim()) {
+    missingFields.push("正文");
+  }
+  if (!draft.tags.trim()) {
+    missingFields.push("标签");
+  }
+  return missingFields;
+}
+
 function buildMobilePreviewChecklist({
   coverImageUrl,
   draft,
@@ -78,6 +92,7 @@ function buildMobilePreviewChecklist({
 }): MobilePreviewChecklistItem[] {
   const sourceStats = generationSourceContextStats(generatedContent?.source_context);
   const draftText = `${draft.title}\n${draft.body}\n${draft.tags}`;
+  const missingContentFields = missingMobileDraftFields(draft);
   const riskyTerms = mobileBlockedPublishTerms.filter((term) => draftText.includes(term));
   const sourceDetail = !generatedContent
     ? "本地草稿没有后端来源证据，发布前请先生成正式草稿。"
@@ -89,10 +104,12 @@ function buildMobilePreviewChecklist({
 
   return [
     {
-      detail: "标题、正文和标签会一起准备；发布前仍需逐项读一遍。",
+      detail: missingContentFields.length
+        ? `缺少${missingContentFields.join("、")}；请回到表单补齐后重新生成，或在预览中人工补充后再复制。`
+        : "标题、正文和标签会一起准备；发布前仍需逐项读一遍。",
       key: "content",
       label: "标题/正文/标签",
-      state: draft.title.trim() && draft.body.trim() && draft.tags.trim() ? "ready" : "blocked"
+      state: missingContentFields.length ? "blocked" : "ready"
     },
     {
       detail: sourceDetail,

@@ -1611,6 +1611,27 @@ def validate_content_production_contract() -> int:
             ],
             "PC missing tag recovery E2E",
         ),
+        (
+            mobile_draft_contract_text,
+            [
+                "function missingMobileDraftFields",
+                'missingFields.push("标签")',
+                '缺少${missingContentFields.join("、")}',
+                'state: missingContentFields.length ? "blocked" : "ready"',
+            ],
+            "mobile missing content recovery",
+        ),
+        (
+            e2e_text,
+            [
+                "E2E_MOBILE_MISSING_TAGS_CONTENT_ID",
+                "mobile generated draft missing tags shows recovery checklist",
+                "responseTags: []",
+                'page.getByTestId("draft-preview-prepublish-check-content")',
+                "缺少标签",
+            ],
+            "mobile missing tag recovery E2E",
+        ),
     ]
     for text, snippets, contract_name in missing_content_recovery_contracts:
         for snippet in snippets:
