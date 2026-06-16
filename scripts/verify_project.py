@@ -1696,6 +1696,25 @@ def validate_content_production_contract() -> int:
         (
             e2e_text,
             [
+                "public preview uses text cover when image payload is not an array",
+                "E2E_PUBLIC_PREVIEW_NON_ARRAY_IMAGE_CONTENT_ID = 8932",
+                "E2E public preview non-array image topic",
+                "E2E image list returned a non-array payload.",
+                "public preview non-array image fallback",
+                'page.getByTestId("public-preview-state")).toHaveCount(0)',
+                'page.getByTestId("public-preview-cover")).toHaveCount(0)',
+                'page.getByTestId("public-preview-fallback-cover")).toContainText("\\u5c01\\u9762\\u9884\\u89c8")',
+                'page.getByTestId("public-preview-body")).toContainText("Non-array image payload")',
+                'page.getByTestId("public-preview-safety-message")).toContainText("\\u4e0d\\u4f1a\\u81ea\\u52a8\\u53d1\\u5e03")',
+                "expect(contentRequests).toHaveLength(1)",
+                "expect(imageRequests).toHaveLength(1)",
+                "expect(forbiddenPublishing).toEqual([])",
+            ],
+            "public preview non-array-image E2E",
+        ),
+        (
+            e2e_text,
+            [
                 "public preview resolves content backend errors without follow-up calls",
                 "E2E_PUBLIC_PREVIEW_ERROR_CONTENT_ID = 8925",
                 "E2E content service temporarily unavailable.",

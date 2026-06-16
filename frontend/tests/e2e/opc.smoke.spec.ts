@@ -58,6 +58,7 @@ const E2E_PUBLIC_PREVIEW_FALLBACK_CONTENT_ID = 8924;
 const E2E_PUBLIC_PREVIEW_ERROR_CONTENT_ID = 8925;
 const E2E_PUBLIC_PREVIEW_MALFORMED_CONTENT_ID = 8930;
 const E2E_PUBLIC_PREVIEW_MALFORMED_IMAGE_CONTENT_ID = 8931;
+const E2E_PUBLIC_PREVIEW_NON_ARRAY_IMAGE_CONTENT_ID = 8932;
 
 type JsonPayload = Record<string, unknown>;
 
@@ -1393,6 +1394,77 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("public-preview-tags")).toContainText(expectedTags[1]);
     await expect(page.getByTestId("public-preview-safety-message")).toContainText("\u4e0d\u4f1a\u81ea\u52a8\u53d1\u5e03");
     await expectNoHorizontalViewportOverflow(page, "public preview malformed image fallback", [
+      { label: "page", testId: "public-preview-page" },
+      { label: "fallback cover", testId: "public-preview-fallback-cover" },
+      { label: "body", testId: "public-preview-body" },
+      { label: "safety message", testId: "public-preview-safety-message" }
+    ]);
+    expect(contentRequests).toHaveLength(1);
+    expect(imageRequests).toHaveLength(1);
+    expect(forbiddenPublishing).toEqual([]);
+  });
+
+  test("public preview uses text cover when image payload is not an array", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const previewTitle = "E2E public preview non-array image topic";
+    const expectedTags = ["#E2E", "#NonArrayCover"];
+    const contentRequests: string[] = [];
+    const imageRequests: string[] = [];
+    const forbiddenPublishing: string[] = [];
+
+    await page.route(`**/api/content/${E2E_PUBLIC_PREVIEW_NON_ARRAY_IMAGE_CONTENT_ID}`, async (route) => {
+      contentRequests.push(route.request().url());
+      await route.fulfill({
+        body: JSON.stringify({
+          body: [
+            `E2E public preview remains readable for ${previewTitle}.`,
+            "Non-array image payload should not hide the manual review preview."
+          ].join("\n\n"),
+          created_at: "2026-06-16T00:15:00.000Z",
+          id: E2E_PUBLIC_PREVIEW_NON_ARRAY_IMAGE_CONTENT_ID,
+          platform: "xiaohongshu",
+          status: "draft",
+          tags: expectedTags,
+          title: previewTitle
+        }),
+        contentType: "application/json",
+        status: 200
+      });
+    });
+    await page.route(/\/api\/image\/list(?:\?|$)/, async (route) => {
+      imageRequests.push(route.request().url());
+      await route.fulfill({
+        body: JSON.stringify({
+          detail: "E2E image list returned a non-array payload.",
+          items: null
+        }),
+        contentType: "application/json",
+        status: 200
+      });
+    });
+    await page.route(/\/api\/[^?]*(publish|submit)/i, async (route) => {
+      forbiddenPublishing.push(route.request().url());
+      await route.fulfill({
+        body: JSON.stringify({ detail: "E2E guard blocked public preview publishing-like call." }),
+        contentType: "application/json",
+        status: 500
+      });
+    });
+
+    await page.goto(`${BASE_URL}/preview/${E2E_PUBLIC_PREVIEW_NON_ARRAY_IMAGE_CONTENT_ID}`);
+
+    await expect(page.getByTestId("public-preview-page")).toBeVisible({ timeout: 7000 });
+    await expect(page.getByTestId("public-preview-state")).toHaveCount(0);
+    await expect(page.getByTestId("public-preview-cover")).toHaveCount(0);
+    await expect(page.getByTestId("public-preview-fallback-cover")).toBeVisible();
+    await expect(page.getByTestId("public-preview-fallback-cover")).toContainText("\u5c01\u9762\u9884\u89c8");
+    await expect(page.getByTestId("public-preview-fallback-cover")).toContainText(previewTitle);
+    await expect(page.getByTestId("public-preview-title")).toContainText(previewTitle);
+    await expect(page.getByTestId("public-preview-body")).toContainText("Non-array image payload");
+    await expect(page.getByTestId("public-preview-tags")).toContainText(expectedTags[0]);
+    await expect(page.getByTestId("public-preview-tags")).toContainText(expectedTags[1]);
+    await expect(page.getByTestId("public-preview-safety-message")).toContainText("\u4e0d\u4f1a\u81ea\u52a8\u53d1\u5e03");
+    await expectNoHorizontalViewportOverflow(page, "public preview non-array image fallback", [
       { label: "page", testId: "public-preview-page" },
       { label: "fallback cover", testId: "public-preview-fallback-cover" },
       { label: "body", testId: "public-preview-body" },

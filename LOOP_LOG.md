@@ -7245,3 +7245,73 @@ Kept. Public preview now has CI coverage for malformed image-list payloads, prov
 ### Next candidate loop
 
 - Add non-array image payload public preview coverage, or expand one-click alignment checks to another custom current-facts topic such as official logo/price on both PC and mobile.
+
+## Loop 104 - Public preview non-array image payload coverage
+
+Date: 2026-06-16
+
+### Observation
+
+Public preview cover fallback coverage now includes failed image lookup and malformed image asset objects inside an array. The runtime also has a distinct fallback branch for successful image responses whose JSON body is not an array; that case is not yet protected by focused E2E coverage.
+
+### Hypothesis
+
+If the public-preview E2E mocks a valid draft plus a 200 OK non-array image payload and asserts the text-cover fallback, readable draft, safety copy, and no publishing-like calls, CI will catch regressions where unexpected cover-list shapes break the preview.
+
+### Patch
+
+- Added a non-array image payload public preview E2E that returns a valid draft plus a 200 OK image-list payload shaped as an object instead of an array.
+- Verified the public preview renders the ready page with the text-cover fallback, keeps the draft body and tags readable, preserves the no-auto-publishing safety copy, and does not call publishing-like endpoints.
+- Added verifier contracts and updated `PROJECT_MAP.md` to document non-array image payload public preview smoke coverage.
+
+### Verification
+
+```text
+cd frontend && npx --version
+node UTF-8 hygiene scan for touched files
+python scripts\verify_project.py --keep-cache
+cd frontend && npm run lint
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "public preview uses text cover when image payload is not an array" --project=chromium
+cd frontend && npm run build
+git diff --check
+git diff -- frontend\tsconfig.json
+git status --short --ignored artifacts frontend\artifacts frontend\.next-build frontend\.next
+```
+
+All final checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- Touched-file UTF-8 hygiene scan found no replacement characters or mojibake markers.
+- Project verifier passed with `content_production_contract_checked=1499`.
+- TypeScript check passed through `npm run lint`.
+- Focused Chromium E2E passed for non-array image payload fallback.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed and `frontend/tsconfig.json` had no build-generated diff.
+- Only ignored artifact/build directories are present under `artifacts/`, `frontend/.next-build/`, and `frontend/.next/`.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 16/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 81/100
+
+### Result
+
+Kept. Public preview now has CI coverage for non-array image-list payloads, proving unexpected cover payload shapes degrade to the text-cover fallback while the draft and manual review warning remain visible.
+
+### Remaining risk
+
+- Public preview cover fallback branches are now covered for failed lookup, malformed array items, and non-array payloads; future risk is lower-value unless cover rendering changes.
+- Screenshot/build artifacts remain ignored and are not committed.
+
+### Next candidate loop
+
+- Expand one-click alignment checks to another custom current-facts topic such as official logo/price on both PC and mobile, or audit prompt/runtime labels for current-facts source requirements.
