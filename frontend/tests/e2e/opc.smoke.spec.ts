@@ -1527,7 +1527,7 @@ test.describe("OPC smoke coverage", () => {
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 
-  test("mobile published generation status stops at manual lifecycle review", async ({ page }) => {
+  test("mobile published generation status stops at manual lifecycle review", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const acceptedLogin = createLoginInput();
     const preset = requireTopicPreset("source-official-fee-check");
@@ -1563,6 +1563,9 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("draft-preview-lifecycle-warning")).toContainText(
       "后端返回状态为「已发布」"
     );
+    const mobileLifecycleWarningBox = await page.getByTestId("draft-preview-lifecycle-warning").boundingBox();
+    expect(mobileLifecycleWarningBox?.width ?? 0).toBeGreaterThan(300);
+    expect(mobileLifecycleWarningBox?.height ?? 0).toBeGreaterThan(40);
     await expect(page.getByTestId("draft-preview-prepublish-check-human")).toContainText("需补充");
     await expect(page.getByTestId("draft-open-xiaohongshu")).toBeDisabled();
     await expect(page.getByTestId("draft-open-xiaohongshu")).toContainText("需先核对状态");
@@ -1570,6 +1573,11 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("draft-preview-copy")).toContainText("需先核对状态");
     await expect(page.getByTestId("draft-copy-preview-link")).toBeDisabled();
     await expect(page.getByTestId("draft-copy-preview-link")).toContainText("需先核对状态");
+    await attachScreenshotEvidence(page, testInfo, "mobile-published-lifecycle-warning.png", {
+      minBytes: 14_000,
+      minHeight: 800,
+      minWidth: 390
+    });
 
     expect(generationRequests.sourcePreview).toHaveLength(1);
     expect(generationRequests.contentGenerate).toHaveLength(1);
@@ -2759,7 +2767,7 @@ test.describe("OPC smoke coverage", () => {
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 
-  test("PC published generation status stops at manual lifecycle review", async ({ page }) => {
+  test("PC published generation status stops at manual lifecycle review", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     const acceptedLogin = createLoginInput();
     const preset = requireTopicPreset("source-official-fee-check");
@@ -2806,6 +2814,9 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("pc-export-lifecycle-warning")).toContainText(
       "发布前请先核对人工确认记录；OPC 不会自动发布。"
     );
+    const pcLifecycleWarningBox = await page.getByTestId("pc-export-lifecycle-warning").boundingBox();
+    expect(pcLifecycleWarningBox?.width ?? 0).toBeGreaterThan(360);
+    expect(pcLifecycleWarningBox?.height ?? 0).toBeGreaterThan(44);
     await expect(page.getByTestId("cover-generate-button")).toBeDisabled();
     await expect(page.getByTestId("cover-generate-button")).toContainText("需先核对状态");
     await expect(page.getByTestId("pc-export-copy-button")).toBeDisabled();
@@ -2814,6 +2825,11 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("pc-export-cover-card")).toContainText(
       "生成后只是待确认素材，不会自动发布。"
     );
+    await attachScreenshotEvidence(page, testInfo, "pc-published-lifecycle-warning.png", {
+      minBytes: 20_000,
+      minHeight: 700,
+      minWidth: 1000
+    });
 
     const draftCard = page.getByTestId("draft-history-card").filter({ hasText: preset.topic }).first();
     await expect(page.getByTestId("draft-history-strip")).toBeVisible();

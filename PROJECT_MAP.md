@@ -58,6 +58,7 @@ Last updated: 2026-06-16
 - E2E smoke tests: run from `frontend/` with `npm run e2e`; specs live in `frontend/tests/e2e/`.
 - Playwright starts the local Next dev server automatically when `OPC_BASE_URL` is not provided.
 - The PC/mobile login-shell smoke test attaches validated screenshot evidence to Playwright results without committing image baselines.
+- Published-status lifecycle smoke tests attach validated warning-surface screenshots while keeping publish/copy actions disabled.
 
 ## Deployment and Build
 
