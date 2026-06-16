@@ -1675,9 +1675,13 @@ def validate_content_production_contract() -> int:
 
     mobile_review_e2e_contracts = [
         "mobile review queue submits human decisions without platform publishing",
+        "mobile review decision failure keeps draft queued without publishing",
         'page.getByTestId("mobile-review-knowledge-list")).toContainText(approvePreset.topic)',
         'page.getByTestId("mobile-review-web-list")).toContainText(approvePreset.topic)',
+        'page.getByTestId("mobile-review-knowledge-list")).toContainText(preset.topic)',
+        'page.getByTestId("mobile-review-web-list")).toContainText(preset.topic)',
         'expectNoHorizontalViewportOverflow(page, "mobile review detail evidence"',
+        'expectNoHorizontalViewportOverflow(page, "mobile review failure detail evidence"',
         '{ label: "source evidence", testId: "mobile-review-source-evidence" }',
         '{ label: "approve action", testId: "mobile-review-detail-approve" }',
         '{ label: "request changes action", testId: "mobile-review-detail-request-changes" }',

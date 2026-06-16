@@ -1827,6 +1827,17 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("mobile-review-status")).toContainText(
       "E2E 人工确认服务暂时不可用，请稍后重试。"
     );
+    await expect(page.getByTestId("mobile-review-source-evidence")).toContainText(preset.topic);
+    await expect(page.getByTestId("mobile-review-knowledge-list")).toContainText(preset.topic);
+    await expect(page.getByTestId("mobile-review-web-list")).toContainText(preset.topic);
+    await expectNoHorizontalViewportOverflow(page, "mobile review failure detail evidence", [
+      { label: "detail sheet", testId: "mobile-review-detail" },
+      { label: "source evidence", testId: "mobile-review-source-evidence" },
+      { label: "knowledge list", testId: "mobile-review-knowledge-list" },
+      { label: "web list", testId: "mobile-review-web-list" },
+      { label: "approve action", testId: "mobile-review-detail-approve" },
+      { label: "request changes action", testId: "mobile-review-detail-request-changes" }
+    ]);
     expect(reviewRequests.reviews).toHaveLength(1);
     expect(reviewRequests.reviewUrls[0]).toContain(`/content/${E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID}/reviews`);
     expect(reviewRequests.reviews[0]).toMatchObject({
