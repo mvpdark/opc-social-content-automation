@@ -297,6 +297,25 @@ function buildE2eSourceContext(
       }
     ],
     knowledge_query: preset.knowledgeQuery,
+    promotion_brief: {
+      cover_angle: preset.coverDirection,
+      cta: `E2E CTA: ask a ${label} reader to share background for manual review.`,
+      forbidden_claims: ["guaranteed admission", "fake rankings", "fake school logos"],
+      intent: {
+        guidance: `Keep the draft aligned with ${label} topic intent.`,
+        key: preset.key.split("-")[0],
+        label
+      },
+      manual_review_required: true,
+      pain_point: `E2E pain point for ${preset.topic}`,
+      quality_checks: ["topic intent preserved", "manual review remains required"],
+      source_requirements: emptyWebResults
+        ? ["verification framework only; do not name schools, prices, logos, or rankings"]
+        : ["cite only E2E source cards before making current-fact claims"],
+      success_metric: "qualified comments and private messages",
+      target_persona: preset.audience,
+      trust_proof: "E2E source cards only"
+    },
     review_note: "受控 E2E 夹具：发布前仍需人工核对来源。",
     web_search: {
       answer: `受控测试联网摘要：${label}选题需要保留 ${preset.topic} 的意图。`,
@@ -920,11 +939,18 @@ async function runMobileTopicAlignmentScenario(
 
   await page.getByTestId("mobile-source-preview-button").click();
   await expect(page.getByTestId("mobile-source-evidence")).toContainText("2 条");
+  await expect(page.getByTestId("mobile-source-promotion-brief")).toContainText("推广简报");
+  await expect(page.getByTestId("mobile-source-promotion-brief")).toContainText(preset.audience);
+  await expect(page.getByTestId("mobile-source-promotion-brief")).toContainText("E2E CTA");
+  await expect(page.getByTestId("mobile-source-promotion-brief")).toContainText(
+    "复制或发布准备前仍需人工确认"
+  );
   await page.getByTestId("mobile-source-knowledge-toggle").click();
   await expect(page.getByTestId("mobile-source-knowledge-list")).toContainText(preset.topic);
   if (expectSourceEvidenceViewportFit) {
     await expectNoHorizontalViewportOverflow(page, "mobile source evidence", [
       { label: "card", testId: "mobile-source-evidence" },
+      { label: "promotion brief", testId: "mobile-source-promotion-brief" },
       { label: "knowledge list", testId: "mobile-source-knowledge-list" }
     ]);
   }
@@ -933,6 +959,7 @@ async function runMobileTopicAlignmentScenario(
   if (expectSourceEvidenceViewportFit) {
     await expectNoHorizontalViewportOverflow(page, "mobile source evidence", [
       { label: "card", testId: "mobile-source-evidence" },
+      { label: "promotion brief", testId: "mobile-source-promotion-brief" },
       { label: "web list", testId: "mobile-source-web-list" }
     ]);
   }
@@ -1034,6 +1061,12 @@ async function runPcTopicAlignmentScenario(
 
   await page.getByTestId("source-preview-button").click();
   await expect(page.getByTestId("generation-source-evidence")).toContainText("2 条");
+  await expect(page.getByTestId("source-promotion-brief")).toContainText("推广简报");
+  await expect(page.getByTestId("source-promotion-brief")).toContainText(preset.audience);
+  await expect(page.getByTestId("source-promotion-brief")).toContainText("E2E CTA");
+  await expect(page.getByTestId("source-promotion-brief")).toContainText(
+    "复制或发布准备前仍需人工确认"
+  );
   await page.getByTestId("source-knowledge-toggle").click();
   await expect(page.getByTestId("source-knowledge-list")).toContainText(
     `E2E 知识库引用：${preset.topic}`
@@ -1041,6 +1074,7 @@ async function runPcTopicAlignmentScenario(
   if (expectSourceEvidenceViewportFit) {
     await expectNoHorizontalViewportOverflow(page, "PC source evidence", [
       { label: "card", testId: "generation-source-evidence" },
+      { label: "promotion brief", testId: "source-promotion-brief" },
       { label: "knowledge list", testId: "source-knowledge-list" }
     ]);
   }
@@ -1051,6 +1085,7 @@ async function runPcTopicAlignmentScenario(
   if (expectSourceEvidenceViewportFit) {
     await expectNoHorizontalViewportOverflow(page, "PC source evidence", [
       { label: "card", testId: "generation-source-evidence" },
+      { label: "promotion brief", testId: "source-promotion-brief" },
       { label: "web list", testId: "source-web-list" }
     ]);
   }
@@ -2977,9 +3012,16 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("mobile-review-source-evidence")).toContainText(approvePreset.topic);
     await expect(page.getByTestId("mobile-review-knowledge-list")).toContainText(approvePreset.topic);
     await expect(page.getByTestId("mobile-review-web-list")).toContainText(approvePreset.topic);
+    await expect(page.getByTestId("mobile-review-promotion-brief")).toContainText("推广简报");
+    await expect(page.getByTestId("mobile-review-promotion-brief")).toContainText(approvePreset.audience);
+    await expect(page.getByTestId("mobile-review-promotion-brief")).toContainText("E2E CTA");
+    await expect(page.getByTestId("mobile-review-promotion-brief")).toContainText(
+      "复制或发布准备前仍需人工确认"
+    );
     await expectNoHorizontalViewportOverflow(page, "mobile review detail evidence", [
       { label: "detail sheet", testId: "mobile-review-detail" },
       { label: "source evidence", testId: "mobile-review-source-evidence" },
+      { label: "promotion brief", testId: "mobile-review-promotion-brief" },
       { label: "knowledge list", testId: "mobile-review-knowledge-list" },
       { label: "web list", testId: "mobile-review-web-list" },
       { label: "approve action", testId: "mobile-review-detail-approve" },

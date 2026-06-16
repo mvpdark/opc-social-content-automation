@@ -79,6 +79,7 @@ def validate_required_files() -> int:
         ROOT / "frontend" / "lib" / "status-labels.ts",
         ROOT / "frontend" / "lib" / "tags.ts",
         ROOT / "frontend" / "lib" / "xhs-stickers.tsx",
+        ROOT / "frontend" / "components" / "promotion-brief-summary.tsx",
         ROOT / "docs" / "RUNBOOK.md",
         ROOT / "docs" / "CLOUDFLARE_OPC.md",
         ROOT / "docs" / "SECURITY_NOTES.md",
@@ -1559,6 +1560,9 @@ def validate_content_production_contract() -> int:
     mobile_source_evidence_text = (
         ROOT / "frontend" / "components" / "mobile-source-evidence-panel.tsx"
     ).read_text(encoding="utf-8")
+    promotion_brief_summary_text = (
+        ROOT / "frontend" / "components" / "promotion-brief-summary.tsx"
+    ).read_text(encoding="utf-8")
     service_error_text = (
         ROOT / "frontend" / "lib" / "service-error-copy.ts"
     ).read_text(encoding="utf-8")
@@ -1945,7 +1949,10 @@ def validate_content_production_contract() -> int:
         (
             generated_assets_text,
             [
-                "promotion_brief?: Record<string, unknown>;",
+                "export type GenerationPromotionBrief",
+                "promotion_brief?: GenerationPromotionBrief | null;",
+                "export function promotionBriefDisplayItems",
+                "复制或发布准备前仍需人工确认",
             ],
             "promotion brief source-context type",
         ),
@@ -2021,6 +2028,63 @@ def validate_content_production_contract() -> int:
         ),
     ]
     for text, snippets, contract_name in draft_schema_contracts:
+        for snippet in snippets:
+            total += 1
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
+
+    promotion_brief_visibility_contracts = [
+        (
+            promotion_brief_summary_text,
+            [
+                "export function PromotionBriefSummary",
+                "promotionBriefDisplayItems(sourceContext)",
+                "推广简报",
+                "约束撰稿策略、来源边界和行动引导",
+                "发布前仍需人工复核",
+            ],
+            "promotion brief summary component",
+        ),
+        (
+            source_evidence_text,
+            [
+                "PromotionBriefSummary",
+                'testId="source-promotion-brief"',
+            ],
+            "PC source evidence promotion brief visibility",
+        ),
+        (
+            mobile_source_evidence_text,
+            [
+                "PromotionBriefSummary",
+                'testId="mobile-source-promotion-brief"',
+                'variant="mobile"',
+            ],
+            "mobile source evidence promotion brief visibility",
+        ),
+        (
+            mobile_review_text,
+            [
+                "PromotionBriefSummary",
+                'testId="mobile-review-promotion-brief"',
+                'variant="mobile"',
+            ],
+            "mobile review promotion brief visibility",
+        ),
+        (
+            e2e_text,
+            [
+                "promotion_brief",
+                "source-promotion-brief",
+                "mobile-source-promotion-brief",
+                "mobile-review-promotion-brief",
+                "E2E CTA",
+                "复制或发布准备前仍需人工确认",
+            ],
+            "promotion brief visibility E2E",
+        ),
+    ]
+    for text, snippets, contract_name in promotion_brief_visibility_contracts:
         for snippet in snippets:
             total += 1
             if snippet not in text:

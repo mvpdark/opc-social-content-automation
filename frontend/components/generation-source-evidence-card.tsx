@@ -15,6 +15,7 @@ import {
   type KnowledgeItem
 } from "@/lib/knowledge-api";
 import { scrollElementIntoView } from "@/lib/scroll-into-view";
+import { PromotionBriefSummary } from "@/components/promotion-brief-summary";
 
 const secondaryButtonClass =
   "workspace-button workspace-button-secondary glass-control flex items-center justify-center gap-2 rounded-md border text-sm font-medium text-ink";
@@ -144,6 +145,7 @@ export function GenerationSourceEvidenceCard({
           此选题需要联网来源；未拿到 Tavily 结果前，不要让模型猜测学校、价格、logo 或排名结论。
         </div>
       ) : null}
+      <PromotionBriefSummary sourceContext={sourceContext} testId="source-promotion-brief" />
       <div className="workspace-evidence-switcher mt-3 rounded-md border border-line bg-mist/45 p-1.5" data-testid="source-evidence-switcher">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <button

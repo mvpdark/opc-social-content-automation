@@ -14,10 +14,28 @@ export type GenerationWebSearchSource = {
   url: string;
 };
 
+export type GenerationPromotionBrief = {
+  cover_angle?: string;
+  cta?: string;
+  forbidden_claims?: string[];
+  intent?: {
+    guidance?: string;
+    key?: string;
+    label?: string;
+  };
+  manual_review_required?: boolean;
+  pain_point?: string;
+  quality_checks?: string[];
+  source_requirements?: string[];
+  success_metric?: string;
+  target_persona?: string;
+  trust_proof?: string;
+};
+
 export type GenerationSourceContext = {
   knowledge_items?: GenerationKnowledgeSource[];
   knowledge_query?: string | null;
-  promotion_brief?: Record<string, unknown>;
+  promotion_brief?: GenerationPromotionBrief | null;
   review_note?: string;
   web_search?: {
     answer?: string | null;
@@ -64,6 +82,52 @@ export function generationSourceContextStats(
     webEvidenceCountLabel: webCount ? `${webCount} 条` : webRequired ? "未返回" : "未启用",
     webRequired
   };
+}
+
+function firstDisplayString(values: string[] | undefined) {
+  return values?.find((item) => item.trim().length > 0)?.trim() ?? "";
+}
+
+export function promotionBriefDisplayItems(
+  sourceContext: GenerationSourceContext | null | undefined
+) {
+  const brief = sourceContext?.promotion_brief;
+  if (!brief) {
+    return [];
+  }
+
+  return [
+    {
+      key: "intent",
+      label: "选题意图",
+      value: brief.intent?.label ?? brief.intent?.key ?? ""
+    },
+    {
+      key: "persona",
+      label: "目标人群",
+      value: brief.target_persona ?? ""
+    },
+    {
+      key: "cta",
+      label: "行动引导",
+      value: brief.cta ?? ""
+    },
+    {
+      key: "source",
+      label: "来源边界",
+      value: firstDisplayString(brief.source_requirements)
+    },
+    {
+      key: "cover",
+      label: "封面角度",
+      value: brief.cover_angle ?? ""
+    },
+    {
+      key: "review",
+      label: "人工复核",
+      value: brief.manual_review_required ? "复制或发布准备前仍需人工确认" : ""
+    }
+  ].filter((item) => item.value.trim().length > 0);
 }
 
 export type GeneratedImageAsset = {

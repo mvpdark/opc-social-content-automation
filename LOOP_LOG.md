@@ -8044,3 +8044,51 @@ If the backend builds a promotion brief from the detected topic intent and sourc
 - The brief is currently payload/log/source-context data rather than a visible UI summary.
 - Local deterministic draft output does not yet surface all brief fields in copy; next loops can add UI summary, fact-ledger cards, or draft scoring.
 - Brief templates are rule-based and should be refined with reviewed campaign feedback.
+
+## Loop 117 - Promotion brief visible review summary
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 116 added a structured promotion brief to backend draft payloads and source context, but operators still could not inspect that brief while checking PC/mobile source evidence or mobile review details. For postgraduate-to-PhD promotion, that made persona, CTA, source boundary, cover angle, and manual-review requirements less visible at the exact point where humans decide whether the draft is usable.
+
+### Hypothesis
+
+If PC/mobile source evidence and mobile review details render a compact promotion brief summary, then users can verify topic intent, target persona, CTA, source requirements, cover direction, and human-review requirements before copy/export decisions without adding automated publishing or weakening source safeguards.
+
+### Patch
+
+- Added a shared frontend promotion brief summary component.
+- Typed promotion brief fields and added display helpers for intent, persona, CTA, source boundary, cover angle, and manual-review requirement.
+- Rendered the brief in PC source evidence, mobile source evidence, and mobile review source evidence.
+- Extended E2E fixtures/assertions and verifier contracts so future regressions remove visible promotion guidance only by breaking tests.
+
+### Verification
+
+- `npm run lint` in `frontend/` passed.
+- `npm run typecheck` in `frontend/` passed.
+- `.venv\Scripts\python.exe scripts\verify_project.py --keep-cache` passed: python files compiled 86; required files 47; safety gates 174; content production contract 1618; text hygiene files 132.
+- `npm run e2e -- --grep "mobile one-click generation keeps selected source logo-price topic|PC one-click generation keeps selected source logo-price topic|mobile review queue submits human decisions"` passed: 3 Playwright tests.
+- `npm run build` in `frontend/` passed; `frontend/tsconfig.json` had no diff after build.
+- `git diff --check` passed.
+
+### Score
+
+- Product value: 23/30
+- Correctness: 18/20
+- Test coverage: 18/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX clarity: 4/5
+- Total: 87/100
+
+### Result
+
+- Verified. PC/mobile source evidence and mobile review details now show the promotion brief summary, making intent, persona, CTA, source boundary, cover angle, and human-review requirements visible before copy/export decisions.
+
+### Remaining risk
+
+- The summary depends on `source_context.promotion_brief`; older drafts without that field render no brief, by design.
+- This improves review visibility but does not yet score title/body/tag/cover quality against the brief.
+- Fact-ledger/source-card UI remains a future loop for stronger current-fact traceability.

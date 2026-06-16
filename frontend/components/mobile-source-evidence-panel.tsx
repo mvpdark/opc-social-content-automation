@@ -15,6 +15,7 @@ import {
   type KnowledgeItem
 } from "@/lib/knowledge-api";
 import { scrollElementIntoView } from "@/lib/scroll-into-view";
+import { PromotionBriefSummary } from "@/components/promotion-brief-summary";
 
 const mobileEvidenceExcerptClass =
   "mt-1 max-h-28 overflow-y-auto whitespace-pre-wrap break-words pr-1 text-[11px] font-medium leading-5 text-muted";
@@ -131,6 +132,11 @@ export function MobileSourceEvidencePanel({
           此选题需要联网来源；未拿到 Tavily 结果前，不要让模型猜测学校、价格、logo 或排名结论。
         </div>
       ) : null}
+      <PromotionBriefSummary
+        sourceContext={sourceContext}
+        testId="mobile-source-promotion-brief"
+        variant="mobile"
+      />
       <div
         className="mt-3 rounded-[20px] border border-white/[0.86] bg-white/60 p-1.5"
         data-testid="mobile-source-evidence-switcher"

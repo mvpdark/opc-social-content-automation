@@ -14,6 +14,7 @@ import {
 import { getApiBase } from "@/lib/api-base";
 import { resolveAssetUrl } from "@/lib/asset-url";
 import { addMobileBackHandler } from "@/lib/mobile-back-navigation";
+import { PromotionBriefSummary } from "@/components/promotion-brief-summary";
 import {
   generationSourceContextStats,
   isGeneratedContent,
@@ -685,6 +686,11 @@ function ReviewEvidenceBlock({ sourceContext }: { sourceContext: GenerationSourc
           检索词：{sourceContext.knowledge_query}
         </p>
       ) : null}
+      <PromotionBriefSummary
+        sourceContext={sourceContext}
+        testId="mobile-review-promotion-brief"
+        variant="mobile"
+      />
       {knowledgeItems.length ? (
         <div className="mt-3 space-y-2" data-testid="mobile-review-knowledge-list">
           <div className="text-[11px] font-black text-muted">知识库引用</div>
