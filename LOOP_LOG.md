@@ -6616,3 +6616,71 @@ Kept. Mobile export handoff messages now reinforce that Xiaohongshu submission r
 ### Next candidate loop
 
 - Add a small E2E/static contract for public preview loading/error states, or continue scanning PC preview copy for missing manual-confirmation wording.
+
+## Loop 95 - Public preview invalid-link smoke coverage
+
+Date: 2026-06-16
+
+### Observation
+
+The public preview route has a clear invalid-link fallback in `PublicPreviewClient`, but the loading/error shell did not expose stable test IDs and there was no E2E test proving an invalid `/preview/[contentId]` resolves to a recoverable error instead of lingering on loading or calling preview APIs.
+
+### Hypothesis
+
+If the public preview loading/error shell exposes stable status selectors and a focused E2E covers invalid links, CI will catch preview-shell regressions before shared preview links can get stuck or make unnecessary backend calls.
+
+### Patch
+
+- Added stable `data-testid` selectors and a `data-state` attribute to the public preview loading/error shell.
+- Added a focused Chromium E2E for `/preview/not-a-draft` that verifies the route resolves to a clear invalid-link error, hides the ready preview page, stays within the mobile viewport, and makes no content/image API calls.
+- Added project verifier contracts for the public preview status shell and invalid-link E2E.
+- Updated `PROJECT_MAP.md` to document public preview invalid-link smoke coverage.
+
+### Verification
+
+```text
+cd frontend && npx --version
+node UTF-8 hygiene scan for touched files
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "public preview invalid link resolves to clear error without API calls" --project=chromium
+cd frontend && npm run build
+git diff --check
+```
+
+All final checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- Touched-file UTF-8 hygiene scan found no replacement characters or mojibake markers.
+- TypeScript check passed through `npm run lint`.
+- Project verifier passed with `content_production_contract_checked=1394`.
+- Focused Chromium E2E passed for the invalid public preview link.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed and `frontend/tsconfig.json` had no build-generated diff.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 14/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 14/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 78/100
+
+### Result
+
+Kept. Public preview invalid links now have CI-protected, viewport-safe error resolution without unnecessary backend calls.
+
+### Remaining risk
+
+- This loop covers invalid-link recovery; valid public preview content rendering is already supported but still lacks a dedicated standalone public-preview E2E.
+- Screenshot/build artifacts remain ignored and are not committed.
+
+### Next candidate loop
+
+- Add focused valid public preview rendering coverage with a mocked content/image response, or continue scanning PC preview copy for missing manual-confirmation wording.

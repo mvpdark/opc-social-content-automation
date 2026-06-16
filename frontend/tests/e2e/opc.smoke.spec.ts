@@ -1143,6 +1143,33 @@ test.describe("OPC smoke coverage", () => {
     });
   });
 
+  test("public preview invalid link resolves to clear error without API calls", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const previewApiRequests: string[] = [];
+    await page.route(/\/api\/(content|image)\//, async (route) => {
+      previewApiRequests.push(route.request().url());
+      await route.fulfill({
+        body: JSON.stringify({ detail: "E2E guard blocked unexpected public preview API call." }),
+        contentType: "application/json",
+        status: 500
+      });
+    });
+
+    await page.goto(`${BASE_URL}/preview/not-a-draft`);
+
+    await expect(page.getByTestId("public-preview-state")).toHaveAttribute("data-state", "error", {
+      timeout: 7000
+    });
+    await expect(page.getByTestId("public-preview-status-title")).toContainText("预览打不开");
+    await expect(page.getByTestId("public-preview-status-message")).toContainText("预览链接无效");
+    await expect(page.getByTestId("public-preview-page")).toHaveCount(0);
+    await expectNoHorizontalViewportOverflow(page, "public preview invalid link", [
+      { label: "status shell", testId: "public-preview-state" },
+      { label: "status card", testId: "public-preview-status-card" }
+    ]);
+    expect(previewApiRequests).toEqual([]);
+  });
+
   for (const width of [360, 390, 414]) {
     test(`mobile route resolves login-state checking at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 844 });

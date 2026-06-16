@@ -86,15 +86,23 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
 
   if (status !== "ready" || !content) {
     return (
-      <main className="flex min-h-[100dvh] items-center justify-center bg-white px-6 text-ink">
-        <section className="w-full max-w-sm text-center">
+      <main
+        className="flex min-h-[100dvh] items-center justify-center bg-white px-6 text-ink"
+        data-state={status}
+        data-testid="public-preview-state"
+      >
+        <section className="w-full max-w-sm text-center" data-testid="public-preview-status-card">
           {status === "error" ? (
             <AlertCircle className="mx-auto h-8 w-8 text-[#ff2442]" />
           ) : (
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-[#ff2442] border-t-transparent" />
           )}
-          <h1 className="mt-4 text-lg font-bold">{status === "error" ? "预览打不开" : "正在加载"}</h1>
-          <p className="mt-2 text-sm leading-6 text-muted">{message}</p>
+          <h1 className="mt-4 text-lg font-bold" data-testid="public-preview-status-title">
+            {status === "error" ? "预览打不开" : "正在加载"}
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-muted" data-testid="public-preview-status-message">
+            {message}
+          </p>
         </section>
       </main>
     );

@@ -1603,6 +1603,41 @@ def validate_content_production_contract() -> int:
         if snippet not in image_service_text:
             raise SystemExit(f"Missing content production backend contract: {snippet}")
 
+    public_preview_contracts = [
+        (
+            public_preview_text,
+            [
+                'data-testid="public-preview-state"',
+                "data-state={status}",
+                'data-testid="public-preview-status-card"',
+                'data-testid="public-preview-status-title"',
+                'data-testid="public-preview-status-message"',
+                "预览链接无效。",
+                "发布前预览 · 不会自动发布",
+            ],
+            "public preview status shell",
+        ),
+        (
+            e2e_text,
+            [
+                "public preview invalid link resolves to clear error without API calls",
+                'page.goto(`${BASE_URL}/preview/not-a-draft`)',
+                'page.getByTestId("public-preview-state")).toHaveAttribute("data-state", "error"',
+                'page.getByTestId("public-preview-status-title")).toContainText("预览打不开")',
+                'page.getByTestId("public-preview-status-message")).toContainText("预览链接无效")',
+                'page.getByTestId("public-preview-page")).toHaveCount(0)',
+                'expectNoHorizontalViewportOverflow(page, "public preview invalid link"',
+                "expect(previewApiRequests).toEqual([])",
+            ],
+            "public preview invalid-link E2E",
+        ),
+    ]
+    for text, snippets, contract_name in public_preview_contracts:
+        for snippet in snippets:
+            total += 1
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
+
     draft_schema_contracts = [
         (
             content_service_text,
