@@ -4308,3 +4308,67 @@ Kept. Long custom source topics now have the same PC/mobile source evidence view
 ### Next candidate loop
 
 - Add a source-required guard for another current-facts preset family, or broaden the viewport guard to source preview failure/recovery states.
+
+## Loop 60 - Source preview failure viewport guard
+
+Date: 2026-06-16
+
+### Observation
+
+The source preview failure tests already verify that generation is blocked and no false draft is created when source evidence cannot be loaded. They did not yet check that the visible recovery/error state stays within the PC and mobile viewport.
+
+### Hypothesis
+
+If PC and mobile source-preview failure tests assert the source evidence error card and retry control stay inside the viewport, then long source failure copy will not regress into horizontal overflow while still preserving the no-fake-draft safety gate.
+
+### Patch
+
+- Added `expectNoHorizontalViewportOverflow` checks to the mobile source-preview failure state.
+- Added the same viewport guard to the mobile custom fact-topic source-preview failure state.
+- Added matching PC viewport checks for normal source-preview failure and custom fact-topic source-preview failure.
+- Extended `scripts/verify_project.py` with source-preview failure viewport contracts.
+
+### Verification
+
+```text
+npm run lint
+python scripts\verify_project.py --keep-cache
+npx --version
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "source preview failure" --project=chromium
+npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+All checks passed.
+
+Evidence:
+
+- The focused Playwright run passed 4 tests covering mobile/PC source-preview failure and mobile/PC custom source-preview failure.
+- Each failure state still blocks generation, creates no false draft, and now keeps the source error card plus retry control inside the viewport.
+- `npm run build` passed, and `frontend/tsconfig.json` stayed restored after build.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 21/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 4/5
+- Total: 89/100
+
+### Result
+
+Kept. Source preview failure and recovery states now have PC/mobile viewport protection while preserving the no-generation/no-fake-draft safety behavior.
+
+### Remaining risk
+
+- This is still a fixture-backed geometry guard, not a screenshot visual diff.
+- Live provider error messages may vary and should be sampled when real Tavily/provider credentials are available.
+
+### Next candidate loop
+
+- Add a source-required guard for another current-facts preset family, or add screenshot-level source evidence visual QA for one focused viewport.

@@ -1845,6 +1845,21 @@ def validate_content_production_contract() -> int:
         if snippet not in e2e_text:
             raise SystemExit(f"Missing custom source viewport E2E contract: {snippet}")
 
+    source_preview_failure_viewport_contracts = [
+        "mobile source preview failure",
+        "mobile custom source preview failure",
+        "PC source preview failure",
+        "PC custom source preview failure",
+        "mobile-source-preview-button",
+        "source-preview-button",
+        "E2E source preview unavailable.",
+        "E2E mobile source preview unavailable.",
+    ]
+    for snippet in source_preview_failure_viewport_contracts:
+        total += 1
+        if snippet not in e2e_text:
+            raise SystemExit(f"Missing source preview failure viewport E2E contract: {snippet}")
+
     expected_topic_preset_prefixes = {"ranking", "route", "mentor", "timeline", "source", "sales"}
     actual_topic_preset_keys = set(re.findall(r'key: "([^"]+)"', topic_presets_text))
     actual_topic_preset_prefixes = {key.split("-", 1)[0] for key in actual_topic_preset_keys}

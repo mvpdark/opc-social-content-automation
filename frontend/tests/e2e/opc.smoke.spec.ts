@@ -1269,6 +1269,10 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("mobile-source-evidence")).toContainText(
       "E2E mobile source preview unavailable."
     );
+    await expectNoHorizontalViewportOverflow(page, "mobile source preview failure", [
+      { label: "error card", testId: "mobile-source-evidence" },
+      { label: "retry button", testId: "mobile-source-preview-button" }
+    ]);
     await expect(page.getByTestId("mobile-source-preview-button")).toBeEnabled();
     await expect(page.getByTestId("mobile-generate-draft")).toBeDisabled();
     await expect(page.getByTestId("mobile-generate-draft")).toContainText("先重新查看依据");
@@ -1321,6 +1325,10 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("mobile-source-evidence")).toContainText(
       "E2E mobile source preview unavailable."
     );
+    await expectNoHorizontalViewportOverflow(page, "mobile custom source preview failure", [
+      { label: "error card", testId: "mobile-source-evidence" },
+      { label: "retry button", testId: "mobile-source-preview-button" }
+    ]);
     await expect(page.getByTestId("mobile-generate-draft")).toBeDisabled();
     await expect(page.getByTestId("mobile-generate-draft")).toContainText("先重新查看依据");
     await expect(
@@ -1887,6 +1895,10 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("generation-source-evidence")).toContainText(
       "E2E source preview unavailable."
     );
+    await expectNoHorizontalViewportOverflow(page, "PC source preview failure", [
+      { label: "error card", testId: "generation-source-evidence" },
+      { label: "retry button", testId: "source-preview-button" }
+    ]);
     await expect(page.getByTestId("source-preview-button")).toBeEnabled();
     await expect(page.getByTestId("start-production-button")).toBeDisabled();
     await expect(page.getByTestId("start-production-button")).toContainText("先重新查看依据");
@@ -1942,6 +1954,10 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("generation-source-evidence")).toContainText(
       "E2E source preview unavailable."
     );
+    await expectNoHorizontalViewportOverflow(page, "PC custom source preview failure", [
+      { label: "error card", testId: "generation-source-evidence" },
+      { label: "retry button", testId: "source-preview-button" }
+    ]);
     await expect(page.getByTestId("source-preview-button")).toBeEnabled();
     await expect(page.getByTestId("start-production-button")).toBeDisabled();
     await expect(page.getByTestId("start-production-button")).toContainText("先重新查看依据");
