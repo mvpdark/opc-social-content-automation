@@ -3521,3 +3521,76 @@ Kept. The mobile missing-cover recovery path now has E2E protection for the visi
 ### Next candidate loop
 
 - Add PC cover-failure checklist assertions, or start a small recovery prompt for incomplete draft fields before preview/copy.
+
+## Loop 49 - PC missing-cover checklist coverage
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 48 protected the mobile missing-cover path by asserting that the prepublish checklist remains visible and marks the cover item as needing补充. The PC cover-failure E2E already verifies that the draft remains available for preview/copy, but it does not assert the export checklist's cover recovery state.
+
+### Hypothesis
+
+If the PC cover-failure smoke test asserts the export checklist and missing-cover cover item, then both desktop and mobile workflows will protect the same human-review guidance when cover generation fails.
+
+### Patch
+
+Files changed:
+
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Strengthened the PC cover-failure E2E path to require the export prepublish checklist after failed cover generation.
+- Asserted that the PC cover checklist item shows `需补充` and the missing-cover explanation.
+- Added verifier contracts for the PC missing-cover checklist coverage.
+
+### Verification
+
+Commands run:
+
+```bash
+python scripts\verify_project.py --keep-cache
+# passed
+# content_production_contract_checked=1035
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC cover failure keeps source topic draft available for preview copy" --project=chromium
+# passed: 1 passed
+
+npm run build
+# passed
+
+npm run typecheck
+# passed after build regenerated .next-build/types
+
+git diff --check
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 18/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 3/5
+- Total: 83/100
+
+### Result
+
+Kept. The PC missing-cover path now has E2E protection for visible prepublish checklist guidance, matching the mobile coverage from Loop 48.
+
+### Remaining risk
+
+- This loop adds regression coverage for existing UI behavior rather than changing recovery copy.
+- The first typecheck attempt was run in parallel with build and hit transient `.next-build/types` deletion; sequential typecheck after build passed.
+
+### Next candidate loop
+
+- Start a small recovery prompt for incomplete draft fields before preview/copy, or add a lightweight unit-style check around platform copy helpers if the frontend test harness expands.

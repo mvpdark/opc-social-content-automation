@@ -1962,6 +1962,12 @@ test.describe("OPC smoke coverage", () => {
     await expect(
       page.getByText("文案已生成，但封面图未完成：PC 封面服务暂时不可用，请稍后重试。")
     ).toBeVisible();
+    await expect(page.getByTestId("pc-export-prepublish-check")).toContainText("发布前检查");
+    await expect(page.getByTestId("pc-export-prepublish-checklist")).toBeVisible();
+    await expect(page.getByTestId("pc-export-prepublish-check-cover")).toContainText("需补充");
+    await expect(page.getByTestId("pc-export-prepublish-check-cover")).toContainText(
+      "封面尚未生成或不可用"
+    );
 
     const draftCard = page.getByTestId("draft-history-card").filter({ hasText: preset.topic }).first();
     await expect(page.getByTestId("draft-history-strip")).toBeVisible();
