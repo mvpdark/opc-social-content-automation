@@ -1819,6 +1819,10 @@ def validate_content_production_contract() -> int:
         "mobile one-click generation keeps selected ranking project-list topic aligned through preview copy",
         "PC one-click generation keeps selected ranking project-list topic aligned through preview copy",
         "presetKey: \"ranking-water-programs\"",
+        "expectSourceEvidenceViewportFit: true",
+        "expectNoHorizontalViewportOverflow",
+        "mobile-source-knowledge-list",
+        "source-web-list",
         "expect(generationRequests.sourcePreview).toHaveLength(1)",
         "expect(String(generationRequests.imageGenerate[0].style_notes)).toContain(preset.coverDirection)",
     ]

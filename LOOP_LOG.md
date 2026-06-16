@@ -4183,3 +4183,66 @@ Kept. Ranking/project-list topics now have direct PC and mobile CI E2E coverage,
 ### Next candidate loop
 
 - Inspect the live mobile/PC source evidence UI for copy overflow at 390 px and 1280 px, or add a source-required guard for another current-facts preset family.
+
+## Loop 58 - Source evidence viewport guard
+
+Date: 2026-06-16
+
+### Observation
+
+The source evidence card uses wrapping and internal scroll areas, and the ranking/project-list E2E now confirms evidence content exists. However, the smoke suite did not assert that source evidence panels stay within the viewport on the most important mobile and desktop widths.
+
+### Hypothesis
+
+If the ranking project-list PC/mobile smoke path checks the source evidence card and expanded source lists against viewport bounds, then future changes that make evidence URLs, summaries, or long queries overflow horizontally will be caught before CI passes.
+
+### Patch
+
+- Added an optional `expectSourceEvidenceViewportFit` flag to the PC and mobile topic alignment E2E helpers.
+- Added `expectNoHorizontalViewportOverflow`, which checks visible source evidence panels against the active viewport width without failing on unrelated horizontal draft carousels.
+- Enabled the viewport guard for the PC and mobile `ranking-water-programs` smoke paths.
+- Extended `scripts/verify_project.py` so the source evidence viewport guard cannot be removed silently.
+
+### Verification
+
+```text
+npm run lint
+python scripts\verify_project.py --keep-cache
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "ranking project-list topic" --project=chromium
+npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+All checks passed.
+
+Evidence:
+
+- The focused Playwright run passed 2 tests, covering the mobile 390 px path and desktop 1280 px path for the ranking project-list preset.
+- The viewport guard checked both the source evidence card and the expanded knowledge/web source lists.
+- `npm run build` passed, and `frontend/tsconfig.json` stayed restored after build.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 21/30
+- Correctness: 18/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 4/5
+- Total: 88/100
+
+### Result
+
+Kept. The current-facts ranking/project-list path now protects not only content alignment and source usage, but also source evidence layout at the key PC/mobile viewport widths.
+
+### Remaining risk
+
+- This is a geometry regression guard, not a screenshot-level visual diff.
+- It checks the fixture-backed ranking project-list flow; live Tavily/source result shape still depends on configured provider behavior.
+
+### Next candidate loop
+
+- Add a source-required guard for another current-facts preset family, or inspect whether long custom source topics need the same viewport guard.

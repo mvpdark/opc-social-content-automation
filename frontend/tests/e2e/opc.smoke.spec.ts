@@ -92,12 +92,14 @@ type MobileReviewFixtureRequests = {
 
 type MobileTopicAlignmentScenarioOptions = {
   contentId: number;
+  expectSourceEvidenceViewportFit?: boolean;
   presetKey: string;
 };
 
 type PcTopicAlignmentScenarioOptions = {
   contentId: number;
   expectExportSafetyCopy?: boolean;
+  expectSourceEvidenceViewportFit?: boolean;
   presetKey: string;
 };
 
@@ -630,6 +632,27 @@ async function localStorageContains(page: Page, value: string) {
   }, value);
 }
 
+async function expectNoHorizontalViewportOverflow(
+  page: Page,
+  context: string,
+  targets: Array<{ label: string; testId: string }>
+) {
+  const viewport = page.viewportSize();
+  expect(viewport, `${context} viewport should be configured`).not.toBeNull();
+  const viewportWidth = viewport!.width;
+
+  for (const { label, testId } of targets) {
+    const locator = page.getByTestId(testId);
+    await expect(locator, `${context} ${label} should be visible`).toBeVisible();
+    const box = await locator.boundingBox();
+    expect(box, `${context} ${label} should have a layout box`).not.toBeNull();
+    expect(Math.floor(box!.x), `${context} ${label} left edge`).toBeGreaterThanOrEqual(-1);
+    expect(Math.ceil(box!.x + box!.width), `${context} ${label} right edge`).toBeLessThanOrEqual(
+      viewportWidth + 1
+    );
+  }
+}
+
 async function waitForMobileGenerationState(page: Page, stateText: string) {
   await expect(page.getByTestId("mobile-generation-progress")).toContainText(stateText, {
     timeout: 20000
@@ -650,7 +673,7 @@ function requireTopicPreset(key: string) {
 
 async function runMobileTopicAlignmentScenario(
   page: Page,
-  { contentId, presetKey }: MobileTopicAlignmentScenarioOptions
+  { contentId, expectSourceEvidenceViewportFit = false, presetKey }: MobileTopicAlignmentScenarioOptions
 ) {
   await page.setViewportSize({ width: 390, height: 844 });
   const acceptedLogin = createLoginInput();
@@ -675,8 +698,20 @@ async function runMobileTopicAlignmentScenario(
   await expect(page.getByTestId("mobile-source-evidence")).toContainText("2 条");
   await page.getByTestId("mobile-source-knowledge-toggle").click();
   await expect(page.getByTestId("mobile-source-knowledge-list")).toContainText(preset.topic);
+  if (expectSourceEvidenceViewportFit) {
+    await expectNoHorizontalViewportOverflow(page, "mobile source evidence", [
+      { label: "card", testId: "mobile-source-evidence" },
+      { label: "knowledge list", testId: "mobile-source-knowledge-list" }
+    ]);
+  }
   await page.getByTestId("mobile-source-web-toggle").click();
   await expect(page.getByTestId("mobile-source-web-list")).toContainText(preset.topic);
+  if (expectSourceEvidenceViewportFit) {
+    await expectNoHorizontalViewportOverflow(page, "mobile source evidence", [
+      { label: "card", testId: "mobile-source-evidence" },
+      { label: "web list", testId: "mobile-source-web-list" }
+    ]);
+  }
 
   await page.getByTestId("mobile-generate-draft").click();
   await expect(page.getByTestId("mobile-generate-draft")).toContainText("重新一键生成");
@@ -732,7 +767,12 @@ async function runMobileTopicAlignmentScenario(
 
 async function runPcTopicAlignmentScenario(
   page: Page,
-  { contentId, expectExportSafetyCopy = false, presetKey }: PcTopicAlignmentScenarioOptions
+  {
+    contentId,
+    expectExportSafetyCopy = false,
+    expectSourceEvidenceViewportFit = false,
+    presetKey
+  }: PcTopicAlignmentScenarioOptions
 ) {
   await page.setViewportSize({ width: 1280, height: 900 });
   const acceptedLogin = createLoginInput();
@@ -764,10 +804,22 @@ async function runPcTopicAlignmentScenario(
   await expect(page.getByTestId("source-knowledge-list")).toContainText(
     `E2E 知识库引用：${preset.topic}`
   );
+  if (expectSourceEvidenceViewportFit) {
+    await expectNoHorizontalViewportOverflow(page, "PC source evidence", [
+      { label: "card", testId: "generation-source-evidence" },
+      { label: "knowledge list", testId: "source-knowledge-list" }
+    ]);
+  }
   await page.getByTestId("source-web-toggle").click();
   await expect(page.getByTestId("source-web-list")).toContainText(
     `E2E 联网来源：${preset.topic}`
   );
+  if (expectSourceEvidenceViewportFit) {
+    await expectNoHorizontalViewportOverflow(page, "PC source evidence", [
+      { label: "card", testId: "generation-source-evidence" },
+      { label: "web list", testId: "source-web-list" }
+    ]);
+  }
 
   await page.getByTestId("start-production-button").click();
   await expect(page.getByText(/文案和封面图已生成/)).toBeVisible();
@@ -1185,6 +1237,7 @@ test.describe("OPC smoke coverage", () => {
   test("mobile one-click generation keeps selected ranking project-list topic aligned through preview copy", async ({ page }) => {
     await runMobileTopicAlignmentScenario(page, {
       contentId: E2E_MOBILE_RANKING_PROGRAMS_CONTENT_ID,
+      expectSourceEvidenceViewportFit: true,
       presetKey: "ranking-water-programs"
     });
   });
@@ -1752,6 +1805,7 @@ test.describe("OPC smoke coverage", () => {
   test("PC one-click generation keeps selected ranking project-list topic aligned through preview copy", async ({ page }) => {
     await runPcTopicAlignmentScenario(page, {
       contentId: E2E_PC_RANKING_PROGRAMS_CONTENT_ID,
+      expectSourceEvidenceViewportFit: true,
       presetKey: "ranking-water-programs"
     });
   });
