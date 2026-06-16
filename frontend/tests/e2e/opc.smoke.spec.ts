@@ -64,6 +64,8 @@ type MobileGenerationFixtureOptions = {
   failContent?: boolean;
   failContentDetail?: string;
   failCover?: boolean;
+  failDraftHistory?: boolean;
+  failDraftHistoryUntilReleased?: boolean;
   failReviewQueue?: boolean;
   failReviewQueueUntilReleased?: boolean;
   failSourcePreview?: boolean;
@@ -81,6 +83,7 @@ type PcGenerationFixtureRequests = MobileGenerationFixtureRequests & {
   contentList: number;
   imageList: number;
   providerStatus: number;
+  releaseDraftHistoryFailures: () => void;
   releaseReviewQueueFailures: () => void;
   reviewQueue: number;
   rewrite: JsonPayload[];
@@ -508,12 +511,15 @@ async function mockPcGenerationFixture(
     failContent = false,
     failContentDetail,
     failCover = false,
+    failDraftHistory = false,
+    failDraftHistoryUntilReleased = false,
     failReviewQueue = false,
     failReviewQueueUntilReleased = false,
     failSourcePreview = false,
     responseTags
   }: MobileGenerationFixtureOptions = {}
 ) {
+  let draftHistoryFailuresReleased = false;
   let reviewQueueFailuresReleased = false;
   const requests: PcGenerationFixtureRequests = {
     contentGenerate: [],
@@ -522,6 +528,9 @@ async function mockPcGenerationFixture(
     imageGenerate: [],
     imageList: 0,
     providerStatus: 0,
+    releaseDraftHistoryFailures: () => {
+      draftHistoryFailuresReleased = true;
+    },
     releaseReviewQueueFailures: () => {
       reviewQueueFailuresReleased = true;
     },
@@ -577,6 +586,14 @@ async function mockPcGenerationFixture(
   });
   await page.route(/\/api\/content\/list(?:\?|$)/, async (route) => {
     requests.contentList += 1;
+    if (failDraftHistory || (failDraftHistoryUntilReleased && !draftHistoryFailuresReleased)) {
+      await route.fulfill({
+        body: JSON.stringify({ detail: "E2E PC draft history unavailable." }),
+        contentType: "application/json",
+        status: 503
+      });
+      return;
+    }
     await route.fulfill({
       body: JSON.stringify(contentList),
       contentType: "application/json",
@@ -2103,6 +2120,52 @@ test.describe("OPC smoke coverage", () => {
 
     expect(generationRequests.reviewQueue).toBeGreaterThan(1);
     expect(generationRequests.contentList).toBeGreaterThan(0);
+    expect(generationRequests.contentGenerate).toHaveLength(0);
+    expect(generationRequests.imageGenerate).toHaveLength(0);
+    expect(generationRequests.rewrite).toHaveLength(0);
+    expect(generationRequests.forbiddenPublishing).toEqual([]);
+    expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
+  });
+
+  test("PC draft history read error keeps review queue available", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const acceptedLogin = createLoginInput();
+    const pendingPreset = requireTopicPreset("timeline-main");
+    await mockSuccessfulLogin(page, acceptedLogin.account);
+    const generationRequests = await mockPcGenerationFixture(page, pendingPreset, {
+      failDraftHistoryUntilReleased: true,
+      contentListItems: [
+        {
+          contentId: E2E_PC_REVIEW_QUEUE_CONTENT_ID,
+          preset: pendingPreset,
+          status: "review_pending"
+        }
+      ]
+    });
+
+    await page.goto(`${BASE_URL}/?theme=mint&tab=content&project=postgraduate-phd`);
+    await expect(page.getByTestId("pc-login-form")).toBeVisible({ timeout: 7000 });
+    await page.getByTestId("pc-login-account").fill(acceptedLogin.account);
+    await page.getByTestId("pc-login-password").fill(acceptedLogin.password);
+    await page.getByTestId("pc-login-submit").click();
+
+    await expect(page.getByTestId("draft-history-error")).toContainText(
+      "E2E PC draft history unavailable."
+    );
+    await expect(page.getByTestId(`pc-review-queue-card-${E2E_PC_REVIEW_QUEUE_CONTENT_ID}`)).toContainText(
+      pendingPreset.topic
+    );
+
+    generationRequests.releaseDraftHistoryFailures();
+    await page.getByTestId("draft-history-retry").click();
+
+    await expect(
+      page.getByTestId("draft-history-card").filter({ hasText: pendingPreset.topic }).first()
+    ).toBeVisible();
+    await expect(page.getByTestId("draft-history-error")).toHaveCount(0);
+
+    expect(generationRequests.contentList).toBeGreaterThan(1);
+    expect(generationRequests.reviewQueue).toBeGreaterThan(0);
     expect(generationRequests.contentGenerate).toHaveLength(0);
     expect(generationRequests.imageGenerate).toHaveLength(0);
     expect(generationRequests.rewrite).toHaveLength(0);

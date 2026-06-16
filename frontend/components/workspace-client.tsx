@@ -2477,6 +2477,8 @@ function ContentView({
   >({});
   const [pinnedDraftIds, setPinnedDraftIds] = useState<number[]>([]);
   const [draftActionError, setDraftActionError] = useState<string | null>(null);
+  const [draftHistoryError, setDraftHistoryError] = useState<string | null>(null);
+  const [draftHistoryReloadKey, setDraftHistoryReloadKey] = useState(0);
   const [reviewQueueError, setReviewQueueError] = useState<string | null>(null);
   const [reviewQueueLoading, setReviewQueueLoading] = useState(true);
   const [reviewQueueReloadKey, setReviewQueueReloadKey] = useState(0);
@@ -2512,6 +2514,7 @@ function ContentView({
         : current.filter((item) => item.id !== content.id)
     );
     setDraftActionError(null);
+    setDraftHistoryError(null);
     setReviewQueueError(null);
     saveStoredGeneratedContent(content);
   }
@@ -2604,6 +2607,12 @@ function ContentView({
     setReviewQueueReloadKey((current) => current + 1);
   }
 
+  function handleRetryDraftHistory() {
+    setPreviewLoading(true);
+    setDraftHistoryError(null);
+    setDraftHistoryReloadKey((current) => current + 1);
+  }
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const project = findEnabledCreationProject(params.get("project"));
@@ -2640,11 +2649,11 @@ function ContentView({
       try {
         const response = await fetch(`${API_BASE}/content/list?platform=xiaohongshu`);
         if (!response.ok) {
-          return;
+          throw new Error(await readApiError(response, "历史草稿读取失败。"));
         }
         const contents = (await response.json()) as unknown;
         if (!Array.isArray(contents)) {
-          return;
+          throw new Error("历史草稿格式异常，请稍后重试。");
         }
         const history = sortDraftHistory(
           contents.filter(isGeneratedContent).filter((content) => !isTestDraft(content)),
@@ -2658,6 +2667,7 @@ function ContentView({
           if (latestContent) {
             saveStoredGeneratedContent(latestContent);
           }
+          setDraftHistoryError(null);
         }
         for (const content of history) {
           void fetchLatestImage(content.id).then((image) => {
@@ -2673,7 +2683,10 @@ function ContentView({
             }
           });
         }
-      } catch (_error) {
+      } catch (error) {
+        if (active) {
+          setDraftHistoryError(error instanceof Error ? error.message : "历史草稿读取失败。");
+        }
         // Keep the local draft or full example visible when the database/API is not available.
       } finally {
         if (active) {
@@ -2686,7 +2699,7 @@ function ContentView({
     return () => {
       active = false;
     };
-  }, []);
+  }, [draftHistoryReloadKey]);
 
   useEffect(() => {
     let active = true;
@@ -2785,11 +2798,13 @@ function ContentView({
           content={previewContent}
           coverImageAsset={previewImageAsset}
           draftActionError={draftActionError}
+          draftHistoryError={draftHistoryError}
           history={draftHistory}
           imageAssetsByContentId={draftImagesByContentId}
           interfaceStyle={interfaceStyle}
           loading={previewLoading}
           onDeleteContent={handleDeleteDraft}
+          onRetryDraftHistory={handleRetryDraftHistory}
           onSelectContent={handleSelectDraft}
           onTogglePin={handleTogglePinDraft}
           pinnedContentIds={pinnedDraftIds}
@@ -5569,11 +5584,13 @@ function DraftPanel({
   content,
   coverImageAsset,
   draftActionError,
+  draftHistoryError,
   history,
   imageAssetsByContentId,
   interfaceStyle,
   loading,
   onDeleteContent,
+  onRetryDraftHistory,
   onSelectContent,
   onTogglePin,
   pinnedContentIds
@@ -5581,11 +5598,13 @@ function DraftPanel({
   content: GeneratedContent | null;
   coverImageAsset: GeneratedImageAsset | null;
   draftActionError: string | null;
+  draftHistoryError: string | null;
   history: GeneratedContent[];
   imageAssetsByContentId: Record<number, GeneratedImageAsset | null>;
   interfaceStyle: InterfaceStyle;
   loading: boolean;
   onDeleteContent: (contentId: number) => void;
+  onRetryDraftHistory: () => void;
   onSelectContent: (content: GeneratedContent) => void;
   onTogglePin: (contentId: number) => void;
   pinnedContentIds: number[];
@@ -5671,14 +5690,35 @@ function DraftPanel({
               横向滑动查看之前生成的图文；点击打开预览，长按卡片可置顶或删除。
             </p>
           </div>
-          <Pill tone={hasHistory ? "green" : loading ? "blue" : "amber"}>
-            {hasHistory ? `${history.length} 条` : loading ? "读取中" : "暂无草稿"}
+          <Pill tone={draftHistoryError ? "red" : hasHistory ? "green" : loading ? "blue" : "amber"}>
+            {draftHistoryError ? "读取失败" : hasHistory ? `${history.length} 条` : loading ? "读取中" : "暂无草稿"}
           </Pill>
         </div>
 
         {draftActionError ? (
           <div className="mt-3 rounded-md border border-coral/35 bg-coral/10 px-3 py-2 text-xs leading-5 text-ink">
             {draftActionError}
+          </div>
+        ) : null}
+
+        {draftHistoryError ? (
+          <div
+            className="mt-3 rounded-md border border-coral/35 bg-coral/10 px-3 py-3 text-xs leading-5 text-ink"
+            data-testid="draft-history-error"
+          >
+            <div className="font-semibold text-coral">历史草稿读取失败</div>
+            <p className="mt-1 text-muted">{draftHistoryError}</p>
+            <p className="mt-1 text-muted">
+              这不会触发生成、改写或发布；可以重新读取历史草稿，待人工确认队列会保持独立。
+            </p>
+            <button
+              className={`${secondaryButtonClass} mt-3 h-9 px-3 text-xs`}
+              data-testid="draft-history-retry"
+              onClick={onRetryDraftHistory}
+              type="button"
+            >
+              重新读取草稿
+            </button>
           </div>
         ) : null}
 

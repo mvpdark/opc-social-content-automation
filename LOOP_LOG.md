@@ -5670,3 +5670,70 @@ Kept. The PC pending-review queue now has a dedicated read-only backend boundary
 ### Next candidate loop
 
 - Add a visible draft-history read failure state, or add screenshot artifacts for PC/mobile lifecycle warning states.
+
+## Loop 81 - PC draft history read-error state
+
+Date: 2026-06-16
+
+### Observation
+
+After the review queue moved to `/content/review-queue`, the PC draft history still reads `/content/list?platform=xiaohongshu` silently. If that request fails, the page can keep a local/stored draft or show an empty history without telling the operator that history loading failed. That makes it harder to distinguish "no drafts" from "history unavailable".
+
+### Hypothesis
+
+If the PC draft history panel has its own visible read-error and retry control, then operators can recover draft history separately while the read-only review queue remains available and no generation or publishing action is introduced.
+
+### Patch
+
+- Added PC draft-history read error state and a separate retry key in `ContentView`.
+- Changed `/content/list?platform=xiaohongshu` failures from silent fallback into a visible, recoverable history error while preserving the local draft/example preview.
+- Added a `DraftPanel` error block with a retry action that clearly states it does not trigger generation, rewrite, publishing, or queue submission.
+- Extended the PC E2E fixture so draft history and review queue failures can be released independently.
+- Added Playwright coverage proving draft-history failure leaves the read-only review queue available and retry reloads only history without generation/image/rewrite/publishing calls.
+- Updated `scripts/verify_project.py` so the draft-history failure UI and E2E contract remain guarded.
+
+### Verification
+
+```text
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx --version
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC draft history read error keeps review queue available" --project=chromium
+cd frontend && npm run build
+git diff --check
+```
+
+All checks passed.
+
+Evidence:
+
+- TypeScript check passed through `npm run lint`.
+- Project verifier passed with `content_production_contract_checked=1279`.
+- `npx` is available at `11.12.1`.
+- The focused Chromium E2E passed: `PC draft history read error keeps review queue available`.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed with only the existing CRLF-to-LF normalization warning for the touched TSX file.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 23/30
+- Correctness: 19/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 5/5
+- Total: 90/100
+
+### Result
+
+Kept. PC operators now get a visible, recoverable draft-history read failure while the pending-review queue remains independently available and all publishing-like behavior stays blocked behind human review.
+
+### Remaining risk
+
+- The E2E is focused on PC history/queue isolation; mobile draft-history read errors remain covered by existing mobile flows but do not have this exact paired queue test.
+
+### Next candidate loop
+
+- Add a mobile-side history/read-error affordance or broaden E2E around source-preview failures for current-fact topics.
