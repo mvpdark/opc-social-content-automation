@@ -2272,6 +2272,11 @@ test.describe("OPC smoke coverage", () => {
     await expect(previewModal).toContainText(preset.topic);
     await expect(previewModal).toContainText(`#${expectedTags[0]}`);
     await expect(previewModal).toContainText("这是发布效果预览，不会自动发布");
+    await expect(page.getByTestId("pc-preview-modal-lifecycle-warning")).toContainText(
+      "后端返回状态为「已发布」"
+    );
+    await expect(page.getByTestId("pc-preview-modal-copy-button")).toBeDisabled();
+    await expect(page.getByTestId("pc-preview-modal-copy-button")).toContainText("需先核对状态");
 
     expect(generationRequests.providerStatus).toBeGreaterThan(0);
     expect(generationRequests.contentList).toBeGreaterThan(0);

@@ -5136,3 +5136,68 @@ Kept. PC generation cards now lock both cover generation and one-click copy when
 ### Next candidate loop
 
 - Inspect PC preview/manual-copy fallback behavior for unsafe lifecycle states, or add a compact screenshot artifact for one high-risk review surface.
+
+## Loop 73 - PC preview lifecycle copy guard
+
+Date: 2026-06-16
+
+### Observation
+
+Loop 72 blocked one-click copy on the PC generated-content card when the backend returns an unsafe lifecycle status such as `published`. The same content can still be opened from the draft history preview modal, and that modal has its own copy action that only checks for local test drafts. This creates a second copy/export path that does not honor the unsafe lifecycle warning.
+
+### Hypothesis
+
+If the PC preview modal uses the same lifecycle warning as the generated-content card, shows that warning in the modal, and disables modal copy for unsafe statuses, then already-published backend content cannot bypass manual review through preview copy.
+
+### Patch
+
+- Reused `generatedContentLifecycleWarning` inside the PC draft preview modal.
+- Disabled the modal copy button when previewed content is in an unsafe lifecycle state such as backend `published` or `submitted`.
+- Added an inline modal lifecycle warning with `pc-preview-modal-lifecycle-warning`.
+- Extended the PC published-status E2E to assert the modal warning, disabled modal copy button, and "需先核对状态" label.
+- Extended verifier contracts so the modal lifecycle lock and E2E checks cannot be removed silently.
+
+### Verification
+
+```text
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC published generation status stops at manual lifecycle review" --project=chromium
+cd frontend && npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+All checks passed.
+
+Evidence:
+
+- The focused Playwright run passed after opening the published-status draft from history and verifying the preview modal lifecycle warning plus disabled copy action.
+- Frontend typecheck and production build passed.
+- The project verifier now counts the added modal lifecycle contract.
+- `git diff --check` passed with only the existing CRLF-to-LF normalization warning for the touched TSX file.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 24/30
+- Correctness: 20/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 5/5
+- Total: 93/100
+
+### Result
+
+Kept. PC already-published content can no longer be copied through either the generated export card or the history preview modal before manual lifecycle review.
+
+### Remaining risk
+
+- This still protects the PC history preview path only for unsafe content statuses returned by the backend.
+- Future dedicated PC review workflows will need separate decision-failure and source-evidence coverage.
+
+### Next candidate loop
+
+- Inspect mobile draft preview copy for matching unsafe lifecycle protection, or add a compact screenshot artifact for one high-risk review surface.

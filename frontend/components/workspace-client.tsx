@@ -5450,7 +5450,9 @@ function DraftPanel({
   const coverLines = buildCoverLines(preview.title);
   const paragraphs = formatPreviewParagraphs(stripDuplicateStandaloneTagLines(preview.body, preview.tags));
   const tagLine = formatTagLine(preview.tags);
-  const canCopy = Boolean(content && !isTestDraft(content));
+  const previewLifecycleWarning = content ? generatedContentLifecycleWarning(content.status) : null;
+  const canCopy = Boolean(content && !isTestDraft(content) && !previewLifecycleWarning);
+  const previewTone = previewLifecycleWarning ? "red" : content ? "green" : loading ? "blue" : "amber";
   const coverImageUrl =
     content && coverImageAsset?.content_id === content.id
       ? resolveAssetUrl(coverImageAsset.image_url)
@@ -5499,7 +5501,7 @@ function DraftPanel({
 
   return (
     <Panel
-      action={<Pill tone={content ? "green" : loading ? "blue" : "amber"}>{preview.status}</Pill>}
+      action={<Pill tone={previewTone}>{preview.status}</Pill>}
       helper={`按${previewPlatformLabel}图文卡片和弹窗预览最终展示效果。`}
       title="创作台"
     >
@@ -5606,7 +5608,7 @@ function DraftPanel({
                     <div className="text-xs text-muted">发布前预览 - {preview.platform}</div>
                   </div>
                 </div>
-                <Pill tone={content ? "green" : loading ? "blue" : "amber"}>
+                <Pill tone={previewTone}>
                   {content ? "最新草稿" : loading ? "读取中" : "未生成"}
                 </Pill>
               </div>
@@ -5646,6 +5648,14 @@ function DraftPanel({
                 <div className="mt-5 rounded-md border border-amber/40 bg-amber/10 p-3 text-xs leading-5 text-ink">
                   这是发布效果预览，不会自动发布；粘贴到{previewPlatformLabel}前仍需要人工确认标题、正文、标签和封面。
                 </div>
+                {previewLifecycleWarning ? (
+                  <div
+                    className="mt-3 rounded-md border border-coral/40 bg-coral/10 p-3 text-xs leading-5 text-ink"
+                    data-testid="pc-preview-modal-lifecycle-warning"
+                  >
+                    {previewLifecycleWarning}
+                  </div>
+                ) : null}
                 {copyState === "failed" ? (
                   <div className="mt-3 rounded-md border border-coral/40 bg-coral/10 p-3 text-xs leading-5 text-ink">
                     当前没有可复制的正式草稿，或复制被浏览器拦截；下方已展开正文，可直接全选复制。
@@ -5680,7 +5690,11 @@ function DraftPanel({
                   type="button"
                 >
                   <Clipboard className="h-4 w-4" />
-                  {copyState === "copied" ? "已复制" : `复制${previewPlatformLabel}文案`}
+                  {previewLifecycleWarning
+                    ? "需先核对状态"
+                    : copyState === "copied"
+                      ? "已复制"
+                      : `复制${previewPlatformLabel}文案`}
                 </button>
               </div>
             </div>
