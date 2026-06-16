@@ -3741,3 +3741,74 @@ Kept. Mobile users now get the same explicit missing-tag recovery prompt as PC u
 ### Next candidate loop
 
 - Clean historical mojibake in Loop Engineering docs and visible frontend copy, or add a focused backend guard for too-thin generated draft bodies.
+
+## Loop 52 - Text hygiene marker enforcement
+
+Date: 2026-06-16
+
+### Observation
+
+The Loop Engineering docs render correctly when read as UTF-8. The project text hygiene guard already resolves Python Unicode escapes at runtime, but its marker table is easy to misread as checking escaped text rather than actual replacement/mojibake characters.
+
+### Hypothesis
+
+If `FORBIDDEN_TEXT_MARKERS` is written with explicit `chr(...)` markers and a self-check rejects escaped `\\uXXXX` literals, then future edits are less likely to weaken the text hygiene guard while preserving current verification behavior.
+
+### Patch
+
+Files changed:
+
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Rewrote text hygiene forbidden markers with explicit runtime `chr(...)` Unicode characters.
+- Added a self-check that fails if a future edit uses escaped `\\uXXXX` string literals that would check the wrong text.
+- Confirmed the current Loop Engineering docs and source hygiene set still pass with the clearer marker definition.
+
+### Verification
+
+Commands run:
+
+```bash
+python scripts\verify_project.py --keep-cache
+# passed
+# text_hygiene_files_checked=129
+
+python - <<'PY'
+import scripts.verify_project as verify_project
+markers = verify_project.FORBIDDEN_TEXT_MARKERS
+assert chr(0xFFFD) in markers
+assert chr(0x951F) in markers
+assert not any(marker.startswith("\\u") for marker in markers)
+print("text_hygiene_marker_contract=ok")
+PY
+# passed
+# text_hygiene_marker_contract=ok
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 12/30
+- Correctness: 19/20
+- Test coverage: 15/20
+- Safety/security: 12/15
+- Maintainability: 10/10
+- UX polish: 2/5
+- Total: 70/100
+
+### Result
+
+Kept as a small maintainability hardening. CI/project verification remains behaviorally consistent, and the marker table is now harder to weaken accidentally.
+
+### Remaining risk
+
+- This loop improves project hygiene enforcement, not user-visible UI copy.
+- The current bad-looking PowerShell output is still a terminal rendering issue, not repository mojibake.
+
+### Next candidate loop
+
+- Continue with core workflow coverage, especially backend guards for too-thin generated drafts or broader one-click topic drift checks.

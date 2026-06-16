@@ -25,11 +25,11 @@ TEXT_HYGIENE_ROOTS = [
     ROOT / "prompts",
 ]
 FORBIDDEN_TEXT_MARKERS = {
-    "\ufffd": "replacement character",
-    "\u951f": "mojibake marker",
-    "\u9225": "mojibake marker",
-    "\u6d93": "mojibake marker",
-    "\u00c2": "mojibake marker",
+    chr(0xFFFD): "replacement character",
+    chr(0x951F): "mojibake marker",
+    chr(0x9225): "mojibake marker",
+    chr(0x6D93): "mojibake marker",
+    chr(0x00C2): "mojibake marker",
     "debugger": "debugger statement",
     "console.log": "console logging",
 }
@@ -2936,6 +2936,12 @@ def _iter_text_hygiene_files() -> list[Path]:
 def validate_text_hygiene() -> int:
     files = _iter_text_hygiene_files()
     failures: list[str] = []
+    escaped_markers = [marker for marker in FORBIDDEN_TEXT_MARKERS if marker.startswith("\\u")]
+    if escaped_markers:
+        raise SystemExit(
+            "Text hygiene markers must be actual Unicode characters, not escaped literals: "
+            + ", ".join(repr(marker) for marker in escaped_markers)
+        )
     for file in files:
         text = file.read_text(encoding="utf-8")
         for marker, reason in FORBIDDEN_TEXT_MARKERS.items():
