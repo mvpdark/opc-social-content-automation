@@ -2891,6 +2891,10 @@ def validate_content_production_contract() -> int:
         "navigator.share(shareData)",
         "downloadFile(coverFile)",
         "系统分享没有打开，已切换到下载封面和手动发布兜底。",
+        "正在准备打开小红书发布入口；图文只会进入编辑流程，仍需人工确认后提交。",
+        "选择小红书后仍需人工确认提交。",
+        "并在小红书内人工确认后再提交",
+        "人工确认后再提交",
     ]
     for snippet in mobile_xhs_export_contract_snippets:
         total += 1
@@ -2902,6 +2906,11 @@ def validate_content_production_contract() -> int:
         "xhsdiscover://home/explore",
         "正在尝试打开小红书 App",
         "下载封面并唤起小红书",
+        "正在打开小红书发布入口；封面图、标题和正文会一起发送。",
+        "已交给小红书；如果正文没有自动带入",
+        "选择小红书即可带入封面图",
+        "请选择小红书发布入口。如果正文没有自动带入",
+        "选择刚下载的封面图后粘贴正文。",
     ]
     for snippet in forbidden_mobile_xhs_export_snippets:
         total += 1

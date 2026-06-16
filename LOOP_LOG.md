@@ -6548,3 +6548,71 @@ Kept. CI can now attach visual evidence for the mobile review queue read-error a
 ### Next candidate loop
 
 - Continue static publish/export copy scanning, or add a small CI evidence check for PC/mobile preview copy flow recovery states.
+
+## Loop 94 - Mobile export status manual-confirmation copy
+
+Date: 2026-06-16
+
+### Observation
+
+The mobile draft preview primary export button now says users manually go to Xiaohongshu to publish, but several transient export status messages still say the app is opening or handing content to Xiaohongshu without repeating that final submission remains manual. Those messages appear exactly when a user is closest to leaving OPC.
+
+### Hypothesis
+
+If mobile export status messages consistently say the share/export flow only prepares Xiaohongshu editing and still requires manual confirmation, users will be less likely to mistake a copy/share handoff for automated publishing.
+
+### Patch
+
+- Reworded mobile Xiaohongshu native/share/download status messages to say content enters an editing or handoff flow and still requires manual confirmation before submission.
+- Preserved the existing copy/share/download behavior and did not add any publishing endpoint or automated publishing action.
+- Added project verifier contracts that require the new manual-confirmation wording and reject older "send/bring into Xiaohongshu" phrasing that omitted the confirmation boundary.
+- Updated `PROJECT_MAP.md` to document that mobile export status messages must preserve the manual confirmation boundary.
+
+### Verification
+
+```text
+cd frontend && npx --version
+node UTF-8 hygiene scan for touched files
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile one-click generation keeps selected timing topic aligned through preview copy" --project=chromium
+cd frontend && npm run build
+git diff --check
+```
+
+All final checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- Touched-file UTF-8 hygiene scan found no replacement characters or mojibake markers.
+- TypeScript check passed through `npm run lint`.
+- Project verifier passed with `content_production_contract_checked=1379`.
+- Focused Chromium E2E passed for the mobile timing-topic generation, preview, and copy flow.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed; Git only repeated the existing CRLF-to-LF warning for the touched mobile component.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 16/30
+- Correctness: 17/20
+- Test coverage: 18/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 79/100
+
+### Result
+
+Kept. Mobile export handoff messages now reinforce that Xiaohongshu submission remains manual, while the E2E-covered generation, preview, and copy flow still works.
+
+### Remaining risk
+
+- The focused E2E covers the mobile preview/copy path and button label; the exact native/share/download branches are protected by static contracts because browser support differs by environment.
+- Git reports a CRLF-to-LF warning for the touched component, but the diff remains scoped to the intended status-message lines.
+
+### Next candidate loop
+
+- Add a small E2E/static contract for public preview loading/error states, or continue scanning PC preview copy for missing manual-confirmation wording.

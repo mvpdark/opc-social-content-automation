@@ -65,6 +65,7 @@ Last updated: 2026-06-16
 - Mobile draft history retry smoke tests attach validated history-error and recovered-card screenshots without triggering generation or publishing calls.
 - Mobile review queue retry smoke tests attach validated read-error and recovered-list screenshots without triggering review decisions or publishing calls.
 - Mobile Xiaohongshu export buttons must label the flow as manual publishing preparation, not direct or automatic publishing.
+- Mobile Xiaohongshu export status messages must say share/download handoff still requires manual confirmation before submission.
 
 ## Deployment and Build
 

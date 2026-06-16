@@ -255,13 +255,13 @@ export function DraftPreviewEditor({
 
       const nativeBridge = getOmpcAndroidBridge();
       if (nativeBridge) {
-        publishExportStatus("正在打开小红书发布入口；封面图、标题和正文会一起发送。");
+        publishExportStatus("正在准备打开小红书发布入口；图文只会进入编辑流程，仍需人工确认后提交。");
         const nativeResult = await shareToNativeXiaohongshu(draft.title, draftText, coverFile);
         if (nativeResult.ok) {
           publishExportStatus(
             textCopied
               ? nativeResult.message
-              : "已交给小红书；如果正文没有自动带入，下方文案可长按全选复制。"
+              : "已交给小红书编辑流程；仍需人工确认后提交。如果正文没有自动带入，下方文案可长按全选复制。"
           );
           return;
         }
@@ -281,8 +281,8 @@ export function DraftPreviewEditor({
         let systemShareFailed = false;
         publishExportStatus(
           textCopied
-            ? "已尝试复制文案，正在打开系统分享；选择小红书即可带入封面图。"
-            : "文案已展开兜底，正在打开系统分享；选择小红书即可带入封面图。"
+            ? "已尝试复制文案，正在打开系统分享；选择小红书后仍需人工确认提交。"
+            : "文案已展开兜底，正在打开系统分享；选择小红书后仍需人工确认提交。"
         );
         try {
           await navigator.share(shareData);
@@ -304,8 +304,8 @@ export function DraftPreviewEditor({
           const sharedCopyRestored = await tryCopyText(draftText);
           setManualCopyText(draftText);
           const sharedMessage = sharedCopyRestored
-            ? "已交给系统分享；请选择小红书发布入口。已重新尝试复制文案，下方也保留了正文，如果没有自动带入请直接粘贴。"
-            : `已交给系统分享；请选择小红书发布入口。如果正文没有自动带入，文案已展开，可长按全选复制，也可以点“${XHS_COPY_TEXT_ONLY_LABEL}”重试。`;
+            ? "已交给系统分享；请选择小红书发布入口，并在小红书内人工确认后再提交。已重新尝试复制文案，下方也保留了正文，如果没有自动带入请直接粘贴。"
+            : `已交给系统分享；请选择小红书发布入口，并在小红书内人工确认后再提交。如果正文没有自动带入，文案已展开，可长按全选复制，也可以点“${XHS_COPY_TEXT_ONLY_LABEL}”重试。`;
           publishExportStatus(sharedMessage);
           return;
         }
@@ -315,8 +315,8 @@ export function DraftPreviewEditor({
       const fallbackTextRestored = await tryCopyText(draftText);
       setManualCopyText(draftText);
       const fallbackMessage = fallbackTextRestored
-        ? "封面图已下载，文案已尝试复制。当前浏览器不能把图文直接带入小红书发布器，请手动打开小红书发布入口，选择刚下载的封面图后粘贴正文。"
-        : `封面图已下载；当前浏览器拦截了剪贴板，文案已展开，可长按全选复制，也可以点“${XHS_COPY_TEXT_ONLY_LABEL}”重试。请手动打开小红书发布入口并选择刚下载的封面图。`;
+        ? "封面图已下载，文案已尝试复制。当前浏览器不能把图文直接带入小红书发布器，请手动打开小红书发布入口，选择刚下载的封面图后粘贴正文，并人工确认后再提交。"
+        : `封面图已下载；当前浏览器拦截了剪贴板，文案已展开，可长按全选复制，也可以点“${XHS_COPY_TEXT_ONLY_LABEL}”重试。请手动打开小红书发布入口并选择刚下载的封面图，人工确认后再提交。`;
       publishExportStatus(fallbackMessage);
     } catch (error) {
       const message = error instanceof Error ? error.message : "打开小红书失败。";
