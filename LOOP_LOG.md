@@ -6145,3 +6145,70 @@ Kept. CI can now attach visual evidence for the highest-risk published-status wa
 ### Next candidate loop
 
 - Inspect static publishing copy for any remaining misleading fallback labels, or add screenshot evidence for review-queue decision failure surfaces.
+
+## Loop 88 - Review decision failure screenshot evidence
+
+Date: 2026-06-16
+
+### Observation
+
+The mobile review decision failure E2E already proves failed human decisions keep the draft queued and avoid publishing-like calls. Its evidence is still text/assertion-only, so CI reviewers cannot quickly see that the user remains in a recoverable manual review detail state after approve/request-changes failures.
+
+### Hypothesis
+
+If the mobile review decision failure test attaches validated screenshots for both failed decision paths, then CI artifacts will make the manual-review safety boundary easier to audit without committing brittle pixel baselines.
+
+### Patch
+
+- Extended the mobile review decision failure E2E with `testInfo` screenshot attachments.
+- Added visible status bounding-box checks for both failed approve and failed request-changes states.
+- Attached validated `mobile-review-approve-failure.png` and `mobile-review-request-changes-failure.png` screenshots to the Playwright report.
+- Added project verifier contracts for both decision-failure screenshot evidence points.
+- Updated `PROJECT_MAP.md` to document that decision-failure screenshots are report artifacts and failed drafts remain queued.
+
+### Verification
+
+```text
+cd frontend && npx --version
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile review decision failure keeps draft queued without publishing" --project=chromium
+cd frontend && npm run build
+git diff --check
+```
+
+All final checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- TypeScript check passed through `npm run lint`.
+- Project verifier passed with `content_production_contract_checked=1334`.
+- The focused Chromium E2E initially caught an over-tight status height threshold; after adjusting it to the actual rendered UI, the target test passed.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 16/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 81/100
+
+### Result
+
+Kept. CI can now attach visual evidence for mobile human-review decision failures while preserving the assertions that drafts stay queued and no publishing-like calls are made.
+
+### Remaining risk
+
+- These screenshots are report evidence, not pixel-diff baselines.
+- Screenshot and build artifacts remain ignored and are not committed.
+
+### Next candidate loop
+
+- Inspect PC review-queue error and retry screenshots, or scan static publish/export copy for misleading manual-confirmation language.

@@ -2185,7 +2185,7 @@ test.describe("OPC smoke coverage", () => {
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 
-  test("mobile review decision failure keeps draft queued without publishing", async ({ page }) => {
+  test("mobile review decision failure keeps draft queued without publishing", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const acceptedLogin = createLoginInput();
     const preset = requireTopicPreset("mentor-email-no-reply");
@@ -2221,6 +2221,9 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("mobile-review-status")).toContainText(
       "E2E 人工确认服务暂时不可用，请稍后重试。"
     );
+    const approveFailureStatusBox = await page.getByTestId("mobile-review-status").boundingBox();
+    expect(approveFailureStatusBox?.width ?? 0).toBeGreaterThan(300);
+    expect(approveFailureStatusBox?.height ?? 0).toBeGreaterThan(16);
     await expect(page.getByTestId("mobile-review-source-evidence")).toContainText(preset.topic);
     await expect(page.getByTestId("mobile-review-knowledge-list")).toContainText(preset.topic);
     await expect(page.getByTestId("mobile-review-web-list")).toContainText(preset.topic);
@@ -2232,6 +2235,11 @@ test.describe("OPC smoke coverage", () => {
       { label: "approve action", testId: "mobile-review-detail-approve" },
       { label: "request changes action", testId: "mobile-review-detail-request-changes" }
     ]);
+    await attachScreenshotEvidence(page, testInfo, "mobile-review-approve-failure.png", {
+      minBytes: 14_000,
+      minHeight: 800,
+      minWidth: 390
+    });
     expect(reviewRequests.reviews).toHaveLength(1);
     expect(reviewRequests.reviewUrls[0]).toContain(`/content/${E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID}/reviews`);
     expect(reviewRequests.reviews[0]).toMatchObject({
@@ -2245,6 +2253,9 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("mobile-review-status")).toContainText(
       "E2E 人工确认服务暂时不可用，请稍后重试。"
     );
+    const requestChangesFailureStatusBox = await page.getByTestId("mobile-review-status").boundingBox();
+    expect(requestChangesFailureStatusBox?.width ?? 0).toBeGreaterThan(300);
+    expect(requestChangesFailureStatusBox?.height ?? 0).toBeGreaterThan(16);
     await expect(page.getByTestId("mobile-review-source-evidence")).toContainText(preset.topic);
     await expectNoHorizontalViewportOverflow(page, "mobile review request-changes failure detail evidence", [
       { label: "detail sheet", testId: "mobile-review-detail" },
@@ -2252,6 +2263,11 @@ test.describe("OPC smoke coverage", () => {
       { label: "approve action", testId: "mobile-review-detail-approve" },
       { label: "request changes action", testId: "mobile-review-detail-request-changes" }
     ]);
+    await attachScreenshotEvidence(page, testInfo, "mobile-review-request-changes-failure.png", {
+      minBytes: 14_000,
+      minHeight: 800,
+      minWidth: 390
+    });
     expect(reviewRequests.reviews).toHaveLength(2);
     expect(reviewRequests.reviewUrls[1]).toContain(`/content/${E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID}/reviews`);
     expect(reviewRequests.reviews[1]).toMatchObject({

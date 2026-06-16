@@ -59,6 +59,7 @@ Last updated: 2026-06-16
 - Playwright starts the local Next dev server automatically when `OPC_BASE_URL` is not provided.
 - The PC/mobile login-shell smoke test attaches validated screenshot evidence to Playwright results without committing image baselines.
 - Published-status lifecycle smoke tests attach validated warning-surface screenshots while keeping publish/copy actions disabled.
+- Mobile review decision failure smoke tests attach validated detail-state screenshots while keeping failed drafts queued and publish-like calls blocked.
 
 ## Deployment and Build
 
