@@ -100,6 +100,7 @@ import {
 import { buildPlatformCopyText, stripDuplicateStandaloneTagLines } from "@/lib/platform-copy";
 import {
   SERVICE_CONFIG_READ_ERROR,
+  formatDraftGenerationErrorMessage,
   isServiceCredentialError,
   sanitizeServiceErrorMessage
 } from "@/lib/service-error-copy";
@@ -3568,7 +3569,7 @@ function GenerationLauncher({
       }
     } catch (error) {
       const rawMessage = error instanceof Error ? error.message : "图文草稿生成失败。";
-      const message = sanitizeServiceErrorMessage(rawMessage);
+      const message = formatDraftGenerationErrorMessage(rawMessage);
       setNeedsProviderSettings(
         rawMessage.includes("授权失败") ||
           rawMessage.includes("模型") ||

@@ -33,7 +33,10 @@ import {
   generatedContentInputSignatureMatches,
   type GeneratedContentInputSignature
 } from "@/lib/generation-input-signature";
-import { sanitizeServiceErrorMessage } from "@/lib/service-error-copy";
+import {
+  formatDraftGenerationErrorMessage,
+  sanitizeServiceErrorMessage
+} from "@/lib/service-error-copy";
 import { formatTagLine, parseTagText, tagsMatchText } from "@/lib/tags";
 import {
   buildEditableDraftCopy,
@@ -1024,7 +1027,7 @@ export function CreateScreen({
       stopProgressTimer();
       setProgressLabel("生成失败");
       onAction(
-        sanitizeServiceErrorMessage(
+        formatDraftGenerationErrorMessage(
           error instanceof Error ? error.message : "一键撰稿和封面生成失败。"
         )
       );

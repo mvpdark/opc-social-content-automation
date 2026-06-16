@@ -16,6 +16,27 @@ export function sanitizeServiceErrorMessage(message: string) {
     .replace(/payload/gi, "请求内容");
 }
 
+const DRAFT_GENERATION_RECOVERY_MARKERS = [
+  "草稿生成结果为空",
+  "草稿正文过短",
+  "元数据段落",
+  "独立话题标签行",
+  "撰稿结果偏离选题"
+] as const;
+
+export function formatDraftGenerationErrorMessage(message: string) {
+  const normalizedMessage = sanitizeServiceErrorMessage(message).trim() || "图文草稿生成失败。";
+  const needsRecoveryCopy = DRAFT_GENERATION_RECOVERY_MARKERS.some((marker) =>
+    normalizedMessage.includes(marker)
+  );
+
+  if (!needsRecoveryCopy || normalizedMessage.includes("生成结果需要补救")) {
+    return normalizedMessage;
+  }
+
+  return `生成结果需要补救：请补充业务素材、核对选题/标签/检索依据后重新生成；系统不会保存这次不合格草稿。${normalizedMessage}`;
+}
+
 export function isServiceCredentialError(message: string) {
   return /API\s*Key/i.test(message) || /Bearer\s*token/i.test(message);
 }

@@ -48,6 +48,7 @@ type MobileGenerationFixtureOptions = {
   contentId?: number;
   contentStatus?: string;
   failContent?: boolean;
+  failContentDetail?: string;
   failCover?: boolean;
   failSourcePreview?: boolean;
   responseTags?: string[];
@@ -242,6 +243,7 @@ async function mockMobileGenerationFixture(
   {
     contentId = E2E_GENERATED_CONTENT_ID,
     failContent = false,
+    failContentDetail,
     failCover = false,
     failSourcePreview = false,
     responseTags
@@ -291,7 +293,7 @@ async function mockMobileGenerationFixture(
     requests.contentGenerate.push(readJsonPayload(route.request().postData()));
     if (failContent) {
       await route.fulfill({
-        body: JSON.stringify({ detail: "撰稿服务暂时不可用，请稍后重试。" }),
+        body: JSON.stringify({ detail: failContentDetail ?? "撰稿服务暂时不可用，请稍后重试。" }),
         contentType: "application/json",
         status: 503
       });
@@ -459,6 +461,7 @@ async function mockPcGenerationFixture(
     contentId = E2E_PC_GENERATED_CONTENT_ID,
     contentStatus = "draft",
     failContent = false,
+    failContentDetail,
     failCover = false,
     failSourcePreview = false,
     responseTags
@@ -522,7 +525,7 @@ async function mockPcGenerationFixture(
     requests.contentGenerate.push(readJsonPayload(route.request().postData()));
     if (failContent) {
       await route.fulfill({
-        body: JSON.stringify({ detail: "PC 撰稿服务暂时不可用，请稍后重试。" }),
+        body: JSON.stringify({ detail: failContentDetail ?? "PC 撰稿服务暂时不可用，请稍后重试。" }),
         contentType: "application/json",
         status: 503
       });
@@ -1499,7 +1502,7 @@ test.describe("OPC smoke coverage", () => {
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 
-  test("mobile content failure keeps topic inputs and source evidence without false draft", async ({ page }) => {
+  test("mobile schema-invalid draft failure gives recovery copy without false draft", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const acceptedLogin = createLoginInput();
     const preset = requireTopicPreset("mentor-direction-check");
@@ -1507,7 +1510,9 @@ test.describe("OPC smoke coverage", () => {
     await mockSuccessfulLogin(page, acceptedLogin.account);
     const generationRequests = await mockMobileGenerationFixture(page, preset, {
       contentId: E2E_CONTENT_FAILURE_CONTENT_ID,
-      failContent: true
+      failContent: true,
+      failContentDetail:
+        "草稿正文过短，无法覆盖选题、受众、行动建议和人工核对提醒，请补充素材后重新生成。"
     });
 
     await page.goto(`${BASE_URL}/android?from=%2F%3Ftheme%3Dmint&tab=create`);
@@ -1530,7 +1535,10 @@ test.describe("OPC smoke coverage", () => {
     await page.getByTestId("mobile-generate-draft").click();
 
     await expect(page.getByTestId("mobile-status")).toContainText(
-      "撰稿服务暂时不可用，请稍后重试。"
+      "生成结果需要补救：请补充业务素材、核对选题/标签/检索依据后重新生成；系统不会保存这次不合格草稿。"
+    );
+    await expect(page.getByTestId("mobile-status")).toContainText(
+      "草稿正文过短，无法覆盖选题、受众、行动建议和人工核对提醒"
     );
     await waitForMobileGenerationState(page, "生成失败");
     await expect(page.getByTestId("mobile-generate-draft")).toContainText("一键撰稿+封面图");
@@ -2060,7 +2068,7 @@ test.describe("OPC smoke coverage", () => {
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 
-  test("PC content failure keeps timing topic evidence without false draft", async ({ page }) => {
+  test("PC schema-invalid draft failure gives recovery copy without false draft", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     const acceptedLogin = createLoginInput();
     const preset = requireTopicPreset("timeline-main");
@@ -2068,7 +2076,9 @@ test.describe("OPC smoke coverage", () => {
     await mockSuccessfulLogin(page, acceptedLogin.account);
     const generationRequests = await mockPcGenerationFixture(page, preset, {
       contentId: E2E_PC_CONTENT_FAILURE_CONTENT_ID,
-      failContent: true
+      failContent: true,
+      failContentDetail:
+        "草稿正文过短，无法覆盖选题、受众、行动建议和人工核对提醒，请补充素材后重新生成。"
     });
 
     await page.goto(`${BASE_URL}/?theme=mint&tab=content&project=postgraduate-phd`);
@@ -2097,7 +2107,8 @@ test.describe("OPC smoke coverage", () => {
     );
 
     await page.getByTestId("start-production-button").click();
-    await expect(page.getByText("PC 撰稿服务暂时不可用，请稍后重试。")).toBeVisible();
+    await expect(page.getByText("生成结果需要补救：请补充业务素材")).toBeVisible();
+    await expect(page.getByText("草稿正文过短，无法覆盖选题、受众、行动建议和人工核对提醒")).toBeVisible();
     await expect(page.getByTestId("content-topic")).toHaveValue(preset.topic);
     await expect(page.getByTestId("content-knowledge-query")).toHaveValue(preset.knowledgeQuery);
     await expect(page.getByTestId("content-target-audience")).toHaveValue(preset.audience);

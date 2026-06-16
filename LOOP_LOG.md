@@ -3954,3 +3954,86 @@ Kept. Mobile one-click generation now has regression coverage for the same core 
 ### Next candidate loop
 
 - Improve frontend wording for backend `schema_invalid` generation failures, or add narrower checks for source-required custom topics.
+
+## Loop 55 - Draft generation recovery copy
+
+Date: 2026-06-16
+
+### Observation
+
+Backend draft generation now rejects blank, metadata-only, hashtag-only, drifted, and too-thin model outputs through `schema_invalid`, but PC and mobile surfaced those details as plain generation failures. Users could see a valid reason, but not a clear recovery instruction or reassurance that the bad draft was not saved.
+
+### Hypothesis
+
+If PC and mobile wrap draft-quality failures with shared recovery copy, users will know to add material, re-check the topic/tags/source evidence, and regenerate without mistaking the rejected model output for a saved draft.
+
+### Patch
+
+Files changed:
+
+- `frontend/lib/service-error-copy.ts`
+- `frontend/components/workspace-client.tsx`
+- `frontend/components/mobile-create-screen.tsx`
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Added shared draft-generation recovery copy for backend `schema_invalid` style failures such as blank output, too-thin body, metadata sections, standalone hashtag lines, and topic drift.
+- Wired the copy into PC and mobile one-click draft failure handling without changing auth, generation requests, cover generation, copy flow, or human review gates.
+- Updated PC and mobile E2E content-failure flows to simulate a too-thin draft rejection and assert that no false draft is saved or published.
+- Extended the project verifier contract so the recovery helper and E2E coverage remain protected.
+
+### Verification
+
+Commands run:
+
+```bash
+npm run typecheck
+# passed
+
+python scripts\verify_project.py --keep-cache
+# passed
+# content_production_contract_checked=1095
+
+npx --version
+# passed: 11.12.1
+
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "schema-invalid draft failure" --project=chromium
+# passed: 2 passed
+
+npm run build
+# passed
+
+git diff --check
+# passed
+
+npm run lint
+# passed
+```
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 21/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 86/100
+
+### Result
+
+Kept. PC and mobile now explain draft-quality generation failures as recoverable issues and preserve the no-false-draft/no-automatic-publishing behavior in E2E.
+
+### Remaining risk
+
+- This loop improves the visible failure copy for known draft-quality backend details; future backend validators should add their marker if they need the same recovery framing.
+- Generic provider outages still use the existing service-unavailable copy, which is intentional.
+
+### Next candidate loop
+
+- Add source-required preset coverage for more current-fact topics, or add a small unit-level contract for the recovery-copy helper if E2E runtime becomes too heavy.

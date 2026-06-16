@@ -1524,6 +1524,56 @@ def validate_content_production_contract() -> int:
             if snippet not in text:
                 raise SystemExit(f"Missing {contract_name} contract: {snippet}")
 
+    draft_generation_recovery_contracts = [
+        (
+            service_error_text,
+            [
+                "DRAFT_GENERATION_RECOVERY_MARKERS",
+                "formatDraftGenerationErrorMessage",
+                "生成结果需要补救",
+                "系统不会保存这次不合格草稿",
+                "草稿正文过短",
+                "元数据段落",
+                "独立话题标签行",
+                "撰稿结果偏离选题",
+            ],
+            "draft generation recovery copy helper",
+        ),
+        (
+            workspace_text,
+            [
+                "formatDraftGenerationErrorMessage(rawMessage)",
+                "setStatusText(message)",
+            ],
+            "PC draft generation recovery copy",
+        ),
+        (
+            mobile_create_text,
+            [
+                "formatDraftGenerationErrorMessage(",
+                "setProgressLabel(\"生成失败\")",
+            ],
+            "mobile draft generation recovery copy",
+        ),
+        (
+            e2e_text,
+            [
+                "failContentDetail?: string",
+                "mobile schema-invalid draft failure gives recovery copy without false draft",
+                "PC schema-invalid draft failure gives recovery copy without false draft",
+                "生成结果需要补救：请补充业务素材",
+                "草稿正文过短，无法覆盖选题、受众、行动建议和人工核对提醒",
+                "系统不会保存这次不合格草稿",
+            ],
+            "schema-invalid draft recovery E2E",
+        ),
+    ]
+    for text, snippets, contract_name in draft_generation_recovery_contracts:
+        for snippet in snippets:
+            total += 1
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
+
     custom_topic_e2e_contracts = [
         "buildCustomTopicAudience",
         "buildCustomTopicTags",
