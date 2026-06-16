@@ -218,6 +218,8 @@ def validate_safety_gates() -> int:
             "确认服务尚未配置。",
             "_missing_required_web_sources",
             "没有可见 Tavily 来源",
+            "不要让模型猜测学校名",
+            "不要让模型猜测具体名字、价格、logo 或排名结论",
             'topic_intent.key == "source_check"',
             "它不是普通经验帖，而是来源核验帖",
             'topic_intent.key == "list_filter"',

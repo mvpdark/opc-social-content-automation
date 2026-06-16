@@ -7734,3 +7734,70 @@ Kept. Persisted backend source review notes now use the same no-model-guessing w
 ### Next candidate loop
 
 - Audit model-router fallback copy for the same no-model-guessing wording, or decide whether missing required web results should block generation instead of allowing framework-only drafts.
+
+## Loop 111 - Model Router missing-source fallback wording
+
+Date: 2026-06-16
+
+### Observation
+
+Backend persisted `review_note` and PC/mobile source-evidence labels now share the same no-model-guessing wording when required Tavily/web results are missing. The Model Router's `codex_test` fallback still uses "不要硬编" in the missing-source draft body, which is aligned in meaning but not exact wording for the current-facts safety rule.
+
+### Hypothesis
+
+If the Model Router missing-required-web-source fallback also says "不要让模型猜测" and its tests lock that phrase, draft previews generated from the fallback provider will reinforce the same data-first rule as source evidence labels and backend review notes.
+
+### Patch
+
+- Updated the Model Router `codex_test` missing-required-web-source fallback to use no-model-guessing wording for water-ranking and source-sensitive current-facts drafts.
+- Updated `backend/tests/test_model_router.py` to lock the new fallback wording while leaving the non-missing-source "不要硬编学校名" coverage intact.
+- Updated `scripts/verify_project.py` and `PROJECT_MAP.md` to record that Model Router fallback drafts are aligned with the no-model-guessing safety rule.
+
+### Verification
+
+```text
+python scripts\verify_project.py --keep-cache
+.\.venv\Scripts\python.exe -m pytest backend\tests\test_model_router.py -q
+cd frontend && npm run lint
+cd frontend && npm run build
+git diff --check
+git diff -- frontend\tsconfig.json
+git status --short --ignored artifacts frontend\artifacts frontend\.next-build frontend\.next
+```
+
+All final checks passed.
+
+Evidence:
+
+- Project verifier passed with `safety_gates_checked=162`, `content_production_contract_checked=1543`, and `text_hygiene_files_checked=129`.
+- Model Router tests passed: 35/35.
+- TypeScript check passed through `npm run lint`.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed and `frontend/tsconfig.json` had no build-generated diff.
+- Only ignored artifact/build directories are present under `artifacts/`, `frontend/.next-build/`, and `frontend/.next/`.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 16/30
+- Correctness: 18/20
+- Test coverage: 18/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 80/100
+
+### Result
+
+Kept. Model Router fallback drafts now use no-model-guessing language when required Tavily/web evidence is missing, matching backend review notes and PC/mobile source warnings.
+
+### Remaining risk
+
+- This loop keeps the existing policy that missing required web results may still produce a framework-only draft; it does not block generation.
+- Non-missing-source fallback copy still uses "不要硬编学校名", which remains acceptable because it is not the required-web-missing path.
+- Screenshot/build artifacts remain ignored and are not committed.
+
+### Next candidate loop
+
+- Decide whether missing required web results should block generation, or add a backend guard/test that limits missing-source drafts to verification-framework content only.
