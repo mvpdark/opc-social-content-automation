@@ -4246,3 +4246,65 @@ Kept. The current-facts ranking/project-list path now protects not only content 
 ### Next candidate loop
 
 - Add a source-required guard for another current-facts preset family, or inspect whether long custom source topics need the same viewport guard.
+
+## Loop 59 - Custom source topic viewport guard
+
+Date: 2026-06-16
+
+### Observation
+
+The custom fact-topic E2E paths use a long English source topic and verify source preview, generation payloads, cover direction, copy flow, and stale draft warnings. They did not reuse the new source evidence viewport guard, even though custom topics are more likely to contain long queries or URLs than curated presets.
+
+### Hypothesis
+
+If the PC and mobile custom fact-topic smoke tests check the source evidence card and expanded knowledge/web lists against the viewport, then custom source workflows will stay readable on the key 390 px mobile and 1280 px desktop paths.
+
+### Patch
+
+- Reused `expectNoHorizontalViewportOverflow` in the mobile custom fact-topic smoke path after expanding knowledge and web source lists.
+- Reused the same viewport guard in the PC custom fact-topic smoke path.
+- Extended `scripts/verify_project.py` with a custom source viewport E2E contract so this protection is not removed silently.
+
+### Verification
+
+```text
+npm run lint
+python scripts\verify_project.py --keep-cache
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "custom fact topic aligned" --project=chromium
+npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+All checks passed.
+
+Evidence:
+
+- The focused Playwright run passed 2 tests, covering the long custom source topic on mobile 390 px and desktop 1280 px.
+- The custom source evidence card, expanded knowledge list, and expanded web source list stayed within viewport bounds.
+- `npm run build` passed, and `frontend/tsconfig.json` stayed restored after build.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 20/30
+- Correctness: 18/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 4/5
+- Total: 87/100
+
+### Result
+
+Kept. Long custom source topics now have the same PC/mobile source evidence viewport protection as the curated ranking project-list preset.
+
+### Remaining risk
+
+- This remains a fixture-backed geometry check, not a visual screenshot diff.
+- Live provider results with unusually long URLs or snippets should still be sampled when Tavily credentials are available.
+
+### Next candidate loop
+
+- Add a source-required guard for another current-facts preset family, or broaden the viewport guard to source preview failure/recovery states.

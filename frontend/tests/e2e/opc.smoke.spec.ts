@@ -1385,8 +1385,16 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("mobile-source-evidence")).toContainText("2 条");
     await page.getByTestId("mobile-source-knowledge-toggle").click();
     await expect(page.getByTestId("mobile-source-knowledge-list")).toContainText(customSourceTopic);
+    await expectNoHorizontalViewportOverflow(page, "mobile custom source evidence", [
+      { label: "card", testId: "mobile-source-evidence" },
+      { label: "knowledge list", testId: "mobile-source-knowledge-list" }
+    ]);
     await page.getByTestId("mobile-source-web-toggle").click();
     await expect(page.getByTestId("mobile-source-web-list")).toContainText(customSourceTopic);
+    await expectNoHorizontalViewportOverflow(page, "mobile custom source evidence", [
+      { label: "card", testId: "mobile-source-evidence" },
+      { label: "web list", testId: "mobile-source-web-list" }
+    ]);
 
     await page.getByTestId("mobile-generate-draft").click();
     await expect(page.getByTestId("mobile-generate-draft")).toContainText("重新一键生成");
@@ -2003,8 +2011,16 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("generation-source-evidence")).toBeVisible();
     await page.getByTestId("source-knowledge-toggle").click();
     await expect(page.getByTestId("source-knowledge-list")).toContainText(customSourceTopic);
+    await expectNoHorizontalViewportOverflow(page, "PC custom source evidence", [
+      { label: "card", testId: "generation-source-evidence" },
+      { label: "knowledge list", testId: "source-knowledge-list" }
+    ]);
     await page.getByTestId("source-web-toggle").click();
     await expect(page.getByTestId("source-web-list")).toContainText(customSourceTopic);
+    await expectNoHorizontalViewportOverflow(page, "PC custom source evidence", [
+      { label: "card", testId: "generation-source-evidence" },
+      { label: "web list", testId: "source-web-list" }
+    ]);
 
     await page.getByTestId("start-production-button").click();
 
