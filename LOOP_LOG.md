@@ -6479,3 +6479,72 @@ Kept. The mobile export action now labels the step as manual Xiaohongshu publish
 ### Next candidate loop
 
 - Continue scanning static publish/export copy, or add artifact evidence for mobile review-queue read-error recovery.
+
+## Loop 93 - Mobile review queue recovery screenshot evidence
+
+Date: 2026-06-16
+
+### Observation
+
+The mobile review queue read-error E2E proves a queue read failure can recover without writing review decisions or triggering publishing-like calls. The current evidence is assertion-only, so CI reviewers cannot quickly inspect the visible mobile review error and recovered list states.
+
+### Hypothesis
+
+If the mobile review queue recovery test attaches validated screenshots before and after retry, CI artifacts will make the mobile review recovery boundary easier to audit without adding brittle image baselines.
+
+### Patch
+
+- Extended the mobile review queue read-error recovery E2E with `testInfo` screenshot attachments.
+- Added visible bounding-box checks for the mobile review queue error card and recovered review list.
+- Attached validated `mobile-review-queue-error.png` and `mobile-review-queue-recovered.png` screenshots to the Playwright report.
+- Added project verifier contracts for both mobile review queue screenshot evidence points.
+- Updated `PROJECT_MAP.md` to document that mobile review queue retry screenshots are report artifacts and do not trigger review decisions or publishing calls.
+
+### Verification
+
+```text
+cd frontend && npx --version
+cd frontend && npm run lint
+python scripts\verify_project.py --keep-cache
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "mobile review queue read error is recoverable without publishing" --project=chromium
+cd frontend && npm run build
+git diff --check
+node UTF-8 hygiene scan for touched files
+```
+
+All final checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- TypeScript check passed through `npm run lint`.
+- Project verifier passed with `content_production_contract_checked=1370`.
+- Focused Chromium E2E passed and attached validated mobile review queue read-error and recovered-list screenshots.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed.
+- Touched-file UTF-8 hygiene scan found no replacement characters or mojibake markers.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 15/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 80/100
+
+### Result
+
+Kept. CI can now attach visual evidence for the mobile review queue read-error and recovery states while preserving assertions that no review decisions or publishing-like calls are made.
+
+### Remaining risk
+
+- These screenshots are report evidence, not pixel-diff baselines.
+- Screenshot and build artifacts remain ignored and are not committed.
+
+### Next candidate loop
+
+- Continue static publish/export copy scanning, or add a small CI evidence check for PC/mobile preview copy flow recovery states.

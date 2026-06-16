@@ -2162,7 +2162,7 @@ test.describe("OPC smoke coverage", () => {
     expect(await localStorageContains(page, acceptedLogin.password)).toBe(false);
   });
 
-  test("mobile review queue read error is recoverable without publishing", async ({ page }) => {
+  test("mobile review queue read error is recoverable without publishing", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const acceptedLogin = createLoginInput();
     const preset = requireTopicPreset("timeline-main");
@@ -2189,6 +2189,14 @@ test.describe("OPC smoke coverage", () => {
       "E2E mobile review queue unavailable."
     );
     await expect(page.getByTestId("mobile-review-card")).toHaveCount(0);
+    const mobileReviewQueueErrorBox = await page.getByTestId("mobile-review-queue-error").boundingBox();
+    expect(mobileReviewQueueErrorBox?.width ?? 0).toBeGreaterThan(300);
+    expect(mobileReviewQueueErrorBox?.height ?? 0).toBeGreaterThan(80);
+    await attachScreenshotEvidence(page, testInfo, "mobile-review-queue-error.png", {
+      minBytes: 14_000,
+      minHeight: 800,
+      minWidth: 390
+    });
 
     reviewRequests.releaseContentListFailures();
     await page.getByTestId("mobile-review-queue-retry").click();
@@ -2196,6 +2204,14 @@ test.describe("OPC smoke coverage", () => {
     await expect(page.getByTestId("mobile-review-list")).toBeVisible();
     await expect(page.getByTestId("mobile-review-card").first()).toContainText(preset.topic);
     await expect(page.getByTestId("mobile-review-queue-error")).toHaveCount(0);
+    const mobileReviewQueueRecoveredBox = await page.getByTestId("mobile-review-list").boundingBox();
+    expect(mobileReviewQueueRecoveredBox?.width ?? 0).toBeGreaterThan(300);
+    expect(mobileReviewQueueRecoveredBox?.height ?? 0).toBeGreaterThan(100);
+    await attachScreenshotEvidence(page, testInfo, "mobile-review-queue-recovered.png", {
+      minBytes: 14_000,
+      minHeight: 800,
+      minWidth: 390
+    });
 
     expect(reviewRequests.contentList).toBeGreaterThan(1);
     expect(reviewRequests.imageList).toContain(E2E_MOBILE_REVIEW_APPROVE_CONTENT_ID);
