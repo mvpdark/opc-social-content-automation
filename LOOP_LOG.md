@@ -4120,3 +4120,66 @@ Kept. PC and mobile now have direct CI E2E protection for the source/logo/price 
 ### Next candidate loop
 
 - Add a small source-required ranking/project-list preset guard, or inspect the live mobile/PC source evidence UI for any copy overflow at 390 px and 1280 px.
+
+## Loop 57 - Ranking project-list preset E2E coverage
+
+Date: 2026-06-16
+
+### Observation
+
+The source-evidence classifier already treats rankings, schools, universities, and project lists as source-required topics, but the `ranking-water-programs` preset did not have direct PC/mobile E2E coverage. This preset asks for water resources PhD program lists, so regressions could skip evidence and still appear superficially aligned.
+
+### Hypothesis
+
+If PC and mobile E2E cover `ranking-water-programs` through source preview, generation payloads, preview/copy, cover direction, and no-publish assertions, then project-list/ranking topics that need current school or program facts will stay tied to collected evidence.
+
+### Patch
+
+- Added PC and mobile smoke tests for the shared `ranking-water-programs` preset.
+- Extended `scripts/verify_project.py` so the project-list/ranking preset, source preview, cover direction, and E2E contracts are protected by repository self-checks.
+- Removed build-only `.next-build/types/**/*.ts` from the frontend TypeScript include list.
+- Updated `frontend/scripts/next-with-dist.mjs` to restore the development `next-env.d.ts` and `tsconfig.json` after production builds, because Next rewrites `tsconfig.json` while building with the custom `.next-build` dist dir.
+
+### Verification
+
+```text
+npm run lint
+python scripts\verify_project.py --keep-cache
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "ranking project-list topic" --project=chromium
+npm run build
+npm run lint
+git diff --check
+```
+
+All final checks passed.
+
+Important regression evidence:
+
+- The new Playwright grep ran 2 tests: mobile and PC ranking project-list topic alignment.
+- `npm run build` still lets Next add `.next-build/types/**/*.ts` during build, but the wrapper now restores `tsconfig.json` afterward.
+- The final post-build `npm run lint` passed, proving the previous `.next-build/types` missing-file failure is fixed.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 23/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 3/5
+- Total: 90/100
+
+### Result
+
+Kept. Ranking/project-list topics now have direct PC and mobile CI E2E coverage, and the frontend quality gate stays stable after a production build.
+
+### Remaining risk
+
+- The E2E uses controlled fixture evidence, not live Tavily results.
+- The test verifies source-preview/generation/copy alignment, but it does not visually inspect every theme at multiple breakpoints.
+
+### Next candidate loop
+
+- Inspect the live mobile/PC source evidence UI for copy overflow at 390 px and 1280 px, or add a source-required guard for another current-facts preset family.

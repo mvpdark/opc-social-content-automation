@@ -313,6 +313,12 @@ def validate_safety_gates() -> int:
             '"dev:lan": "next dev -H 0.0.0.0"',
             '"typecheck": "tsc --noEmit --noUnusedLocals --noUnusedParameters --incremental false"',
         ],
+        "frontend/scripts/next-with-dist.mjs": [
+            'OPC_NEXT_DIST_DIR: ".next-build"',
+            "restoreDevBuildFiles",
+            "restoreDevTsconfig",
+            '".next-build/types/**/*.ts"',
+        ],
         "scripts/start_local.py": [
             "0.0.0.0",
             "dev:lan",
@@ -350,6 +356,10 @@ def validate_safety_gates() -> int:
             total += 1
             if snippet not in text:
                 raise SystemExit(f"Missing safety gate {snippet!r} in {rel_path}")
+    tsconfig_text = (ROOT / "frontend" / "tsconfig.json").read_text(encoding="utf-8")
+    total += 1
+    if '".next-build/types/**/*.ts"' in tsconfig_text:
+        raise SystemExit("Frontend typecheck must not include build-only .next-build generated types.")
     return total
 
 
@@ -601,6 +611,7 @@ def validate_topic_presets_contract() -> int:
     keyword_contract_cases = [
         ("global water PhD ranking list", True),
         ("全球水博排名清单", True),
+        ("water resources PhD university program list", True),
         ("official tuition fees and logo verification", True),
         ("how to choose domestic or overseas PhD route", False),
     ]
@@ -1762,6 +1773,8 @@ def validate_content_production_contract() -> int:
         'topic: "全球水博排名必看"',
         'knowledgeQuery: "全球 水博 博士 项目 排名 认证 预算 在职"',
         'topic: "低预算海外博士怎么筛"',
+        'key: "ranking-water-programs"',
+        'topic: "水资源博士项目清单怎么看"',
         'key: "source-logo-price"',
         'topic: "水博项目校徽和价格怎么核验"',
         'key: "source-official-fee-check"',
@@ -1799,6 +1812,20 @@ def validate_content_production_contract() -> int:
         total += 1
         if snippet not in e2e_text:
             raise SystemExit(f"Missing source logo-price E2E contract: {snippet}")
+
+    ranking_project_list_e2e_contracts = [
+        "E2E_PC_RANKING_PROGRAMS_CONTENT_ID",
+        "E2E_MOBILE_RANKING_PROGRAMS_CONTENT_ID",
+        "mobile one-click generation keeps selected ranking project-list topic aligned through preview copy",
+        "PC one-click generation keeps selected ranking project-list topic aligned through preview copy",
+        "presetKey: \"ranking-water-programs\"",
+        "expect(generationRequests.sourcePreview).toHaveLength(1)",
+        "expect(String(generationRequests.imageGenerate[0].style_notes)).toContain(preset.coverDirection)",
+    ]
+    for snippet in ranking_project_list_e2e_contracts:
+        total += 1
+        if snippet not in e2e_text:
+            raise SystemExit(f"Missing ranking project-list E2E contract: {snippet}")
 
     expected_topic_preset_prefixes = {"ranking", "route", "mentor", "timeline", "source", "sales"}
     actual_topic_preset_keys = set(re.findall(r'key: "([^"]+)"', topic_presets_text))

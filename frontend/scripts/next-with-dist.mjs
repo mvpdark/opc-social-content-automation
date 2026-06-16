@@ -14,6 +14,7 @@ if (!["build", "start"].includes(command)) {
 const frontendRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const nextCommand = resolve(frontendRoot, "node_modules", "next", "dist", "bin", "next");
 const nextEnvPath = resolve(frontendRoot, "next-env.d.ts");
+const tsconfigPath = resolve(frontendRoot, "tsconfig.json");
 
 async function restoreDevNextEnv() {
   try {
@@ -30,6 +31,29 @@ async function restoreDevNextEnv() {
   }
 }
 
+async function restoreDevTsconfig() {
+  try {
+    const current = await readFile(tsconfigPath, "utf8");
+    const parsed = JSON.parse(current);
+    if (!Array.isArray(parsed.include)) {
+      return;
+    }
+
+    const include = parsed.include.filter((entry) => entry !== ".next-build/types/**/*.ts");
+    if (include.length !== parsed.include.length) {
+      parsed.include = include;
+      await writeFile(tsconfigPath, `${JSON.stringify(parsed, null, 2)}\n`);
+    }
+  } catch (_error) {
+    // TypeScript can still run without this cleanup; verification will catch drift.
+  }
+}
+
+async function restoreDevBuildFiles() {
+  await restoreDevNextEnv();
+  await restoreDevTsconfig();
+}
+
 const child = spawn(process.execPath, [nextCommand, command, ...passthroughArgs], {
   cwd: frontendRoot,
   env: {
@@ -41,7 +65,7 @@ const child = spawn(process.execPath, [nextCommand, command, ...passthroughArgs]
 
 child.on("close", async (code) => {
   if (command === "build") {
-    await restoreDevNextEnv();
+    await restoreDevBuildFiles();
   }
   process.exit(code ?? 1);
 });
