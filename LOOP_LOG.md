@@ -7456,3 +7456,73 @@ Kept. Mobile custom official logo-price topics now have CI coverage proving sour
 ### Next candidate loop
 
 - Add the PC custom official logo-price success path, or audit prompt/runtime labels for current-facts source requirements.
+
+## Loop 107 - PC custom official logo-price source topic
+
+Date: 2026-06-16
+
+### Observation
+
+Mobile custom official logo-price topics now have success-path coverage, while PC only has the generic custom fact topic and exchange-rate current-facts success path. A PC custom official logo/price wording still needs focused coverage because official URLs, logos, tuition, and pricing facts must stay tied to source evidence before preview/copy.
+
+### Hypothesis
+
+If the PC E2E runs a custom official logo/price topic through source preview, one-click generation, export card, preview modal, and copy assertions, CI will catch regressions where desktop custom current-facts topics bypass evidence or drift into generic planning content.
+
+### Patch
+
+- Added a PC custom official logo-price E2E with a custom topic for official logo authorization and tuition price verification.
+- Verified the flow requires source preview first, keeps knowledge/web evidence visible, generates a draft/export card tied to the custom topic, opens the preview modal, preserves manual review/no-auto-publish copy, and keeps copied output aligned.
+- Extended verifier contracts and updated `PROJECT_MAP.md` to document PC/mobile custom official logo-price success-path coverage.
+
+### Verification
+
+```text
+cd frontend && npx --version
+node UTF-8 hygiene scan for touched files
+python scripts\verify_project.py --keep-cache
+cd frontend && npm run lint
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC one-click generation keeps official logo-price custom topic evidence aligned" --project=chromium
+cd frontend && npm run build
+git diff --check
+git diff -- frontend\tsconfig.json
+git status --short --ignored artifacts frontend\artifacts frontend\.next-build frontend\.next
+```
+
+All final checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- Touched-file UTF-8 hygiene scan found no replacement characters or mojibake markers.
+- Project verifier passed with `content_production_contract_checked=1529`.
+- TypeScript check passed through `npm run lint`.
+- Focused Chromium E2E passed for PC custom official logo-price topic evidence alignment.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed and `frontend/tsconfig.json` had no build-generated diff.
+- Only ignored artifact/build directories are present under `artifacts/`, `frontend/.next-build/`, and `frontend/.next/`.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 19/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 8/10
+- UX polish: 4/5
+- Total: 83/100
+
+### Result
+
+Kept. PC custom official logo-price topics now have CI coverage proving source evidence, generation requests, export/preview/copy output, tags, cover request, and no-publishing guards stay aligned with the custom current-facts topic.
+
+### Remaining risk
+
+- PC and mobile custom official logo-price success paths are now covered; live official logo and price facts still depend on collected knowledge or the configured Tavily/web-search support path.
+- Screenshot/build artifacts remain ignored and are not committed.
+
+### Next candidate loop
+
+- Audit prompt/runtime labels for current-facts source requirements, or add another custom current-facts topic class if a new high-risk wording appears.
