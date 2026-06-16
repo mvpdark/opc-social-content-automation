@@ -860,9 +860,27 @@ async function runPcTopicAlignmentScenario(
   await expect(previewModal).toContainText("这是发布效果预览，不会自动发布");
   await expect(page.getByTestId("xhs-preview-real-cover")).toBeVisible();
 
+  await page.evaluate(() => {
+    const windowWithCopy = window as Window & { __opcPcPreviewCopiedText?: string };
+    windowWithCopy.__opcPcPreviewCopiedText = "";
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (text: string) => {
+          windowWithCopy.__opcPcPreviewCopiedText = text;
+        }
+      }
+    });
+  });
   const copyButton = page.getByTestId("pc-preview-modal-copy-button");
   await copyButton.click();
   await expect(copyButton).toContainText(/\u5df2\u590d\u5236/);
+  const copiedPreviewText = await page.evaluate(
+    () => (window as Window & { __opcPcPreviewCopiedText?: string }).__opcPcPreviewCopiedText ?? ""
+  );
+  expect(copiedPreviewText).toContain(preset.topic);
+  expect(copiedPreviewText).toContain(`#${expectedTags[0]}`);
+  expect(countTextOccurrences(copiedPreviewText, `#${expectedTags[0]}`)).toBe(1);
 
   expect(generationRequests.providerStatus).toBeGreaterThan(0);
   expect(generationRequests.contentList).toBeGreaterThan(0);

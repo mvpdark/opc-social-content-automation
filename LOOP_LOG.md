@@ -4561,3 +4561,67 @@ Kept. Desktop sales, route, mentor, and timing one-click generation coverage is 
 ### Next candidate loop
 
 - Add screenshot-level source evidence visual QA for one focused viewport, or inspect another desktop preview/copy edge state.
+
+## Loop 64 - PC preview copy payload guard
+
+Date: 2026-06-16
+
+### Observation
+
+The PC multi-topic helper verifies that the preview modal opens and that the preview copy button reports a copied state. It does not currently inspect the actual copied payload, so a future copy-text regression could drift away from the selected topic or reintroduce duplicate tag lines while the button still says copied.
+
+### Hypothesis
+
+If the PC preview-copy helper intercepts clipboard writes and asserts the copied text contains the selected topic and exactly one instance of the first tag, then desktop preview/copy regressions will be caught across the existing sales, route, mentor, and timing topic smoke tests.
+
+### Patch
+
+- Added a clipboard-write interceptor inside the PC topic alignment E2E helper.
+- Asserted the copied preview payload includes the selected topic.
+- Asserted the copied preview payload includes the first topic tag exactly once.
+- Extended the project verifier so this payload-level PC copy guard cannot be removed silently.
+
+### Verification
+
+```text
+npm run lint
+python scripts\verify_project.py --keep-cache
+npx --version
+npx playwright test tests/e2e/opc.smoke.spec.ts --grep "PC one-click generation keeps selected (sales|route|mentor|timing) topic aligned" --project=chromium
+npm run build
+git diff --check
+python scripts\verify_project.py --keep-cache
+```
+
+All checks passed.
+
+Evidence:
+
+- The focused Playwright run passed 4 tests covering PC sales, route, mentor, and timing preview-copy flows.
+- The copied payload now has to contain the selected topic and a deduplicated tag line, not just a copied-state button label.
+- The verifier now fails if the clipboard payload interception or topic/tag copy assertions are removed.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 19/30
+- Correctness: 19/20
+- Test coverage: 20/20
+- Safety/security: 15/15
+- Maintainability: 10/10
+- UX polish: 4/5
+- Total: 87/100
+
+### Result
+
+Kept. PC preview-copy smoke coverage now verifies the actual copied text stays aligned with the selected topic and avoids duplicate first-tag output.
+
+### Remaining risk
+
+- This covers the PC multi-topic helper paths; custom fact-topic PC preview copy still has separate visible alignment checks but not this exact clipboard payload interception.
+- Clipboard behavior in real browsers may still vary, so manual spot checks remain useful around browser permission changes.
+
+### Next candidate loop
+
+- Add the same payload-level copy guard to the PC custom fact-topic preview path, or inspect mobile copy fallback behavior for custom fact topics.
