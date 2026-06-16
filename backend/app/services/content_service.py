@@ -132,7 +132,7 @@ def _public_source_context(
     if web_search_required and not web_results:
         review_note = (
             "这个选题需要实时来源，但本次没有可见 Tavily 结果；请先检查 Tavily 配置、"
-            "换更具体关键词，或只输出维度框架，不能编学校、价格、logo 或排名。"
+            "换更具体关键词，或只输出维度框架，不要让模型猜测学校、价格、logo 或排名结论。"
         )
 
     return {

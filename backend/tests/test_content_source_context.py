@@ -91,7 +91,7 @@ def test_source_context_warns_when_required_web_search_is_missing(monkeypatch) -
     assert context["web_search"]["required"] is True
     assert context["web_search"]["results"] == []
     assert "没有可见 Tavily 结果" in context["review_note"]
-    assert "不能编学校、价格、logo 或排名" in context["review_note"]
+    assert "不要让模型猜测学校、价格、logo 或排名结论" in context["review_note"]
 
 
 def test_draft_prompt_marks_missing_required_web_search(monkeypatch) -> None:
@@ -123,6 +123,7 @@ def test_draft_prompt_marks_missing_required_web_search(monkeypatch) -> None:
     assert "Do not name schools" in web_search_context["usage_note"]
     assert isinstance(package.payload["source_context"], dict)
     assert "没有可见 Tavily 结果" in package.payload["source_context"]["review_note"]
+    assert "不要让模型猜测学校、价格、logo 或排名结论" in package.payload["source_context"]["review_note"]
 
 
 def test_generated_content_persists_visible_source_context(monkeypatch) -> None:

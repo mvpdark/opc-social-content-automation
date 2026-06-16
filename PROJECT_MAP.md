@@ -49,6 +49,7 @@ Last updated: 2026-06-16
 - Prompt templates live under `prompts/`.
 - Draft generation, image generation, review, and Tavily/web search support are separated by service modules.
 - Tavily/web search is research support only; the app must not invent current facts when sources are required.
+- Backend source review notes and PC/mobile source-evidence warnings use the same no-model-guessing wording when required Tavily/web results are missing.
 
 ## Test Setup
 

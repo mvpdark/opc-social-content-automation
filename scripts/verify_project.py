@@ -285,7 +285,7 @@ def validate_safety_gates() -> int:
         "backend/app/services/content_service.py": [
             "这个选题需要实时来源",
             "没有可见 Tavily 结果",
-            "不能编学校、价格、logo 或排名",
+            "不要让模型猜测学校、价格、logo 或排名结论",
             "Live web search was required but no Tavily sources were available",
             "_prompt_web_search_context",
         ],

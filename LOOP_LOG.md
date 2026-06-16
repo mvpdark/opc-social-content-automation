@@ -7663,3 +7663,74 @@ Kept. PC and mobile now have direct browser coverage for the required-web-but-em
 ### Next candidate loop
 
 - Audit backend review-note copy for the same no-model-guessing wording, or decide whether missing required web results should block generation instead of allowing framework-only drafts.
+
+## Loop 110 - Backend missing-source review note alignment
+
+Date: 2026-06-16
+
+### Observation
+
+PC/mobile runtime warnings and browser tests now use the no-model-guessing wording for missing Tavily/web results, but the backend source `review_note` still says "不能编学校、价格、logo 或排名". The meaning is aligned, yet the visible/persisted source context can drift from the frontend warning language.
+
+### Hypothesis
+
+If the backend missing-source `review_note` uses the same no-model-guessing wording and backend tests plus project verifier lock it, persisted source context and frontend warning labels will reinforce the same data-first rule for current-facts topics.
+
+### Patch
+
+- Updated backend missing-source `review_note` to say "不要让模型猜测学校、价格、logo 或排名结论".
+- Updated backend source-context tests to assert the aligned no-model-guessing wording in both source preview and draft prompt package payloads.
+- Updated `scripts/verify_project.py` and `PROJECT_MAP.md` so the backend review-note copy remains aligned with PC/mobile warning labels.
+
+### Verification
+
+```text
+python scripts\verify_project.py --keep-cache
+python -m pytest backend\tests\test_content_source_context.py -q
+.\.venv\Scripts\python.exe -m pytest backend\tests\test_content_source_context.py -q
+backend\.venv\Scripts\python.exe -m pytest backend\tests\test_content_source_context.py -q
+cd frontend && npm run lint
+cd frontend && npm run build
+git diff --check
+git diff -- frontend\tsconfig.json
+git status --short --ignored artifacts frontend\artifacts frontend\.next-build frontend\.next
+```
+
+Final checks passed.
+
+Evidence:
+
+- Project verifier passed with `content_production_contract_checked=1543` and `text_hygiene_files_checked=129`.
+- System Python lacked `pytest`, so the direct system-python pytest attempt did not run tests.
+- Root project venv passed `backend/tests/test_content_source_context.py`: 9/9 tests.
+- Backend local venv also passed `backend/tests/test_content_source_context.py`: 9/9 tests.
+- TypeScript check passed through `npm run lint`.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed and `frontend/tsconfig.json` had no build-generated diff.
+- Only ignored artifact/build directories are present under `artifacts/`, `frontend/.next-build/`, and `frontend/.next/`.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 16/30
+- Correctness: 18/20
+- Test coverage: 18/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 80/100
+
+### Result
+
+Kept. Persisted backend source review notes now use the same no-model-guessing warning as PC/mobile source-evidence labels when required Tavily/web results are missing.
+
+### Remaining risk
+
+- Model-router fallback prompt copy still contains its own "不要硬编" phrasing; it is aligned in meaning but not exact wording.
+- This loop only aligns warning language; it does not change whether missing required web results block generation.
+- Screenshot/build artifacts remain ignored and are not committed.
+
+### Next candidate loop
+
+- Audit model-router fallback copy for the same no-model-guessing wording, or decide whether missing required web results should block generation instead of allowing framework-only drafts.
