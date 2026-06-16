@@ -6964,3 +6964,74 @@ Kept. The global ranking/list recommended topic now has PC and mobile CI coverag
 ### Next candidate loop
 
 - Add malformed-content public preview coverage, or expand one-click alignment checks to another high-risk custom current-facts topic such as exchange-rate pricing.
+
+## Loop 100 - Mobile exchange-rate custom fact topic alignment
+
+Date: 2026-06-16
+
+### Observation
+
+Custom source-evidence topic checks cover market-data/pricing success paths and exchange-rate failure blocking, but the exchange-rate/currency-conversion custom topic does not yet have a successful mobile one-click generation path proving source evidence, generation payloads, preview, copy text, and manual review remain aligned.
+
+### Hypothesis
+
+If the mobile E2E runs an exchange-rate custom topic through source preview, one-click generation, draft preview, and copy assertions, CI will catch regressions where current exchange-rate topics bypass collected evidence or drift into generic planning content.
+
+### Patch
+
+- Added a mobile one-click E2E for the exchange-rate/currency-conversion custom fact topic.
+- Verified source evidence is requested first, knowledge/web evidence lists contain the custom topic, generation payloads use the custom topic as `knowledge_query`, preview/copy output stays aligned, and publishing-like calls remain blocked.
+- Added verifier contracts and updated `PROJECT_MAP.md` to document the exchange-rate custom topic smoke coverage.
+
+### Verification
+
+```text
+cd frontend && npx --version
+node UTF-8 hygiene scan for touched files
+python scripts\verify_project.py --keep-cache
+cd frontend && npm run lint
+cd frontend && npx playwright test tests/e2e/opc.smoke.spec.ts --grep "exchange-rate custom topic evidence aligned" --project=chromium
+cd frontend && npm run build
+git diff --check
+git diff -- frontend\tsconfig.json
+git status --short --ignored artifacts frontend\artifacts frontend\.next-build frontend\.next
+```
+
+All final checks passed.
+
+Evidence:
+
+- `npx` is available at `11.12.1`.
+- Touched-file UTF-8 hygiene scan found no replacement characters or mojibake markers.
+- Project verifier passed with `content_production_contract_checked=1456`.
+- TypeScript check passed through `npm run lint`.
+- Focused Chromium E2E passed for mobile exchange-rate custom topic evidence alignment.
+- Production build completed successfully for `/`, `/android`, and `/preview/[contentId]`.
+- `git diff --check` passed and `frontend/tsconfig.json` had no build-generated diff.
+- Only ignored artifact/build directories are present under `artifacts/`, `frontend/.next-build/`, and `frontend/.next/`.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 18/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 8/10
+- UX polish: 4/5
+- Total: 82/100
+
+### Result
+
+Kept. Mobile custom exchange-rate/currency-conversion topics now have CI coverage proving source evidence, generation requests, preview/copy output, tags, cover generation, and no-publishing guards stay aligned with the current-facts topic.
+
+### Remaining risk
+
+- This loop covers the mobile exchange-rate success path with mocked evidence and generation responses; PC exchange-rate success alignment can still be added.
+- Live exchange-rate facts still depend on collected knowledge or the configured Tavily/web-search support path.
+- Screenshot/build artifacts remain ignored and are not committed.
+
+### Next candidate loop
+
+- Add PC exchange-rate custom topic success coverage, or add malformed-content public preview coverage.

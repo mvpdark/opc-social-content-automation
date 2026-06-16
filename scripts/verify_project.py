@@ -2382,6 +2382,24 @@ def validate_content_production_contract() -> int:
         if snippet not in e2e_text:
             raise SystemExit(f"Missing custom source viewport E2E contract: {snippet}")
 
+    exchange_rate_custom_e2e_contracts = [
+        "E2E_MOBILE_EXCHANGE_RATE_TOPIC_CONTENT_ID",
+        "mobile one-click generation keeps exchange-rate custom topic evidence aligned",
+        "overseas doctoral exchange rate and currency conversion check",
+        "Custom mobile source verification checklist for current exchange rates and currency conversion.",
+        "mobile exchange-rate source evidence",
+        "mobile-source-web-list",
+        "draft-preview-prepublish-check-sources",
+        "expect(generationRequests.sourcePreview).toHaveLength(1)",
+        "expect(generationRequests.contentGenerate).toHaveLength(1)",
+        "expect(generationRequests.imageGenerate).toHaveLength(1)",
+        "expect(generationRequests.forbiddenPublishing).toEqual([])",
+    ]
+    for snippet in exchange_rate_custom_e2e_contracts:
+        total += 1
+        if snippet not in e2e_text:
+            raise SystemExit(f"Missing exchange-rate custom topic E2E contract: {snippet}")
+
     source_preview_failure_viewport_contracts = [
         "mobile source preview failure",
         "mobile custom source preview failure",
