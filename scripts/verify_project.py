@@ -1934,25 +1934,35 @@ def validate_content_production_contract() -> int:
         (
             content_service_text,
             [
+                "def _source_cards",
+                '"source_cards"',
+                '"web:missing-required"',
+                '"missing_required_source"',
+                "No visible Tavily result supports current-fact conclusions.",
                 "from app.services.promotion_brief import build_promotion_brief",
                 "def _source_context_with_promotion_brief",
                 '"promotion_brief": promotion_brief',
                 '"promotion_brief": source_context["promotion_brief"]',
             ],
-            "promotion brief draft payload",
+            "source cards and promotion brief draft payload",
         ),
         (
             draft_prompt_text,
             [
+                "If `source_context.source_cards` is provided",
+                "treat those cards as the fact",
+                "Prefer `source_context.source_cards`",
                 "If `promotion_brief` is provided",
                 "intent, persona, pain point, trust proof, CTA, forbidden claims",
                 "Do not print the brief as a",
             ],
-            "promotion brief prompt guidance",
+            "source cards and promotion brief prompt guidance",
         ),
         (
             generated_assets_text,
             [
+                "export type GenerationSourceCard",
+                "source_cards?: GenerationSourceCard[];",
                 "export type GenerationPromotionBrief",
                 "promotion_brief?: GenerationPromotionBrief | null;",
                 "export function promotionBriefDisplayItems",
@@ -1966,6 +1976,9 @@ def validate_content_production_contract() -> int:
         (
             content_source_context_test_text,
             [
+                '"source_cards"',
+                "missing_required_source",
+                "No visible Tavily result",
                 "test_promotion_brief_maps_topic_intent_to_marketing_plan",
                 "test_promotion_brief_downgrades_missing_source_topics_to_verification_framework",
                 'promotion_brief == package.payload["source_context"]["promotion_brief"]',

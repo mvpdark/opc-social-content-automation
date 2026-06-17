@@ -8186,3 +8186,53 @@ If the E2E assertions verify the promotion readiness contract instead of one exa
 - This loop fixes test expectation drift only; it does not add new product capability.
 - Exact score-calculation regressions would be better covered by a focused unit test for `buildPromotionReadinessSummary`.
 - Fact-ledger/source-card UI remains the next higher-value promotion-precision loop.
+
+## Loop 120 - Source cards in draft source context
+
+Date: 2026-06-17
+
+### Observation
+
+OPC already preserves `knowledge_items`, Tavily `web_search` results, a source review note, and a promotion brief in `source_context`, but the draft payload still lacks a normalized fact-ledger/source-card structure. That means downstream prompts and UI must infer source boundaries from raw snippets instead of reading a compact list of supported claims, freshness/confidence, and usage boundaries.
+
+### Hypothesis
+
+If the backend derives conservative `source_cards` from knowledge and Tavily evidence before drafting, then source-check and ranking flows will have a clearer fact ledger for prompt grounding and future UI display without inventing facts or weakening the missing-source guards.
+
+### Patch
+
+- Added backend source-card derivation for knowledge items, visible Tavily results, and missing-required-web-source cases.
+- Attached `source_cards` to `source_context`, which is already persisted on generated content and passed to the draft prompt package.
+- Updated the draft prompt to treat `source_context.source_cards` as the fact ledger and to avoid current-fact claims when a missing-source card is present.
+- Added frontend source-context typing for `GenerationSourceCard`.
+- Extended backend tests and verifier contracts to protect source-card payload, prompt guidance, missing-source card behavior, and frontend typing.
+
+### Verification
+
+- `.venv\Scripts\python.exe -m pytest backend\tests\test_content_source_context.py` passed: 17 tests.
+- `.venv\Scripts\python.exe -m pytest backend\tests` passed: 244 tests, 1 existing Starlette deprecation warning.
+- `.venv\Scripts\python.exe scripts\verify_project.py --keep-cache` passed: python files compiled 86; required files 48; safety gates 174; content production contract 1651; text hygiene files 133.
+- `npm run typecheck` in `frontend/` passed.
+- `npm run build` in `frontend/` passed.
+- `npm run e2e -- --grep "source logo-price topic|missing Tavily results warns"` passed: 4 Playwright tests.
+- `git diff --check` passed.
+
+### Score
+
+- Product value: 24/30
+- Correctness: 18/20
+- Test coverage: 18/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX clarity: 3/5
+- Total: 87/100
+
+### Result
+
+- Verified. Draft generation source context now includes conservative `source_cards` that distinguish stored knowledge, visible Tavily evidence, and missing required web evidence, giving the prompt and future UI a fact-ledger structure before current-fact claims are made.
+
+### Remaining risk
+
+- Source cards currently derive supported claims from snippets; they do not yet run a separate claim-extraction model or human approval workflow.
+- UI panels still show raw knowledge/Tavily evidence and promotion brief; rendering source cards directly should be a follow-up loop.
+- Source card confidence is rule-based and should be refined when reviewed campaign feedback is available.

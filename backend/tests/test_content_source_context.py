@@ -141,6 +141,11 @@ def test_source_context_exposes_knowledge_and_web_sources(monkeypatch) -> None:
     assert context["web_search"]["provider"] == "tavily"
     assert "accreditation" in context["web_search"]["answer"]
     assert context["web_search"]["results"][0]["url"] == "https://example.edu/water-phd"
+    assert context["source_cards"][0]["source_type"] == "knowledge"
+    assert context["source_cards"][0]["confidence"] == "review_required"
+    assert context["source_cards"][1]["source_type"] == "web"
+    assert context["source_cards"][1]["url"] == "https://example.edu/water-phd"
+    assert "human review before publishing" in context["source_cards"][1]["unsupported_boundary"]
     assert "请先人工核对来源" in context["review_note"]
 
 
@@ -165,6 +170,10 @@ def test_source_context_warns_when_required_web_search_is_missing(monkeypatch) -
 
     assert context["web_search"]["required"] is True
     assert context["web_search"]["results"] == []
+    assert context["source_cards"][0]["id"] == "web:missing-required"
+    assert context["source_cards"][0]["confidence"] == "missing_required_source"
+    assert context["source_cards"][0]["safe_for"] == ["checklist"]
+    assert "No visible Tavily result" in context["source_cards"][0]["supported_claim"]
     assert "没有可见 Tavily 结果" in context["review_note"]
     assert "不要让模型猜测学校、价格、logo 或排名结论" in context["review_note"]
 
@@ -197,6 +206,11 @@ def test_draft_prompt_marks_missing_required_web_search(monkeypatch) -> None:
     assert "no Tavily sources were available" in web_search_context["usage_note"]
     assert "Do not name schools" in web_search_context["usage_note"]
     assert isinstance(package.payload["source_context"], dict)
+    assert package.payload["source_context"]["source_cards"][0]["id"] == "web:missing-required"
+    assert (
+        package.payload["source_context"]["source_cards"][0]["confidence"]
+        == "missing_required_source"
+    )
     assert "没有可见 Tavily 结果" in package.payload["source_context"]["review_note"]
     assert "不要让模型猜测学校、价格、logo 或排名结论" in package.payload["source_context"]["review_note"]
     promotion_brief = package.payload["promotion_brief"]

@@ -29,6 +29,7 @@ from app.services.web_search_service import (
 
 
 SOURCE_CONTEXT_EXCERPT_LENGTH = 420
+SOURCE_CARD_SUPPORTED_CLAIM_LENGTH = 220
 MIN_DRAFT_MEANINGFUL_CHARACTERS = 20
 DRAFT_METADATA_SECTION_HEADINGS = (
     "title",
@@ -100,6 +101,95 @@ def _source_excerpt(value: object, max_length: int = SOURCE_CONTEXT_EXCERPT_LENG
     return f"{text[:max_length].rstrip()}..."
 
 
+def _source_card_claim(value: object) -> str:
+    return _source_excerpt(value, SOURCE_CARD_SUPPORTED_CLAIM_LENGTH)
+
+
+def _source_cards(source_context: dict[str, object]) -> list[dict[str, object]]:
+    cards: list[dict[str, object]] = []
+    raw_knowledge_items = source_context.get("knowledge_items")
+    if isinstance(raw_knowledge_items, list):
+        for index, item in enumerate(raw_knowledge_items, start=1):
+            if not isinstance(item, dict):
+                continue
+            cards.append(
+                {
+                    "id": f"knowledge:{item.get('id') or index}",
+                    "source_type": "knowledge",
+                    "title": _source_excerpt(item.get("title"), 160),
+                    "url": None,
+                    "freshness": "stored knowledge base item",
+                    "supported_claim": _source_card_claim(item.get("content")),
+                    "unsupported_boundary": (
+                        "Do not use this card alone for current rankings, fees, logos, "
+                        "policies, or market data unless the item itself contains reviewed facts."
+                    ),
+                    "confidence": "review_required",
+                    "safe_for": ["body", "checklist"],
+                }
+            )
+
+    raw_web_search = source_context.get("web_search")
+    if isinstance(raw_web_search, dict):
+        raw_results = raw_web_search.get("results")
+        if isinstance(raw_results, list):
+            for index, item in enumerate(raw_results, start=1):
+                if not isinstance(item, dict):
+                    continue
+                cards.append(
+                    {
+                        "id": f"web:{index}",
+                        "source_type": "web",
+                        "title": _source_excerpt(item.get("title"), 160),
+                        "url": _source_excerpt(item.get("url"), 600),
+                        "freshness": "live Tavily search result",
+                        "supported_claim": _source_card_claim(item.get("content")),
+                        "unsupported_boundary": (
+                            "Use only the returned title, URL, snippet, and answer summary; "
+                            "open the URL for human review before publishing current facts."
+                        ),
+                        "confidence": "source_visible",
+                        "safe_for": ["title", "body", "cover", "checklist"],
+                    }
+                )
+            if not raw_results and raw_web_search.get("required") is True:
+                cards.append(
+                    {
+                        "id": "web:missing-required",
+                        "source_type": "web",
+                        "title": "Required live web evidence missing",
+                        "url": None,
+                        "freshness": "missing",
+                        "supported_claim": "No visible Tavily result supports current-fact conclusions.",
+                        "unsupported_boundary": (
+                            "Do not name schools, logos, prices, rankings, policies, or market facts; "
+                            "write only a verification framework until sources are collected."
+                        ),
+                        "confidence": "missing_required_source",
+                        "safe_for": ["checklist"],
+                    }
+                )
+        elif raw_web_search.get("required") is True:
+            cards.append(
+                {
+                    "id": "web:missing-required",
+                    "source_type": "web",
+                    "title": "Required live web evidence missing",
+                    "url": None,
+                    "freshness": "missing",
+                    "supported_claim": "No visible Tavily result supports current-fact conclusions.",
+                    "unsupported_boundary": (
+                        "Do not name schools, logos, prices, rankings, policies, or market facts; "
+                        "write only a verification framework until sources are collected."
+                    ),
+                    "confidence": "missing_required_source",
+                    "safe_for": ["checklist"],
+                }
+            )
+
+    return cards
+
+
 def _knowledge_context(
     db: Session,
     payload: ContentGenerateRequest,
@@ -164,7 +254,7 @@ def _public_source_context(
             "换更具体关键词，或只输出维度框架，不要让模型猜测学校、价格、logo 或排名结论。"
         )
 
-    return {
+    source_context = {
         "knowledge_query": payload.knowledge_query or payload.topic,
         "knowledge_items": [
             {
@@ -200,6 +290,8 @@ def _public_source_context(
         },
         "review_note": review_note,
     }
+    source_context["source_cards"] = _source_cards(source_context)
+    return source_context
 
 
 def _source_context_with_promotion_brief(

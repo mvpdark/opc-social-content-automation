@@ -14,6 +14,18 @@ export type GenerationWebSearchSource = {
   url: string;
 };
 
+export type GenerationSourceCard = {
+  confidence?: string | null;
+  freshness?: string | null;
+  id: string;
+  safe_for?: string[];
+  source_type: "knowledge" | "web" | string;
+  supported_claim: string;
+  title: string;
+  unsupported_boundary?: string | null;
+  url?: string | null;
+};
+
 export type GenerationPromotionBrief = {
   cover_angle?: string;
   cta?: string;
@@ -37,6 +49,7 @@ export type GenerationSourceContext = {
   knowledge_query?: string | null;
   promotion_brief?: GenerationPromotionBrief | null;
   review_note?: string;
+  source_cards?: GenerationSourceCard[];
   web_search?: {
     answer?: string | null;
     provider?: string | null;

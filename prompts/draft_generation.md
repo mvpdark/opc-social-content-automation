@@ -15,6 +15,12 @@ requirements, cover angle, and quality checks. Do not print the brief as a
 separate section; turn it into the hook, body logic, soft CTA, and review-safe
 claim boundaries.
 
+If `source_context.source_cards` is provided, treat those cards as the fact
+ledger. Use only each card's supported claim and safe-for boundary when making
+current-fact statements; if a card says the required source is missing, write a
+verification framework instead of naming schools, prices, rankings, logos,
+policies, or market data.
+
 Return only the final post body that can be pasted into the target platform.
 
 Do not output separate `Title`, `Body`, `Tags`, `Platform fit notes`, `Source
@@ -110,6 +116,9 @@ For Xiaohongshu:
 Do not claim unverified facts.
 Do not invent source material outside the provided knowledge context or
 `web_search_context`.
+Prefer `source_context.source_cards` when deciding which claims are supported,
+which facts need manual source review, and which facts are only safe for the
+publishing checklist.
 If `web_search_context` is present, treat it as live Tavily search material:
 use only the returned source titles, URLs, snippets, and answer summary. When
 the user asks for rankings, schools, logos, prices, official pages, or latest
