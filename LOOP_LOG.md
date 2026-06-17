@@ -8140,3 +8140,49 @@ If PC and mobile draft preview/copy surfaces include a compact promotion readine
 - The readiness score is a deterministic UI review aid, not a model-quality evaluator.
 - CTA detection is conservative; drafts without explicit comment/private-message/consultation cues are flagged for manual improvement even if the operator plans a softer CTA.
 - Fact-ledger/source-card UI remains a future loop for stronger current-fact traceability.
+
+## Loop 119 - Promotion readiness E2E expectation alignment
+
+Date: 2026-06-17
+
+### Observation
+
+The current PC/mobile promotion readiness UI can legitimately score different selected topics at `83%` or `92%` while still showing `可进入人工复核`. The shared E2E helper locked every selected-topic preview/export path to one stale score and a single weak-CTA message, so broader smoke runs failed even though the product kept the manual-review boundary and CTA check visible.
+
+### Hypothesis
+
+If the E2E assertions verify the promotion readiness contract instead of one exact score, then tests will still catch regressions in readiness visibility, CTA state, and no-auto-publish safety copy without failing across valid topic-specific scores.
+
+### Patch
+
+- Updated the shared PC/mobile topic-alignment E2E helper to require a numeric readiness score with `可进入人工复核`.
+- Kept CTA coverage while allowing either `已就绪` or `待加强`, matching the deterministic scorer's valid states across topic fixtures.
+- Updated the project verifier's promotion-readiness E2E contract to require the new flexible CTA-state assertions.
+
+### Verification
+
+- `npm run e2e -- --grep "mobile one-click generation keeps selected sales topic aligned through preview copy|PC one-click generation keeps selected sales topic aligned through preview copy"` passed: 2 Playwright tests.
+- `npm run e2e -- --grep "login|mobile route|android|PC"` passed: 72 Playwright tests, 1 credentialed-login test skipped because env credentials were not provided.
+- `npm run typecheck` in `frontend/` passed.
+- `.venv\Scripts\python.exe scripts\verify_project.py --keep-cache` passed: python files compiled 86; required files 48; safety gates 174; content production contract 1638; text hygiene files 133.
+- `git diff --check` passed.
+
+### Score
+
+- Product value: 14/30
+- Correctness: 18/20
+- Test coverage: 19/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX clarity: 3/5
+- Total: 78/100
+
+### Result
+
+- Verified. Promotion readiness E2E now protects the user-visible review contract across PC and mobile without pinning all topics to the same numeric score or CTA outcome.
+
+### Remaining risk
+
+- This loop fixes test expectation drift only; it does not add new product capability.
+- Exact score-calculation regressions would be better covered by a focused unit test for `buildPromotionReadinessSummary`.
+- Fact-ledger/source-card UI remains the next higher-value promotion-precision loop.

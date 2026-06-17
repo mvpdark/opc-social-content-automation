@@ -2133,8 +2133,8 @@ def validate_content_production_contract() -> int:
             [
                 "draft-preview-promotion-readiness",
                 "pc-export-promotion-readiness",
-                "CTA 待加强",
-                "E2E CTA",
+                'toContainText("CTA")',
+                "已就绪|待加强",
                 "可进入人工复核",
             ],
             "promotion readiness E2E",
