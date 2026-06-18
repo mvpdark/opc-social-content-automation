@@ -317,6 +317,23 @@ function buildE2eSourceContext(
       trust_proof: "E2E source cards only"
     },
     review_note: "受控 E2E 夹具：发布前仍需人工核对来源。",
+    source_cards: [
+      {
+        confidence: emptyWebResults ? "missing_required_source" : "review_required",
+        freshness: emptyWebResults ? "missing" : "live Tavily search result",
+        id: emptyWebResults ? "web:missing-required" : "web:1",
+        safe_for: emptyWebResults ? ["checklist"] : ["title", "body", "cover", "checklist"],
+        source_type: "web",
+        supported_claim: emptyWebResults
+          ? "No visible Tavily result supports current-fact conclusions."
+          : `E2E source card supports ${preset.topic} only inside the controlled fixture.`,
+        title: emptyWebResults ? "Required live web evidence missing" : `E2E source card: ${preset.topic}`,
+        unsupported_boundary: emptyWebResults
+          ? "Do not name schools, logos, prices, rankings, policies, or market facts."
+          : "Open the URL for human review before publishing current facts.",
+        url: emptyWebResults ? null : "https://example.edu/e2e-source"
+      }
+    ],
     web_search: {
       answer: `受控测试联网摘要：${label}选题需要保留 ${preset.topic} 的意图。`,
       provider: "tavily",
@@ -942,6 +959,9 @@ async function runMobileTopicAlignmentScenario(
   await expect(page.getByTestId("mobile-source-promotion-brief")).toContainText("推广简报");
   await expect(page.getByTestId("mobile-source-promotion-brief")).toContainText(preset.audience);
   await expect(page.getByTestId("mobile-source-promotion-brief")).toContainText("E2E CTA");
+  await expect(page.getByTestId("mobile-source-card-summary")).toContainText("????");
+  await expect(page.getByTestId("mobile-source-card-summary")).toContainText("????");
+  await expect(page.getByTestId("mobile-source-card-summary")).toContainText("????");
   await expect(page.getByTestId("mobile-source-promotion-brief")).toContainText(
     "复制或发布准备前仍需人工确认"
   );
@@ -1072,6 +1092,9 @@ async function runPcTopicAlignmentScenario(
   await expect(page.getByTestId("source-promotion-brief")).toContainText("推广简报");
   await expect(page.getByTestId("source-promotion-brief")).toContainText(preset.audience);
   await expect(page.getByTestId("source-promotion-brief")).toContainText("E2E CTA");
+  await expect(page.getByTestId("source-card-summary")).toContainText("????");
+  await expect(page.getByTestId("source-card-summary")).toContainText("????");
+  await expect(page.getByTestId("source-card-summary")).toContainText("????");
   await expect(page.getByTestId("source-promotion-brief")).toContainText(
     "复制或发布准备前仍需人工确认"
   );

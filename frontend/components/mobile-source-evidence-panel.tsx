@@ -16,6 +16,7 @@ import {
 } from "@/lib/knowledge-api";
 import { scrollElementIntoView } from "@/lib/scroll-into-view";
 import { PromotionBriefSummary } from "@/components/promotion-brief-summary";
+import { SourceCardSummary } from "@/components/source-card-summary";
 
 const mobileEvidenceExcerptClass =
   "mt-1 max-h-28 overflow-y-auto whitespace-pre-wrap break-words pr-1 text-[11px] font-medium leading-5 text-muted";
@@ -47,6 +48,7 @@ export function MobileSourceEvidencePanel({
   sourceContext: GenerationSourceContext | null;
 }) {
   const knowledgeItems = sourceContext?.knowledge_items ?? [];
+  const sourceCards = sourceContext?.source_cards ?? [];
   const webSearch = sourceContext?.web_search;
   const webResults = webSearch?.results ?? [];
   const {
@@ -132,6 +134,7 @@ export function MobileSourceEvidencePanel({
           此选题需要联网来源；未拿到 Tavily 结果前，不要让模型猜测学校、价格、logo 或排名结论。
         </div>
       ) : null}
+      <SourceCardSummary cards={sourceCards} testId="mobile-source-card-summary" variant="mobile" />
       <PromotionBriefSummary
         sourceContext={sourceContext}
         testId="mobile-source-promotion-brief"

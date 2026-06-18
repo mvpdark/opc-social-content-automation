@@ -81,6 +81,7 @@ def validate_required_files() -> int:
         ROOT / "frontend" / "lib" / "xhs-stickers.tsx",
         ROOT / "frontend" / "components" / "promotion-brief-summary.tsx",
         ROOT / "frontend" / "components" / "promotion-readiness-summary.tsx",
+        ROOT / "frontend" / "components" / "source-card-summary.tsx",
         ROOT / "docs" / "RUNBOOK.md",
         ROOT / "docs" / "CLOUDFLARE_OPC.md",
         ROOT / "docs" / "SECURITY_NOTES.md",
@@ -1558,6 +1559,9 @@ def validate_content_production_contract() -> int:
     source_evidence_text = (
         ROOT / "frontend" / "components" / "generation-source-evidence-card.tsx"
     ).read_text(encoding="utf-8")
+    source_card_summary_text = (
+        ROOT / "frontend" / "components" / "source-card-summary.tsx"
+    ).read_text(encoding="utf-8")
     mobile_source_evidence_text = (
         ROOT / "frontend" / "components" / "mobile-source-evidence-panel.tsx"
     ).read_text(encoding="utf-8")
@@ -2072,6 +2076,34 @@ def validate_content_production_contract() -> int:
                 'testId="source-promotion-brief"',
             ],
             "PC source evidence promotion brief visibility",
+        ),
+        (
+            source_card_summary_text,
+            [
+                "export function SourceCardSummary",
+                "?????",
+                "?????",
+                "????",
+            ],
+            "source card summary component",
+        ),
+        (
+            source_evidence_text,
+            [
+                "SourceCardSummary",
+                'testId="source-card-summary"',
+                "sourceContext?.source_cards",
+            ],
+            "PC source card visibility",
+        ),
+        (
+            mobile_source_evidence_text,
+            [
+                "SourceCardSummary",
+                'testId="mobile-source-card-summary"',
+                'variant="mobile"',
+            ],
+            "mobile source card visibility",
         ),
         (
             mobile_source_evidence_text,

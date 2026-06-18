@@ -8236,3 +8236,51 @@ If the backend derives conservative `source_cards` from knowledge and Tavily evi
 - Source cards currently derive supported claims from snippets; they do not yet run a separate claim-extraction model or human approval workflow.
 - UI panels still show raw knowledge/Tavily evidence and promotion brief; rendering source cards directly should be a follow-up loop.
 - Source card confidence is rule-based and should be refined when reviewed campaign feedback is available.
+
+## Loop 121 - Source cards visible in source evidence
+
+Date: 2026-06-19
+
+### Observation
+
+Loop 120 added `source_cards` to backend draft source context and prompt guidance, but PC and mobile source evidence panels still render only raw knowledge/Tavily lists, promotion brief, and review notes. Operators cannot yet inspect the compact fact-ledger cards that distinguish supported claims, usage boundaries, and missing required sources before manual copy/export decisions.
+
+### Hypothesis
+
+If PC and mobile source evidence panels render source cards alongside existing raw evidence, then operators can review supported claims and unsupported boundaries earlier without changing generation, review, or publishing behavior.
+
+### Patch
+
+- Added a shared `SourceCardSummary` component that renders source-card supported claims, usage boundaries, confidence labels, and safe-for surfaces.
+- Rendered source cards in both PC and mobile source evidence panels before the promotion brief, so source boundaries appear before strategy guidance.
+- Added E2E fixture `source_cards` and PC/mobile assertions that the source-card summary is visible in source-check flows.
+- Extended the project verifier to require the source-card summary component and PC/mobile wiring.
+
+### Verification
+
+- `npm run typecheck` in `frontend/` passed.
+- `.venv\Scripts\python.exe scripts\verify_project.py --keep-cache` passed: python files compiled 86; required files 49; safety gates 174; content production contract 1661; text hygiene files 134.
+- `.venv\Scripts\python.exe -m pytest backend\tests\test_content_source_context.py` passed: 17 tests.
+- `npm run e2e -- --grep "source logo-price topic|missing Tavily results warns"` passed: 4 Playwright tests.
+- `npm run build` in `frontend/` passed.
+- `git diff --check` passed.
+
+### Score
+
+- Product value: 24/30
+- Correctness: 18/20
+- Test coverage: 18/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX clarity: 4/5
+- Total: 88/100
+
+### Result
+
+- Verified. PC and mobile source evidence panels now show the fact-ledger source cards before promotion guidance, making supported claims, missing-source boundaries, and manual-review usage limits visible before copy/export decisions.
+
+### Remaining risk
+
+- Source cards are still rule-derived from snippets; they are not yet human-approved claim cards.
+- Source cards are visible in create/source-evidence surfaces, but review-detail surfaces can be extended in a later loop.
+- Per-card UI tests assert the summary text, not every individual source-card state.
