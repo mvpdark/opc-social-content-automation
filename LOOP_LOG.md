@@ -8284,3 +8284,47 @@ If PC and mobile source evidence panels render source cards alongside existing r
 - Source cards are still rule-derived from snippets; they are not yet human-approved claim cards.
 - Source cards are visible in create/source-evidence surfaces, but review-detail surfaces can be extended in a later loop.
 - Per-card UI tests assert the summary text, not every individual source-card state.
+
+## Loop 122 - Windows local startup launcher
+
+Date: 2026-06-19
+
+### Observation
+
+The runbook already documents `python scripts/start_local.py` as the supported local startup helper, but Windows operators still need to open a terminal and type the command. The user needs a double-click launcher that starts both backend and frontend without changing product behavior or bypassing safety gates.
+
+### Hypothesis
+
+If the repository root includes a small Windows `.bat` launcher that delegates to the existing startup helper, then operators can start the local PC/mobile app more reliably while preserving the existing port checks, logs, and service boundaries.
+
+### Patch
+
+- Added `START_OPC.bat` at the repository root.
+- The launcher detects `.venv\Scripts\python.exe` first, falls back to system Python, calls `scripts\start_local.py`, opens `http://127.0.0.1:3000/?theme=mint` on success, and keeps the window open on failures.
+- Documented the launcher in `docs/RUNBOOK.md`.
+- Updated `PROJECT_MAP.md` deployment notes with the Windows launcher path and startup behavior.
+
+### Verification
+
+- `cmd /c START_OPC.bat --status` with `OPC_LAUNCHER_NO_PAUSE=1` passed and reported backend/frontend port status through the launcher.
+- `.venv\Scripts\python.exe scripts\verify_project.py --keep-cache` passed: python files compiled 86; required files 49; safety gates 174; content production contract 1661; text hygiene files 134.
+- `git diff --check` passed with the existing CRLF normalization warning for `LOOP_LOG.md`.
+
+### Score
+
+- Product value: 16/30
+- Correctness: 17/20
+- Test coverage: 14/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX clarity: 4/5
+- Total: 75/100
+
+### Result
+
+- Verified. Windows users can now double-click `START_OPC.bat` to start the existing local backend and frontend helper, see logs/errors in a persistent launcher window, and open the PC app URL after startup succeeds.
+
+### Remaining risk
+
+- The launcher delegates to the existing startup helper; it does not install missing Python, Node, npm packages, or `.venv` automatically.
+- Full startup with live server processes was not run to avoid leaving background dev servers open in this thread; the launcher path and status mode were verified.

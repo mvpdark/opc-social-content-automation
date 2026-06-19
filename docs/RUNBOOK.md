@@ -56,6 +56,16 @@ Start the local API and frontend together:
 python scripts/start_local.py
 ```
 
+On Windows, double-click the repository-root launcher:
+
+```text
+START_OPC.bat
+```
+
+It starts the same local backend and frontend helper, keeps the launcher window
+open for errors, and opens `http://127.0.0.1:3000/?theme=mint` when startup
+succeeds.
+
 The helper skips services that are already listening on ports `8010` or `3000`
 and writes UTF-8 logs to `backend/uvicorn-8010.log` and
 `frontend/next-3000.log`. If it finds an older UTF-16 log from a manual

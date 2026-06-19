@@ -94,6 +94,7 @@ Last updated: 2026-06-16
 
 - Frontend build command: `npm run build` in `frontend/`.
 - Backend health and service startup are documented in `docs/RUNBOOK.md`.
+- Windows local startup launcher: `START_OPC.bat` wraps `python scripts/start_local.py`, starts backend `8010` and frontend `3000`, and opens the PC app URL.
 - Cloudflare tunnel notes are in `docs/CLOUDFLARE_OPC.md`.
 - CI runs backend project checks, backend tests, frontend typecheck, and Chromium E2E smoke tests.
 
