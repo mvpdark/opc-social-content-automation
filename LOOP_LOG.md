@@ -8328,3 +8328,49 @@ If the repository root includes a small Windows `.bat` launcher that delegates t
 
 - The launcher delegates to the existing startup helper; it does not install missing Python, Node, npm packages, or `.venv` automatically.
 - Full startup with live server processes was not run to avoid leaving background dev servers open in this thread; the launcher path and status mode were verified.
+
+## Loop 123 - Frontend error recovery boundary
+
+Date: 2026-06-19
+
+### Observation
+
+The frontend app directory did not define Next route or global error boundaries. A runtime rendering error could therefore degrade into a framework-level fallback or blank app surface instead of a product-safe recovery screen that reminds operators no draft, cover, or publishing action was submitted.
+
+### Hypothesis
+
+If the app defines route-level and global error boundaries with retry and return-to-workbench actions, then unexpected frontend failures become recoverable without exposing secrets or implying any automatic publishing/submission happened.
+
+### Patch
+
+- Added `frontend/app/error.tsx` with a product-safe recovery UI, retry action, optional digest display, and a link back to `/?theme=mint`.
+- Added `frontend/app/global-error.tsx` for root-layout failures with inline-safe styling and the same no-submit/no-publish recovery copy.
+- Extended `scripts/verify_project.py` to require both error boundary files and their recovery/safety contracts.
+- Updated `PROJECT_MAP.md` with the new route/global error fallback entries and contract coverage.
+
+### Verification
+
+- `npm run typecheck` in `frontend/` passed.
+- `.venv\Scripts\python.exe scripts\verify_project.py --keep-cache` passed: python files compiled 86; required files 51; safety gates 174; frontend design contract 167; content production contract 1661; text hygiene files 136.
+- `npm run build` in `frontend/` passed; Next compiled the new route/global error boundary files successfully.
+- `npm run e2e -- --grep "PC and mobile login shells attach screenshot evidence"` passed: 1 Playwright test.
+- `git diff --check` passed with the existing CRLF normalization warnings for `LOOP_LOG.md` and `scripts/verify_project.py`.
+
+### Score
+
+- Product value: 18/30
+- Correctness: 18/20
+- Test coverage: 16/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX clarity: 4/5
+- Total: 80/100
+
+### Result
+
+- Verified. Frontend runtime failures now have route-level and global recovery screens with retry, return-to-workbench, optional digest display, and explicit no-submit/no-publish copy. The normal PC/mobile login entry still renders under Playwright smoke coverage.
+
+### Remaining risk
+
+- The loop verifies compile/build and normal-route smoke behavior; it does not inject a synthetic production runtime crash to screenshot the error UI.
+- Error digests are shown only when Next provides them; detailed messages are limited to development console output.

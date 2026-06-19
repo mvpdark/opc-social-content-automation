@@ -68,6 +68,8 @@ def validate_required_files() -> int:
         ROOT / "backend" / "app" / "services" / "promotion_brief.py",
         ROOT / "backend" / "alembic" / "versions" / "0008_content_source_context.py",
         ROOT / "frontend" / "app" / "page.tsx",
+        ROOT / "frontend" / "app" / "error.tsx",
+        ROOT / "frontend" / "app" / "global-error.tsx",
         ROOT / "frontend" / "playwright.config.ts",
         ROOT / "frontend" / "middleware.ts",
         ROOT / "frontend" / "public" / "mobile-assets" / "collection-collage.png",
@@ -1024,6 +1026,10 @@ def validate_frontend_design_contract() -> int:
     app_shell_text = (
         ROOT / "frontend" / "components" / "app-shell.tsx"
     ).read_text(encoding="utf-8")
+    app_error_text = (ROOT / "frontend" / "app" / "error.tsx").read_text(encoding="utf-8")
+    global_error_text = (ROOT / "frontend" / "app" / "global-error.tsx").read_text(
+        encoding="utf-8"
+    )
     android_text = (ROOT / "frontend" / "app" / "android" / "page.tsx").read_text(
         encoding="utf-8"
     )
@@ -1222,6 +1228,49 @@ def validate_frontend_design_contract() -> int:
     for snippet in app_shell_login_snippets:
         if snippet not in app_shell_text:
             raise SystemExit(f"Missing app shell login contract snippet: {snippet}")
+
+    app_error_boundary_contracts = [
+        (
+            app_error_text,
+            [
+                '"use client";',
+                "export default function AppError",
+                'data-testid="app-error-boundary"',
+                'data-testid="app-error-message"',
+                'data-testid="app-error-reset"',
+                'data-testid="app-error-home"',
+                "当前操作没有被提交或发布",
+                "返回 OPC 工作台",
+                'href="/?theme=mint"',
+                "process.env.NODE_ENV === \"development\"",
+                "error.digest",
+            ],
+            "route error boundary",
+        ),
+        (
+            global_error_text,
+            [
+                '"use client";',
+                "export default function GlobalError",
+                "<html lang=\"zh-CN\">",
+                'data-testid="global-error-boundary"',
+                'data-testid="global-error-message"',
+                'data-testid="global-error-reset"',
+                'data-testid="global-error-home"',
+                "当前操作没有被提交或发布",
+                "返回 OPC 工作台",
+                'href="/?theme=mint"',
+                "process.env.NODE_ENV === \"development\"",
+                "error.digest",
+            ],
+            "global error boundary",
+        ),
+    ]
+    for text, snippets, contract_name in app_error_boundary_contracts:
+        for snippet in snippets:
+            total += 1
+            if snippet not in text:
+                raise SystemExit(f"Missing {contract_name} contract: {snippet}")
 
     pc_topbar_overflow_contract_snippets = [
         "xl:grid-cols-[minmax(180px,220px)_minmax(0,1fr)_auto]",
@@ -1554,6 +1603,10 @@ def validate_content_production_contract() -> int:
         encoding="utf-8"
     )
     app_shell_text = (ROOT / "frontend" / "components" / "app-shell.tsx").read_text(
+        encoding="utf-8"
+    )
+    app_error_text = (ROOT / "frontend" / "app" / "error.tsx").read_text(encoding="utf-8")
+    global_error_text = (ROOT / "frontend" / "app" / "global-error.tsx").read_text(
         encoding="utf-8"
     )
     source_evidence_text = (

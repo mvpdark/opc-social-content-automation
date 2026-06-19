@@ -21,6 +21,7 @@ Last updated: 2026-06-16
 - PC workspace: `frontend/app/page.tsx`, reached as `/?theme=mint`.
 - Mobile web workspace: `frontend/app/android/page.tsx`, reached as `/android?from=%2F%3Ftheme%3Dmint&tab=home`.
 - Public preview: `frontend/app/preview/[contentId]/page.tsx`.
+- Frontend route and global error fallbacks: `frontend/app/error.tsx` and `frontend/app/global-error.tsx`.
 - Middleware redirects mobile user agents from `/` to `/android`.
 
 ## Auth and Session
@@ -89,6 +90,7 @@ Last updated: 2026-06-16
 - Public preview non-array image payload smoke tests keep the draft readable with the text-cover fallback when cover payload shapes are unexpected.
 - Public preview content-error smoke tests resolve backend failures to a clear error state without image or publishing follow-up calls.
 - Public preview malformed-content smoke tests resolve invalid payloads to a clear error state without image or publishing follow-up calls.
+- Project contract checks require frontend route/global error boundaries with retry, return-to-workbench, and no-auto-submit copy.
 
 ## Deployment and Build
 
