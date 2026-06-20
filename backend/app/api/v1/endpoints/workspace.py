@@ -3,7 +3,9 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.domain import get_domain, registry as domain_registry
 from app.db.session import get_db
+from app.domains import register_all_domains
 from app.models.content import Content
 from app.models.knowledge_base import KnowledgeBase
 from app.models.publish_record import PublishRecord
@@ -11,14 +13,16 @@ from app.models.trend_content import TrendContent
 from app.models.user import User
 from app.schemas.workspace import (
     DependencyReport,
+    DomainInfo,
+    DomainSwitchRequest,
     ExportRequest,
     ExportResponse,
-    PublishRecordCreate,
-    PublishRecordRead,
-    ProviderKeyUpdateRequest,
     ProviderConnectionCheckRequest,
     ProviderConnectionCheckResponse,
+    ProviderKeyUpdateRequest,
     ProviderStatusItem,
+    PublishRecordCreate,
+    PublishRecordRead,
     WorkspaceContentItem,
 )
 from app.services.dependency_service import dependency_report
@@ -31,7 +35,6 @@ from app.services.workspace_service import (
     list_publish_records,
     provider_status_items,
 )
-
 
 router = APIRouter()
 
@@ -174,3 +177,44 @@ def create_publish_record(
         "platform": record.platform,
         "status": record.status,
     }
+
+
+@router.get("/domains", response_model=list[DomainInfo])
+def list_domains() -> list[DomainInfo]:
+    register_all_domains(domain_registry)
+    return [
+        DomainInfo(key=key, label=domain_registry.get(key).label)
+        for key in domain_registry.list_keys()
+    ]
+
+
+@router.get("/domain", response_model=DomainInfo)
+def get_current_domain_info(
+    current_user: User = Depends(get_current_user),
+) -> DomainInfo:
+    try:
+        domain = get_domain(getattr(current_user, "domain_key", None))
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="尚未注册任何内容域，请先部署业务域插件。",
+        )
+    return DomainInfo(key=domain.key, label=domain.label)
+
+
+@router.put("/domain", response_model=DomainInfo)
+def switch_domain(
+    payload: DomainSwitchRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> DomainInfo:
+    register_all_domains(domain_registry)
+    if payload.domain_key not in domain_registry.list_keys():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"未知内容域：{payload.domain_key}",
+        )
+    domain = domain_registry.get(payload.domain_key)
+    current_user.domain_key = domain.key
+    db.commit()
+    return DomainInfo(key=domain.key, label=domain.label)

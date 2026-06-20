@@ -93,3 +93,12 @@ class DependencyReport(BaseModel):
     summary: dict[str, int]
     items: list[DependencyStatusItem]
     repair_steps: list[str]
+
+
+class DomainInfo(BaseModel):
+    key: str
+    label: str
+
+
+class DomainSwitchRequest(BaseModel):
+    domain_key: str = Field(min_length=1, max_length=32)

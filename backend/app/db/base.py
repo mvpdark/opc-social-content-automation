@@ -5,8 +5,8 @@ from app.models.generated_image import GeneratedImage
 from app.models.generation_log import GenerationLog
 from app.models.knowledge_base import KnowledgeBase
 from app.models.publish_record import PublishRecord
-from app.models.trend_content import TrendContent
 from app.models.trend_collection_job import TrendCollectionJob
+from app.models.trend_content import TrendContent
 from app.models.user import User
 
 __all__ = [

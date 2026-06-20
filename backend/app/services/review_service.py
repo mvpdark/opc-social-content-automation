@@ -9,7 +9,6 @@ from app.schemas.review import ContentAiReviewRequest, ContentReviewRequest
 from app.services.content_service import PromptPackage, record_generation_log
 from app.services.model_router import load_prompt, model_router
 
-
 EDITABLE_STATUSES = {"draft", "rewritten", "review_pending", "changes_requested"}
 HUMAN_REVIEWABLE_STATUSES = {"draft", "rewritten", "review_pending"}
 
@@ -135,6 +134,15 @@ def run_ai_review(
         )
         raise
 
+    record_generation_log(
+        db=db,
+        current_user=current_user,
+        purpose="content_review",
+        model="review_model",
+        package=package,
+        result=result,
+        status="success",
+    )
     review = ContentReview(
         content_id=content.id,
         reviewer_id=current_user.id,
@@ -147,13 +155,4 @@ def run_ai_review(
     db.add(review)
     db.commit()
     db.refresh(review)
-    record_generation_log(
-        db=db,
-        current_user=current_user,
-        purpose="content_review",
-        model="review_model",
-        package=package,
-        result=result,
-        status="success",
-    )
     return review

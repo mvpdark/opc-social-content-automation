@@ -2134,9 +2134,10 @@ def validate_content_production_contract() -> int:
             source_card_summary_text,
             [
                 "export function SourceCardSummary",
-                "?????",
-                "?????",
-                "????",
+                "来源卡片",
+                "支持内容：",
+                "使用边界：",
+                "可用于：",
             ],
             "source card summary component",
         ),

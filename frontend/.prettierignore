@@ -1,0 +1,9 @@
+node_modules/
+.next/
+dist/
+out/
+build/
+*.min.js
+*.min.css
+playwright-report/
+test-results/

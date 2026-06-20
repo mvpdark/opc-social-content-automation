@@ -9,7 +9,6 @@ from fastapi import HTTPException, status
 
 from app.core.config import settings
 
-
 LIVE_SEARCH_FACT_TERMS = (
     "最新",
     "今天",

@@ -27,6 +27,7 @@ class UserRead(BaseModel):
     phone: str
     nickname: str | None
     role: str
+    domain_key: str = "ssb"
     created_at: datetime
 
     model_config = {"from_attributes": True}

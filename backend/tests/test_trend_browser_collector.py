@@ -1,16 +1,16 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from fastapi import HTTPException
 
 from app.models.trend_collection_job import TrendCollectionJob
 from app.services.trend_browser_collector import (
+    CollectedTrendAsset,
     _blocked_candidate_count,
     _content_kind,
     _merge_detail_asset,
     _operator_wait_seconds,
     _parse_xhs_publish_time,
-    CollectedTrendAsset,
     collection_session_dir,
     extract_candidate_assets,
     normalize_visible_text,
@@ -217,24 +217,24 @@ def test_extract_candidate_assets_records_repeated_card_publish_time() -> None:
     assert len(assets) == 1
     assert assets[0].author == "瑶瑶硕博留学（宽灌）"
     assert assets[0].likes == 191
-    assert assets[0].publish_time == datetime(2025, 11, 4, tzinfo=timezone.utc)
+    assert assets[0].publish_time == datetime(2025, 11, 4, tzinfo=UTC)
 
 
 def test_parse_xhs_publish_time_handles_relative_dates() -> None:
-    now = datetime(2026, 6, 14, 8, 30, tzinfo=timezone.utc)
+    now = datetime(2026, 6, 14, 8, 30, tzinfo=UTC)
 
     assert _parse_xhs_publish_time("刚刚", now) == now
     assert _parse_xhs_publish_time("昨天", now) == datetime(
-        2026, 6, 13, 8, 30, tzinfo=timezone.utc
+        2026, 6, 13, 8, 30, tzinfo=UTC
     )
     assert _parse_xhs_publish_time("前天", now) == datetime(
-        2026, 6, 12, 8, 30, tzinfo=timezone.utc
+        2026, 6, 12, 8, 30, tzinfo=UTC
     )
     assert _parse_xhs_publish_time("4天前", now) == datetime(
-        2026, 6, 10, 8, 30, tzinfo=timezone.utc
+        2026, 6, 10, 8, 30, tzinfo=UTC
     )
     assert _parse_xhs_publish_time("12-31", now) == datetime(
-        2025, 12, 31, tzinfo=timezone.utc
+        2025, 12, 31, tzinfo=UTC
     )
 
 

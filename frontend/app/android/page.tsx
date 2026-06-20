@@ -45,7 +45,6 @@ import {
   sanitizeProviderStatusItems,
   type ProviderStatusItem
 } from "@/lib/provider-settings";
-import { SERVICE_CONFIG_READ_ERROR } from "@/lib/service-error-copy";
 import {
   CREDENTIAL_STORAGE_KEY,
   MOBILE_AUTH_STORAGE_KEY,
@@ -56,6 +55,7 @@ import {
   writeMobileStorage,
   type CredentialSettings
 } from "@/lib/mobile-runtime";
+import { fetchProviderStatuses } from "@/components/workspace-utils";
 
 type MobileTab = "home" | "collect" | "knowledge" | "review" | "create" | "settings";
 type MobileHistoryState = {
@@ -82,16 +82,6 @@ type MobileLoginResponse = {
   key_profile: string;
   provider_statuses: ProviderStatusItem[];
 };
-
-async function fetchProviderStatuses() {
-  const response = await fetch(`${API_BASE}/workspace/provider-status`);
-  if (!response.ok) {
-    throw new Error(await readApiError(response, SERVICE_CONFIG_READ_ERROR));
-  }
-  return sanitizeProviderStatusItems(
-    (await response.json()) as ProviderStatusItem[]
-  );
-}
 
 async function authenticateMobileLogin(account: string, password: string) {
   try {

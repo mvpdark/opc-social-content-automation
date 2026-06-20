@@ -959,9 +959,9 @@ async function runMobileTopicAlignmentScenario(
   await expect(page.getByTestId("mobile-source-promotion-brief")).toContainText("推广简报");
   await expect(page.getByTestId("mobile-source-promotion-brief")).toContainText(preset.audience);
   await expect(page.getByTestId("mobile-source-promotion-brief")).toContainText("E2E CTA");
-  await expect(page.getByTestId("mobile-source-card-summary")).toContainText("????");
-  await expect(page.getByTestId("mobile-source-card-summary")).toContainText("????");
-  await expect(page.getByTestId("mobile-source-card-summary")).toContainText("????");
+  await expect(page.getByTestId("mobile-source-card-summary")).toContainText("来源卡片");
+  await expect(page.getByTestId("mobile-source-card-summary")).toContainText("支持内容：");
+  await expect(page.getByTestId("mobile-source-card-summary")).toContainText("使用边界：");
   await expect(page.getByTestId("mobile-source-promotion-brief")).toContainText(
     "复制或发布准备前仍需人工确认"
   );
@@ -1092,9 +1092,9 @@ async function runPcTopicAlignmentScenario(
   await expect(page.getByTestId("source-promotion-brief")).toContainText("推广简报");
   await expect(page.getByTestId("source-promotion-brief")).toContainText(preset.audience);
   await expect(page.getByTestId("source-promotion-brief")).toContainText("E2E CTA");
-  await expect(page.getByTestId("source-card-summary")).toContainText("????");
-  await expect(page.getByTestId("source-card-summary")).toContainText("????");
-  await expect(page.getByTestId("source-card-summary")).toContainText("????");
+  await expect(page.getByTestId("source-card-summary")).toContainText("来源卡片");
+  await expect(page.getByTestId("source-card-summary")).toContainText("支持内容：");
+  await expect(page.getByTestId("source-card-summary")).toContainText("使用边界：");
   await expect(page.getByTestId("source-promotion-brief")).toContainText(
     "复制或发布准备前仍需人工确认"
   );

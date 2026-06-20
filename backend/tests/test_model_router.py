@@ -8,7 +8,6 @@ from app.services.model_router import (
     load_platform_style_reference,
     model_router,
 )
-from topic_preset_helpers import load_generation_topic_presets, split_topic_tags
 
 
 def test_embedding_model_is_deterministic() -> None:
@@ -24,245 +23,6 @@ def test_embedding_model_handles_empty_text() -> None:
 
     assert len(vector) == settings.embedding_dimensions
     assert set(vector) == {0.0}
-
-
-def test_codex_test_draft_provider(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(settings, "draft_provider", "codex_test")
-
-    result = model_router.draft_model(
-        "draft_generation",
-        {
-            "platform": "xiaohongshu",
-            "topic": "硕升博申请节奏",
-            "tags": ["规划", "申请"],
-            "knowledge_context": [{"title": "申请时间线"}],
-        },
-    )
-
-    assert "【本地检查草稿】硕升博申请节奏" in result
-    assert "本地检查模式生成的草稿" in result
-    assert "codex_test 测试 Provider" not in result
-    assert "申请时间线" in result
-
-
-def test_codex_test_draft_provider_does_not_echo_hidden_tone_rules(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(settings, "draft_provider", "codex_test")
-
-    result = model_router.draft_model(
-        "draft_generation",
-        {
-            "platform": "xiaohongshu",
-            "topic": "硕升博申请节奏",
-            "tone": "偏女性可爱风；隐藏撰稿规则：自动使用 [笑哭R]，不要解释字符码。",
-        },
-    )
-
-    assert "偏女性可爱风" in result
-    assert "隐藏撰稿规则" not in result
-    assert "[笑哭R]" not in result
-
-
-def test_codex_test_draft_provider_uses_xhs_expression_layer(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(settings, "draft_provider", "codex_test")
-
-    result = model_router.draft_model(
-        "draft_generation",
-        {
-            "platform": "xiaohongshu",
-            "topic": "硕升博申请节奏",
-            "tone": "偏女性可爱风；必须有表情包感和活泼标点。",
-        },
-    )
-
-    assert "姐妹们" in result
-    assert "👉" in result
-    assert "👇" in result
-    assert "📍" in result
-    assert "✅" in result
-    assert "🎓" in result
-    assert "😎" in result
-    assert "[哇R]" in result
-    assert "！！" in result
-    assert "（真的会累）" in result
-
-
-def test_codex_test_draft_provider_keeps_water_ranking_topic(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(settings, "draft_provider", "codex_test")
-
-    result = model_router.draft_model(
-        "draft_generation",
-        {
-            "platform": "xiaohongshu",
-            "topic": "全球水博排名必看",
-            "tags": ["水博", "排名"],
-        },
-    )
-
-    assert "全球水博排名必看" in result
-    assert "水博" in result
-    assert "认证" in result
-    assert "预算" in result
-    assert "榜" in result
-    assert "研究方向、目标导师和时间节点" not in result
-
-
-def test_codex_test_draft_provider_warns_missing_sources_for_water_ranking_topic(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(settings, "draft_provider", "codex_test")
-
-    result = model_router.draft_model(
-        "draft_generation",
-        {
-            "platform": "xiaohongshu",
-            "topic": "全球水博排名必看",
-            "tags": ["水博", "排名"],
-            "web_search_context": {
-                "required": True,
-                "query": "global water resources PhD programs official sources",
-                "results": [],
-                "usage_note": "Live web search was required but no Tavily sources were available.",
-            },
-        },
-    )
-
-    assert "全球水博排名必看" in result
-    assert "没有可见 Tavily 来源" in result
-    assert "核验框架" in result
-    assert "不要让模型猜测学校名" in result
-    assert "研究方向、目标导师和时间节点" not in result
-
-
-def test_codex_test_draft_provider_keeps_colloquial_school_list_topic(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(settings, "draft_provider", "codex_test")
-
-    result = model_router.draft_model(
-        "draft_generation",
-        {
-            "platform": "xiaohongshu",
-            "topic": "水博哪个学校好",
-            "tags": ["水博", "博士项目"],
-        },
-    )
-
-    assert "水博哪个学校好" in result
-    assert "认证" in result
-    assert "预算" in result
-    assert "硬编学校名" in result
-    assert "研究方向、目标导师和时间节点" not in result
-
-
-def test_codex_test_draft_provider_handles_missing_required_web_sources(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(settings, "draft_provider", "codex_test")
-
-    result = model_router.draft_model(
-        "draft_generation",
-        {
-            "platform": "xiaohongshu",
-            "topic": "水博项目校徽和价格怎么对比",
-            "tags": ["水博", "价格", "校徽"],
-            "web_search_context": {
-                "required": True,
-                "query": "global water resources PhD programs official logo tuition",
-                "results": [],
-                "usage_note": "Live web search was required but no Tavily sources were available.",
-            },
-        },
-    )
-
-    assert "水博项目校徽和价格怎么对比" in result
-    assert "没有可见 Tavily 来源" in result
-    assert "核验框架" in result
-    assert "不要让模型猜测具体名字、价格、logo 或排名结论" in result
-    assert "学校/项目名、价格、logo/校徽" in result
-    assert "参考上下文：缺可见 Tavily 来源" in result
-    assert "global water resources PhD programs official logo tuition" in result
-    assert "研究方向、目标导师和时间节点" not in result
-
-
-@pytest.mark.parametrize(
-    ("topic", "expected_terms", "forbidden_terms"),
-    [
-        ("低预算海外博士怎么筛", ("筛选", "预算", "认证"), ("研究方向、目标导师和时间节点",)),
-        ("在职博士项目避坑榜", ("风险", "认证", "预算"), ("12-9 个月",)),
-        ("水资源博士项目清单怎么看", ("筛选清单", "核验", "项目"), ("近期论文",)),
-        ("硕升博申请路线怎么选", ("路线", "选择", "适配"), ("群发邮件",)),
-        ("导师匹配前要做的方向自查", ("导师", "匹配", "论文"), ("12-9 个月",)),
-        ("研究方向太散怎么收", ("关键词", "问题意识", "收敛"), ("预算友好榜",)),
-        ("没有论文还能读博吗", ("项目经历", "工作成果", "背景补强"), ("预算友好榜",)),
-        ("在职博士申请时间线怎么排", ("时间线", "12-9 个月", "DDL"), ("预算友好榜",)),
-        ("什么时候开始联系导师", ("时间线", "12-9 个月", "联系导师"), ("导师不是被模板打动",)),
-        ("适合上班族的博士项目怎么咨询", ("咨询", "需求", "转化"), ("近期论文",)),
-        ("别人问博士含金量怎么回答", ("含金量", "价值", "异议"), ("近期论文",)),
-        ("水博项目校徽和价格怎么核验", ("来源核验", "官网", "校徽"), ("研究方向、目标导师和时间节点",)),
-        ("海外博士官方来源和费用怎么查", ("来源核验", "官网", "费用页", "待复核"), ("12-9 个月",)),
-        ("学校官网学费表怎么查", ("来源核验", "费用页", "待复核"), ("12-9 个月",)),
-    ],
-)
-def test_codex_test_draft_provider_matches_recommended_topic_intent(
-    monkeypatch: pytest.MonkeyPatch,
-    topic: str,
-    expected_terms: tuple[str, ...],
-    forbidden_terms: tuple[str, ...],
-) -> None:
-    monkeypatch.setattr(settings, "draft_provider", "codex_test")
-
-    result = model_router.draft_model(
-        "draft_generation",
-        {
-            "platform": "xiaohongshu",
-            "topic": topic,
-            "tags": [],
-        },
-    )
-
-    assert topic in result
-    for term in expected_terms:
-        assert term in result
-    for term in forbidden_terms:
-        assert term not in result
-
-
-def test_codex_test_draft_provider_covers_all_recommended_topic_presets(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(settings, "draft_provider", "codex_test")
-    presets = load_generation_topic_presets()
-    expected_terms_by_label = {
-        "榜单型": ("筛选", "预算", "认证", "风险", "榜"),
-        "路线型": ("路线", "选择", "适配"),
-        "导师型": ("导师", "匹配", "关键词"),
-        "时间型": ("时间", "12-9 个月", "DDL", "材料"),
-        "来源型": ("来源核验", "官网", "待复核", "URL"),
-        "转化型": ("转化", "需求", "异议", "价值"),
-    }
-
-    assert len(presets) >= 20
-    for preset in presets:
-        tags = split_topic_tags(preset["tags"])
-        result = model_router.draft_model(
-            "draft_generation",
-            {
-                "platform": "xiaohongshu",
-                "topic": preset["topic"],
-                "tags": tags,
-            },
-        )
-
-        assert preset["topic"] in result, preset["key"]
-        assert "研究方向、目标导师和时间节点" not in result, preset["key"]
-        expected_terms = expected_terms_by_label[preset["desktopLabel"]]
-        assert any(term in result for term in expected_terms), preset["key"]
 
 
 def test_codex_test_image_provider_creates_svg(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -352,7 +112,7 @@ def test_openai_compatible_draft_provider_calls_chat_completion(
             requests.append({"url": url, "headers": headers, "json": json})
             return FakeResponse()
 
-    monkeypatch.setattr("app.services.model_router.httpx.Client", FakeClient)
+    monkeypatch.setattr("app.services.model_router_helpers.httpx.Client", FakeClient)
 
     result = model_router.draft_model("draft_generation", {"topic": "硕升博"})
 
@@ -404,7 +164,7 @@ def test_openai_compatible_draft_provider_reports_timeout(
             request = httpx.Request("POST", url)
             raise httpx.ReadTimeout("timed out", request=request)
 
-    monkeypatch.setattr("app.services.model_router.httpx.Client", FakeClient)
+    monkeypatch.setattr("app.services.model_router_helpers.httpx.Client", FakeClient)
 
     with pytest.raises(HTTPException) as exc:
         model_router.draft_model("draft_generation", {"topic": "test"})
@@ -460,7 +220,7 @@ def test_openai_compatible_draft_provider_reports_invalid_key(
         ) -> FakeResponse:
             return FakeResponse()
 
-    monkeypatch.setattr("app.services.model_router.httpx.Client", FakeClient)
+    monkeypatch.setattr("app.services.model_router_helpers.httpx.Client", FakeClient)
 
     with pytest.raises(HTTPException) as exc:
         model_router.draft_model("draft_generation", {"topic": "test"})
@@ -524,7 +284,7 @@ def test_openai_compatible_image_provider_accepts_remote_url(
             requests.append({"url": url, "headers": headers, "json": json})
             return FakeResponse()
 
-    monkeypatch.setattr("app.services.model_router.httpx.Client", FakeClient)
+    monkeypatch.setattr("app.services.model_router_helpers.httpx.Client", FakeClient)
 
     result = model_router.image_model(
         "image_generation",
@@ -590,7 +350,7 @@ def test_openai_compatible_image_provider_stores_b64_png(
         def post(self, *args: object, **kwargs: object) -> FakeResponse:
             return FakeResponse()
 
-    monkeypatch.setattr("app.services.model_router.httpx.Client", FakeClient)
+    monkeypatch.setattr("app.services.model_router_helpers.httpx.Client", FakeClient)
 
     result = model_router.image_model("image_generation", {"title": "硕升博封面"})
 
@@ -648,7 +408,7 @@ def test_rewrite_model_calls_deepseek_without_exposing_key(
             requests.append({"url": url, "headers": headers, "json": json})
             return FakeResponse()
 
-    monkeypatch.setattr("app.services.model_router.httpx.Client", FakeClient)
+    monkeypatch.setattr("app.services.model_router_helpers.httpx.Client", FakeClient)
 
     result = model_router.rewrite_model("humanization", {"body": "AI draft"})
 

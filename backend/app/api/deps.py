@@ -7,10 +7,9 @@ from app.core.security import decode_access_token
 from app.db.session import get_db
 from app.models.user import User
 
-
 bearer_scheme = HTTPBearer(auto_error=False)
 DEFAULT_PLANNER_USER = User(
-    id=None,
+    id=0,
     phone="local-planner",
     nickname="默认运营员",
     role="planner",
@@ -47,3 +46,18 @@ def get_current_user(
             detail="账号不存在或已失效，请重新登录。",
         )
     return user
+
+
+WRITER_ROLES = {"planner", "admin"}
+
+
+def require_writer_role(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """写操作鉴权：只有 planner 或 admin 角色才能执行。"""
+    if current_user.role not in WRITER_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="当前账号没有写入权限。",
+        )
+    return current_user

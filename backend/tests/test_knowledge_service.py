@@ -139,7 +139,7 @@ def test_keyword_search_prefers_title_term_matches() -> None:
 
 
 def test_repair_utf8_mojibake_restores_chinese_text() -> None:
-    mojibake = "趋势摘要：硕升博".encode("utf-8").decode("latin1")
+    mojibake = "趋势摘要：硕升博".encode().decode("latin1")
 
     assert repair_utf8_mojibake(mojibake) == "趋势摘要：硕升博"
     assert repair_utf8_mojibake("plain ascii") == "plain ascii"

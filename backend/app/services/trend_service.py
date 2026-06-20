@@ -14,17 +14,16 @@ from app.schemas.knowledge import KnowledgeUploadRequest
 from app.schemas.trend import (
     KeywordAnalysisItem,
     PlatformSearchTarget,
-    TrendCollectRequest,
     TrendCollectionJobCreate,
+    TrendCollectRequest,
+    TrendKnowledgeDigestRequest,
+    TrendKnowledgeDigestResponse,
     TrendLinkCandidate,
     TrendLinkImportRequest,
     TrendLinkImportTarget,
-    TrendKnowledgeDigestRequest,
-    TrendKnowledgeDigestResponse,
 )
 from app.services.image_service import localize_image_url
 from app.services.knowledge_service import create_knowledge_item
-
 
 TOKEN_RE = re.compile(r"[\w\u4e00-\u9fff]+", re.UNICODE)
 STOP_WORDS = {
@@ -140,7 +139,7 @@ def _classify_xhs_url(url: str) -> TrendLinkCandidate:
     if parts and parts[0] == "search_result":
         return TrendLinkCandidate(
             original_url=url,
-            normalized_url=f"https://www.xiaohongshu.com/search_result",
+            normalized_url="https://www.xiaohongshu.com/search_result",
             link_type="search_result",
             accepted=True,
             requires_resolution=False,
@@ -334,7 +333,6 @@ def ensure_trend_covers_are_local(db: Session, items: list[TrendContent]) -> Non
             changed = True
 
     if changed:
-        db.flush()
         db.commit()
 
 
@@ -512,7 +510,8 @@ def analyze_keywords(
     platform: str | None,
     limit: int,
 ) -> list[KeywordAnalysisItem]:
-    statement = select(TrendContent)
+    candidate_limit = min(max(limit * 20, 200), 2000)
+    statement = select(TrendContent).order_by(desc(TrendContent.created_at)).limit(candidate_limit)
     if platform:
         statement = statement.where(TrendContent.platform == platform)
     items = db.scalars(statement).all()

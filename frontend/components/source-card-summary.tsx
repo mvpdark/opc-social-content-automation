@@ -1,13 +1,13 @@
 import type { GenerationSourceCard } from "@/lib/generated-assets";
 
 const confidenceLabel: Record<string, string> = {
-  missing_required_source: "???",
-  review_required: "???",
-  source_visible: "????"
+  missing_required_source: "缺来源",
+  review_required: "待复核",
+  source_visible: "来源可见"
 };
 
 function cardConfidenceLabel(confidence: string | null | undefined) {
-  return confidence ? confidenceLabel[confidence] ?? confidence : "???";
+  return confidence ? confidenceLabel[confidence] ?? confidence : "待复核";
 }
 
 export function SourceCardSummary({
@@ -37,10 +37,10 @@ export function SourceCardSummary({
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className={mobile ? "text-xs font-black text-ink" : "text-xs font-semibold text-ink"}>
-          ????
+          来源卡片
         </div>
         <span className={mobile ? "rounded-full bg-[#e7f2ea] px-2 py-0.5 text-[10px] font-black text-moss" : "rounded-md border border-moss/40 bg-moss/10 px-2 py-0.5 text-[10px] font-semibold text-ink"}>
-          {cards.length} ?
+          {cards.length} 条
         </span>
       </div>
       <div className="mt-2 space-y-2">
@@ -59,15 +59,15 @@ export function SourceCardSummary({
               </span>
             </div>
             <p className="mt-1 whitespace-pre-wrap break-words text-muted">
-              ?????{card.supported_claim}
+              支持内容：{card.supported_claim}
             </p>
             {card.unsupported_boundary ? (
               <p className="mt-1 whitespace-pre-wrap break-words text-[#8a6110]">
-                ?????{card.unsupported_boundary}
+                使用边界：{card.unsupported_boundary}
               </p>
             ) : null}
             {card.safe_for?.length ? (
-              <p className="mt-1 text-moss">????{card.safe_for.join(" / ")}</p>
+              <p className="mt-1 text-moss">可用于：{card.safe_for.join(" / ")}</p>
             ) : null}
           </article>
         ))}

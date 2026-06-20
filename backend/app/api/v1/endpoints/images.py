@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi import Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -12,7 +11,6 @@ from app.services.image_service import (
     list_cover_templates,
     list_images,
 )
-
 
 router = APIRouter()
 

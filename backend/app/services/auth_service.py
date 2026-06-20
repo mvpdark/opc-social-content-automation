@@ -4,10 +4,10 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.user import User
 from app.schemas.auth import UserCreate
-
 
 MOBILE_TEST_ACCOUNTS = ("admin", "admin1", "admin2")
 MOBILE_ACCOUNT_KEY_PROFILES = {account: "default" for account in MOBILE_TEST_ACCOUNTS}
@@ -47,6 +47,13 @@ def authenticate_user(db: Session, phone: str, password: str) -> User:
 
 
 def authenticate_mobile_account(account: str, password: str) -> str:
+    # 生产模式（auth_required=True）下禁用测试账号
+    if settings.auth_required:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="账号或密码不正确。",
+        )
+
     normalized_account = account.strip()
     for candidate in MOBILE_TEST_ACCOUNTS:
         if compare_digest(normalized_account, candidate) and compare_digest(password, candidate):

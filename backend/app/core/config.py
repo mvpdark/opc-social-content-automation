@@ -1,8 +1,9 @@
+import warnings
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 PROJECT_ROOT = BACKEND_ROOT.parent
@@ -61,6 +62,15 @@ class Settings(BaseSettings):
         env_file=(PROJECT_ROOT / ".env", BACKEND_ROOT / ".env"),
         env_file_encoding="utf-8",
     )
+
+    @model_validator(mode="after")
+    def _warn_weak_jwt_secret(self) -> "Settings":
+        if self.jwt_secret_key == "replace-with-a-long-random-secret":
+            warnings.warn(
+                "JWT_SECRET_KEY 使用默认弱密钥，生产环境必须在 .env 中替换！",
+                stacklevel=2,
+            )
+        return self
 
     @property
     def cors_origins(self) -> list[str]:

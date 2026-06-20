@@ -1,5 +1,5 @@
-import pytest
 import httpx
+import pytest
 from fastapi import HTTPException
 
 from app.models.content import Content

@@ -39,15 +39,18 @@ function resolveConfiguredApiBase(
   configuredApiBase: string,
   browserHostname: string,
   browserOrigin?: string,
+  browserProtocol?: string,
 ) {
   const normalizedBase = trimTrailingSlash(configuredApiBase);
+  const protocol = browserProtocol ?? "https:";
 
   try {
     const url = new URL(normalizedBase);
     const configuredIsLocalOrPrivate = isLocalOrPrivateHostname(url.hostname);
 
+    // 配置的是公网地址，但浏览器在本地访问 → 用浏览器地址+默认端口
     if (!configuredIsLocalOrPrivate && isLocalOrPrivateHostname(browserHostname)) {
-      const localUrl = new URL(browserOrigin ?? `http://${browserHostname || "localhost"}`);
+      const localUrl = new URL(`${protocol}//${browserHostname || "localhost"}`);
       localUrl.port = DEFAULT_API_PORT;
       localUrl.pathname = "/api";
       localUrl.search = "";
@@ -55,14 +58,20 @@ function resolveConfiguredApiBase(
       return trimTrailingSlash(localUrl.toString());
     }
 
+    // 配置的是本地地址，但浏览器从公网访问 → 用浏览器 origin（保持 protocol 一致）
     if (
       configuredIsLocalOrPrivate &&
       !isLocalOrPrivateHostname(browserHostname) &&
       browserOrigin
     ) {
-      return `${browserOrigin}/api`;
+      const originUrl = new URL(browserOrigin);
+      originUrl.pathname = "/api";
+      originUrl.search = "";
+      originUrl.hash = "";
+      return trimTrailingSlash(originUrl.toString());
     }
 
+    // loopback 配置但浏览器在局域网 IP → 替换 hostname，保持 protocol 和端口
     const shouldUseBrowserHost =
       isLoopbackHostname(url.hostname) &&
       isLocalOrPrivateHostname(browserHostname) &&
@@ -70,6 +79,7 @@ function resolveConfiguredApiBase(
 
     if (shouldUseBrowserHost) {
       url.hostname = browserHostname;
+      url.protocol = protocol;
       return trimTrailingSlash(url.toString());
     }
   } catch {
@@ -89,7 +99,7 @@ export function getApiBase() {
 
   const { hostname, origin, protocol } = window.location;
   if (configuredApiBase) {
-    return resolveConfiguredApiBase(configuredApiBase, hostname, origin);
+    return resolveConfiguredApiBase(configuredApiBase, hostname, origin, protocol);
   }
 
   if (!isLocalOrPrivateHostname(hostname)) {

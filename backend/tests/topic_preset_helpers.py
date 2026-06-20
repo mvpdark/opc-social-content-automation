@@ -1,7 +1,6 @@
 import re
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 TOPIC_PRESETS_FILE = PROJECT_ROOT / "frontend" / "lib" / "topic-presets.ts"
 REQUIRED_TOPIC_PRESET_FIELDS = {

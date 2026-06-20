@@ -14,7 +14,6 @@ from app.core.config import settings
 from app.db.session import SessionLocal, initialize_local_database
 from app.services.knowledge_service import compile_knowledge_base_if_due
 
-
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 STATIC_ROOT = BACKEND_ROOT / "static"
 logger = logging.getLogger(__name__)

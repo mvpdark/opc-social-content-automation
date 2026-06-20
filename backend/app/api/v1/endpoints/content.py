@@ -9,8 +9,8 @@ from app.models.user import User
 from app.schemas.content import (
     ContentGenerateRequest,
     ContentRead,
-    ContentSourcePreviewRead,
     ContentRewriteRequest,
+    ContentSourcePreviewRead,
 )
 from app.schemas.review import (
     ContentAiReviewRequest,
@@ -31,7 +31,6 @@ from app.services.review_service import (
     request_human_review,
     run_ai_review,
 )
-
 
 router = APIRouter()
 
@@ -121,8 +120,10 @@ def list_contents(
     db: Session = Depends(get_db),
     platform: str | None = Query(default=None, max_length=40),
     status_filter: str | None = Query(default=None, alias="status", max_length=40),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
 ) -> list[ContentRead]:
-    statement = select(Content).order_by(desc(Content.created_at))
+    statement = select(Content).order_by(desc(Content.created_at)).limit(limit).offset(offset)
     if platform:
         statement = statement.where(Content.platform == platform)
     if status_filter:

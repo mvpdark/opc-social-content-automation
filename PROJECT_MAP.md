@@ -1,6 +1,6 @@
 # OPC Project Map
 
-Last updated: 2026-06-16
+Last updated: 2026-06-20
 
 ## Runtime and Framework
 
@@ -55,6 +55,7 @@ Last updated: 2026-06-16
 - Loop Engineering promotion precision now targets topic-intent routing, fact-ledger/source cards, promotion briefs, bounded variants/scoring, cover/title coupling, publish-readiness review, and feedback labels for postgraduate-to-PhD Xiaohongshu lead generation.
 - Backend draft prompt packages now include a promotion brief derived from topic intent, target persona, CTA, forbidden claims, source requirements, cover angle, and manual-review quality checks.
 - PC/mobile source evidence panels and mobile review details now surface a compact promotion brief summary so operators can inspect intent, persona, CTA, source boundary, cover angle, and manual-review requirements before copy/export decisions.
+- PC/mobile source evidence panels surface readable source-card labels for claim support, use boundaries, confidence, and safe-use scope before copy/export decisions.
 - PC/mobile draft preview and copy surfaces now include a promotion readiness check that scores draft alignment against the brief, flags weak CTA/source/cover gaps, and keeps final publishing manual-only.
 
 ## Test Setup

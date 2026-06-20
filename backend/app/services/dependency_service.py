@@ -6,11 +6,10 @@ import shutil
 import socket
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from app.core.config import settings
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 FRONTEND_ROOT = PROJECT_ROOT / "frontend"
@@ -378,7 +377,7 @@ def dependency_report() -> dict[str, object]:
     )
 
     return {
-        "generated_at": datetime.now(timezone.utc),
+        "generated_at": datetime.now(UTC),
         "status": overall_status,
         "summary": {
             "ok": sum(1 for item in items if item["status"] == "ok"),

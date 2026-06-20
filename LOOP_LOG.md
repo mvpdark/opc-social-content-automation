@@ -8374,3 +8374,91 @@ If the app defines route-level and global error boundaries with retry and return
 
 - The loop verifies compile/build and normal-route smoke behavior; it does not inject a synthetic production runtime crash to screenshot the error UI.
 - Error digests are shown only when Next provides them; detailed messages are limited to development console output.
+
+## Loop 124 - Repair source-card UI labels
+
+Date: 2026-06-20
+
+### Observation
+
+The PC/mobile source-card summary UI and its smoke assertions contained `????` placeholders. These placeholders made the user-visible fact-ledger card labels unreadable and weakened the E2E contract that should protect supported-claim and usage-boundary copy.
+
+### Hypothesis
+
+If the source-card summary uses explicit Chinese labels for confidence, supported content, usage boundaries, and safe-use scope, then operators can inspect source cards before copy/export decisions without changing generation or publishing behavior.
+
+### Patch
+
+Files changed:
+
+- `PROJECT_MAP.md`
+- `frontend/components/source-card-summary.tsx`
+- `frontend/tests/e2e/opc.smoke.spec.ts`
+- `scripts/verify_project.py`
+- `LOOP_LOG.md`
+
+Summary:
+
+- Replaced unreadable source-card confidence and field labels with readable Chinese copy.
+- Updated PC/mobile E2E assertions to protect the readable source-card labels.
+- Updated project contract checks and project map notes for readable source-card summaries.
+
+### Verification
+
+Commands run:
+
+```bash
+python scripts/verify_project.py
+# passed: python_files_compiled=86; required_files_present=51; content_production_contract_checked=1662; text_hygiene_files_checked=136
+
+python -m pytest backend/tests
+# failed on system Python: No module named pytest
+
+.venv\Scripts\python.exe -m pytest backend/tests
+# passed: 244 passed, 1 warning
+
+npm run typecheck
+# passed from frontend/
+
+npm run build
+# passed from frontend/
+```
+
+Manual checks:
+
+- Confirmed `????` no longer appears in source-card UI, E2E assertions, or project verifier contracts.
+- Confirmed remaining `???` grep hits are intentional knowledge-service mojibake detection tests, not UI copy.
+
+### Score
+
+Use `docs/loop-engineering/EVAL_MATRIX.md`:
+
+- Product value: 16/30
+- Correctness: 18/20
+- Test coverage: 17/20
+- Safety/security: 15/15
+- Maintainability: 9/10
+- UX polish: 4/5
+- Total: 79/100
+
+Promotion precision evidence, if applicable:
+
+- Topic intent: unchanged; this loop preserves the source-card display layer.
+- Fact/source ledger: source-card supported content, use boundary, confidence, and safe-use scope are readable in PC/mobile source evidence panels.
+- Promotion brief: unchanged and still displayed alongside source cards.
+- CTA and conversion clarity: unchanged.
+- Cover/title/body consistency: unchanged.
+- Manual review readiness: source-card copy remains review-oriented and does not enable auto-publishing.
+
+### Result
+
+Kept.
+
+### Remaining risk
+
+- Source-card labels are now readable, but per-card E2E coverage still checks summary labels rather than every possible confidence state.
+- Source cards remain rule-derived from snippets and are not a human-approved claim ledger.
+
+### Next candidate loop
+
+- Add focused source-card UI tests for missing-source and review-required confidence states.

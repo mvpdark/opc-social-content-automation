@@ -1,6 +1,7 @@
 import httpx
 import pytest
 from fastapi import HTTPException
+from topic_preset_helpers import load_generation_topic_presets, split_topic_tags
 
 from app.core.config import settings
 from app.services.web_search_service import (
@@ -8,7 +9,6 @@ from app.services.web_search_service import (
     tavily_search,
     topic_needs_live_web_search,
 )
-from topic_preset_helpers import load_generation_topic_presets, split_topic_tags
 
 
 def test_topic_needs_live_web_search_for_ranking_topic() -> None:

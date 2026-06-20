@@ -1,14 +1,16 @@
 import json
+import re
+from pathlib import Path
 
 from fastapi import HTTPException, status
 from sqlalchemy import desc, exists, select
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.content import Content
 from app.models.content_review import ContentReview
 from app.models.publish_record import PublishRecord
 from app.models.user import User
-from app.core.config import settings
 from app.schemas.workspace import (
     ExportItem,
     ExportRequest,
@@ -19,7 +21,6 @@ from app.schemas.workspace import (
     ProviderStatusItem,
 )
 from app.services.model_router import model_router
-
 
 EXPORTABLE_STATUSES = {"approved", "published"}
 
@@ -228,19 +229,48 @@ def _clean_provider_key(value: str | None) -> str | None:
     return stripped or None
 
 
+def _write_env_keys(updates: dict[str, str]) -> None:
+    """将键值对写回 PROJECT_ROOT/.env（存在则更新，不存在则追加）。"""
+    from app.core.config import PROJECT_ROOT
+
+    env_path = Path(PROJECT_ROOT) / ".env"
+    text = env_path.read_text(encoding="utf-8") if env_path.exists() else ""
+
+    for key, value in updates.items():
+        pattern = rf"^{re.escape(key)}\s*=.*$"
+        replacement = f"{key}={value}"
+        if re.search(pattern, text, flags=re.MULTILINE):
+            text = re.sub(pattern, replacement, text, flags=re.MULTILINE)
+        else:
+            text = text.rstrip("\n") + f"\n{replacement}\n"
+
+    env_path.write_text(text, encoding="utf-8")
+
+
 def apply_provider_key_settings(payload: ProviderKeyUpdateRequest) -> list[ProviderStatusItem]:
     draft_api_key = _clean_provider_key(payload.draft_api_key)
     image_api_key = _clean_provider_key(payload.image_api_key)
     deepseek_api_key = _clean_provider_key(payload.deepseek_api_key)
 
+    env_updates: dict[str, str] = {}
+
     if draft_api_key:
         settings.draft_provider = "openai_compatible"
         settings.openai_compatible_api_key = draft_api_key
+        env_updates["OPENAI_COMPATIBLE_API_KEY"] = draft_api_key
+        env_updates["DRAFT_PROVIDER"] = "openai_compatible"
     if image_api_key:
         settings.image_provider = "openai_compatible"
         settings.image_openai_compatible_api_key = image_api_key
+        env_updates["IMAGE_OPENAI_COMPATIBLE_API_KEY"] = image_api_key
+        env_updates["IMAGE_PROVIDER"] = "openai_compatible"
     if deepseek_api_key:
         settings.deepseek_api_key = deepseek_api_key
+        env_updates["DEEPSEEK_API_KEY"] = deepseek_api_key
+
+    if env_updates:
+        _write_env_keys(env_updates)
+
     return provider_status_items()
 
 

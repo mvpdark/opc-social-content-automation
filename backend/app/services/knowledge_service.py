@@ -1,16 +1,15 @@
 import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import Select, desc, or_, select
+from sqlalchemy import Select, case, desc, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.knowledge_base import KnowledgeBase
 from app.schemas.knowledge import KnowledgeSearchResult, KnowledgeUploadRequest
 from app.services.model_router import model_router
-
 
 KNOWLEDGE_COMPILED_CATEGORY = "ai-compiled-weekly"
 KNOWLEDGE_COMPILE_MARKER = "AI_KNOWLEDGE_COMPILED_AT="
@@ -142,6 +141,7 @@ def create_knowledge_item(db: Session, payload: KnowledgeUploadRequest) -> Knowl
         content=payload.content,
         category=payload.category,
         embedding=embedding,
+        embedding_dirty=False,
     )
     db.add(item)
     db.commit()
@@ -178,8 +178,8 @@ def _compiled_at(item: KnowledgeBase | None) -> datetime | None:
         except ValueError:
             return None
         if parsed.tzinfo is None:
-            return parsed.replace(tzinfo=timezone.utc)
-        return parsed.astimezone(timezone.utc)
+            return parsed.replace(tzinfo=UTC)
+        return parsed.astimezone(UTC)
     return None
 
 
@@ -193,7 +193,7 @@ def is_knowledge_compilation_due(db: Session, interval_hours: int) -> bool:
         return True
 
     interval = timedelta(hours=max(1, interval_hours))
-    return datetime.now(timezone.utc) - compiled_at >= interval
+    return datetime.now(UTC) - compiled_at >= interval
 
 
 def _source_knowledge_items(db: Session, limit: int) -> list[KnowledgeBase]:
@@ -251,8 +251,8 @@ def render_knowledge_compilation(
     *,
     compiled_at: datetime | None = None,
 ) -> tuple[str, str]:
-    compiled_at = compiled_at or datetime.now(timezone.utc)
-    compiled_at = compiled_at.astimezone(timezone.utc)
+    compiled_at = compiled_at or datetime.now(UTC)
+    compiled_at = compiled_at.astimezone(UTC)
     source_count = len(items)
     keywords = _compile_keywords(items)
     keyword_line = "、".join(keywords) if keywords else "暂无高频关键词"
@@ -335,6 +335,7 @@ def compile_knowledge_base(
         content=content,
         category=KNOWLEDGE_COMPILED_CATEGORY,
         embedding=build_knowledge_embedding(title, content, KNOWLEDGE_COMPILED_CATEGORY),
+        embedding_dirty=False,
     )
     db.add(item)
     db.commit()
@@ -463,20 +464,34 @@ def keyword_search(
         )
     )
     statement = _apply_category_filter(statement, category)
-    candidate_limit = max(limit * 8, 24)
-    items = db.scalars(statement.order_by(desc(KnowledgeBase.id)).limit(candidate_limit)).all()
-    ranked_items = sorted(
-        items,
-        key=lambda item: (_keyword_relevance_score(item, normalized_query, terms), item.id),
-        reverse=True,
-    )[:limit]
+
+    # 相关性排序下推到 SQL：标题匹配 > 内容匹配 > 整句匹配
+    title_match = case(
+        *[(KnowledgeBase.title.ilike(f"%{t}%"), 1) for t in search_terms],
+        else_=0,
+    )
+    content_match = case(
+        *[(KnowledgeBase.content.ilike(f"%{t}%"), 1) for t in search_terms],
+        else_=0,
+    )
+    full_query_in_title = case(
+        (KnowledgeBase.title.ilike(f"%{normalized_query}%"), 1),
+        else_=0,
+    )
+    relevance = (full_query_in_title * 140 + title_match * 24 + content_match * 10).label("relevance")
+
+    candidate_limit = max(limit * 4, 24)
+    items = db.scalars(
+        statement.order_by(desc(relevance), desc(KnowledgeBase.id)).limit(candidate_limit)
+    ).all()
+
     return [
         _knowledge_result(
             item,
             score=None,
             match_type="keyword",
         )
-        for item in ranked_items
+        for item in items[:limit]
     ]
 
 

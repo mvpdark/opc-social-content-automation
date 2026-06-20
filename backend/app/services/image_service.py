@@ -265,9 +265,7 @@ def list_images(db: Session, content_id: int | None, limit: int) -> list[Generat
     statement = select(GeneratedImage).order_by(desc(GeneratedImage.created_at)).limit(limit)
     if content_id is not None:
         statement = statement.where(GeneratedImage.content_id == content_id)
-    images = list(db.scalars(statement).all())
-    ensure_images_are_local(db, images)
-    return images
+    return list(db.scalars(statement).all())
 
 
 def get_content_for_image(db: Session, content_id: int) -> Content:
@@ -453,7 +451,8 @@ def generate_image_asset(
         status="generated" if content.status == "approved" else "needs_review",
     )
     db.add(image)
-    db.flush()
+    db.commit()
+    db.refresh(image)
     record_generation_log(
         db=db,
         current_user=current_user,

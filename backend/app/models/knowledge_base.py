@@ -1,5 +1,5 @@
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import JSON, String, Text
+from sqlalchemy import JSON, Boolean, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.config import settings
@@ -16,4 +16,8 @@ class KnowledgeBase(Base):
     embedding: Mapped[list[float] | None] = mapped_column(
         JSON if settings.is_sqlite else Vector(settings.embedding_dimensions),
         nullable=True,
+    )
+    # 标记 embedding 是否需要重新计算（内容变更后置为 True）
+    embedding_dirty: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="1", default=True
     )

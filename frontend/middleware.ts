@@ -30,20 +30,36 @@ function isMobileTerminal(request: NextRequest) {
 
 
 export function middleware(request: NextRequest) {
-  if (request.nextUrl.pathname !== "/") {
-    return NextResponse.next();
+  const pathname = request.nextUrl.pathname;
+
+  // 移动端访问首页 → 重定向到 /android（不带 query string，避免参数泄漏）
+  if (pathname === "/") {
+    if (!isMobileTerminal(request)) {
+      return NextResponse.next();
+    }
+
+    const nextUrl = request.nextUrl.clone();
+    nextUrl.pathname = "/android";
+    nextUrl.search = "";
+    return NextResponse.redirect(nextUrl);
   }
 
-  if (!isMobileTerminal(request)) {
-    return NextResponse.next();
+  // PC 直接访问 /android → 重定向回首页
+  if (pathname === "/android" || pathname.startsWith("/android/")) {
+    if (isMobileTerminal(request)) {
+      return NextResponse.next();
+    }
+
+    const homeUrl = request.nextUrl.clone();
+    homeUrl.pathname = "/";
+    homeUrl.search = "";
+    return NextResponse.redirect(homeUrl);
   }
 
-  const nextUrl = request.nextUrl.clone();
-  nextUrl.pathname = "/android";
-  return NextResponse.redirect(nextUrl);
+  return NextResponse.next();
 }
 
 
 export const config = {
-  matcher: ["/"]
+  matcher: ["/", "/android/:path*"]
 };

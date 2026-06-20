@@ -7,18 +7,20 @@ from app.db.base import Base
 from app.models.trend_collection_job import TrendCollectionJob
 from app.models.trend_content import TrendContent
 from app.models.user import User
-from app.schemas.trend import TrendCollectionJobCreate
-from app.schemas.trend import TrendLinkImportRequest
-from app.schemas.trend import TrendKnowledgeDigestRequest
+from app.schemas.trend import (
+    TrendCollectionJobCreate,
+    TrendKnowledgeDigestRequest,
+    TrendLinkImportRequest,
+)
 from app.services.trend_browser_collector import (
     CollectedTrendAsset,
     _merge_detail_asset,
     extract_candidate_assets,
 )
 from app.services.trend_service import (
-    build_xhs_link_import_target,
     build_platform_search_target,
     build_safety_profile,
+    build_xhs_link_import_target,
     collection_job_has_pending_auto_start,
     create_trend_knowledge_digest,
     ensure_trend_covers_are_local,

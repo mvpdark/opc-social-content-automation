@@ -19,7 +19,6 @@ from app.services.auth_service import (
 )
 from app.services.workspace_service import provider_status_items
 
-
 router = APIRouter()
 
 

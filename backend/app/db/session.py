@@ -34,7 +34,7 @@ engine = create_engine(
     pool_pre_ping=True,
     connect_args=_connect_args(),
 )
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
 
 
 def initialize_local_database() -> None:
@@ -48,21 +48,27 @@ def initialize_local_database() -> None:
 
 
 def _ensure_sqlite_additive_columns() -> None:
+    """SQLite 模式下自动补齐新增列。新增列时只需在 SQLITE_ADDITIVE_COLUMNS 里加一行。"""
     inspector = inspect(engine)
-    if "trend_contents" not in inspector.get_table_names():
-        return
 
-    trend_columns = {column["name"] for column in inspector.get_columns("trend_contents")}
-    with engine.begin() as connection:
-        if "cover_url" not in trend_columns:
-            connection.execute(
-                text("ALTER TABLE trend_contents ADD COLUMN cover_url VARCHAR(500)")
-            )
+    # 格式: (表名, 列名, DDL 类型定义)
+    SQLITE_ADDITIVE_COLUMNS: list[tuple[str, str, str]] = [
+        ("trend_contents", "cover_url", "VARCHAR(500)"),
+        ("knowledge_base", "embedding_dirty", "BOOLEAN DEFAULT 1"),
+    ]
+
+    existing_tables = set(inspector.get_table_names())
+    for table_name, column_name, column_type in SQLITE_ADDITIVE_COLUMNS:
+        if table_name not in existing_tables:
+            continue
+        existing_columns = {col["name"] for col in inspector.get_columns(table_name)}
+        if column_name not in existing_columns:
+            with engine.begin() as connection:
+                connection.execute(
+                    text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
+                )
 
 
 def get_db() -> Generator[Session, None, None]:
-    db = SessionLocal()
-    try:
+    with SessionLocal() as db:
         yield db
-    finally:
-        db.close()
