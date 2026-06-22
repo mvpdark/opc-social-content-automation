@@ -1,0 +1,240 @@
+from __future__ import annotations
+
+from ._helpers import ROOT, _read_optional_text
+
+def validate_safety_gates() -> int:
+    checks = {
+        "backend/app/api/v1/endpoints/workspace.py": [
+            "只有人工批准后的内容可以记录为已发布。",
+            "has_human_approved_review(db, content.id)",
+            "只有人工确认通过的内容可以记录为已发布。",
+            'content.status = "published"',
+        ],
+        "backend/app/services/image_service.py": [
+            "只有草稿、已改写、待审核或人工批准后的内容可以生成封面图。",
+            'status="generated" if content.status == "approved" else "needs_review"',
+            "provider_not_configured",
+            "load_platform_style_reference",
+        ],
+        "backend/app/services/trend_service.py": [
+            "human_like_scrolling",
+            "account_safety_first",
+            "cookie_persistence",
+            "video_collection_enabled",
+            "视频采集暂未启用",
+            "这里只提取并分类链接，不抓取笔记详情或媒体文件。",
+            "默认不下载媒体",
+            "public_first_visible_browser",
+            "content_kind",
+            "build_platform_search_target",
+            "create_trend_knowledge_digest",
+            "source_reviewed",
+            "ensure_trend_sources_reviewed",
+        ],
+        "backend/app/services/trend_browser_collector.py": [
+            "operator_wait_seconds",
+            "operator_wait_seconds: int | None = None",
+            "raw_candidates",
+            "blocked_candidates",
+            "headless: bool = False",
+            "未找到可采集的公开图文素材",
+            "视频采集暂未启用",
+            "采集浏览器已启动",
+            "collection_session_dir",
+            "VIDEO_MARKERS",
+            "BLOCKED_MARKERS",
+        ],
+        "scripts/open_collection_login_browser.py": [
+            "collection_session_dir",
+            "VENV_PYTHON",
+            "os.execv",
+            'default="xiaohongshu"',
+            "--print-session-dir",
+            "launch_persistent_context",
+            "headless=False",
+            "operator-owned login",
+        ],
+        "scripts/smoke_public_image_text_search.py": [
+            "extract_image_text_candidates",
+            "serial_anonymous_no_cookie",
+            "storage_state=None",
+            "VIDEO_MARKERS",
+            "BLOCKED_MARKERS",
+            "without storing results",
+        ],
+        "scripts/run_trend_collection_job.py": [
+            "--operator-wait-seconds",
+            "default=30",
+            "Backend dependencies are not installed",
+        ],
+        "backend/app/services/model_router.py": [
+            "load_prompt",
+            "load_platform_style_reference",
+            "撰稿服务尚未配置。",
+            "_missing_required_web_sources",
+            "没有可见 Tavily 来源",
+            "不要让模型猜测学校名",
+            "不要让模型猜测具体名字、价格、logo 或排名结论",
+            'topic_intent.key == "source_check"',
+            "它不是普通经验帖，而是来源核验帖",
+            'topic_intent.key == "list_filter"',
+            "榜单/筛选类内容最重要的是维度清楚",
+        ],
+        "backend/app/services/topic_intent.py": [
+            "LIST_FILTER_STRUCTURE_DRAFT_TERMS",
+            'key="source_check"',
+            'key="list_filter"',
+            "来源核验",
+            "榜单/筛选",
+            '"来源"',
+            '"核验"',
+            '"官方"',
+            '"官方来源清单"',
+            '"来源清单"',
+            '"核验清单"',
+            '"项目页"',
+            '"费用页"',
+            '"学费表"',
+            "价格/校徽/认证字段",
+        ],
+        "backend/app/services/promotion_brief.py": [
+            "def build_promotion_brief",
+            "FORBIDDEN_PROMOTION_CLAIMS",
+            "QUALITY_CHECKS",
+            '"manual_review_required": True',
+            "verification framework only",
+            "guaranteed admission",
+        ],
+        "backend/app/services/web_search_service.py": [
+            '"校徽"',
+            '"价格"',
+            '"来源"',
+            '"核验"',
+            '"官方"',
+            '"项目页"',
+            '"费用页"',
+            '"学费表"',
+            "official logo school emblem",
+            "tuition fees total cost",
+            "official accreditation policy",
+            '"include_answer": True',
+            "Tavily 授权失败",
+            "额度或频率限制",
+        ],
+        "prompts/image_generation.md": [
+            "primary cover headline must copy the content title verbatim",
+            "High-attraction Xiaohongshu cover formula",
+            "visual_direction",
+            "Draft and rewritten content may produce cover previews",
+        ],
+        "backend/app/services/workspace_service.py": [
+            "provider_status_items",
+            "missing_key",
+            "def has_human_approved_review",
+            "human_approved_review_exists",
+            ".where(Content.status.in_(EXPORTABLE_STATUSES), human_approved_review_exists)",
+            "ContentReview.review_type == \"human\"",
+            "ContentReview.status == \"approved\"",
+            "只有人工确认通过的内容可以导出。",
+        ],
+        "backend/app/services/review_service.py": [
+            'HUMAN_REVIEWABLE_STATUSES = {"draft", "rewritten", "review_pending"}',
+            "content.status not in HUMAN_REVIEWABLE_STATUSES",
+            "当前状态不能记录人工审核",
+        ],
+        "backend/tests/test_review_service.py": [
+            "test_human_review_rejects_non_reviewable_lifecycle_statuses",
+            '["approved", "published", "submitted", "rejected", "changes_requested"]',
+            "assert content.status == content_status",
+        ],
+        "backend/app/services/content_service.py": [
+            "这个选题需要实时来源",
+            "没有可见 Tavily 结果",
+            "不要让模型猜测学校、价格、logo 或排名结论",
+            "Live web search was required but no Tavily sources were available",
+            "_prompt_web_search_context",
+        ],
+        "backend/app/api/deps.py": [
+            "settings.auth_required",
+            "DEFAULT_PLANNER_USER",
+            "默认运营员",
+            "请先登录。",
+        ],
+        "backend/app/main.py": [
+            "allow_origin_regex=settings.cors_origin_regex",
+        ],
+        "backend/app/core/config.py": [
+            "cors_origin_regex",
+            "opc\\.mvpdark\\.top",
+            "192\\.168",
+            "10\\.",
+            "172\\.",
+        ],
+        "frontend/lib/api-base.ts": [
+            "NEXT_PUBLIC_API_BASE_URL",
+            "NEXT_PUBLIC_API_PORT",
+            "window.location",
+            "hostname",
+            "browserOrigin",
+            "configuredIsLocalOrPrivate",
+            "export function isLocalOrPrivateHostname",
+            "normalizedHostname(hostname)",
+            'normalized === "[::1]"',
+            "172\\.(1[6-9]|2\\d|3[0-1])\\.",
+            "return `${origin}/api`",
+            "return `${browserOrigin}/api`",
+        ],
+        "frontend/package.json": [
+            '"dev:lan": "next dev -H 0.0.0.0"',
+            '"typecheck": "tsc --noEmit --noUnusedLocals --noUnusedParameters --incremental false"',
+        ],
+        "frontend/scripts/next-with-dist.mjs": [
+            'OPC_NEXT_DIST_DIR: ".next-build"',
+            "restoreDevBuildFiles",
+            "restoreDevTsconfig",
+            '".next-build/types/**/*.ts"',
+        ],
+        "scripts/start_local.py": [
+            "0.0.0.0",
+            "dev:lan",
+            "8010",
+            "3000",
+            "port_is_open",
+            "process_ids_on_port",
+            "--restart-frontend",
+            "--status",
+            "LEGACY_TEXT_BOMS",
+            "PYTHONIOENCODING",
+        ],
+        "scripts/setup_local.py": [
+            "python scripts/start_local.py",
+        ],
+        "infra/cloudflare/opc-tunnel.example.yml": [
+            "hostname: opc.mvpdark.top",
+            "path: ^/api($|/.*)",
+            "path: ^/static($|/.*)",
+            "service: http://localhost:8010",
+            "service: http://localhost:3000",
+            "service: http_status:404",
+        ],
+        "docs/CLOUDFLARE_OPC.md": [
+            "https://opc.mvpdark.top",
+            "cloudflared tunnel route dns opc-social-content-automation opc.mvpdark.top",
+            "opc.mvpdark.top/api",
+            "opc.mvpdark.top/static",
+        ],
+    }
+    total = 0
+    for rel_path, snippets in checks.items():
+        text = _read_optional_text(ROOT / rel_path)
+        if text is None:
+            continue
+        for snippet in snippets:
+            total += 1
+            if snippet not in text:
+                raise SystemExit(f"Missing safety gate {snippet!r} in {rel_path}")
+    tsconfig_text = (ROOT / "frontend" / "tsconfig.json").read_text(encoding="utf-8")
+    total += 1
+    if '".next-build/types/**/*.ts"' in tsconfig_text:
+        raise SystemExit("Frontend typecheck must not include build-only .next-build generated types.")
+    return total

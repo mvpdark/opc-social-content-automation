@@ -55,6 +55,10 @@ def _ensure_sqlite_additive_columns() -> None:
     SQLITE_ADDITIVE_COLUMNS: list[tuple[str, str, str]] = [
         ("trend_contents", "cover_url", "VARCHAR(500)"),
         ("knowledge_base", "embedding_dirty", "BOOLEAN DEFAULT 1"),
+        ("content_reviews", "feedback_tags", "JSON"),
+        ("content_reviews", "feedback_category", "VARCHAR(40)"),
+        ("contents", "task_state", "VARCHAR(32)"),
+        ("contents", "task_state_updated_at", "DATETIME"),
     ]
 
     existing_tables = set(inspector.get_table_names())

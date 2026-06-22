@@ -138,7 +138,7 @@ Acceptance:
 - Drafts use the brief for hook, body, CTA, tags, and cover direction.
 - Thin business material creates a warning or conservative brief, not fabricated selling points.
 
-### 12. Variants and draft scoring
+### 12. Variants and draft scoring [COMPLETED]
 
 Problem: The first model output may not be the best title, hook, or cover promise.
 
@@ -150,7 +150,9 @@ Acceptance:
 - Score topic-intent alignment, source safety, stop-power, persona fit, CTA clarity, and cover/title/body consistency.
 - Recommend one option with a reason while keeping human review required.
 
-### 13. Feedback labels for future generation
+Status: Implemented. Bounded variant generation and draft scoring are live in the promotion readiness check. PC/mobile draft preview and copy surfaces include a promotion readiness check that scores draft alignment against the brief and flags weak CTA/source/cover gaps.
+
+### 13. Feedback labels for future generation [COMPLETED]
 
 Problem: Human review feedback does not yet become structured guidance for future drafts.
 
@@ -162,9 +164,11 @@ Acceptance:
 - Labels are stored safely and can be summarized into future generation preferences.
 - Feedback never triggers automatic publishing.
 
+Status: Implemented. Feedback labels are available in the review workflow. Labels are stored safely and can be summarized into future generation preferences. Publishing remains manual-only.
+
 ## P3 — Operational hardening
 
-### 14. Task lifecycle model
+### 14. Task lifecycle model [PENDING]
 
 Problem: task state may be implicit.
 
@@ -185,6 +189,8 @@ Acceptance:
 
 - UI renders valid state transitions only.
 - Invalid transitions show safe error.
+
+Status: Not yet started. Task states remain implicit in the current UI and backend. This is the next priority for operational hardening.
 
 ### 15. Client error boundary
 

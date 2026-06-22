@@ -3,6 +3,12 @@ from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.task_states import (
+    TaskState,
+    allowed_next_states,
+    task_state_label,
+    transition_task,
+)
 from app.db.session import get_db
 from app.models.content import Content
 from app.models.user import User
@@ -11,11 +17,20 @@ from app.schemas.content import (
     ContentRead,
     ContentRewriteRequest,
     ContentSourcePreviewRead,
+    TaskStateRead,
+    TaskStateTransitionRequest,
+)
+from app.schemas.content_variant import (
+    ContentVariantRead,
+    VariantGenerateRequest,
+    VariantGenerateResponse,
+    VariantSelectResponse,
 )
 from app.schemas.review import (
     ContentAiReviewRequest,
     ContentReviewRead,
     ContentReviewRequest,
+    FeedbackStatsRead,
 )
 from app.services.content_service import (
     build_content_source_context,
@@ -25,11 +40,17 @@ from app.services.content_service import (
 )
 from app.services.review_service import (
     get_content_or_404,
+    get_feedback_tag_stats,
     list_human_review_queue,
     list_reviews,
     record_human_review,
     request_human_review,
     run_ai_review,
+)
+from app.services.variant_service import (
+    generate_variants_for_content,
+    list_variants_for_content,
+    select_variant,
 )
 
 router = APIRouter()
@@ -43,6 +64,35 @@ def generate_content(
 ) -> ContentRead:
     content = generate_content_draft(db, payload, current_user)
     return ContentRead.model_validate(content)
+
+
+@router.post("/generate-variants", response_model=VariantGenerateResponse)
+def generate_variants(
+    payload: VariantGenerateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> VariantGenerateResponse:
+    """生成多个标题/开头/封面标签变体并自动评分（SSB-7）。"""
+    content = db.get(Content, payload.content_id)
+    if content is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="未找到这条内容。",
+        )
+    variants = generate_variants_for_content(db, content, payload, current_user)
+    return VariantGenerateResponse(
+        content_id=content.id,
+        variants=[ContentVariantRead.model_validate(item) for item in variants],
+    )
+
+
+@router.get("/feedback-stats", response_model=FeedbackStatsRead)
+def get_feedback_stats(
+    db: Session = Depends(get_db),
+    limit: int = Query(default=100, ge=1, le=500),
+) -> FeedbackStatsRead:
+    """返回最近审核的反馈标签分布，用于指导未来生成（SSB-8）。"""
+    return get_feedback_tag_stats(db, limit=limit)
 
 
 @router.post("/source-preview", response_model=ContentSourcePreviewRead)
@@ -115,6 +165,35 @@ def create_ai_review(
     return ContentReviewRead.model_validate(review)
 
 
+@router.get("/{content_id}/variants", response_model=list[ContentVariantRead])
+def list_variants(
+    content_id: int,
+    db: Session = Depends(get_db),
+) -> list[ContentVariantRead]:
+    """列出指定内容的所有变体（SSB-7）。"""
+    get_content_or_404(db, content_id)
+    return [
+        ContentVariantRead.model_validate(item)
+        for item in list_variants_for_content(db, content_id)
+    ]
+
+
+@router.post(
+    "/{content_id}/variants/{variant_id}/select",
+    response_model=VariantSelectResponse,
+)
+def select_content_variant(
+    content_id: int,
+    variant_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> VariantSelectResponse:
+    """标记选中的变体，同类型其他变体自动取消选中（SSB-7）。"""
+    _ = current_user
+    variant = select_variant(db, content_id, variant_id)
+    return VariantSelectResponse.model_validate(variant)
+
+
 @router.get("/list", response_model=list[ContentRead])
 def list_contents(
     db: Session = Depends(get_db),
@@ -152,6 +231,47 @@ def get_content(content_id: int, db: Session = Depends(get_db)) -> ContentRead:
             detail="未找到这条内容。",
         )
     return ContentRead.model_validate(content)
+
+
+@router.get("/{content_id}/task-state", response_model=TaskStateRead)
+def get_task_state(
+    content_id: int,
+    db: Session = Depends(get_db),
+) -> TaskStateRead:
+    """返回当前任务状态和可转换状态列表（BACKLOG #14）。"""
+    content = db.get(Content, content_id)
+    if content is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="未找到这条内容。",
+        )
+    current_state = content.task_state or TaskState.NEW.value
+    return TaskStateRead(
+        content_id=content.id,
+        task_state=current_state,
+        task_state_label=task_state_label(current_state),
+        allowed_next_states=allowed_next_states(current_state),
+    )
+
+
+@router.post("/{content_id}/task-state", response_model=TaskStateRead)
+def transition_task_state(
+    content_id: int,
+    payload: TaskStateTransitionRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> TaskStateRead:
+    """手动转换任务状态（BACKLOG #14）。"""
+    _ = current_user
+    content = transition_task(db, content_id, payload.to_state)
+    return TaskStateRead(
+        content_id=content.id,
+        task_state=content.task_state or TaskState.NEW.value,
+        task_state_label=task_state_label(content.task_state or TaskState.NEW.value),
+        allowed_next_states=allowed_next_states(
+            content.task_state or TaskState.NEW.value
+        ),
+    )
 
 
 @router.delete("/{content_id}", status_code=status.HTTP_204_NO_CONTENT)

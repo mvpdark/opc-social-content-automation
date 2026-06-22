@@ -17,6 +17,8 @@ class ContentReview(Base):
     score: Mapped[int | None] = mapped_column(Integer, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     risk_flags: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    feedback_tags: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    feedback_category: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

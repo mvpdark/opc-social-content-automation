@@ -1,6 +1,6 @@
 # OPC Project Map
 
-Last updated: 2026-06-20
+Last updated: 2026-06-22
 
 ## Runtime and Framework
 
@@ -49,6 +49,8 @@ Last updated: 2026-06-20
 - Model calls route through `backend/app/services/model_router.py`.
 - Prompt templates live under `prompts/`.
 - Draft generation, image generation, review, and Tavily/web search support are separated by service modules.
+- **review_model** is implemented: `backend/app/services/review_service.py` calls `model_router.review_model()` for content review, with `review_model` and `review_provider` configured in `backend/app/core/config.py`.
+- **knowledge/trends routes have been migrated to OMPC-ZSCJ** (`E:\OMPC-ZSCJ`): knowledge base CRUD, AI knowledge compilation, trend material collection, keyword analysis, and video transcript review now live in the independent OMPC-ZSCJ service (backend port 8011, frontend port 3001). OMPC-SSB backend endpoints are now limited to `auth`, `content`, `images`, and `workspace`.
 - Tavily/web search is research support only; the app must not invent current facts when sources are required.
 - Backend source review notes, Model Router fallback drafts, and PC/mobile source-evidence warnings use no-model-guessing wording when required Tavily/web results are missing.
 - Backend draft saves reject conclusion-style school, price, logo, or ranking facts when required Tavily/web results are missing, while still allowing verification-framework drafts.
@@ -61,10 +63,12 @@ Last updated: 2026-06-20
 ## Test Setup
 
 - Backend tests: `backend/tests/`, run with `python -m pytest backend/tests`.
+- **Frontend unit tests** are set up with **vitest**: config in `frontend/vitest.config.ts`, specs in `frontend/tests/unit/`, run with `npm run test` (or `npm run test:watch` for watch mode). Uses jsdom environment, `@testing-library/react`, and `@testing-library/jest-dom`.
 - Project contract checks: `python scripts/verify_project.py`.
 - Frontend verification: run from `frontend/` with `npm run typecheck`, `npm run build`, or `npm run verify`.
 - E2E smoke tests: run from `frontend/` with `npm run e2e`; specs live in `frontend/tests/e2e/`.
 - Playwright starts the local Next dev server automatically when `OPC_BASE_URL` is not provided.
+- **E2E tests fixed** with `PLAYWRIGHT_FORCE_ASYNC_LOADER=1` in `frontend/playwright.config.ts` to work around Playwright 1.61.0 sync ESM loader TypeError on the current Node version.
 - The PC/mobile login-shell smoke test attaches validated screenshot evidence to Playwright results without committing image baselines.
 - Published-status lifecycle smoke tests attach validated warning-surface screenshots while keeping publish/copy actions disabled.
 - Mobile review decision failure smoke tests attach validated detail-state screenshots while keeping failed drafts queued and publish-like calls blocked.
@@ -108,3 +112,6 @@ Last updated: 2026-06-20
 - Mobile and PC login state rely on localStorage account markers; future auth work should keep explicit loading, expired-session, and network-error states.
 - PC pending-review queue is read-only and intentionally separate from approval/change-request actions.
 - Publishing and platform actions must remain behind human confirmation.
+- **knowledge/trends separation risk**: OMPC-SSB no longer hosts knowledge or trends endpoints; any frontend or integration code that still references `/api/knowledge/*` or `/api/trends/*` must be updated to call the OMPC-ZSCJ service (port 8011) instead. Cross-service dependencies should be documented explicitly.
+- **review_model dependency**: content review depends on the configured `review_model` and `review_provider`; if the review provider is unavailable, review falls back to a safe error state but does not auto-approve content.
+- **Task lifecycle (#14) still pending**: task states remain implicit; explicit state transitions (`new` -> `material_ready` -> `generating` -> `draft_ready` -> `reviewing` -> `ready_to_publish` -> `published` -> `failed`) are not yet enforced in the UI or backend.

@@ -1,10 +1,14 @@
+from datetime import datetime, timezone
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from sqlalchemy import delete
 
+from app.core.task_states import TaskState
 from app.models.content import Content
 from app.models.content_review import ContentReview
+from app.models.content_variant import ContentVariant
 from app.models.generated_image import GeneratedImage
 from app.models.generation_log import GenerationLog
 from app.models.publish_record import PublishRecord
@@ -161,6 +165,8 @@ def generate_content_draft(
         if isinstance(package.payload.get("source_context"), dict)
         else None,
         status="draft",
+        task_state=TaskState.DRAFT_READY.value,
+        task_state_updated_at=datetime.now(timezone.utc),
     )
     db.add(content)
     db.commit()
@@ -223,7 +229,7 @@ def delete_content_with_assets(db: Session, content_id: int) -> None:
             detail="未找到这条内容。",
         )
 
-    for model in (GeneratedImage, ContentReview, PublishRecord):
+    for model in (GeneratedImage, ContentReview, ContentVariant, PublishRecord):
         db.execute(delete(model).where(model.content_id == content_id))
 
     db.delete(content)
