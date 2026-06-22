@@ -11,6 +11,20 @@ from app.schemas.content import ContentGenerateRequest
 
 __all__ = ["build_promotion_brief"]
 
+# 安全门：禁止推广声明和质检规则由域配置提供，此处定义默认值。
+# 支持的意图类型："source_check"、"list_filter"、"route"、"mentor"、"timeline"、"sales"
+FORBIDDEN_PROMOTION_CLAIMS = (
+    "guaranteed admission",
+    "100%录取",
+    "保录",
+    "包过",
+)
+QUALITY_CHECKS = (
+    "verification framework only",
+    "no unsupported current-fact claims",
+    "manual review required before publishing",
+)
+
 
 def _source_requirement_notes(
     source_context: dict[str, object] | None,

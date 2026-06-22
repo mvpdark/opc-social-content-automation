@@ -1,6 +1,6 @@
 "use client";
 
-import { getApiBase } from "@/lib/api-base";
+import { getApiBase, getZscjApiBase } from "@/lib/api-base";
 import {
   type CollectionJobDiagnosticItem,
   type CollectionJobStatusSnapshot
@@ -46,6 +46,7 @@ export type TrendCollectionJob = CollectionJobStatusSnapshot & {
 };
 
 export const API_BASE = getApiBase();
+export const ZSCJ_API_BASE = getZscjApiBase();
 const XHS_URL_PATTERN = /https?:\/\/[^\s<>'"，。；、)）】]+/gi;
 const SUPPORTED_XHS_HOSTS = new Set([
   "xiaohongshu.com",

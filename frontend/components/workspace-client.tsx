@@ -47,11 +47,8 @@ export function WorkspaceClient({
   const [credentials, setCredentials] = useState<CredentialSettings>(emptyCredentials);
   const [authLoaded, setAuthLoaded] = useState(false);
   const [workspaceAccount, setWorkspaceAccount] = useState<string | null>(null);
-  // 标记客户端 hydration 完成，避免 SSR 初始值与客户端 URL 解析不一致导致 hydration mismatch
-  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setHydrated(true);
     function syncStateFromUrl() {
       const params = new URLSearchParams(window.location.search);
       const tab = params.get("tab");

@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_rewrite_model: str = "deepseek-v4-pro"
     deepseek_timeout_seconds: float = 60.0
+    review_provider: str = "codex_test"
+    review_model: str = "gpt-5.5"
+    review_timeout_seconds: float = 60.0
+    review_max_tokens: int = 1200
+    review_temperature: float = 0.3
     tavily_api_key: str | None = None
     tavily_base_url: str = "https://api.tavily.com"
     tavily_search_enabled: bool = True

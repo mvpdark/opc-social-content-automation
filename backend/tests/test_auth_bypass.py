@@ -10,7 +10,7 @@ def test_planner_stage_auth_bypass_returns_default_user(monkeypatch) -> None:
 
     user = get_current_user(credentials=None, db=None)  # type: ignore[arg-type]
 
-    assert user.id is None
+    assert user.id == 0
     assert user.role == "planner"
     assert user.phone == "local-planner"
 

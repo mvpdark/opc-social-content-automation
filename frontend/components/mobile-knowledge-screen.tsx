@@ -14,14 +14,13 @@ import {
   knowledgeItemTitle,
   type KnowledgeItem
 } from "@/lib/knowledge-api";
+import { getZscjApiBase } from "@/lib/api-base";
 
 export function KnowledgeScreen({
   active = true,
-  apiBase,
   onAction
 }: {
   active?: boolean;
-  apiBase: string;
   onAction: (message: string) => void;
 }) {
   const [items, setItems] = useState<KnowledgeItem[]>([]);
@@ -46,7 +45,7 @@ export function KnowledgeScreen({
     setLoading(true);
     setStatus(normalizedQuery ? "正在搜索知识库..." : "正在读取最近入库内容...");
     try {
-      const data = await fetchKnowledgeItems(apiBase, {
+      const data = await fetchKnowledgeItems(getZscjApiBase(), {
         limit: 20,
         query: normalizedQuery
       });

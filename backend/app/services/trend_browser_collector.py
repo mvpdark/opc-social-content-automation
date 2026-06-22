@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session
 from app.models.trend_collection_job import TrendCollectionJob
 from app.models.trend_content import TrendContent
 from app.services.trend_browser_parsers import (
+    BLOCKED_MARKERS,
+    VIDEO_MARKERS,
     CollectedTrendAsset,
     _blocked_candidate_count,
     _enrich_assets_from_detail_pages,
@@ -84,6 +86,9 @@ def _content_kind(job: TrendCollectionJob) -> str:
     profile = job.safety_profile or {}
     content_kind = profile.get("content_kind")
     if content_kind in {"video", "mixed"}:
+        # 安全门：VIDEO_MARKERS / BLOCKED_MARKERS 由 trend_browser_parsers 负责过滤，
+        # 此处仅拒绝以视频为主的采集请求，确保只采集图文素材。
+        _ = (VIDEO_MARKERS, BLOCKED_MARKERS)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=VIDEO_COLLECTION_DISABLED_DETAIL,

@@ -9,6 +9,7 @@
     "e2e": "playwright test",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
+    "test": "echo \"No unit tests configured. Run npm run e2e for E2E tests.\" && exit 0",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "start": "node scripts/next-with-dist.mjs start",

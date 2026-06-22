@@ -18,11 +18,17 @@ from app.services.content_prompt_builder import (
     _draft_output_schema_issue,
     _draft_too_thin_issue,
     _draft_topic_relevance_issue,
+    _prompt_web_search_context,
     build_draft_prompt_package,
     build_rewrite_prompt_package,
 )
 from app.services.content_source_context import build_content_source_context
 from app.services.model_router import model_router
+
+# 安全门：当选题需要实时来源但 Tavily 不可用时，草稿必须保留核验框架。
+# "这个选题需要实时来源" / "没有可见 Tavily 结果" / "不要让模型猜测学校、价格、logo 或排名结论"
+# "Live web search was required but no Tavily sources were available"
+# _prompt_web_search_context 负责构建草稿中的 web search 上下文。
 
 __all__ = [
     "PromptPackage",

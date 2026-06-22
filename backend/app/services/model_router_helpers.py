@@ -35,6 +35,7 @@ def _redacted_provider_error(provider: str, status_code: int | None = None) -> s
         "OpenAI-compatible draft provider": "撰稿服务",
         "OpenAI-compatible image provider": "图片服务",
         "DeepSeek": "改写服务",
+        "OpenAI-compatible review provider": "审核服务",
     }.get(provider, "模型服务")
     if status_code in {401, 403}:
         return f"{provider_label}授权失败，请检查设置里的服务授权和服务地址。"
@@ -52,6 +53,7 @@ def _provider_display_label(provider: str) -> str:
         "OpenAI-compatible draft provider": "撰稿服务",
         "OpenAI-compatible image provider": "图片服务",
         "DeepSeek": "改写服务",
+        "OpenAI-compatible review provider": "审核服务",
     }.get(provider, "模型服务")
 
 

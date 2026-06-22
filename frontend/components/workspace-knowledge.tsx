@@ -13,8 +13,8 @@ import {
   knowledgeItemTitle,
   type KnowledgeItem
 } from "@/lib/knowledge-api";
+import { getZscjApiBase } from "@/lib/api-base";
 import {
-  API_BASE,
   secondaryButtonClass,
   subtleCardClass
 } from "./workspace-utils";
@@ -36,7 +36,7 @@ export function KnowledgeView() {
     setLoading(true);
     setMessage(normalizedQuery ? "正在搜索知识库..." : "正在读取最近入库内容...");
     try {
-      const data = await fetchKnowledgeItems(API_BASE, {
+      const data = await fetchKnowledgeItems(getZscjApiBase(), {
         limit: 24,
         query: normalizedQuery
       });

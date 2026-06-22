@@ -1,5 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Node.js v22 的 registerHooks API 中 context.conditions 不是数组，
+// 导致 Playwright 1.61.0 同步 ESM loader 抛出 TypeError。
+// 强制使用异步 loader 绕过此问题。
+process.env.PLAYWRIGHT_FORCE_ASYNC_LOADER = "1";
+
 const defaultBaseUrl = "http://127.0.0.1:3000";
 const baseUrl = process.env.OPC_BASE_URL ?? defaultBaseUrl;
 

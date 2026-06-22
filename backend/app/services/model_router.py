@@ -141,6 +141,16 @@ def _test_draft(payload: dict[str, object]) -> str:
         if missing_required_web_sources
         else "👇如果没有已核实的学校数据，就先做“榜单维度”，不要硬编学校名（这个会很亏）……"
     )
+
+    # 根据 topic_intent 类型调整草稿策略：
+    # - topic_intent.key == "source_check"：来源核验帖，它不是普通经验帖，而是来源核验帖，需要引用官方来源。
+    # - topic_intent.key == "list_filter"：榜单/筛选类内容最重要的是维度清楚，不要硬编具体排名。
+    intent_guidance = ""
+    if topic_intent and topic_intent.key == "source_check":
+        intent_guidance = "它不是普通经验帖，而是来源核验帖，必须引用官方来源清单。"
+    elif topic_intent and topic_intent.key == "list_filter":
+        intent_guidance = "榜单/筛选类内容最重要的是维度清楚，不要硬编具体排名。"
+
     body_lines = [
         str(line)
         .replace("{topic}", topic)
@@ -161,8 +171,52 @@ def _test_draft(payload: dict[str, object]) -> str:
             f"标签：{tag_line}",
             "",
             "风险提示：这是本地检查模式生成的草稿，只用于流程验证，正式发布前必须经过人工审核。",
+            "内容约束：不要让模型猜测具体名字、价格、logo 或排名结论；涉及具体数据时必须引用已核验来源。",
+            intent_guidance,
         ]
     )
+
+
+def _test_review(payload: dict[str, object]) -> str:
+    title = str(payload.get("title") or "未命名内容")
+    platform = str(payload.get("platform") or "unknown")
+    body = str(payload.get("body") or "")
+    body_length = len(body)
+    has_tags = bool(payload.get("tags"))
+    instruction = str(payload.get("instruction") or "").strip()
+
+    score = 78
+    risk_flags: list[str] = []
+    required_edits: list[str] = []
+
+    if body_length < 200:
+        risk_flags.append("正文过短")
+        required_edits.append("补充正文内容至 300 字以上")
+        score -= 10
+    if not has_tags:
+        required_edits.append("添加至少 3 个标签")
+        score -= 5
+    if platform == "xiaohongshu" and body_length > 2000:
+        risk_flags.append("正文过长，小红书建议控制在 1000 字以内")
+        required_edits.append("精简正文长度")
+        score -= 8
+
+    score = max(1, min(100, score))
+    approval = "approved" if score >= 70 else "changes_requested"
+
+    lines = [
+        f"【本地检查审核】{title}",
+        "",
+        f"评分：{score}/100",
+        f"风险标记：{', '.join(risk_flags) if risk_flags else '无'}",
+        f"需要修改：{'; '.join(required_edits) if required_edits else '无'}",
+        f"审核建议：{approval}",
+        "",
+        "风险提示：这是本地检查模式生成的审核结果，只用于流程验证，正式发布前必须经过人工审核。",
+    ]
+    if instruction:
+        lines.insert(1, f"审核指令：{instruction}")
+    return "\n".join(lines)
 
 
 class ModelRouter:
@@ -280,10 +334,55 @@ class ModelRouter:
         )
 
     def review_model(self, prompt_name: str, payload: dict[str, object]) -> str:
-        load_prompt(prompt_name)
+        prompt_template = load_prompt(prompt_name)
+        if settings.review_provider == "codex_test":
+            return _test_review(payload)
+        if settings.review_provider == "openai_compatible":
+            if not settings.openai_compatible_api_key:
+                raise HTTPException(
+                    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                    detail="审核服务尚未配置服务授权。",
+                )
+            request_payload: dict[str, object] = {
+                "model": settings.review_model,
+                "messages": _chat_messages(prompt_template, payload),
+                "stream": False,
+                "store": False,
+                "temperature": settings.review_temperature,
+                "max_tokens": settings.review_max_tokens,
+            }
+            data = _post_chat_completion(
+                provider="OpenAI-compatible review provider",
+                base_url=settings.openai_compatible_base_url,
+                api_key=settings.openai_compatible_api_key,
+                timeout_seconds=settings.review_timeout_seconds,
+                payload=request_payload,
+            )
+            return _extract_chat_content("OpenAI-compatible review provider", data)
+        if settings.review_provider == "deepseek":
+            if not settings.deepseek_api_key:
+                raise HTTPException(
+                    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+                    detail="审核服务尚未配置。",
+                )
+            request_payload = {
+                "model": settings.deepseek_rewrite_model,
+                "messages": _deepseek_messages(prompt_template, payload),
+                "thinking": {"type": "disabled"},
+                "temperature": settings.review_temperature,
+                "stream": False,
+            }
+            data = _post_chat_completion(
+                provider="DeepSeek",
+                base_url=settings.deepseek_base_url,
+                api_key=settings.deepseek_api_key,
+                timeout_seconds=settings.review_timeout_seconds,
+                payload=request_payload,
+            )
+            return _extract_chat_content("DeepSeek", data)
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="确认服务尚未配置。",
+            detail="审核服务尚未配置。",
         )
 
 

@@ -50,6 +50,7 @@ import {
   type MobilePlatform
 } from "@/lib/mobile-runtime";
 import { addMobileBackHandler } from "@/lib/mobile-back-navigation";
+import { getZscjApiBase } from "@/lib/api-base";
 
 import {
   TREND_REVIEW_QUEUE_STORAGE_KEY,
@@ -63,15 +64,14 @@ import {
 
 export function CollectScreen({
   active = true,
-  apiBase,
   credentials,
   onAction
 }: {
   active?: boolean;
-  apiBase: string;
   credentials: CredentialSettings;
   onAction: (message: string) => void;
 }) {
+  const apiBase = getZscjApiBase();
   const [platform, setPlatform] = useState<MobilePlatform>("xiaohongshu");
   const [query, setQuery] = useState("硕升博 高赞图文");
   const [maxItems, setMaxItems] = useState(20);

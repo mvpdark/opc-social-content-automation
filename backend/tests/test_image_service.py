@@ -30,6 +30,9 @@ class FakeImageSession:
     def flush(self) -> None:
         return None
 
+    def commit(self) -> None:
+        return None
+
     def refresh(self, item: object) -> None:
         if isinstance(item, GeneratedImage):
             item.id = item.id or 1

@@ -710,10 +710,10 @@ export default function AndroidPreviewPage() {
           />
         </div>
         <div className="relative z-10" hidden={activeTab !== "collect"}>
-          <CollectScreen active={activeTab === "collect"} apiBase={API_BASE} credentials={credentials} onAction={setStatus} />
+          <CollectScreen active={activeTab === "collect"} credentials={credentials} onAction={setStatus} />
         </div>
         <div className="relative z-10" hidden={activeTab !== "knowledge"}>
-          <KnowledgeScreen active={activeTab === "knowledge"} apiBase={API_BASE} onAction={setStatus} />
+          <KnowledgeScreen active={activeTab === "knowledge"} onAction={setStatus} />
         </div>
         {activeTab === "review" ? (
           <div className="relative z-10">

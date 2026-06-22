@@ -12,7 +12,7 @@ import {
   isRestartableCollectionJob
 } from "@/lib/collection-job-status";
 import {
-  API_BASE,
+  ZSCJ_API_BASE,
   buildLocalSearchTarget,
   buildLocalXhsLinkImportTarget,
   diagnosticToneClass,
@@ -92,7 +92,7 @@ export function TrendCollectorPanel({
 
   async function loadSearchTarget(): Promise<SearchTarget> {
     const params = new URLSearchParams({ platform, keyword: keyword.trim() });
-    const response = await fetch(`${API_BASE}/trends/search-target?${params.toString()}`);
+    const response = await fetch(`${ZSCJ_API_BASE}/trends/search-target?${params.toString()}`);
     if (!response.ok) {
       throw new Error("搜索目标准备失败，请稍后重试或检查应用服务。");
     }
@@ -102,7 +102,7 @@ export function TrendCollectorPanel({
   }
 
   async function fetchCollectionJob(jobId: number): Promise<TrendCollectionJob | null> {
-    const response = await fetch(`${API_BASE}/trends/jobs/${jobId}`);
+    const response = await fetch(`${ZSCJ_API_BASE}/trends/jobs/${jobId}`);
     if (response.status === 404) {
       return null;
     }
@@ -130,7 +130,7 @@ export function TrendCollectorPanel({
     async function loadLatestJob() {
       try {
         const params = new URLSearchParams({ limit: "1" });
-        const response = await fetch(`${API_BASE}/trends/jobs?${params.toString()}`);
+        const response = await fetch(`${ZSCJ_API_BASE}/trends/jobs?${params.toString()}`);
         if (!response.ok) {
           return;
         }
@@ -235,7 +235,7 @@ export function TrendCollectorPanel({
     setBusyAction("job");
     try {
       setTarget(buildLocalSearchTarget(platform, keyword));
-      const response = await fetch(`${API_BASE}/trends/jobs`, {
+      const response = await fetch(`${ZSCJ_API_BASE}/trends/jobs`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -275,7 +275,7 @@ export function TrendCollectorPanel({
     }
     setBusyAction("restart");
     try {
-      const response = await fetch(`${API_BASE}/trends/jobs/${restartableJobId}/start`, {
+      const response = await fetch(`${ZSCJ_API_BASE}/trends/jobs/${restartableJobId}/start`, {
         method: "POST",
         headers: {
           ...(workspaceToken ? { Authorization: `Bearer ${workspaceToken}` } : {})
@@ -316,7 +316,7 @@ export function TrendCollectorPanel({
     setBusyAction("link");
     try {
       const fallbackTarget = buildLocalXhsLinkImportTarget(linkImportText);
-      const response = await fetch(`${API_BASE}/trends/link-import-target`, {
+      const response = await fetch(`${ZSCJ_API_BASE}/trends/link-import-target`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -368,7 +368,7 @@ export function TrendCollectorPanel({
     }
     setBusyAction("digest");
     try {
-      const response = await fetch(`${API_BASE}/trends/knowledge-digest`, {
+      const response = await fetch(`${ZSCJ_API_BASE}/trends/knowledge-digest`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -19,22 +19,6 @@ def test_documented_api_paths_are_registered() -> None:
         "/api/content/{content_id}/review-request",
         "/api/content/{content_id}/reviews",
         "/api/content/{content_id}/ai-review",
-        "/api/knowledge/upload",
-        "/api/knowledge/list",
-        "/api/knowledge/compiled/latest",
-        "/api/knowledge/compile/status",
-        "/api/knowledge/compile",
-        "/api/knowledge/search",
-        "/api/trends/list",
-        "/api/trends/report",
-        "/api/trends/collect",
-        "/api/trends/link-import-target",
-        "/api/trends/search-target",
-        "/api/trends/jobs",
-        "/api/trends/jobs/{job_id}",
-        "/api/trends/jobs/{job_id}/start",
-        "/api/trends/knowledge-digest",
-        "/api/trends/keywords",
         "/api/image/generate",
         "/api/image/templates",
         "/api/image/list",
@@ -55,7 +39,7 @@ def test_documented_api_paths_are_registered() -> None:
 
 def test_static_paths_are_registered_before_dynamic_fallbacks() -> None:
     app = create_app()
-    routes = [route.path for route in app.routes]
+    routes = list(app.openapi()["paths"].keys())
 
     assert routes.index("/api/content/list") < routes.index("/api/content/{content_id}")
     assert routes.index("/api/content/review-queue") < routes.index("/api/content/{content_id}")

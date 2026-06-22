@@ -1,5 +1,7 @@
 const DEFAULT_API_PORT = process.env.NEXT_PUBLIC_API_PORT ?? "8010";
 const DEFAULT_LOCAL_API_BASE = `http://localhost:${DEFAULT_API_PORT}/api`;
+const DEFAULT_ZSCJ_API_PORT = process.env.NEXT_PUBLIC_ZSCJ_API_PORT ?? "8011";
+const DEFAULT_LOCAL_ZSCJ_API_BASE = `http://localhost:${DEFAULT_ZSCJ_API_PORT}/api`;
 
 
 function trimTrailingSlash(value: string) {
@@ -59,6 +61,7 @@ function resolveConfiguredApiBase(
     }
 
     // 配置的是本地地址，但浏览器从公网访问 → 用浏览器 origin（保持 protocol 一致）
+    // 等价于 return `${browserOrigin}/api`
     if (
       configuredIsLocalOrPrivate &&
       !isLocalOrPrivateHostname(browserHostname) &&
@@ -107,4 +110,28 @@ export function getApiBase() {
   }
 
   return `${protocol}//${hostname || "localhost"}:${DEFAULT_API_PORT}/api`;
+}
+
+/**
+ * 获取 OMPC-ZSCJ（知识库与趋势采集）项目的 API base URL。
+ * knowledge/trends 端点已从 OMPC-SSB 迁移至独立的 OMPC-ZSCJ 项目，
+ * 前端调用这些端点时需使用此函数获取正确的 API 地址。
+ */
+export function getZscjApiBase() {
+  const configuredApiBase = process.env.NEXT_PUBLIC_ZSCJ_API_BASE_URL;
+
+  if (typeof window === "undefined") {
+    return trimTrailingSlash(configuredApiBase ?? DEFAULT_LOCAL_ZSCJ_API_BASE);
+  }
+
+  const { hostname, origin, protocol } = window.location;
+  if (configuredApiBase) {
+    return resolveConfiguredApiBase(configuredApiBase, hostname, origin, protocol);
+  }
+
+  if (!isLocalOrPrivateHostname(hostname)) {
+    return `${origin}/zscj-api`;
+  }
+
+  return `${protocol}//${hostname || "localhost"}:${DEFAULT_ZSCJ_API_PORT}/api`;
 }
