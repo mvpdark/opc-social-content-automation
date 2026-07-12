@@ -10,7 +10,6 @@ from app.core.config import settings
 from app.services.model_router_helpers import (
     PROMPT_ROOT,
     _chat_messages,
-    _deepseek_messages,
     _extract_chat_content,
     _post_chat_completion,
     _post_image_generation,
@@ -309,7 +308,7 @@ class ModelRouter:
             return _test_draft(payload)
         prompt_template = load_prompt(prompt_name)
         if settings.draft_provider == "openai_compatible":
-            if not settings.openai_compatible_api_key:
+            if not settings.yunwu_api_key:
                 raise HTTPException(
                     status_code=status.HTTP_501_NOT_IMPLEMENTED,
                     detail="撰稿服务尚未配置服务授权。",
@@ -325,7 +324,7 @@ class ModelRouter:
             data = _post_chat_completion(
                 provider="OpenAI-compatible draft provider",
                 base_url=settings.openai_compatible_base_url,
-                api_key=settings.openai_compatible_api_key,
+                api_key=settings.yunwu_api_key,
                 timeout_seconds=settings.draft_timeout_seconds,
                 payload=request_payload,
             )
@@ -337,34 +336,34 @@ class ModelRouter:
 
     def rewrite_model(self, prompt_name: str, payload: dict[str, object]) -> str:
         prompt_template = load_prompt(prompt_name)
-        if not settings.deepseek_api_key:
+        if not settings.yunwu_api_key:
             raise HTTPException(
                 status_code=status.HTTP_501_NOT_IMPLEMENTED,
                 detail="改写服务尚未配置。",
             )
 
         request_payload: dict[str, object] = {
-            "model": settings.deepseek_rewrite_model,
-            "messages": _deepseek_messages(prompt_template, payload),
-            "thinking": {"type": "disabled"},
-            "temperature": 0.7,
+            "model": settings.draft_model,
+            "messages": _chat_messages(prompt_template, payload),
             "stream": False,
+            "store": False,
+            "temperature": 0.7,
         }
         data = _post_chat_completion(
-            provider="DeepSeek",
-            base_url=settings.deepseek_base_url,
-            api_key=settings.deepseek_api_key,
-            timeout_seconds=settings.deepseek_timeout_seconds,
+            provider="OpenAI-compatible rewrite provider",
+            base_url=settings.openai_compatible_base_url,
+            api_key=settings.yunwu_api_key,
+            timeout_seconds=settings.draft_timeout_seconds,
             payload=request_payload,
         )
-        return _extract_chat_content("DeepSeek", data)
+        return _extract_chat_content("OpenAI-compatible rewrite provider", data)
 
     def image_model(self, prompt_name: str, payload: dict[str, object]) -> str:
         if settings.image_provider == "codex_test":
             return _test_image(payload)
         prompt_template = load_prompt(prompt_name)
         if settings.image_provider == "openai_compatible":
-            api_key = settings.image_openai_compatible_api_key or settings.openai_compatible_api_key
+            api_key = settings.yunwu_api_key
             if not api_key:
                 raise HTTPException(
                     status_code=status.HTTP_501_NOT_IMPLEMENTED,
@@ -404,7 +403,7 @@ class ModelRouter:
             return _test_review(payload)
         prompt_template = load_prompt(prompt_name)
         if settings.review_provider == "openai_compatible":
-            if not settings.openai_compatible_api_key:
+            if not settings.yunwu_api_key:
                 raise HTTPException(
                     status_code=status.HTTP_501_NOT_IMPLEMENTED,
                     detail="审核服务尚未配置服务授权。",
@@ -420,32 +419,11 @@ class ModelRouter:
             data = _post_chat_completion(
                 provider="OpenAI-compatible review provider",
                 base_url=settings.openai_compatible_base_url,
-                api_key=settings.openai_compatible_api_key,
+                api_key=settings.yunwu_api_key,
                 timeout_seconds=settings.review_timeout_seconds,
                 payload=request_payload,
             )
             return _extract_chat_content("OpenAI-compatible review provider", data)
-        if settings.review_provider == "deepseek":
-            if not settings.deepseek_api_key:
-                raise HTTPException(
-                    status_code=status.HTTP_501_NOT_IMPLEMENTED,
-                    detail="审核服务尚未配置。",
-                )
-            request_payload = {
-                "model": settings.deepseek_rewrite_model,
-                "messages": _deepseek_messages(prompt_template, payload),
-                "thinking": {"type": "disabled"},
-                "temperature": settings.review_temperature,
-                "stream": False,
-            }
-            data = _post_chat_completion(
-                provider="DeepSeek",
-                base_url=settings.deepseek_base_url,
-                api_key=settings.deepseek_api_key,
-                timeout_seconds=settings.review_timeout_seconds,
-                payload=request_payload,
-            )
-            return _extract_chat_content("DeepSeek", data)
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="审核服务尚未配置。",

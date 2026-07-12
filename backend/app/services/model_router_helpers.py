@@ -51,6 +51,7 @@ def _redacted_provider_error(provider: str, status_code: int | None = None) -> s
     provider_label = {
         "OpenAI-compatible draft provider": "撰稿服务",
         "OpenAI-compatible image provider": "图片服务",
+        "OpenAI-compatible rewrite provider": "改写服务",
         "DeepSeek": "改写服务",
         "OpenAI-compatible review provider": "审核服务",
     }.get(provider, "模型服务")
@@ -69,6 +70,7 @@ def _provider_display_label(provider: str) -> str:
     return {
         "OpenAI-compatible draft provider": "撰稿服务",
         "OpenAI-compatible image provider": "图片服务",
+        "OpenAI-compatible rewrite provider": "改写服务",
         "DeepSeek": "改写服务",
         "OpenAI-compatible review provider": "审核服务",
     }.get(provider, "模型服务")

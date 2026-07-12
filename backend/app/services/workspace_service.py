@@ -183,11 +183,11 @@ def create_export_package(
 
 def provider_status_items() -> list[ProviderStatusItem]:
     draft_configured = settings.draft_provider == "codex_test" or bool(
-        settings.openai_compatible_api_key
+        settings.yunwu_api_key
     )
-    rewrite_configured = bool(settings.deepseek_api_key)
+    rewrite_configured = bool(settings.yunwu_api_key)
     image_configured = settings.image_provider == "codex_test" or bool(
-        settings.image_openai_compatible_api_key or settings.openai_compatible_api_key
+        settings.yunwu_api_key
     )
     web_search_configured = settings.tavily_search_enabled and bool(settings.tavily_api_key)
 
@@ -210,8 +210,8 @@ def provider_status_items() -> list[ProviderStatusItem]:
         ),
         ProviderStatusItem(
             name="Humanization rewrite",
-            provider="deepseek",
-            model=settings.deepseek_rewrite_model,
+            provider="openai_compatible",
+            model=settings.draft_model,
             configured=rewrite_configured,
             status="configured" if rewrite_configured else "missing_key",
             note="改写服务用于口吻润色和降低模板感。",
@@ -299,20 +299,20 @@ def _write_env_keys(updates: dict[str, str]) -> None:
 
 
 def apply_provider_key_settings(payload: ProviderKeyUpdateRequest) -> list[ProviderStatusItem]:
+    yunwu_api_key = _clean_provider_key(payload.yunwu_api_key)
     draft_api_key = _clean_provider_key(payload.draft_api_key)
     image_api_key = _clean_provider_key(payload.image_api_key)
-    deepseek_api_key = _clean_provider_key(payload.deepseek_api_key)
+
+    # All provider keys are now the same YUNWU_API_KEY. Accept any of the
+    # deprecated field names for backward compatibility with older frontends.
+    resolved_key = yunwu_api_key or draft_api_key or image_api_key
 
     env_updates: dict[str, str] = {}
 
-    if draft_api_key:
-        env_updates["OPENAI_COMPATIBLE_API_KEY"] = draft_api_key
+    if resolved_key:
+        env_updates["YUNWU_API_KEY"] = resolved_key
         env_updates["DRAFT_PROVIDER"] = "openai_compatible"
-    if image_api_key:
-        env_updates["IMAGE_OPENAI_COMPATIBLE_API_KEY"] = image_api_key
         env_updates["IMAGE_PROVIDER"] = "openai_compatible"
-    if deepseek_api_key:
-        env_updates["DEEPSEEK_API_KEY"] = deepseek_api_key
 
     # Persist to .env first; only update in-memory settings after successful write.
     # Hold the lock across both file write and in-memory update so concurrent
@@ -331,14 +331,12 @@ def apply_provider_key_settings(payload: ProviderKeyUpdateRequest) -> list[Provi
                     detail="配置文件写入失败",
                 )
 
-        if draft_api_key:
+        if resolved_key:
+            settings.yunwu_api_key = resolved_key
+            settings.openai_compatible_api_key = resolved_key
+            settings.image_openai_compatible_api_key = resolved_key
             settings.draft_provider = "openai_compatible"
-            settings.openai_compatible_api_key = draft_api_key
-        if image_api_key:
             settings.image_provider = "openai_compatible"
-            settings.image_openai_compatible_api_key = image_api_key
-        if deepseek_api_key:
-            settings.deepseek_api_key = deepseek_api_key
 
     return provider_status_items()
 
@@ -353,7 +351,7 @@ def check_provider_connection(
         )
 
     configured = settings.draft_provider == "codex_test" or bool(
-        settings.openai_compatible_api_key
+        settings.yunwu_api_key
     )
     if not configured:
         return ProviderConnectionCheckResponse(

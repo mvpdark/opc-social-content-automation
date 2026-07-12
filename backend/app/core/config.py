@@ -19,33 +19,39 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 1440
     auth_required: bool = True
     embedding_dimensions: int = 1536
-    draft_provider: str = "codex_test"
-    draft_model: str = "gpt-5.5"
+    draft_provider: str = "openai_compatible"
+    draft_model: str = "gpt-5.6-luna"
     draft_timeout_seconds: float = 60.0
     draft_max_tokens: int = 1800
     draft_temperature: float = 0.7
-    image_provider: str = "codex_test"
+    image_provider: str = "openai_compatible"
     image_model: str = "gpt-image-2"
     image_size: str | None = None
     image_response_format: str | None = None
     image_timeout_seconds: float = 600.0
     test_static_url_prefix: str = "/static/generated"
+    # YUNWU_API_KEY is the single API key for all LLM and image services (yunwu.ai).
+    yunwu_api_key: str | None = None
+    yunwu_base_url: str = "https://yunwu.ai"
+    # Deprecated: use YUNWU_API_KEY instead. Kept as backward-compatible alias.
     openai_compatible_api_key: str | None = None
-    openai_compatible_base_url: str = "https://api.openai.com/v1"
+    openai_compatible_base_url: str = "https://yunwu.ai"
+    # Deprecated: image uses the same YUNWU_API_KEY.
     image_openai_compatible_api_key: str | None = None
-    image_openai_compatible_base_url: str | None = None
+    image_openai_compatible_base_url: str | None = "https://yunwu.ai"
+    # Deprecated: DeepSeek provider is no longer used; yunwu.ai is the only provider.
     deepseek_api_key: str | None = None
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_rewrite_model: str = "deepseek-v4-pro"
     deepseek_timeout_seconds: float = 60.0
-    review_provider: str = "codex_test"
-    review_model: str = "gpt-5.5"
+    review_provider: str = "openai_compatible"
+    review_model: str = "gpt-5.6-luna"
     review_timeout_seconds: float = 60.0
     review_max_tokens: int = 1200
     review_temperature: float = 0.3
     tavily_api_key: str | None = None
     tavily_base_url: str = "https://api.tavily.com"
-    tavily_search_enabled: bool = True
+    tavily_search_enabled: bool = False
     tavily_timeout_seconds: float = 25.0
     tavily_max_results: int = 6
     knowledge_compile_enabled: bool = True
@@ -83,6 +89,23 @@ class Settings(BaseSettings):
             )
         if len(self.jwt_secret_key) < 32:
             warnings.warn("JWT_SECRET_KEY 长度不足32字符，建议使用更长的随机密钥", stacklevel=2)
+        return self
+
+    @model_validator(mode="after")
+    def _yunwu_key_fallback(self) -> "Settings":
+        """YUNWU_API_KEY is the single source of truth for all API keys.
+
+        Deprecated aliases (OPENAI_COMPATIBLE_API_KEY,
+        IMAGE_OPENAI_COMPATIBLE_API_KEY) fall back to YUNWU_API_KEY
+        for backward compatibility with older .env files.
+        """
+        if self.yunwu_api_key is None and self.openai_compatible_api_key is not None:
+            self.yunwu_api_key = self.openai_compatible_api_key
+        if self.yunwu_api_key is None and self.image_openai_compatible_api_key is not None:
+            self.yunwu_api_key = self.image_openai_compatible_api_key
+        # Sync deprecated aliases to the resolved yunwu key.
+        self.openai_compatible_api_key = self.yunwu_api_key
+        self.image_openai_compatible_api_key = self.yunwu_api_key
         return self
 
     @property
