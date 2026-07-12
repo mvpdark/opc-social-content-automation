@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -11,266 +11,34 @@ import {
   ShieldCheck
 } from "lucide-react";
 
-import { getApiBase } from "@/lib/api-base";
 import { resolveAssetUrl } from "@/lib/asset-url";
 import { addMobileBackHandler } from "@/lib/mobile-back-navigation";
 import { PromotionBriefSummary } from "@/components/promotion-brief-summary";
 import {
   generationSourceContextStats,
-  isGeneratedContent,
-  isGeneratedImageAsset,
-  type GeneratedContent,
-  type GeneratedImageAsset,
   type GenerationSourceContext
 } from "@/lib/generated-assets";
-import { readStoredDeletedDraftIds } from "@/lib/mobile-draft-storage";
-import { sanitizeServiceErrorMessage } from "@/lib/service-error-copy";
 import { formatTagLine } from "@/lib/tags";
 import { renderXhsExpressionText } from "@/lib/xhs-stickers";
+import { buildLocalCoverUrl } from "@/lib/mobile-cover-palette";
+import { MobilePanel } from "@/components/mobile-ui";
+import {
+  fetchMobileReviewQueue,
+  formatMobileReviewTime,
+  mobileContentExcerpt,
+  mobileReviewEvidenceCount,
+  mobileReviewNeedsWebSourceReview,
+  mobileReviewStatusClass,
+  mobileReviewStatusLabel,
+  submitMobileHumanReview,
+  type MobileCredentialSettings,
+  type MobileReviewDecision,
+  type MobileReviewQueueItem
+} from "@/lib/mobile-review-utils";
 
-type MobileCredentialSettings = {
-  draftApiKey: string;
-  imageApiKey: string;
-  rewriteApiKey: string;
-  workspaceToken: string;
-};
+export { fetchMobileReviewContents } from "@/lib/mobile-review-utils";
 
-type MobileReviewDecision = "approved" | "changes_requested";
-type MobileReviewQueueItem = {
-  content: GeneratedContent;
-  cover: GeneratedImageAsset | null;
-};
-
-const API_BASE = getApiBase();
-const mobileReviewQueueStatuses = new Set(["draft", "rewritten", "review_pending"]);
-const REVIEW_COVER_WIDTH = 2048;
-const REVIEW_COVER_HEIGHT = 2736;
-const REVIEW_COVER_BASE_WIDTH = 900;
-const REVIEW_COVER_BASE_HEIGHT = 1200;
-const localReviewCoverPalettes = [
-  { accent: "#ff2442", backgroundEnd: "#ffd9df", backgroundMid: "#d9f1e5", backgroundStart: "#fff7df" },
-  { accent: "#209b5a", backgroundEnd: "#dff7ee", backgroundMid: "#f4ead4", backgroundStart: "#ffffff" },
-  { accent: "#111111", backgroundEnd: "#e9efe8", backgroundMid: "#f7e6cd", backgroundStart: "#fffdf7" },
-  { accent: "#1f6feb", backgroundEnd: "#d9e8ff", backgroundMid: "#f5ead9", backgroundStart: "#fffaf0" }
-];
-
-function authHeaders(credentials: MobileCredentialSettings) {
-  return {
-    "Content-Type": "application/json",
-    ...(credentials.workspaceToken.trim()
-      ? { Authorization: `Bearer ${credentials.workspaceToken.trim()}` }
-      : {})
-  };
-}
-
-async function readApiError(response: Response, fallback: string) {
-  const errorBody = (await response.json().catch(() => null)) as
-    | { detail?: unknown; message?: unknown }
-    | null;
-  return sanitizeServiceErrorMessage(errorBody?.message ?? errorBody?.detail ?? fallback);
-}
-
-function isMobileReviewCandidate(content: GeneratedContent) {
-  return content.platform === "xiaohongshu" && mobileReviewQueueStatuses.has(content.status);
-}
-
-function mobileReviewStatusLabel(status: string) {
-  if (status === "review_pending") {
-    return "待确认";
-  }
-  if (status === "rewritten") {
-    return "已润色";
-  }
-  if (status === "approved") {
-    return "已通过";
-  }
-  if (status === "changes_requested") {
-    return "需修改";
-  }
-  if (status === "rejected") {
-    return "已拒绝";
-  }
-  return "草稿";
-}
-
-function mobileReviewStatusClass(status: string) {
-  if (status === "review_pending") {
-    return "bg-[#fff4d7] text-[#8a6110]";
-  }
-  if (status === "rewritten") {
-    return "bg-[#e7f2ea] text-moss";
-  }
-  if (status === "approved") {
-    return "bg-[#e6f4ec] text-[#23854f]";
-  }
-  if (status === "changes_requested" || status === "rejected") {
-    return "bg-[#fff1ec] text-coral";
-  }
-  return "bg-white text-muted";
-}
-
-function mobileReviewEvidenceCount(sourceContext?: GenerationSourceContext | null) {
-  return generationSourceContextStats(sourceContext).totalCount;
-}
-
-function mobileReviewNeedsWebSourceReview(sourceContext?: GenerationSourceContext | null) {
-  return generationSourceContextStats(sourceContext).missingRequiredWebResults;
-}
-
-function formatMobileReviewTime(value?: string) {
-  if (!value) {
-    return "刚刚";
-  }
-  return new Date(value).toLocaleString("zh-CN", {
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "2-digit"
-  });
-}
-
-function mobileContentExcerpt(content: GeneratedContent, maxLength = 82) {
-  const normalized = content.body.replace(/\s+/g, " ").trim();
-  return normalized.length > maxLength ? `${normalized.slice(0, maxLength)}...` : normalized;
-}
-
-function escapeSvgText(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function chunkCoverText(value: string, size: number, maxLines: number) {
-  const chars = Array.from(value.replace(/\s+/g, "") || "草稿");
-  const lines: string[] = [];
-  for (let index = 0; index < chars.length && lines.length < maxLines; index += size) {
-    lines.push(chars.slice(index, index + size).join(""));
-  }
-  return lines.length ? lines : ["草稿"];
-}
-
-function buildLocalReviewCoverUrl(content: GeneratedContent) {
-  const palette = localReviewCoverPalettes[Math.abs(content.id) % localReviewCoverPalettes.length];
-  const titleLines = chunkCoverText(content.title, 7, 3);
-  const excerpt = Array.from(content.body.replace(/\s+/g, " ").trim()).slice(0, 24).join("");
-  const tag = content.tags?.find((value) => value.trim())?.trim() ?? "草稿";
-  const titleSvg = titleLines
-    .map(
-      (line, index) =>
-        `<text x="86" y="${392 + index * 92}" class="title">${escapeSvgText(line)}</text>`
-    )
-    .join("");
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${REVIEW_COVER_WIDTH}" height="${REVIEW_COVER_HEIGHT}" viewBox="0 0 ${REVIEW_COVER_BASE_WIDTH} ${REVIEW_COVER_BASE_HEIGHT}">
-<defs>
-<linearGradient id="cover-bg" x1="0" y1="0" x2="1" y2="1">
-<stop offset="0%" stop-color="${palette.backgroundStart}"/>
-<stop offset="54%" stop-color="${palette.backgroundMid}"/>
-<stop offset="100%" stop-color="${palette.backgroundEnd}"/>
-</linearGradient>
-<style>
-.label{font:800 34px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;fill:${palette.accent}}
-.title{font:900 74px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;fill:#111}
-.meta{font:700 30px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;fill:#5f6a61}
-</style>
-</defs>
-<rect width="${REVIEW_COVER_BASE_WIDTH}" height="${REVIEW_COVER_BASE_HEIGHT}" fill="url(#cover-bg)"/>
-<rect x="64" y="74" width="190" height="78" rx="39" fill="rgba(255,255,255,0.78)"/>
-<text x="100" y="126" class="label">${escapeSvgText(tag.slice(0, 8))}</text>
-<path d="M92 278H808" stroke="${palette.accent}" stroke-width="8" stroke-linecap="round" opacity="0.16"/>
-${titleSvg}
-<rect x="70" y="812" width="760" height="158" rx="38" fill="rgba(255,255,255,0.54)"/>
-<text x="104" y="882" class="meta">${escapeSvgText(excerpt || "本地草稿封面预览")}</text>
-<text x="104" y="930" class="meta">本地预览 · 等待真实封面记录</text>
-</svg>`;
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-}
-
-async function fetchLatestContentCover(contentId: number) {
-  try {
-    const response = await fetch(`${API_BASE}/image/list?content_id=${contentId}&limit=1`);
-    if (!response.ok) {
-      return null;
-    }
-
-    const images: unknown = await response.json();
-    if (!Array.isArray(images)) {
-      return null;
-    }
-
-    return images.find(
-      (image): image is GeneratedImageAsset =>
-        isGeneratedImageAsset(image) && image.content_id === contentId
-    ) ?? null;
-  } catch (_error) {
-    return null;
-  }
-}
-
-export async function fetchMobileReviewContents(credentials: MobileCredentialSettings) {
-  const response = await fetch(`${API_BASE}/content/list?platform=xiaohongshu`, {
-    headers: authHeaders(credentials)
-  });
-  if (!response.ok) {
-    throw new Error(await readApiError(response, "待确认草稿读取失败。"));
-  }
-
-  const data: unknown = await response.json();
-  if (!Array.isArray(data)) {
-    return [];
-  }
-
-  const deletedDraftIds = readStoredDeletedDraftIds();
-  return data
-    .filter(isGeneratedContent)
-    .filter(isMobileReviewCandidate)
-    .filter((content) => !deletedDraftIds.has(content.id));
-}
-
-async function fetchMobileReviewQueue(credentials: MobileCredentialSettings) {
-  const contents = await fetchMobileReviewContents(credentials);
-  return Promise.all(
-    contents.slice(0, 30).map(async (content): Promise<MobileReviewQueueItem> => ({
-      content,
-      cover: await fetchLatestContentCover(content.id)
-    }))
-  );
-}
-
-async function submitMobileHumanReview(
-  credentials: MobileCredentialSettings,
-  contentId: number,
-  decision: MobileReviewDecision
-) {
-  const response = await fetch(`${API_BASE}/content/${contentId}/reviews`, {
-    body: JSON.stringify({
-      decision,
-      notes: decision === "approved" ? "手机端人工确认通过。" : "手机端人工确认退回修改。",
-      risk_flags: decision === "approved" ? [] : ["needs_revision"],
-      score: decision === "approved" ? 95 : 60
-    }),
-    headers: authHeaders(credentials),
-    method: "POST"
-  });
-  if (!response.ok) {
-    throw new Error(await readApiError(response, "人工确认提交失败。"));
-  }
-}
-
-function MobilePanel({ action, children, title }: { action?: ReactNode; children: ReactNode; title: string }) {
-  return (
-    <section className="rounded-[28px] border border-white/[0.88] bg-[rgba(255,253,247,0.88)] p-4 shadow-[0_12px_32px_rgba(31,58,49,0.07),inset_0_1px_0_rgba(255,255,255,0.90)] backdrop-blur-sm">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-[15px] font-black">{title}</h2>
-        {action}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-export function ReviewScreen({
+export const ReviewScreen = memo(function ReviewScreen({
   active = true,
   credentials,
   onAction,
@@ -289,6 +57,17 @@ export function ReviewScreen({
   const [busyContentId, setBusyContentId] = useState<number | null>(null);
   const [queueError, setQueueError] = useState<string | null>(null);
   const [status, setStatus] = useState("正在读取待确认草稿...");
+  const activeRef = useRef(true);
+  const requestIdRef = useRef(0);
+  const queueAbortRef = useRef<AbortController | null>(null);
+  const reviewAbortRef = useRef<AbortController | null>(null);
+  const reviewRequestIdRef = useRef(0);
+
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+
+  const selectedItemRef = useRef(selectedItem);
+  selectedItemRef.current = selectedItem;
 
   useEffect(() => {
     return addMobileBackHandler(() => {
@@ -301,12 +80,17 @@ export function ReviewScreen({
     });
   }, [active, onAction, selectedItem]);
 
-  async function loadReviewQueue(announce = false) {
+  const loadReviewQueue = useCallback(async (announce = false) => {
+    queueAbortRef.current?.abort();
+    const controller = new AbortController();
+    queueAbortRef.current = controller;
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setQueueError(null);
     setStatus("正在读取待确认草稿...");
     try {
-      const nextItems = await fetchMobileReviewQueue(credentials);
+      const nextItems = await fetchMobileReviewQueue(credentials, controller.signal);
+      if (!activeRef.current || requestIdRef.current !== requestId) return;
       setItems(nextItems);
       setQueueError(null);
       onPendingCountChange(nextItems.length);
@@ -319,6 +103,7 @@ export function ReviewScreen({
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "待确认草稿读取失败。";
+      if (!activeRef.current || requestIdRef.current !== requestId) return;
       setItems([]);
       onPendingCountChange(0);
       setQueueError(message);
@@ -327,19 +112,35 @@ export function ReviewScreen({
         onAction(message);
       }
     } finally {
-      setLoading(false);
+      if (activeRef.current && requestIdRef.current === requestId) setLoading(false);
     }
-  }
+  }, [credentials, onAction, onPendingCountChange]);
 
   useEffect(() => {
+    activeRef.current = true;
     void loadReviewQueue();
-  }, [credentials.workspaceToken]);
+    return () => {
+      activeRef.current = false;
+      queueAbortRef.current?.abort();
+      reviewAbortRef.current?.abort();
+    };
+  }, [loadReviewQueue]);
 
-  async function reviewItem(item: MobileReviewQueueItem, decision: MobileReviewDecision) {
+  const reviewItem = useCallback(async (item: MobileReviewQueueItem, decision: MobileReviewDecision) => {
+    reviewAbortRef.current?.abort();
+    const controller = new AbortController();
+    reviewAbortRef.current = controller;
+    const requestId = ++reviewRequestIdRef.current;
     setBusyContentId(item.content.id);
     try {
-      await submitMobileHumanReview(credentials, item.content.id, decision);
-      const nextItems = items.filter((currentItem) => currentItem.content.id !== item.content.id);
+      const result = await submitMobileHumanReview(credentials, item.content.id, decision, controller.signal);
+      if (!activeRef.current || reviewRequestIdRef.current !== requestId) return;
+      if (!result.ok) {
+        setStatus(result.message);
+        onAction(result.message);
+        return;
+      }
+      const nextItems = itemsRef.current.filter((currentItem) => currentItem.content.id !== item.content.id);
       setItems(nextItems);
       onPendingCountChange(nextItems.length);
       setSelectedItem(null);
@@ -350,34 +151,46 @@ export function ReviewScreen({
       setStatus(message);
       onAction(message);
     } catch (error) {
+      if (!activeRef.current || reviewRequestIdRef.current !== requestId) return;
       const message = error instanceof Error ? error.message : "人工确认提交失败。";
       setStatus(message);
       onAction(message);
     } finally {
-      setBusyContentId(null);
+      if (activeRef.current && reviewRequestIdRef.current === requestId) setBusyContentId(null);
     }
-  }
+  }, [credentials, onPendingCountChange, onAction]);
+
+  const handleApproveReview = useCallback((cardItem: MobileReviewQueueItem) => void reviewItem(cardItem, "approved"), [reviewItem]);
+  const handleOpenReviewCard = useCallback((cardItem: MobileReviewQueueItem) => setSelectedItem(cardItem), []);
+  const handleRequestChangesReview = useCallback((cardItem: MobileReviewQueueItem) => void reviewItem(cardItem, "changes_requested"), [reviewItem]);
+  const handleCloseReviewDetail = useCallback(() => setSelectedItem(null), []);
+  const handleApproveReviewDetail = useCallback(() => {
+    if (selectedItemRef.current) void reviewItem(selectedItemRef.current, "approved");
+  }, [reviewItem]);
+  const handleRequestChangesReviewDetail = useCallback(() => {
+    if (selectedItemRef.current) void reviewItem(selectedItemRef.current, "changes_requested");
+  }, [reviewItem]);
 
   return (
     <div className="space-y-4">
       <section className="relative mt-8 overflow-hidden rounded-[30px] border border-white/[0.88] bg-[rgba(255,253,247,0.92)] p-5 text-ink shadow-[0_18px_42px_rgba(31,58,49,0.11),inset_0_1px_0_rgba(255,255,255,0.90)] backdrop-blur-sm">
-        <div aria-hidden="true" className="absolute -right-16 -top-20 h-44 w-44 rounded-full bg-[#f7cdbf]/[0.26] blur-2xl" />
+        <div aria-hidden="true" className="absolute -right-16 -top-20 h-44 w-44 rounded-full bg-blush/[0.26] blur-2xl" />
         <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,transparent,rgba(236,244,237,0.58))]" />
         <div className="relative">
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-xs font-black text-moss">发布前人工确认</div>
-              <h2 className="mt-1 text-[29px] font-black leading-9">确认台</h2>
+              <h2 className="mt-1 text-[22px] font-black leading-7">确认台</h2>
               <p className="mt-2 max-w-[270px] text-sm font-medium leading-6 text-muted">
                 核对标题、正文、封面和检索依据；通过后才进入发布准备。
               </p>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-[20px] border border-white/[0.84] bg-[#e7f2ea] text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.84)]">
+            <div className="flex h-12 w-12 items-center justify-center rounded-[20px] border border-white/[0.84] bg-sage text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.84)]">
               <ShieldCheck className="h-5 w-5" />
             </div>
           </div>
           <div className="mt-5 grid grid-cols-2 gap-2">
-            <div className="rounded-[22px] bg-[#fff1ec]/[0.88] px-3 py-3 text-coral">
+            <div className="rounded-[22px] bg-blush/[0.88] px-3 py-3 text-coral">
               <div className="text-[24px] font-black leading-7">{items.length}</div>
               <div className="mt-1 text-[11px] font-bold">待确认</div>
             </div>
@@ -396,7 +209,7 @@ export function ReviewScreen({
 
       <MobilePanel
         action={
-          <span className="rounded-full bg-[#e7f2ea]/[0.90] px-2.5 py-1 text-xs font-black text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]">
+          <span className="rounded-full bg-sage/[0.90] px-2.5 py-1 text-xs font-black text-moss shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]">
             {queueError ? "读取失败" : loading ? "读取中" : `${items.length} 篇`}
           </span>
         }
@@ -407,17 +220,17 @@ export function ReviewScreen({
         </p>
         {queueError ? (
           <div
-            className="mb-3 rounded-[22px] border border-[#ffcfda] bg-[#fff4f6] px-3 py-3 text-xs font-bold leading-5 text-[#a2152c]"
+            className="mb-3 rounded-[22px] border border-coral/30 bg-blush px-3 py-3 text-xs font-bold leading-5 text-coral"
             data-testid="mobile-review-queue-error"
             role="alert"
           >
             <div>待确认队列读取失败</div>
-            <p className="mt-1 text-[#6f5960]">{queueError}</p>
-            <p className="mt-1 text-[#6f5960]">
+            <p className="mt-1 text-muted">{queueError}</p>
+            <p className="mt-1 text-muted">
               这只会重新读取待人工确认草稿；不会生成、改写、确认或发布。
             </p>
             <button
-              className="mt-3 h-9 rounded-full bg-[#111111] px-4 text-xs font-black text-white active:scale-[0.99] disabled:opacity-60"
+              className="mt-3 h-9 rounded-full bg-moss px-4 text-xs font-black text-white active:scale-[0.99] disabled:opacity-60"
               data-testid="mobile-review-queue-retry"
               disabled={loading}
               onClick={() => void loadReviewQueue(true)}
@@ -434,9 +247,9 @@ export function ReviewScreen({
                 busy={busyContentId === item.content.id}
                 item={item}
                 key={item.content.id}
-                onApprove={() => void reviewItem(item, "approved")}
-                onOpen={() => setSelectedItem(item)}
-                onRequestChanges={() => void reviewItem(item, "changes_requested")}
+                onApprove={handleApproveReview}
+                onOpen={handleOpenReviewCard}
+                onRequestChanges={handleRequestChangesReview}
               />
             ))}
           </div>
@@ -462,16 +275,16 @@ export function ReviewScreen({
         <ReviewDetailSheet
           busy={busyContentId === selectedItem.content.id}
           item={selectedItem}
-          onApprove={() => void reviewItem(selectedItem, "approved")}
-          onClose={() => setSelectedItem(null)}
-          onRequestChanges={() => void reviewItem(selectedItem, "changes_requested")}
+          onApprove={handleApproveReviewDetail}
+          onClose={handleCloseReviewDetail}
+          onRequestChanges={handleRequestChangesReviewDetail}
         />
       ) : null}
     </div>
   );
-}
+});
 
-function ReviewQueueCard({
+const ReviewQueueCard = memo(function ReviewQueueCard({
   busy,
   item,
   onApprove,
@@ -480,22 +293,31 @@ function ReviewQueueCard({
 }: {
   busy: boolean;
   item: MobileReviewQueueItem;
-  onApprove: () => void;
-  onOpen: () => void;
-  onRequestChanges: () => void;
+  onApprove: (item: MobileReviewQueueItem) => void;
+  onOpen: (item: MobileReviewQueueItem) => void;
+  onRequestChanges: (item: MobileReviewQueueItem) => void;
 }) {
-  const coverUrl = item.cover ? resolveAssetUrl(item.cover.image_url) : buildLocalReviewCoverUrl(item.content);
-  const evidenceCount = mobileReviewEvidenceCount(item.content.source_context);
-  const needsWebSourceReview = mobileReviewNeedsWebSourceReview(item.content.source_context);
+  const coverUrl = useMemo(
+    () => (item.cover ? resolveAssetUrl(item.cover.image_url) : buildLocalCoverUrl(item.content)),
+    [item.cover, item.content]
+  );
+  const evidenceCount = useMemo(
+    () => mobileReviewEvidenceCount(item.content.source_context),
+    [item.content.source_context]
+  );
+  const needsWebSourceReview = useMemo(
+    () => mobileReviewNeedsWebSourceReview(item.content.source_context),
+    [item.content.source_context]
+  );
 
   return (
     <article
       className="overflow-hidden rounded-[26px] border border-white/[0.86] bg-[rgba(255,253,247,0.88)] p-3 shadow-[0_10px_26px_rgba(31,58,49,0.07),inset_0_1px_0_rgba(255,255,255,0.86)]"
       data-testid="mobile-review-card"
     >
-      <button className="flex w-full touch-manipulation gap-3 text-left active:scale-[0.995]" onClick={onOpen} type="button">
-        <div className="relative h-[112px] w-[84px] shrink-0 overflow-hidden rounded-[20px] bg-[#edf5f0]">
-          <img alt="" className="h-full w-full object-cover" src={coverUrl} />
+      <button className="flex w-full touch-manipulation gap-3 text-left active:scale-[0.995]" onClick={() => onOpen(item)} type="button">
+        <div className="relative h-[112px] w-[84px] shrink-0 overflow-hidden rounded-[20px] bg-sage">
+          <img alt={`${item.content.title}封面`} className="h-full w-full object-cover" loading="lazy" decoding="async" src={coverUrl} />
           <span className="absolute left-2 top-2 rounded-full bg-white/[0.86] px-2 py-1 text-[10px] font-black text-coral">
             草稿
           </span>
@@ -518,7 +340,7 @@ function ReviewQueueCard({
               来源 {evidenceCount} 条
             </span>
             {needsWebSourceReview ? (
-              <span className="rounded-full bg-[#fff4d7] px-2 py-1 text-[10px] font-black text-[#8a6110]">
+              <span className="rounded-full bg-amber/15 px-2 py-1 text-[10px] font-black text-amber-ink">
                 待补联网来源
               </span>
             ) : null}
@@ -531,10 +353,10 @@ function ReviewQueueCard({
       </button>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <button
-          className="flex h-10 touch-manipulation items-center justify-center gap-2 rounded-full bg-[#23854f] text-xs font-black text-white shadow-[0_12px_24px_rgba(35,133,79,0.18)] active:scale-[0.99] disabled:opacity-60"
+          className="flex h-10 touch-manipulation items-center justify-center gap-2 rounded-full bg-moss text-xs font-black text-white shadow-[0_12px_24px_rgba(44,151,88,0.18)] active:scale-[0.99] disabled:opacity-60"
           data-testid="mobile-review-approve"
           disabled={busy}
-          onClick={onApprove}
+          onClick={() => onApprove(item)}
           type="button"
         >
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
@@ -544,7 +366,7 @@ function ReviewQueueCard({
           className="flex h-10 touch-manipulation items-center justify-center gap-2 rounded-full border border-white/[0.86] bg-white/[0.76] text-xs font-black text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.78)] active:scale-[0.99] disabled:opacity-60"
           data-testid="mobile-review-request-changes"
           disabled={busy}
-          onClick={onRequestChanges}
+          onClick={() => onRequestChanges(item)}
           type="button"
         >
           <PenLine className="h-3.5 w-3.5" />
@@ -553,9 +375,9 @@ function ReviewQueueCard({
       </div>
     </article>
   );
-}
+});
 
-function ReviewDetailSheet({
+const ReviewDetailSheet = memo(function ReviewDetailSheet({
   busy,
   item,
   onApprove,
@@ -568,8 +390,27 @@ function ReviewDetailSheet({
   onClose: () => void;
   onRequestChanges: () => void;
 }) {
-  const coverUrl = item.cover ? resolveAssetUrl(item.cover.image_url) : buildLocalReviewCoverUrl(item.content);
-  const tags = formatTagLine(item.content.tags);
+  const coverUrl = useMemo(
+    () => (item.cover ? resolveAssetUrl(item.cover.image_url) : buildLocalCoverUrl(item.content)),
+    [item.cover, item.content]
+  );
+  const tags = useMemo(() => formatTagLine(item.content.tags), [item.content.tags]);
+  const bodyParagraphs = useMemo(
+    () =>
+      item.content.body
+        .split(/\n+/)
+        .map((paragraph) => paragraph.trim())
+        .filter(Boolean),
+    [item.content.body]
+  );
+  const evidenceCount = useMemo(
+    () => mobileReviewEvidenceCount(item.content.source_context),
+    [item.content.source_context]
+  );
+  const needsWebSourceReview = useMemo(
+    () => mobileReviewNeedsWebSourceReview(item.content.source_context),
+    [item.content.source_context]
+  );
 
   return (
     <div
@@ -598,18 +439,18 @@ function ReviewDetailSheet({
           </button>
         </div>
         <div className="max-h-[54vh] overflow-y-auto px-4 py-4">
-          <div className="overflow-hidden rounded-[24px] border border-white/[0.86] bg-[#edf5f0]">
-            <img alt="" className="aspect-[3/4] w-full object-cover" src={coverUrl} />
+          <div className="overflow-hidden rounded-[24px] border border-white/[0.86] bg-sage">
+            <img alt={`${item.content.title}封面`} className="aspect-[3/4] w-full object-cover" loading="lazy" decoding="async" src={coverUrl} />
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
             <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${mobileReviewStatusClass(item.content.status)}`}>
               {mobileReviewStatusLabel(item.content.status)}
             </span>
             <span className="rounded-full bg-white/[0.78] px-2.5 py-1 text-[11px] font-black text-muted">
-              来源 {mobileReviewEvidenceCount(item.content.source_context)} 条
+              来源 {evidenceCount} 条
             </span>
-            {mobileReviewNeedsWebSourceReview(item.content.source_context) ? (
-              <span className="rounded-full bg-[#fff4d7] px-2.5 py-1 text-[11px] font-black text-[#8a6110]">
+            {needsWebSourceReview ? (
+              <span className="rounded-full bg-amber/15 px-2.5 py-1 text-[11px] font-black text-amber-ink">
                 需核对联网来源
               </span>
             ) : null}
@@ -617,11 +458,7 @@ function ReviewDetailSheet({
           <article className="mt-4 rounded-[24px] border border-white/[0.86] bg-white/[0.72] px-4 py-4">
             <h4 className="text-xs font-black text-muted">正文预览</h4>
             <div className="mt-2 space-y-3 text-[13px] font-semibold leading-6 text-ink">
-              {item.content.body
-                .split(/\n+/)
-                .map((paragraph) => paragraph.trim())
-                .filter(Boolean)
-                .map((paragraph, index) => (
+              {bodyParagraphs.map((paragraph, index) => (
                   <p key={`review-body-${item.content.id}-${index}`}>{renderXhsExpressionText(paragraph)}</p>
                 ))}
             </div>
@@ -633,7 +470,7 @@ function ReviewDetailSheet({
         </div>
         <div className="grid grid-cols-2 gap-2 border-t border-moss/10 px-4 py-4">
           <button
-            className="flex h-11 touch-manipulation items-center justify-center gap-2 rounded-full bg-[#23854f] text-sm font-black text-white shadow-[0_14px_28px_rgba(35,133,79,0.20)] active:scale-[0.99] disabled:opacity-60"
+            className="flex h-11 touch-manipulation items-center justify-center gap-2 rounded-full bg-moss text-sm font-black text-white shadow-[0_14px_28px_rgba(44,151,88,0.20)] active:scale-[0.99] disabled:opacity-60"
             data-testid="mobile-review-detail-approve"
             disabled={busy}
             onClick={onApprove}
@@ -656,14 +493,17 @@ function ReviewDetailSheet({
       </section>
     </div>
   );
-}
+});
 
-function ReviewEvidenceBlock({ sourceContext }: { sourceContext: GenerationSourceContext | null }) {
-  const knowledgeItems = sourceContext?.knowledge_items ?? [];
-  const webSearch = sourceContext?.web_search;
-  const webResults = webSearch?.results ?? [];
-  const { hasEvidence, missingRequiredWebResults, totalCount } =
-    generationSourceContextStats(sourceContext);
+const ReviewEvidenceBlock = memo(function ReviewEvidenceBlock({ sourceContext }: { sourceContext: GenerationSourceContext | null }) {
+  const knowledgeItems = useMemo(() => sourceContext?.knowledge_items ?? [], [sourceContext]);
+  const webResults = useMemo(() => sourceContext?.web_search?.results ?? [], [sourceContext]);
+  const visibleKnowledgeItems = useMemo(() => knowledgeItems.slice(0, 4), [knowledgeItems]);
+  const visibleWebResults = useMemo(() => webResults.slice(0, 4), [webResults]);
+  const { hasEvidence, missingRequiredWebResults, totalCount } = useMemo(
+    () => generationSourceContextStats(sourceContext),
+    [sourceContext]
+  );
 
   return (
     <section
@@ -677,7 +517,7 @@ function ReviewEvidenceBlock({ sourceContext }: { sourceContext: GenerationSourc
             发布前核对这些资料，避免凭空编学校、榜单或项目。
           </p>
         </div>
-        <span className="shrink-0 rounded-full bg-[#e7f2ea]/[0.92] px-2.5 py-1 text-[11px] font-black text-moss">
+        <span className="shrink-0 rounded-full bg-sage/[0.92] px-2.5 py-1 text-[11px] font-black text-moss">
           {hasEvidence ? `${totalCount} 条` : "无依据"}
         </span>
       </div>
@@ -694,7 +534,7 @@ function ReviewEvidenceBlock({ sourceContext }: { sourceContext: GenerationSourc
       {knowledgeItems.length ? (
         <div className="mt-3 space-y-2" data-testid="mobile-review-knowledge-list">
           <div className="text-[11px] font-black text-muted">知识库引用</div>
-          {knowledgeItems.slice(0, 4).map((item, index) => (
+          {visibleKnowledgeItems.map((item, index) => (
             <article
               className="mobile-review-evidence-result-card rounded-[18px] bg-white/[0.76] px-3 py-2"
               key={`review-knowledge-${item.id}-${index}`}
@@ -708,7 +548,7 @@ function ReviewEvidenceBlock({ sourceContext }: { sourceContext: GenerationSourc
       {webResults.length ? (
         <div className="mt-3 space-y-2" data-testid="mobile-review-web-list">
           <div className="text-[11px] font-black text-muted">联网来源</div>
-          {webResults.slice(0, 4).map((item, index) => (
+          {visibleWebResults.map((item, index) => (
             <a
               aria-label={`打开联网来源：${item.title}`}
               className="mobile-review-evidence-result-card block rounded-[18px] bg-white/[0.76] px-3 py-2"
@@ -729,22 +569,22 @@ function ReviewEvidenceBlock({ sourceContext }: { sourceContext: GenerationSourc
       ) : null}
       {missingRequiredWebResults ? (
         <div
-          className="mt-3 rounded-[18px] border border-[#f3dca3] bg-[#fff8e6] px-3 py-2 text-[11px] font-semibold leading-5 text-[#8a6110]"
+          className="mt-3 rounded-[18px] border border-amber/40 bg-amber/10 px-3 py-2 text-[11px] font-semibold leading-5 text-amber-ink"
           data-testid="mobile-review-required-web-warning"
         >
           <p>这个选题需要联网来源，但当前没有可见 Tavily 结果。</p>
-          {webSearch?.query ? <p className="mt-1 break-words">联网检索词：{webSearch.query}</p> : null}
+          {sourceContext?.web_search?.query ? <p className="mt-1 break-words">联网检索词：{sourceContext.web_search.query}</p> : null}
           <p className="mt-1">请退回补充来源，或改成核验框架后再发布。</p>
         </div>
       ) : null}
       {sourceContext?.review_note ? (
-        <p className="mt-3 border-l-4 border-[#f0c76b] pl-3 text-[11px] font-semibold leading-5 text-muted">
+        <p className="mt-3 border-l-4 border-amber/60 pl-3 text-[11px] font-semibold leading-5 text-muted">
           {sourceContext.review_note}
         </p>
       ) : null}
       {!hasEvidence ? (
         <p
-          className="mt-3 rounded-[18px] border border-[#f3dca3] bg-[#fff8e6] px-3 py-2 text-[11px] font-semibold leading-5 text-muted"
+          className="mt-3 rounded-[18px] border border-amber/40 bg-amber/10 px-3 py-2 text-[11px] font-semibold leading-5 text-muted"
           data-testid="mobile-review-no-evidence-warning"
         >
           这篇草稿没有可见检索依据，建议退回修改或重新生成。
@@ -752,4 +592,4 @@ function ReviewEvidenceBlock({ sourceContext }: { sourceContext: GenerationSourc
       ) : null}
     </section>
   );
-}
+});

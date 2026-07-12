@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { type InterfaceStyle, type WorkspaceTab } from "@/lib/dashboard-data";
@@ -8,6 +8,8 @@ import {
   CREDENTIAL_STORAGE_KEY,
   DEFAULT_WRITING_STYLE_STORAGE_KEY,
   INTERFACE_STYLE_STORAGE_KEY,
+  LAST_GENERATED_CONTENT_STORAGE_KEY,
+  PINNED_DRAFT_IDS_STORAGE_KEY,
   clearStoredWorkspaceAccount,
   coerceWorkspaceTabAlias,
   emptyCredentials,
@@ -15,6 +17,7 @@ import {
   isWritingStylePresetId,
   readLocalStorage,
   readStoredWorkspaceAccount,
+  removeLocalStorage,
   saveStoredWorkspaceAccount,
   writeLocalStorage,
   type CredentialSettings,
@@ -26,6 +29,7 @@ import { KnowledgeView } from "./workspace-knowledge";
 import { ContentView } from "./workspace-content";
 import { SettingsView } from "./workspace-settings";
 import { CoverView, DeliveryView, ResearchView } from "./workspace-delivery";
+import { ViewErrorBoundary } from "./error-boundary";
 
 export function WorkspaceClient({
   hasInitialTheme,
@@ -83,7 +87,15 @@ export function WorkspaceClient({
     try {
       const stored = readLocalStorage(CREDENTIAL_STORAGE_KEY);
       if (stored) {
-        setCredentials({ ...emptyCredentials, ...JSON.parse(stored) });
+        const parsed = JSON.parse(stored) as Record<string, unknown>;
+        const safeKeys: (keyof typeof emptyCredentials)[] = ["workspaceToken", "draftApiKey", "imageApiKey", "rewriteApiKey"];
+        const filtered: Partial<typeof emptyCredentials> = {};
+        for (const key of safeKeys) {
+          if (typeof parsed[key] === "string") {
+            filtered[key] = parsed[key] as string;
+          }
+        }
+        setCredentials({ ...emptyCredentials, ...filtered });
       }
     } catch (_error) {
       setCredentials(emptyCredentials);
@@ -121,7 +133,7 @@ export function WorkspaceClient({
     writeLocalStorage(DEFAULT_WRITING_STYLE_STORAGE_KEY, defaultWritingStyle);
   }, [defaultWritingStyle]);
 
-  function buildWorkspaceUrl(tab: WorkspaceTab, style = interfaceStyle) {
+  const buildWorkspaceUrl = useCallback(function buildWorkspaceUrl(tab: WorkspaceTab, style = interfaceStyle) {
     const params = new URLSearchParams();
     if (tab !== "dashboard") {
       params.set("tab", tab);
@@ -129,25 +141,38 @@ export function WorkspaceClient({
     params.set("theme", style);
     const query = params.toString();
     return query ? `/?${query}` : "/";
-  }
+  }, [interfaceStyle]);
 
-  function handleTabChange(nextTab: WorkspaceTab) {
+  const handleTabChange = useCallback(function handleTabChange(nextTab: WorkspaceTab) {
     setActiveTab(nextTab);
     const nextUrl = buildWorkspaceUrl(nextTab);
     if (window.location.pathname + window.location.search !== nextUrl) {
       window.history.pushState(null, "", nextUrl);
     }
-  }
+  }, [buildWorkspaceUrl]);
 
-  function handleLogin(account: string) {
+  const handleOpenSettings = useCallback(() => {
+    handleTabChange("settings");
+  }, [handleTabChange]);
+
+  const handleLogin = useCallback(function handleLogin(account: string, accessToken: string) {
     saveStoredWorkspaceAccount(account);
     setWorkspaceAccount(account);
-  }
+    setCredentials(prev => ({ ...prev, workspaceToken: accessToken }));
+  }, []);
 
-  function handleLogout() {
+  const handleLogout = useCallback(function handleLogout() {
     clearStoredWorkspaceAccount();
     setWorkspaceAccount(null);
-  }
+    setCredentials(emptyCredentials);
+    removeLocalStorage(CREDENTIAL_STORAGE_KEY);
+    removeLocalStorage(LAST_GENERATED_CONTENT_STORAGE_KEY);
+    removeLocalStorage(PINNED_DRAFT_IDS_STORAGE_KEY);
+  }, []);
+
+  const handleResetHelperText = useCallback(() => {
+    setShowHelperText(true);
+  }, []);
 
   if (!authLoaded || !workspaceAccount) {
     return (
@@ -168,16 +193,18 @@ export function WorkspaceClient({
       onLogout={handleLogout}
       showHelperText={showHelperText}
     >
+      <ViewErrorBoundary>
       {activeTab === "dashboard" ? (
         <DashboardView
           buildWorkspaceUrl={buildWorkspaceUrl}
           defaultWritingStyle={defaultWritingStyle}
           onDefaultWritingStyleChange={setDefaultWritingStyle}
+          workspaceToken={credentials.workspaceToken}
         />
       ) : null}
       {activeTab === "research" ? (
         <ResearchView
-          onOpenSettings={() => handleTabChange("settings")}
+          onOpenSettings={handleOpenSettings}
           workspaceToken={credentials.workspaceToken}
         />
       ) : null}
@@ -187,7 +214,7 @@ export function WorkspaceClient({
           defaultWritingStyle={defaultWritingStyle}
           interfaceStyle={interfaceStyle}
           initialProject={initialProject}
-          onOpenSettings={() => handleTabChange("settings")}
+          onOpenSettings={handleOpenSettings}
           workspaceToken={credentials.workspaceToken}
         />
       ) : null}
@@ -198,11 +225,12 @@ export function WorkspaceClient({
           credentials={credentials}
           interfaceStyle={interfaceStyle}
           onCredentialsChange={setCredentials}
-          onReset={() => setShowHelperText(true)}
+          onReset={handleResetHelperText}
           onShowHelperTextChange={setShowHelperText}
           showHelperText={showHelperText}
         />
       ) : null}
+      </ViewErrorBoundary>
     </AppShell>
     </div>
   );

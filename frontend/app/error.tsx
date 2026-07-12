@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
 
@@ -25,6 +26,7 @@ export default function AppError({ error, reset }: AppErrorProps) {
         className="w-full max-w-xl rounded-md border border-line bg-white/80 p-6 shadow-sm"
         data-testid="app-error-boundary"
       >
+        <AlertCircle className="mb-3 h-8 w-8 text-moss" strokeWidth={2.5} />
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted">
           OPC recovery
         </p>

@@ -1,6 +1,8 @@
+import binascii
 import hashlib
 import html
 import json
+import logging
 import re
 import textwrap
 from base64 import b64decode
@@ -9,6 +11,9 @@ from pathlib import Path
 from fastapi import HTTPException, status
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
+
 from app.services.model_router_helpers import (
     _provider_response_shape_error,
     _resolved_aspect_ratio,
@@ -25,7 +30,7 @@ IMAGE_PIXEL_SIZE_BY_ASPECT_RATIO = {
 }
 IMAGE_PROVIDER_SIZE_BY_ASPECT_RATIO = {
     "1:1": "1024x1024",
-    "3:4": "2048x2736",
+    "3:4": "1024x1366",
     "4:5": "1024x1280",
     "9:16": "1024x1820",
 }
@@ -87,7 +92,14 @@ def _test_image(payload: dict[str, object]) -> str:
     ).hexdigest()[:12]
     slug = FILENAME_RE.sub("-", title.lower()).strip("-")[:36] or "opc-test-cover"
     filename = f"codex-test-{slug}-{digest}.svg"
-    GENERATED_ASSET_ROOT.mkdir(parents=True, exist_ok=True)
+    try:
+        GENERATED_ASSET_ROOT.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        logger.error("Failed to create generated asset directory: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="本地检查封面目录创建失败，请稍后重试。",
+        ) from exc
     target = GENERATED_ASSET_ROOT / filename
 
     title_lines = _wrap_svg_text(title)
@@ -121,7 +133,14 @@ def _test_image(payload: dict[str, object]) -> str:
   <text x="96" y="{height - 89}" class="mark">本地检查素材</text>
 </svg>
 """
-    target.write_text(svg, encoding="utf-8")
+    try:
+        target.write_text(svg, encoding="utf-8")
+    except OSError as exc:
+        logger.error("Failed to write test cover SVG: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="本地检查封面写入失败，请稍后重试。",
+        ) from exc
     return f"{settings.test_static_url_prefix.rstrip('/')}/{filename}"
 
 
@@ -176,7 +195,44 @@ def _image_prompt(prompt_template: str, payload: dict[str, object]) -> str:
     style_reference = str(payload.get("style_reference") or "").strip()
     if style_reference:
         lines.extend(["", "Platform style reference:", style_reference[:2400]])
+    source_context = payload.get("source_context")
+    if isinstance(source_context, dict):
+        source_lines = ["", "Source context (verified facts only):"]
+        knowledge_items = source_context.get("knowledge_items") or []
+        for item in knowledge_items[:5]:
+            if isinstance(item, dict):
+                source_lines.append(f"- {item.get('title', '')}: {str(item.get('content', ''))[:200]}")
+        web_search = source_context.get("web_search")
+        if isinstance(web_search, dict) and web_search.get("results"):
+            for result in (web_search["results"] or [])[:3]:
+                if isinstance(result, dict):
+                    source_lines.append(f"- Web: {result.get('title', '')}: {str(result.get('content', ''))[:200]}")
+        if len(source_lines) > 2:
+            lines.extend(source_lines)
     return "\n".join(lines)
+
+
+
+# Image magic bytes for validation
+_IMAGE_MAGIC_BYTES = (
+    b"\x89PNG\r\n\x1a\n",  # PNG
+    b"\xff\xd8\xff",          # JPEG (SOI + marker)
+    b"RIFF",                     # WebP/AVIF (RIFF container)
+)
+
+
+def _validate_image_magic_bytes(data: bytes, provider: str) -> None:
+    """Validate that decoded bytes have a recognized image magic header."""
+    if not data or len(data) < 12:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=_provider_response_shape_error(provider, "图片数据为空或过小"),
+        )
+    if not any(data.startswith(magic) for magic in _IMAGE_MAGIC_BYTES):
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=_provider_response_shape_error(provider, "图片数据格式无效（非PNG/JPEG/WebP）"),
+        )
 
 
 def _extract_image_url(provider: str, data: dict[str, object], payload: dict[str, object]) -> str:
@@ -199,18 +255,40 @@ def _extract_image_url(provider: str, data: dict[str, object], payload: dict[str
 
     b64_json = first.get("b64_json")
     if isinstance(b64_json, str) and b64_json.strip():
+        # Prevent DoS: reject oversized base64 payloads (~22MB image limit)
+        _MAX_B64_LENGTH = 30_000_000
+        if len(b64_json) > _MAX_B64_LENGTH:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=_provider_response_shape_error(provider, "图片数据过大"),
+            )
         title = str(payload.get("title") or "opc-image")
         digest = hashlib.sha256(b64_json.encode("utf-8")).hexdigest()[:12]
         slug = FILENAME_RE.sub("-", title.lower()).strip("-")[:36] or "opc-image"
         filename = f"image2-{slug}-{digest}.png"
-        GENERATED_ASSET_ROOT.mkdir(parents=True, exist_ok=True)
+        try:
+            GENERATED_ASSET_ROOT.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="封面目录创建失败",
+            ) from exc
         target = GENERATED_ASSET_ROOT / filename
         try:
-            target.write_bytes(b64decode(b64_json))
-        except ValueError as exc:
+            image_bytes = b64decode(b64_json)
+        except (ValueError, TypeError, binascii.Error) as exc:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=_provider_response_shape_error(provider, "图片数据解码失败"),
+            ) from exc
+        # Validate image magic bytes (PNG/JPEG/WebP)
+        _validate_image_magic_bytes(image_bytes, provider)
+        try:
+            target.write_bytes(image_bytes)
+        except OSError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="封面写入失败",
             ) from exc
         return f"{settings.test_static_url_prefix.rstrip('/')}/{filename}"
 

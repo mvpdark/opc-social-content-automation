@@ -2,6 +2,8 @@ import { sanitizeServiceErrorMessage } from "@/lib/service-error-copy";
 
 export type MobilePlatform = "douyin" | "xiaohongshu";
 
+export type MobileTab = "home" | "collect" | "knowledge" | "review" | "create" | "settings";
+
 export type CredentialSettings = {
   draftApiKey: string;
   imageApiKey: string;
@@ -19,7 +21,7 @@ export type OmpcAndroidBridge = {
 };
 
 export const MOBILE_AUTH_STORAGE_KEY = "opc_mobile_auth_v1";
-export const CREDENTIAL_STORAGE_KEY = "opc_workspace_credentials_v1";
+export const CREDENTIAL_STORAGE_KEY = "opc_mobile_credentials_v1";
 export const COLLECTION_SCHEDULE_STORAGE_KEY = "opc_mobile_collection_schedule_v1";
 
 export const emptyCredentials: CredentialSettings = {
@@ -42,6 +44,9 @@ export async function readApiError(response: Response, fallback: string) {
   const errorBody = (await response.json().catch(() => null)) as
     | { detail?: unknown; message?: unknown }
     | null;
+  if (errorBody?.detail === "database_unavailable") {
+    return "数据库暂时不可用：安装包或本地运行请重新启动；自部署模式请检查数据库连接设置和数据库服务。";
+  }
   return sanitizeServiceErrorMessage(errorBody?.message ?? errorBody?.detail ?? fallback);
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -14,6 +14,7 @@ import { PromotionReadinessSummary } from "@/components/promotion-readiness-summ
 import { resolveAssetUrl } from "@/lib/asset-url";
 import { copyText } from "@/lib/clipboard";
 import {
+  isGeneratedImageAsset,
   type GeneratedContent,
   type GeneratedImageAsset
 } from "@/lib/generated-assets";
@@ -42,7 +43,7 @@ import {
 } from "./workspace-utils";
 import { Pill } from "./workspace-ui";
 
-export function GeneratedPostExportCard({
+export const GeneratedPostExportCard = memo(function GeneratedPostExportCard({
   content,
   generatedImageAsset,
   generationBusy,
@@ -68,20 +69,25 @@ export function GeneratedPostExportCard({
   const [imageError, setImageError] = useState<string | null>(null);
   const manualCopyRef = useRef<HTMLTextAreaElement | null>(null);
   const currentContentIdRef = useRef(content.id);
-  const warnings = complianceWarnings(content);
+  const activeRef = useRef(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const warnings = useMemo(() => complianceWarnings(content), [content]);
   const testDraft = isTestDraft(content);
   const lifecycleWarning = generatedContentLifecycleWarning(content.status);
   const canCopy = !testDraft && !generationBusy && !lifecycleWarning;
   const canGenerateImage = canCopy && !imageBusy && !lifecycleWarning;
-  const copyPayload = buildPlatformCopy(content);
+  const copyPayload = useMemo(() => buildPlatformCopy(content), [content]);
   const tagLine = formatTagLine(content.tags);
   const imagePreviewUrl = imageAsset ? resolveAssetUrl(imageAsset.image_url) : null;
   const isDouyinPost = content.platform === "douyin";
   const platformLabel = isDouyinPost ? "抖音" : "小红书";
   const coverAspectRatio = isDouyinPost ? "9:16" : "3:4";
-  const coverStyleNotes = buildTopicCoverStyleNotes(
-    isDouyinPost ? douyinHighAttractionCoverStyle : xhsHighAttractionCoverStyle,
-    content.title
+  const coverStyleNotes = useMemo(
+    () => buildTopicCoverStyleNotes(
+      isDouyinPost ? douyinHighAttractionCoverStyle : xhsHighAttractionCoverStyle,
+      content.title
+    ),
+    [isDouyinPost, content.title]
   );
   const coverTemplate = isDouyinPost ? "douyin-cover" : "xiaohongshu-cover";
   const imageButtonLabel = imageBusy
@@ -96,13 +102,20 @@ export function GeneratedPostExportCard({
         ? "生成封面图"
         : "检测并生成封面";
   const statusTone = lifecycleWarning ? "red" : content.status === "draft" ? "amber" : "green";
-  const prepublishChecklist = buildPrepublishChecklist({
-    content,
-    imageReady: Boolean(imageAsset && imagePreviewUrl),
-    lifecycleWarning,
-    testDraft,
-    warnings
-  });
+  const prepublishChecklist = useMemo(
+    () => buildPrepublishChecklist({
+      content,
+      imageReady: Boolean(imageAsset && imagePreviewUrl),
+      lifecycleWarning,
+      testDraft,
+      warnings
+    }),
+    [content, imageAsset, imagePreviewUrl, lifecycleWarning, testDraft, warnings]
+  );
+  const promotionReadinessDraft = useMemo(
+    () => ({ body: content.body, tags: content.tags, title: content.title }),
+    [content.body, content.tags, content.title]
+  );
 
   useEffect(() => {
     currentContentIdRef.current = content.id;
@@ -128,6 +141,14 @@ export function GeneratedPostExportCard({
     manualCopyRef.current?.focus();
     manualCopyRef.current?.select();
   }, [manualCopyText]);
+
+  useEffect(() => {
+    activeRef.current = true;
+    return () => {
+      activeRef.current = false;
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   function authHeaders() {
     return {
@@ -169,10 +190,13 @@ export function GeneratedPostExportCard({
 
     setImageBusy(true);
     setImageError(null);
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
     try {
       const refreshedStatuses = imageProviderReady
         ? null
         : await onRefreshProviderStatuses();
+      if (!activeRef.current) return;
       const refreshedImageProviderReady = imageProviderReady ||
         hasLiveImageProvider(refreshedStatuses ?? []);
       if (!refreshedImageProviderReady) {
@@ -186,22 +210,30 @@ export function GeneratedPostExportCard({
           content_id: content.id,
           style_notes: coverStyleNotes,
           template: coverTemplate
-        })
+        }),
+        signal: abortController.signal
       });
+      if (!activeRef.current) return;
       if (!response.ok) {
         throw new Error(await readApiError(response, "封面图生成失败。"));
       }
-      const data = (await response.json()) as GeneratedImageAsset;
+      const rawCover: unknown = await response.json();
+      if (!activeRef.current) return;
+      if (!isGeneratedImageAsset(rawCover)) {
+        throw new Error("服务返回的封面图数据格式不正确。");
+      }
+      const data = rawCover;
       onImageGenerated(data);
       if (currentContentIdRef.current === data.content_id) {
         setImageAsset(data);
       }
     } catch (error) {
-      if (currentContentIdRef.current === requestContentId) {
+      if (error instanceof Error && error.name === "AbortError") return;
+      if (activeRef.current && currentContentIdRef.current === requestContentId) {
         setImageError(error instanceof Error ? error.message : "封面图生成失败。");
       }
     } finally {
-      if (currentContentIdRef.current === requestContentId) {
+      if (activeRef.current && currentContentIdRef.current === requestContentId) {
         setImageBusy(false);
       }
     }
@@ -280,11 +312,7 @@ export function GeneratedPostExportCard({
         <div className="mt-3 space-y-2 text-xs leading-5 text-muted">
           <PromotionReadinessSummary
             coverAvailable={Boolean(imageAsset && imagePreviewUrl)}
-            draft={{
-              body: content.body,
-              tags: content.tags,
-              title: content.title
-            }}
+            draft={promotionReadinessDraft}
             sourceContext={content.source_context}
             testId="pc-export-promotion-readiness"
           />
@@ -402,6 +430,8 @@ export function GeneratedPostExportCard({
               <img
                 alt="生成的封面图预览"
                 className={`${isDouyinPost ? "aspect-[9/16]" : "aspect-[3/4]"} w-full object-cover`}
+                decoding="async"
+                loading="lazy"
                 src={imagePreviewUrl}
               />
             </div>
@@ -426,4 +456,4 @@ export function GeneratedPostExportCard({
       </div>
     </div>
   );
-}
+});

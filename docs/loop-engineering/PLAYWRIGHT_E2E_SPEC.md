@@ -5,7 +5,7 @@ Codex should adapt this spec to the actual framework and DOM.
 ## Environment
 
 ```bash
-export OPC_BASE_URL=http://localhost:3000
+export OPC_BASE_URL=http://localhost:6000
 export OPC_TEST_USERNAME=admin
 export OPC_TEST_PASSWORD=admin
 ```

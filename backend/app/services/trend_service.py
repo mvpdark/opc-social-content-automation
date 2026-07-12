@@ -1,16 +1,24 @@
+import logging
 import re
+
+logger = logging.getLogger(__name__)
+
+
 from collections import Counter, defaultdict
 from urllib.parse import quote, urlparse
 
 from fastapi import HTTPException, status
-from sqlalchemy import desc, func, select
+from sqlalchemy import Select, desc, func, select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.models.knowledge_base import KnowledgeBase
+# 知识库已迁移到 ZSCJ，SSB 不再本地写入
+# from app.models.knowledge_base import KnowledgeBase
 from app.models.trend_collection_job import TrendCollectionJob
 from app.models.trend_content import TrendContent
 from app.models.user import User
-from app.schemas.knowledge import KnowledgeUploadRequest
+# 知识库已迁移到 ZSCJ，SSB 不再本地写入
+# from app.schemas.knowledge import KnowledgeUploadRequest
 from app.schemas.trend import (
     KeywordAnalysisItem,
     PlatformSearchTarget,
@@ -22,8 +30,15 @@ from app.schemas.trend import (
     TrendLinkImportRequest,
     TrendLinkImportTarget,
 )
-from app.services.image_service import localize_image_url
-from app.services.knowledge_service import create_knowledge_item
+from app.services.image_service import _cleanup_local_image_file, localize_image_url
+# 知识库已迁移到 ZSCJ，SSB 不再本地写入
+# from app.services.knowledge_service import create_knowledge_item
+
+
+def _escape_ilike(value: str) -> str:
+    """Escape special characters for SQLAlchemy ilike queries."""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
 
 TOKEN_RE = re.compile(r"[\w\u4e00-\u9fff]+", re.UNICODE)
 STOP_WORDS = {
@@ -277,8 +292,15 @@ def create_collection_job(
         },
     )
     db.add(job)
-    db.commit()
-    db.refresh(job)
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    try:
+        db.refresh(job)
+    except Exception:
+        logger.warning("db.refresh failed after successful commit", exc_info=True)
     return job
 
 
@@ -306,8 +328,14 @@ def list_collection_jobs(
     platform: str | None,
     status_filter: str | None,
     limit: int,
+    current_user: User,
 ) -> list[TrendCollectionJob]:
-    statement = select(TrendCollectionJob).order_by(desc(TrendCollectionJob.created_at)).limit(limit)
+    statement = (
+        select(TrendCollectionJob)
+        .where(TrendCollectionJob.requested_by == current_user.id)
+        .order_by(desc(TrendCollectionJob.created_at))
+        .limit(limit)
+    )
     if platform:
         statement = statement.where(TrendCollectionJob.platform == platform)
     if status_filter:
@@ -317,6 +345,7 @@ def list_collection_jobs(
 
 def ensure_trend_covers_are_local(db: Session, items: list[TrendContent]) -> None:
     changed = False
+    localized_urls: list[str] = []
     for item in items:
         if not item.cover_url or not item.cover_url.startswith(("http://", "https://")):
             continue
@@ -327,13 +356,26 @@ def ensure_trend_covers_are_local(db: Session, items: list[TrendContent]) -> Non
                 template="trend-cover",
             )
         except HTTPException:
+            logger.warning(
+                "ensure_trend_covers_are_local: failed to localize cover URL %s",
+                item.cover_url,
+                exc_info=True,
+            )
             continue
         if localized_url != item.cover_url:
             item.cover_url = localized_url
             changed = True
+            localized_urls.append(localized_url)
 
     if changed:
-        db.commit()
+        try:
+            with db.begin_nested():
+                db.flush()
+        except Exception:
+            logger.warning("ensure_trend_covers_are_local flush failed", exc_info=True)
+            for url in localized_urls:
+                _cleanup_local_image_file(url)
+            raise
 
 
 def create_trend_asset(
@@ -341,34 +383,105 @@ def create_trend_asset(
     payload: TrendCollectRequest,
     current_user: User,
 ) -> TrendContent:
-    _ = current_user
-    item = TrendContent(**payload.model_dump())
+    # 规范化 URL：空字符串视为 None，避免 url="" 与 url=None 去重不一致。
+    normalized_url = payload.url.strip() if payload.url else None
+    # 当 url 为 None 时，TrendContent.url == None 会生成 IS NULL，
+    # 匹配任意 url 为 NULL 的记录，导致错误去重。
+    # 因此 url 为 None 时改用 title + platform + user_id 组合去重。
+    if normalized_url:
+        existing = db.scalar(
+            select(TrendContent).where(
+                TrendContent.url == normalized_url,
+                TrendContent.user_id == current_user.id,
+            )
+        )
+    else:
+        existing = db.scalar(
+            select(TrendContent).where(
+                TrendContent.title == payload.title,
+                TrendContent.platform == payload.platform,
+                TrendContent.user_id == current_user.id,
+            )
+        )
+    if existing:
+        return existing
+    item = TrendContent(**payload.model_dump(), user_id=current_user.id)
+    item.url = normalized_url
     db.add(item)
-    db.commit()
-    db.refresh(item)
+    try:
+        db.commit()
+    except IntegrityError:
+        # 并发去重竞态：另一个请求已抢先插入相同记录。
+        # 回滚后重新查询已有记录并返回它。
+        db.rollback()
+        if normalized_url:
+            existing = db.scalar(
+                select(TrendContent).where(
+                    TrendContent.url == normalized_url,
+                    TrendContent.user_id == current_user.id,
+                )
+            )
+        else:
+            existing = db.scalar(
+                select(TrendContent).where(
+                    TrendContent.title == payload.title,
+                    TrendContent.platform == payload.platform,
+                    TrendContent.user_id == current_user.id,
+                )
+            )
+        if existing:
+            return existing
+        raise
+    except Exception:
+        db.rollback()
+        raise
+    try:
+        db.refresh(item)
+    except Exception:
+        logger.warning("db.refresh failed after successful commit", exc_info=True)
     return item
 
 
 def delete_trend_asset(db: Session, trend_id: int, current_user: User) -> None:
-    _ = current_user
-    item = db.get(TrendContent, trend_id)
+    item = db.scalar(
+        select(TrendContent).where(
+            TrendContent.id == trend_id,
+            TrendContent.user_id == current_user.id,
+        )
+    )
     if item is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="未找到采集素材。",
+            detail="未找到采集素材或无权操作。",
         )
+    # 保存封面 URL，事务提交成功后清理本地化封面图片
+    cover_url = item.cover_url
     db.delete(item)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    # 事务提交成功后清理本地化封面图片文件
+    if cover_url:
+        try:
+            _cleanup_local_image_file(cover_url)
+        except Exception:
+            logger.warning(
+                "delete_trend_asset: failed to cleanup local cover image %s",
+                cover_url,
+                exc_info=True,
+            )
 
 
-def _trend_filter_statement(payload: TrendKnowledgeDigestRequest):
-    statement = select(TrendContent).order_by(desc(TrendContent.created_at))
+def _trend_filter_statement(payload: TrendKnowledgeDigestRequest, user_id: int) -> Select[tuple[TrendContent]]:
+    statement = select(TrendContent).where(TrendContent.user_id == user_id).order_by(desc(TrendContent.created_at))
     if payload.trend_ids:
         statement = statement.where(TrendContent.id.in_(payload.trend_ids))
     elif payload.keyword:
-        pattern = f"%{payload.keyword}%"
+        pattern = f"%{_escape_ilike(payload.keyword)}%"
         statement = statement.where(
-            TrendContent.title.ilike(pattern) | TrendContent.content.ilike(pattern)
+            TrendContent.title.ilike(pattern, escape="\\") | TrendContent.content.ilike(pattern, escape="\\")
         )
     if payload.platform:
         statement = statement.where(TrendContent.platform == payload.platform)
@@ -418,7 +531,7 @@ def render_trend_knowledge_digest(
         )
         author = item.author or "未知作者"
         url = item.url or "无来源链接"
-        excerpt = re.sub(r"\s+", " ", item.content).strip()[:260]
+        excerpt = re.sub(r"\s+", " ", item.content or "").strip()[:260]
         lines.extend(
             [
                 f"{index}. {item.title}",
@@ -448,26 +561,28 @@ def create_trend_knowledge_digest(
     payload: TrendKnowledgeDigestRequest,
     current_user: User,
 ) -> TrendKnowledgeDigestResponse:
-    _ = current_user
+    # 知识库已迁移到 ZSCJ，SSB 不再本地写入；
+    # current_user 用于未来恢复知识库写入时的归属校验。
     ensure_trend_sources_reviewed(payload.source_reviewed)
 
-    items = list(db.scalars(_trend_filter_statement(payload)).all())
+    items = list(db.scalars(_trend_filter_statement(payload, current_user.id)).all())
     title, content, source_ids = render_trend_knowledge_digest(items, payload)
-    knowledge: KnowledgeBase = create_knowledge_item(
-        db,
-        KnowledgeUploadRequest(
-            title=title,
-            content=content,
-            category=payload.category,
-        ),
-    )
+    # 知识库已迁移到 ZSCJ，SSB 不再本地写入
+    # knowledge: KnowledgeBase = create_knowledge_item(
+    #     db,
+    #     KnowledgeUploadRequest(
+    #         title=title,
+    #         content=content,
+    #         category=payload.category,
+    #     ),
+    # )
     return TrendKnowledgeDigestResponse(
-        knowledge_id=knowledge.id,
-        title=knowledge.title,
-        category=knowledge.category or payload.category,
+        knowledge_id=0,  # 知识库已迁移到 ZSCJ，本地不再写入
+        title=title,
+        category=payload.category,
         source_trend_ids=source_ids,
         item_count=len(source_ids),
-        content=knowledge.content,
+        content=content,
     )
 
 
@@ -479,17 +594,29 @@ def ensure_trend_sources_reviewed(source_reviewed: bool) -> None:
         )
 
 
-def trend_report(db: Session) -> dict[str, object]:
-    rows = db.execute(
-        select(
-            TrendContent.platform,
-            func.count(TrendContent.id),
-            func.coalesce(func.sum(TrendContent.likes), 0),
-            func.coalesce(func.sum(TrendContent.favorites), 0),
-            func.coalesce(func.sum(TrendContent.comments), 0),
-            func.coalesce(func.sum(TrendContent.shares), 0),
-        ).group_by(TrendContent.platform)
-    ).all()
+def trend_report(db: Session, user_id: int) -> dict[str, object]:
+    try:
+        statement = (
+            select(
+                TrendContent.platform,
+                func.count(TrendContent.id),
+                func.coalesce(func.sum(TrendContent.likes), 0),
+                func.coalesce(func.sum(TrendContent.favorites), 0),
+                func.coalesce(func.sum(TrendContent.comments), 0),
+                func.coalesce(func.sum(TrendContent.shares), 0),
+            ).group_by(TrendContent.platform)
+        )
+        statement = statement.where(TrendContent.user_id == user_id)
+        rows = db.execute(statement).all()
+    except SQLAlchemyError:
+        logger.error("trend_report 查询失败", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="趋势报告生成失败，请稍后重试",
+        )
+    except Exception:
+        logger.error("trend_report 发生非数据库异常", exc_info=True)
+        raise
     return {
         "platforms": [
             {
@@ -509,18 +636,30 @@ def analyze_keywords(
     db: Session,
     platform: str | None,
     limit: int,
+    user_id: int,
 ) -> list[KeywordAnalysisItem]:
     candidate_limit = min(max(limit * 20, 200), 2000)
-    statement = select(TrendContent).order_by(desc(TrendContent.created_at)).limit(candidate_limit)
-    if platform:
-        statement = statement.where(TrendContent.platform == platform)
-    items = db.scalars(statement).all()
+    try:
+        statement = select(TrendContent).where(TrendContent.user_id == user_id)
+        if platform:
+            statement = statement.where(TrendContent.platform == platform)
+        statement = statement.order_by(desc(TrendContent.created_at)).limit(candidate_limit)
+        items = db.scalars(statement).all()
+    except SQLAlchemyError:
+        logger.error("analyze_keywords 查询失败", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="关键词分析失败，请稍后重试",
+        )
+    except Exception:
+        logger.error("analyze_keywords 发生非数据库异常", exc_info=True)
+        raise
 
     counts: Counter[str] = Counter()
     platforms: dict[str, set[str]] = defaultdict(set)
     for item in items:
         tokens = list(item.tags or [])
-        tokens.extend(TOKEN_RE.findall(f"{item.title} {item.content}".lower()))
+        tokens.extend(TOKEN_RE.findall(f"{item.title or ''} {item.content or ''}".lower()))
         for token in tokens:
             normalized = token.strip("#").lower()
             if len(normalized) < 2 or normalized in STOP_WORDS:

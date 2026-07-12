@@ -1,5 +1,7 @@
 "use client";
 
+import { memo, useCallback, type ChangeEvent } from "react";
+
 import { Loader2, Sparkles } from "lucide-react";
 
 import { MobileSourceEvidencePanel } from "@/components/mobile-source-evidence-panel";
@@ -38,7 +40,7 @@ interface FormPanelProps {
   staleMobileDraftMessage: string | null;
 }
 
-export function FormPanel(props: FormPanelProps) {
+export const FormPanel = memo(function FormPanel(props: FormPanelProps) {
   const {
     topic,
     onTopicChange,
@@ -68,19 +70,29 @@ export function FormPanel(props: FormPanelProps) {
     staleMobileDraftMessage
   } = props;
 
+  const handleTopicChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    onTopicChange(event.target.value);
+  }, [onTopicChange]);
+
+  const handleTargetAudienceChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    onTargetAudienceChange(event.target.value);
+  }, [onTargetAudienceChange]);
+
+  const handleTagsChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    onTagsChange(event.target.value);
+  }, [onTagsChange]);
+
   return (
     <MobilePanel
       title="一键生成"
-      action={<span className="rounded-full bg-[#e7f2ea]/[0.90] px-2.5 py-1 text-xs font-black text-moss">撰稿 + 封面</span>}
+      action={<span className="rounded-full bg-sage/[0.90] px-2.5 py-1 text-xs font-black text-moss">撰稿 + 封面</span>}
     >
       <label className="block">
         <span className="text-xs font-medium text-muted">选题</span>
         <input
           className="mt-2 h-12 w-full rounded-full border border-white/[0.84] bg-[rgba(255,253,247,0.88)] px-4 text-sm font-medium text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.86)] outline-none focus:border-moss focus:ring-2 focus:ring-moss/[0.15]"
           data-testid="mobile-topic"
-          onChange={(event) => {
-            onTopicChange(event.target.value);
-          }}
+          onChange={handleTopicChange}
           value={topic}
         />
       </label>
@@ -134,7 +146,7 @@ export function FormPanel(props: FormPanelProps) {
         <input
           className="mt-2 h-12 w-full rounded-full border border-white/[0.84] bg-[rgba(255,253,247,0.88)] px-4 text-sm font-medium text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.86)] outline-none focus:border-moss focus:ring-2 focus:ring-moss/[0.15]"
           data-testid="mobile-audience"
-          onChange={(event) => onTargetAudienceChange(event.target.value)}
+          onChange={handleTargetAudienceChange}
           value={targetAudience}
         />
       </label>
@@ -183,13 +195,13 @@ export function FormPanel(props: FormPanelProps) {
         <input
           className="mt-2 h-11 w-full rounded-full border border-white/[0.84] bg-[rgba(255,253,247,0.88)] px-4 text-sm font-medium text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.86)] outline-none focus:border-moss focus:ring-2 focus:ring-moss/[0.15]"
           data-testid="mobile-tags"
-          onChange={(event) => onTagsChange(event.target.value)}
+          onChange={handleTagsChange}
           value={tagsText}
         />
       </label>
       <button
         aria-label="一键完成撰稿和封面图"
-        className="mt-4 flex h-[54px] w-full touch-manipulation items-center justify-center gap-2 rounded-full bg-[#ff2442] text-sm font-black text-white shadow-[0_16px_34px_rgba(255,36,66,0.22)] active:scale-[0.99] disabled:opacity-60"
+        className="mt-4 flex h-[54px] w-full touch-manipulation items-center justify-center gap-2 rounded-full bg-coral text-sm font-black text-white shadow-[0_16px_34px_rgba(255,36,66,0.22)] active:scale-[0.99] disabled:opacity-60"
         data-testid="mobile-generate-draft"
         disabled={mobileGenerateDraftDisabled}
         onClick={onGenerate}
@@ -207,11 +219,11 @@ export function FormPanel(props: FormPanelProps) {
       </button>
       {busy || progressPercent === 100 || progressLabel === "生成失败" ? (
         <div className="mt-3" data-testid="mobile-generation-progress">
-          <div className="h-2 overflow-hidden rounded-full bg-[#eadfd6]">
+          <div className="h-2 overflow-hidden rounded-full bg-sand">
             <div
               className={[
                 "h-full rounded-full transition-all duration-500",
-                progressLabel === "生成失败" ? "bg-coral" : "bg-[#ff2442]"
+                progressLabel === "生成失败" ? "bg-coral" : "bg-coral"
               ].join(" ")}
               style={{ width: `${progressPercent}%` }}
             />
@@ -224,7 +236,7 @@ export function FormPanel(props: FormPanelProps) {
       ) : null}
       {staleMobileDraftMessage ? (
         <div
-          className="mt-3 rounded-[18px] border border-[#ffcfda] bg-[#fff4f6] px-3 py-2 text-xs font-bold leading-5 text-[#a2152c]"
+          className="mt-3 rounded-[18px] border border-coral/30 bg-blush px-3 py-2 text-xs font-bold leading-5 text-coral"
           data-testid="mobile-stale-draft-warning"
         >
           {staleMobileDraftMessage}
@@ -235,4 +247,4 @@ export function FormPanel(props: FormPanelProps) {
       </p>
     </MobilePanel>
   );
-}
+});

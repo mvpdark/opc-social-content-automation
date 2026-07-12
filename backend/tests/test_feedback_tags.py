@@ -162,6 +162,7 @@ def test_get_feedback_tag_stats_returns_distribution() -> None:
             body="正文",
             tags=["测试"],
             status="draft",
+            user_id=1,
         )
         db.add(content)
         db.flush()
@@ -199,7 +200,7 @@ def test_get_feedback_tag_stats_returns_distribution() -> None:
         )
         db.commit()
 
-        stats = get_feedback_tag_stats(db, limit=100)
+        stats = get_feedback_tag_stats(db, limit=100, user_id=1)
         assert stats.total_reviews == 2  # 只统计有 feedback_category 的记录
         tone_stats = next(c for c in stats.categories if c.category == "tone")
         assert tone_stats.total == 2

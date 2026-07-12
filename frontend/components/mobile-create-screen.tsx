@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
 import {
@@ -11,6 +11,7 @@ import {
 import { resolveAssetUrl } from "@/lib/asset-url";
 import { addMobileBackHandler } from "@/lib/mobile-back-navigation";
 import {
+  isGeneratedImageAsset,
   sourceContextMatchesKnowledgeQuery,
   type GeneratedContent,
   type GeneratedImageAsset,
@@ -22,7 +23,7 @@ import {
   type GeneratedContentInputSignature
 } from "@/lib/generation-input-signature";
 import { tagsMatchText } from "@/lib/tags";
-import { type DraftPreviewState } from "@/lib/mobile-draft-storage";
+import { saveStoredMobileCover, saveStoredMobileDraftPreview, loadStoredMobileDraftPreview, type DraftPreviewState } from "@/lib/mobile-draft-storage";
 import {
   TOPIC_PRESET_REFRESH_MS,
   buildCustomTopicAudience,
@@ -43,7 +44,16 @@ import {
   shortPostDraftTone,
   xhsMobileDraftTone
 } from "@/components/mobile-create-utils";
-import { type CredentialSettings, type MobilePlatform } from "@/lib/mobile-runtime";
+import {
+  authHeaders,
+  readApiError,
+  type CredentialSettings,
+  type MobilePlatform
+} from "@/lib/mobile-runtime";
+import {
+  buildMobileCoverImageRequestPayload,
+  buildMobileCoverStyleNotes
+} from "@/components/mobile-create-utils";
 
 import { useDraftHistory } from "./mobile-create/use-draft-history";
 import { useCoverHydration } from "./mobile-create/use-cover-hydration";
@@ -53,7 +63,7 @@ import { HeroSection } from "./mobile-create/hero-section";
 import { FormPanel } from "./mobile-create/form-panel";
 import { DraftHistorySection } from "./mobile-create/draft-history-section";
 
-export function CreateScreen({
+export const CreateScreen = memo(function CreateScreen({
   active = true,
   apiBase,
   credentials,
@@ -80,9 +90,10 @@ export function CreateScreen({
   const [sourceContext, setSourceContext] = useState<GenerationSourceContext | null>(null);
   const [sourcePreviewBusy, setSourcePreviewBusy] = useState(false);
   const [sourcePreviewError, setSourcePreviewError] = useState<string | null>(null);
-  const [draftPreview, setDraftPreview] = useState<DraftPreviewState>(defaultMobileDraftPreview);
+  const [draftPreview, setDraftPreview] = useState<DraftPreviewState>(() => loadStoredMobileDraftPreview() ?? defaultMobileDraftPreview);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const activeRef = useRef(true);
 
   const draftHistory = useDraftHistory({
     apiBase,
@@ -96,9 +107,13 @@ export function CreateScreen({
     setPreviewOpen
   });
 
+  const selectedDraftItemsRef = useRef(draftHistory.selectedDraftItems);
+  selectedDraftItemsRef.current = draftHistory.selectedDraftItems;
+
   useCoverHydration({
     apiBase,
     platform,
+    credentials,
     onAction,
     draftHistoryReloadKey: draftHistory.draftHistoryReloadKey,
     setDraftHistory: draftHistory.setDraftHistory,
@@ -111,53 +126,95 @@ export function CreateScreen({
 
   const progress = useProgressCompletion(busy, onAction, platform);
 
-  const coverImageUrl = generatedCover ? resolveAssetUrl(generatedCover.image_url) : null;
-  const selectedProject = findEnabledMobileCreationProject(selectedProjectId);
-  const selectedTopicPreset = findGenerationTopicPresetByTopic(topic);
-  const generationKnowledgeQuery = selectedTopicPreset?.knowledgeQuery ?? topic;
-  const sourceEvidenceRequired = generationTopicRequiresSourceEvidence({
-    knowledgeQuery: generationKnowledgeQuery,
-    preset: selectedTopicPreset,
-    tags: tagsText,
-    topic
-  });
-  const currentMobileGenerationInputSignature = buildGenerationInputSignature({
-    knowledgeQuery: generationKnowledgeQuery,
-    platform,
-    tagsText,
-    targetAudience,
-    tone: contentMode === "xiaohongshu" ? xhsMobileDraftTone : shortPostDraftTone,
-    topic
-  });
-  const generatedContentMatchesCurrentInputs = Boolean(
-    generatedContent &&
-      generatedContent.title === topic.trim() &&
-      generatedContent.platform === platform &&
-      tagsMatchText(generatedContent.tags, tagsText) &&
-      sourceContextMatchesKnowledgeQuery(generatedContent.source_context, generationKnowledgeQuery) &&
-      generatedContentInputSignatureMatches(
-        generatedContent.id,
-        generatedContentInputSignature,
-        currentMobileGenerationInputSignature
-      )
+  const coverImageUrl = useMemo(
+    () => (generatedCover ? resolveAssetUrl(generatedCover.image_url) : null),
+    [generatedCover]
   );
-  const staleMobileDraftMessage = buildStaleMobileDraftMessage(
-    generatedContent,
-    generatedContentMatchesCurrentInputs,
-    topic
+  const selectedProject = useMemo(
+    () => findEnabledMobileCreationProject(selectedProjectId),
+    [selectedProjectId]
   );
-  const matchingMobileSourceContext = sourceContextMatchesKnowledgeQuery(sourceContext, generationKnowledgeQuery)
-    ? sourceContext
-    : null;
-  const matchingMobileGeneratedSourceContext =
-    generatedContentMatchesCurrentInputs &&
-    sourceContextMatchesKnowledgeQuery(generatedContent?.source_context, generationKnowledgeQuery)
-      ? generatedContent?.source_context ?? null
-      : null;
-  const visibleMobileSourceContext =
-    matchingMobileSourceContext ?? matchingMobileGeneratedSourceContext;
-  const sourceEvidenceBlocked =
-    sourceEvidenceRequired && Boolean(sourcePreviewError) && !visibleMobileSourceContext;
+  const selectedTopicPreset = useMemo(
+    () => findGenerationTopicPresetByTopic(topic),
+    [topic]
+  );
+  const generationKnowledgeQuery = useMemo(
+    () => selectedTopicPreset?.knowledgeQuery ?? topic,
+    [selectedTopicPreset, topic]
+  );
+  const sourceEvidenceRequired = useMemo(
+    () =>
+      generationTopicRequiresSourceEvidence({
+        knowledgeQuery: generationKnowledgeQuery,
+        preset: selectedTopicPreset,
+        tags: tagsText,
+        topic
+      }),
+    [generationKnowledgeQuery, selectedTopicPreset, tagsText, topic]
+  );
+  const currentMobileGenerationInputSignature = useMemo(
+    () =>
+      buildGenerationInputSignature({
+        knowledgeQuery: generationKnowledgeQuery,
+        platform,
+        tagsText,
+        targetAudience,
+        tone: contentMode === "xiaohongshu" ? xhsMobileDraftTone : shortPostDraftTone,
+        topic
+      }),
+    [generationKnowledgeQuery, platform, tagsText, targetAudience, contentMode, topic]
+  );
+  const generatedContentMatchesCurrentInputs = useMemo(
+    () =>
+      Boolean(
+        generatedContent &&
+          generatedContent.title === topic.trim() &&
+          generatedContent.platform === platform &&
+          tagsMatchText(generatedContent.tags, tagsText) &&
+          sourceContextMatchesKnowledgeQuery(generatedContent.source_context, generationKnowledgeQuery) &&
+          generatedContentInputSignatureMatches(
+            generatedContent.id,
+            generatedContentInputSignature,
+            currentMobileGenerationInputSignature
+          )
+      ),
+    [
+      generatedContent,
+      topic,
+      platform,
+      tagsText,
+      generationKnowledgeQuery,
+      generatedContentInputSignature,
+      currentMobileGenerationInputSignature
+    ]
+  );
+  const staleMobileDraftMessage = useMemo(
+    () => buildStaleMobileDraftMessage(generatedContent, generatedContentMatchesCurrentInputs, topic),
+    [generatedContent, generatedContentMatchesCurrentInputs, topic]
+  );
+  const matchingMobileSourceContext = useMemo(
+    () =>
+      sourceContextMatchesKnowledgeQuery(sourceContext, generationKnowledgeQuery)
+        ? sourceContext
+        : null,
+    [sourceContext, generationKnowledgeQuery]
+  );
+  const matchingMobileGeneratedSourceContext = useMemo(
+    () =>
+      generatedContentMatchesCurrentInputs &&
+      sourceContextMatchesKnowledgeQuery(generatedContent?.source_context, generationKnowledgeQuery)
+        ? generatedContent?.source_context ?? null
+        : null,
+    [generatedContentMatchesCurrentInputs, generatedContent, generationKnowledgeQuery]
+  );
+  const visibleMobileSourceContext = useMemo(
+    () => matchingMobileSourceContext ?? matchingMobileGeneratedSourceContext,
+    [matchingMobileSourceContext, matchingMobileGeneratedSourceContext]
+  );
+  const sourceEvidenceBlocked = useMemo(
+    () => sourceEvidenceRequired && Boolean(sourcePreviewError) && !visibleMobileSourceContext,
+    [sourceEvidenceRequired, sourcePreviewError, visibleMobileSourceContext]
+  );
   const mobileGenerateDraftDisabled = busy || sourceEvidenceBlocked;
 
   const generationApi = useGenerationApi({
@@ -185,12 +242,27 @@ export function CreateScreen({
     onAction
   });
 
-  function clearMobileSourceEvidence() {
+  
+  // Persist draft preview edits to localStorage
+  useEffect(() => {
+    if (!draftPreview?.title && !draftPreview?.body) return;
+    const timer = setTimeout(() => saveStoredMobileDraftPreview(draftPreview), 500);
+    return () => clearTimeout(timer);
+  }, [draftPreview]);
+
+  useEffect(() => {
+    activeRef.current = true;
+    return () => {
+      activeRef.current = false;
+    };
+  }, []);
+
+const clearMobileSourceEvidence = useCallback(() => {
     setSourceContext(null);
     setSourcePreviewError(null);
-  }
+  }, []);
 
-  function updateMobileTopicAndAutoContext(nextTopic: string) {
+  const updateMobileTopicAndAutoContext = useCallback((nextTopic: string) => {
     const previousTopic = topic.trim();
     const previousTopicPreset = findGenerationTopicPresetByTopic(previousTopic);
     const nextTopicText = nextTopic.trim();
@@ -232,17 +304,17 @@ export function CreateScreen({
     } else if (previousTopicPreset && nextTopicText) {
       onAction(`已切换为自定义选题：${nextTopicText}`);
     }
-  }
+  }, [topic, onAction, clearMobileSourceEvidence]);
 
-  function applyMobileTopicPreset(preset: GenerationTopicPreset) {
+  const applyMobileTopicPreset = useCallback((preset: GenerationTopicPreset) => {
     setTopic(preset.topic);
     setTargetAudience(preset.audience);
     setTagsText(preset.tags);
     clearMobileSourceEvidence();
     onAction(`已套用推荐选题：${preset.topic}`);
-  }
+  }, [onAction, clearMobileSourceEvidence]);
 
-  function refreshMobileTopicPresets(manual = false) {
+  const refreshMobileTopicPresets = useCallback((manual = false) => {
     setVisibleTopicPresets((currentPresets) =>
       pickGenerationTopicPresetBatch({
         currentTopic: topic,
@@ -252,31 +324,34 @@ export function CreateScreen({
     if (manual) {
       onAction("已刷新推荐选题。");
     }
-  }
+  }, [topic, onAction]);
 
-  function handlePlatformChange(nextPlatform: MobilePlatform) {
+  const handlePlatformChange = useCallback((nextPlatform: MobilePlatform) => {
     setPlatform(nextPlatform);
     clearMobileSourceEvidence();
     onAction(nextPlatform === "xiaohongshu" ? "已切换到小红书生成。" : "已切换到抖音生成。");
-  }
+  }, [onAction, clearMobileSourceEvidence]);
 
-  function handleContentModeChange(nextMode: "short" | "xiaohongshu") {
+  const handleContentModeChange = useCallback((nextMode: "short" | "xiaohongshu") => {
     setContentMode(nextMode);
     onAction(nextMode === "xiaohongshu" ? "已切换到小红书图文版式。" : "已切换到短段正文版式。");
-  }
+  }, [onAction]);
 
-  function handleTagsChange(value: string) {
+  const handleTagsChange = useCallback((value: string) => {
     setTagsText(value);
     clearMobileSourceEvidence();
-  }
+  }, [clearMobileSourceEvidence]);
 
   const {
     percent: heroProgressPercent,
     label: heroProgressLabel,
     value: heroProgressValue
-  } = buildMobileHeroProgressState(busy, progress.progressPercent, progress.progressLabel, generatedContentMatchesCurrentInputs);
+  } = useMemo(
+    () => buildMobileHeroProgressState(busy, progress.progressPercent, progress.progressLabel, generatedContentMatchesCurrentInputs),
+    [busy, progress.progressPercent, progress.progressLabel, generatedContentMatchesCurrentInputs]
+  );
 
-  function enterProject(projectId: MobileCreationProjectId) {
+  const enterProject = useCallback((projectId: MobileCreationProjectId) => {
     const project = findEnabledMobileCreationProject(projectId);
     if (!project) {
       onAction("这个项目还在规划中，暂时不能进入。");
@@ -284,19 +359,89 @@ export function CreateScreen({
     }
     setSelectedProjectId(project.id);
     onAction(`已进入${project.title}，可以开始生成图文和封面。`);
-  }
+  }, [onAction]);
 
-  function returnToProjects() {
+  const returnToProjects = useCallback(() => {
     setSelectedProjectId(null);
     onAction("已返回创作项目卡片。");
-  }
+  }, [onAction]);
+
+  const handleClosePreview = useCallback(() => {
+    setPreviewOpen(false);
+  }, []);
+
+  const handleDeleteSelected = useCallback(() => {
+    draftHistory.deleteSelectedDraftHistoryItems(selectedDraftItemsRef.current);
+  }, [draftHistory.deleteSelectedDraftHistoryItems]);
+
+  const handlePinToggle = useCallback(() => {
+    const items = selectedDraftItemsRef.current;
+    const item = items[0] ?? null;
+    if (items.length === 1 && item) {
+      draftHistory.toggleDraftPin(item);
+    }
+  }, [draftHistory.toggleDraftPin]);
+
+  const [regeneratingImage, setRegeneratingImage] = useState(false);
+  const regenerateImageAbortRef = useRef<AbortController | null>(null);
+  useEffect(() => {
+    return () => {
+      regenerateImageAbortRef.current?.abort();
+    };
+  }, []);
+  const handleRegenerateImage = useCallback(async () => {
+    const contentId = generatedContent?.id;
+    if (!contentId || regeneratingImage) return;
+    setRegeneratingImage(true);
+    onAction("正在重新生成封面图……");
+    regenerateImageAbortRef.current?.abort();
+    const controller = new AbortController();
+    regenerateImageAbortRef.current = controller;
+    try {
+      const coverStyleNotes = buildMobileCoverStyleNotes(platform, topic);
+      const imageResponse = await fetch(`${apiBase}/image/generate`, {
+        method: "POST",
+        headers: authHeaders(credentials),
+        body: JSON.stringify(
+          buildMobileCoverImageRequestPayload(platform, contentId, coverStyleNotes)
+        ),
+        signal: controller.signal
+      });
+      if (!imageResponse.ok) {
+        throw new Error(
+          `封面图重新生成失败：${await readApiError(imageResponse, "封面图生成失败。")}`
+        );
+      }
+      const rawCover: unknown = await imageResponse.json();
+      if (!isGeneratedImageAsset(rawCover)) {
+        throw new Error("服务返回的封面图数据格式不正确。");
+      }
+      if (!activeRef.current) return;
+      setGeneratedCover(rawCover);
+      saveStoredMobileCover(rawCover);
+      if (generatedContent) {
+        draftHistory.syncDraftIntoHistory(generatedContent, rawCover);
+      }
+      onAction("封面图已重新生成。");
+    } catch (error) {
+      if (controller.signal.aborted || !activeRef.current) return;
+      onAction(error instanceof Error ? error.message : "封面图重新生成失败。");
+    } finally {
+      if (activeRef.current) {
+        setRegeneratingImage(false);
+      }
+    }
+  }, [generatedContent, regeneratingImage, platform, topic, apiBase, credentials, onAction, draftHistory.syncDraftIntoHistory]);
+
+  const refreshPresetsRef = useRef(refreshMobileTopicPresets);
+  refreshPresetsRef.current = refreshMobileTopicPresets;
 
   useEffect(() => {
     const refreshTimer = window.setInterval(() => {
-      refreshMobileTopicPresets();
+      refreshPresetsRef.current();
     }, TOPIC_PRESET_REFRESH_MS);
     return () => window.clearInterval(refreshTimer);
-  }, [topic]);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.isSecureContext || !("serviceWorker" in navigator)) {
@@ -328,6 +473,17 @@ export function CreateScreen({
       return false;
     });
   }, [active, onAction, previewOpen, draftHistory.selectedDraftIds.length, selectedProjectId]);
+
+  // Auto-load source preview when knowledge query changes (topic selection)
+  const autoPreviewRef = useRef(generationApi.previewMobileSourceContext);
+  autoPreviewRef.current = generationApi.previewMobileSourceContext;
+  useEffect(() => {
+    if (!generationKnowledgeQuery.trim()) return;
+    const timer = window.setTimeout(() => {
+      void autoPreviewRef.current();
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [generationKnowledgeQuery]);
 
   if (!selectedProject) {
     return (
@@ -397,13 +553,8 @@ export function CreateScreen({
         selectedDraftIds={draftHistory.selectedDraftIds}
         selectionMode={draftHistory.selectionMode}
         onCancelSelection={draftHistory.cancelDraftSelection}
-        onDeleteSelected={() => draftHistory.deleteSelectedDraftHistoryItems(draftHistory.selectedDraftItems)}
-        onPinToggle={() => {
-          const item = draftHistory.selectedDraftItems[0] ?? null;
-          if (draftHistory.selectedDraftItems.length === 1 && item) {
-            draftHistory.toggleDraftPin(item);
-          }
-        }}
+        onDeleteSelected={handleDeleteSelected}
+        onPinToggle={handlePinToggle}
         selectedCount={draftHistory.selectedDraftItems.length}
         selectedItem={draftHistory.selectedDraftItems.length === 1 ? draftHistory.selectedDraftItems[0] : null}
         previewOpen={previewOpen}
@@ -411,10 +562,11 @@ export function CreateScreen({
         draft={draftPreview}
         generatedContent={generatedContent}
         onDraftChange={setDraftPreview}
-        onPreviewClose={() => setPreviewOpen(false)}
+        onPreviewClose={handleClosePreview}
         onCopy={generationApi.copyDraft}
         onExportStatus={onAction}
+        onRegenerateImage={handleRegenerateImage}
       />
     </div>
   );
-}
+});

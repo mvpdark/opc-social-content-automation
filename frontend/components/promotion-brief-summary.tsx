@@ -1,9 +1,12 @@
+"use client";
+
+import { memo } from "react";
 import {
   promotionBriefDisplayItems,
   type GenerationSourceContext
 } from "@/lib/generated-assets";
 
-export function PromotionBriefSummary({
+export const PromotionBriefSummary = memo(function PromotionBriefSummary({
   sourceContext,
   testId,
   variant = "desktop"
@@ -43,4 +46,4 @@ export function PromotionBriefSummary({
       </dl>
     </section>
   );
-}
+});

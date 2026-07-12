@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 
 export type PlatformId = "xiaohongshu" | "douyin";
 
@@ -25,7 +25,7 @@ export function isPlatformId(platform: string): platform is PlatformId {
   return platform === "xiaohongshu" || platform === "douyin";
 }
 
-export function PlatformIcon({
+export const PlatformIcon = memo(function PlatformIcon({
   className = "",
   platform,
   size = "md"
@@ -46,12 +46,12 @@ export function PlatformIcon({
       ].join(" ")}
       title={meta.label}
     >
-      <img alt="" className="h-full w-full object-contain" src={meta.iconSrc} />
+      <img alt="" className="h-full w-full object-contain" loading="lazy" decoding="async" src={meta.iconSrc} />
     </span>
   );
-}
+});
 
-export function PlatformLabel({
+export const PlatformLabel = memo(function PlatformLabel({
   children,
   className = "",
   iconClassName = "",
@@ -74,4 +74,4 @@ export function PlatformLabel({
       <span>{children ?? `${meta.label}${suffix}`}</span>
     </span>
   );
-}
+});

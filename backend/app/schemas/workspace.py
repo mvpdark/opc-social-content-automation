@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class ExportRequest(BaseModel):
-    content_ids: list[int] = Field(default_factory=list)
+    content_ids: list[int] = Field(default_factory=list, max_length=100)
     format: str = Field(default="markdown", pattern="^(markdown|json|plain)$")
 
 
@@ -27,7 +27,7 @@ class ExportResponse(BaseModel):
 class PublishRecordCreate(BaseModel):
     content_id: int
     platform: str = Field(min_length=1, max_length=40)
-    external_url: str | None = Field(default=None, max_length=500)
+    external_url: str | None = Field(default=None, max_length=500, pattern=r"^https?://")
     status: str = Field(default="published", pattern="^published$")
 
 

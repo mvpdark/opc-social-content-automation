@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { playAudioUnlockTick, playCompletionChime } from "@/components/mobile-create-helpers";
 import {
@@ -27,11 +27,16 @@ export function useProgressCompletion(
   const lastProgressActionRef = useRef("");
   const audioContextRef = useRef<AudioContext | null>(null);
   const completionSoundReadyRef = useRef(false);
+  const onActionRef = useRef(onAction);
+  onActionRef.current = onAction;
 
   useEffect(() => {
     return () => {
       if (progressTimerRef.current) {
         clearInterval(progressTimerRef.current);
+      }
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+        void audioContextRef.current.close().catch(() => undefined);
       }
     };
   }, []);
@@ -47,24 +52,24 @@ export function useProgressCompletion(
     }
 
     lastProgressActionRef.current = message;
-    onAction(message);
-  }, [busy, onAction, progressLabel, progressPercent]);
+    onActionRef.current(message);
+  }, [busy, progressLabel, progressPercent]);
 
-  function stopProgressTimer() {
+  const stopProgressTimer = useCallback(() => {
     if (progressTimerRef.current) {
       clearInterval(progressTimerRef.current);
       progressTimerRef.current = null;
     }
-  }
+  }, []);
 
-  function setProgressStage(label: string, floor: number, ceiling: number) {
+  const setProgressStage = useCallback((label: string, floor: number, ceiling: number) => {
     progressLabelRef.current = label;
     progressCeilingRef.current = ceiling;
     setProgressLabel(label);
     setProgressPercent((current) => Math.max(current, floor));
-  }
+  }, []);
 
-  function startProgress(label: string) {
+  const startProgress = useCallback((label: string) => {
     stopProgressTimer();
     progressLabelRef.current = label;
     progressCeilingRef.current = MOBILE_GENERATE_PROGRESS_DEFAULT_CEILING;
@@ -82,16 +87,16 @@ export function useProgressCompletion(
         return next;
       });
     }, MOBILE_GENERATE_PROGRESS_INTERVAL_MS);
-  }
+  }, [stopProgressTimer]);
 
-  function finishProgress(label: string) {
+  const finishProgress = useCallback((label: string) => {
     stopProgressTimer();
     progressLabelRef.current = label;
     setProgressLabel(label);
     setProgressPercent(100);
-  }
+  }, [stopProgressTimer]);
 
-  function getCompletionAudioContext() {
+  const getCompletionAudioContext = useCallback(() => {
     if (typeof window === "undefined") {
       return null;
     }
@@ -111,9 +116,9 @@ export function useProgressCompletion(
       audioContextRef.current = new AudioContextCtor();
     }
     return audioContextRef.current;
-  }
+  }, []);
 
-  async function prepareCompletionFeedback() {
+  const prepareCompletionFeedback = useCallback(async () => {
     if (typeof window === "undefined") {
       return;
     }
@@ -128,6 +133,9 @@ export function useProgressCompletion(
         completionSoundReadyRef.current = true;
       }
     } catch (_error) {
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+        void audioContextRef.current.close().catch(() => undefined);
+      }
       audioContextRef.current = null;
       completionSoundReadyRef.current = false;
     }
@@ -135,9 +143,9 @@ export function useProgressCompletion(
     if ("Notification" in window && Notification.permission === "default") {
       void Notification.requestPermission().catch(() => undefined);
     }
-  }
+  }, [getCompletionAudioContext]);
 
-  async function playCompletionSound() {
+  const playCompletionSound = useCallback(async () => {
     const context = getCompletionAudioContext();
     if (!context) {
       return false;
@@ -154,12 +162,16 @@ export function useProgressCompletion(
       completionSoundReadyRef.current = true;
       return true;
     } catch (_error) {
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+        void audioContextRef.current.close().catch(() => undefined);
+      }
+      audioContextRef.current = null;
       completionSoundReadyRef.current = false;
       return false;
     }
-  }
+  }, [getCompletionAudioContext]);
 
-  async function showCompletionNotification(content: GeneratedContent) {
+  const showCompletionNotification = useCallback(async (content: GeneratedContent) => {
     if ("Notification" in window && Notification.permission === "granted") {
       const { title, options } = buildMobileCompletionNotificationOptions(platform, content.id);
 
@@ -177,18 +189,18 @@ export function useProgressCompletion(
         // Some mobile browsers only allow ServiceWorkerRegistration.showNotification().
       }
     }
-  }
+  }, [platform]);
 
-  async function notifyGenerationComplete(content: GeneratedContent) {
+  const notifyGenerationComplete = useCallback(async (content: GeneratedContent) => {
     const soundPlayed = await playCompletionSound();
-    if (navigator.vibrate) {
+    if (typeof navigator.vibrate === "function") {
       navigator.vibrate(MOBILE_COMPLETION_VIBRATION_PATTERN);
     }
     await showCompletionNotification(content);
     if (!soundPlayed && !completionSoundReadyRef.current) {
       onAction("已完成；提示音被浏览器拦截了，下次请先点一次一键生成按钮解锁声音。");
     }
-  }
+  }, [playCompletionSound, showCompletionNotification, onAction]);
 
   return {
     progressPercent,

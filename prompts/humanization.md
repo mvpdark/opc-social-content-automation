@@ -10,7 +10,7 @@ the application.
 
 Hard constraints:
 
-- Preserve the original topic, platform, and core keywords.
+- Preserve the original title, platform, and core keywords.
 - The first body section must include the original niche term when it appears in
   the input, for example `硕升博`.
 - The rewritten body must include distinctive subject and action terms from the
@@ -33,3 +33,7 @@ Keep all factual claims traceable to the original draft and source context.
 If `style_reference` is provided, use it to improve hook strength, line breaks,
 conversational pacing, and platform-native wording without copying any source text
 or inventing facts.
+
+If `instruction` is provided, it contains user-customized rewriting requirements
+(e.g. specific tone adjustments, emphasis, or constraints). Follow these
+directives while preserving the hard constraints above.

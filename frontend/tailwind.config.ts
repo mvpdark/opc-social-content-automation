@@ -12,8 +12,13 @@ const config: Config = {
         muted: "rgb(var(--muted) / <alpha-value>)",
         moss: "rgb(var(--moss) / <alpha-value>)",
         coral: "rgb(var(--coral) / <alpha-value>)",
+        blush: "rgb(var(--blush) / <alpha-value>)",
         steel: "rgb(var(--steel) / <alpha-value>)",
-        amber: "rgb(var(--amber) / <alpha-value>)"
+        amber: "rgb(var(--amber) / <alpha-value>)",
+        sand: "rgb(var(--sand) / <alpha-value>)",
+        sage: "rgb(var(--sage) / <alpha-value>)",
+        cream: "rgb(var(--cream) / <alpha-value>)",
+        shell: "rgb(var(--shell) / <alpha-value>)"
       },
       boxShadow: {
         soft: "0 18px 45px rgba(18, 49, 45, 0.08)",

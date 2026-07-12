@@ -10,7 +10,7 @@ import {
   type GenerationTopicPreset
 } from "../../lib/topic-presets";
 
-const BASE_URL = process.env.OPC_BASE_URL ?? "http://127.0.0.1:3000";
+const BASE_URL = process.env.OPC_BASE_URL ?? "http://127.0.0.1:6000";
 const BASE_ORIGIN = new URL(BASE_URL).origin;
 const USERNAME = process.env.OPC_TEST_USERNAME ?? "";
 const PASSWORD = process.env.OPC_TEST_PASSWORD ?? "";

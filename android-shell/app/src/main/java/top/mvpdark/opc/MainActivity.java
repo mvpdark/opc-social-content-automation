@@ -116,6 +116,10 @@ public class MainActivity extends Activity {
             cookieManager.setAcceptThirdPartyCookies(target, true);
         }
 
+        // Clear cached web content to prevent stale white-screen pages
+        target.clearCache(true);
+        target.clearHistory();
+
         target.setOverScrollMode(View.OVER_SCROLL_NEVER);
         target.addJavascriptInterface(new OmpcBridge(), "OMPCAndroid");
         target.setWebViewClient(new ShellWebViewClient());

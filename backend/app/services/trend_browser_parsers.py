@@ -1,11 +1,23 @@
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass, replace
-from datetime import UTC, datetime, timedelta
+try:
+    from datetime import UTC, datetime, timedelta
+except ImportError:
+    from datetime import datetime, timedelta, timezone
+    UTC = timezone.utc
 from typing import Any
 
+try:
+    from playwright.sync_api import Error as PlaywrightError
+except ImportError:  # pragma: no cover - Playwright is an optional dependency
+    PlaywrightError = ()  # type: ignore[assignment]
+
 from app.services.trend_browser_scripts import detail_visible_item_script
+
+logger = logging.getLogger(__name__)
 
 HASHTAG_RE = re.compile(r"[#＃]([\w\u4e00-\u9fff-]{2,40})", re.UNICODE)
 SPACE_RE = re.compile(r"\s+")
@@ -226,14 +238,20 @@ def _parse_xhs_publish_time(value: str, now: datetime | None = None) -> datetime
     full_date_match = re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", marker)
     if full_date_match:
         year, month, day = map(int, full_date_match.groups())
-        return datetime(year, month, day, tzinfo=UTC)
+        try:
+            return datetime(year, month, day, tzinfo=UTC)
+        except ValueError:
+            return None
     short_date_match = re.fullmatch(r"(\d{2})-(\d{2})", marker)
     if short_date_match:
         month, day = map(int, short_date_match.groups())
-        inferred = datetime(current.year, month, day, tzinfo=UTC)
-        if inferred > current + timedelta(days=1):
-            inferred = inferred.replace(year=current.year - 1)
-        return inferred
+        try:
+            inferred = datetime(current.year, month, day, tzinfo=UTC)
+            if inferred > current + timedelta(days=1):
+                inferred = inferred.replace(year=current.year - 1)
+            return inferred
+        except ValueError:
+            return None
     return None
 
 
@@ -449,7 +467,25 @@ def _enrich_assets_from_detail_pages(
                 enriched.append(_merge_detail_asset(asset, detail, keyword))
             else:
                 enriched.append(asset)
-        except Exception:
+        except PlaywrightError as exc:
+            logger.warning("Failed to enrich asset %s: %s", asset.url, exc)
+            enriched.append(asset)
+        except (TypeError, AttributeError, KeyError, ValueError) as exc:
+            logger.error(
+                "Programming error while enriching asset %s: %s: %s",
+                asset.url,
+                type(exc).__name__,
+                exc,
+                exc_info=True,
+            )
+            raise
+        except Exception as exc:
+            logger.warning(
+                "Failed to enrich asset %s: %s: %s",
+                asset.url,
+                type(exc).__name__,
+                exc,
+            )
             enriched.append(asset)
     return enriched
 

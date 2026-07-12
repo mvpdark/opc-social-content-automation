@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
 import { countMobileDraftsToday } from "@/components/mobile-draft-history";
@@ -58,39 +58,44 @@ export function useDraftHistory(params: UseDraftHistoryParams) {
   const [draftHistoryReloadKey, setDraftHistoryReloadKey] = useState(0);
   const [selectedDraftIds, setSelectedDraftIds] = useState<number[]>([]);
 
-  const todayDraftCount = countMobileDraftsToday(draftHistory);
-  const selectedDraftIdSet = new Set(selectedDraftIds);
-  const selectedDraftItems = draftHistory.filter((item) => selectedDraftIdSet.has(item.content.id));
+  const todayDraftCount = useMemo(() => countMobileDraftsToday(draftHistory), [draftHistory]);
+  const selectedDraftIdSet = useMemo(() => new Set(selectedDraftIds), [selectedDraftIds]);
+  const selectedDraftItems = useMemo(() => draftHistory.filter((item) => selectedDraftIdSet.has(item.content.id)), [draftHistory, selectedDraftIdSet]);
   const selectionMode = selectedDraftIds.length > 0;
 
-  function persistDraftHistory(nextItems: MobileDraftHistoryItem[]) {
+  const draftHistoryRef = useRef(draftHistory);
+  draftHistoryRef.current = draftHistory;
+  const selectionModeRef = useRef(selectionMode);
+  selectionModeRef.current = selectionMode;
+  const generatedContentRef = useRef(generatedContent);
+  generatedContentRef.current = generatedContent;
+  const activeRef = useRef(true);
+  const deleteDraftAbortRef = useRef<AbortController | null>(null);
+
+  const persistDraftHistory = useCallback(function persistDraftHistory(nextItems: MobileDraftHistoryItem[]) {
     const normalized = normalizeVisibleDraftHistory(nextItems);
     setDraftHistory(normalized);
     saveStoredMobileDraftHistory(normalized);
     return normalized;
-  }
+  }, []);
 
-  function syncDraftIntoHistory(content: GeneratedContent, cover: GeneratedImageAsset | null) {
+  const syncDraftIntoHistory = useCallback(function syncDraftIntoHistory(content: GeneratedContent, cover: GeneratedImageAsset | null) {
     setDraftHistoryError(null);
     const savedAt = content.created_at ?? new Date().toISOString();
-    let normalized: MobileDraftHistoryItem[] = [];
-    setDraftHistory((currentItems) => {
-      normalized = normalizeVisibleDraftHistory([
-        {
-          content,
-          cover,
-          pinned: false,
-          saved_at: savedAt
-        },
-        ...currentItems
-      ]);
-      saveStoredMobileDraftHistory(normalized);
-      return normalized;
-    });
-    return normalized;
-  }
+    const next = normalizeVisibleDraftHistory([
+      {
+        content,
+        cover,
+        pinned: false,
+        saved_at: savedAt
+      },
+      ...draftHistoryRef.current
+    ]);
+    setDraftHistory(next);
+    saveStoredMobileDraftHistory(next);
+  }, []);
 
-  function selectDraftHistoryItem(item: MobileDraftHistoryItem) {
+  const selectDraftHistoryItem = useCallback(function selectDraftHistoryItem(item: MobileDraftHistoryItem) {
     setGeneratedContent(item.content);
     setSourceContext(item.content.source_context ?? null);
     setDraftPreview(draftStateFromContent(item.content));
@@ -104,45 +109,45 @@ export function useDraftHistory(params: UseDraftHistoryParams) {
     }
     setPreviewOpen(true);
     onAction(`已打开草稿：${item.content.title}`);
-  }
+  }, [onAction]);
 
-  function toggleDraftSelection(item: MobileDraftHistoryItem) {
+  const toggleDraftSelection = useCallback(function toggleDraftSelection(item: MobileDraftHistoryItem) {
     setSelectedDraftIds((currentIds) =>
       currentIds.includes(item.content.id)
         ? currentIds.filter((contentId) => contentId !== item.content.id)
         : [...currentIds, item.content.id]
     );
-  }
+  }, []);
 
-  function beginDraftSelection(item: MobileDraftHistoryItem) {
+  const beginDraftSelection = useCallback(function beginDraftSelection(item: MobileDraftHistoryItem) {
     setSelectedDraftIds((currentIds) =>
       currentIds.includes(item.content.id) ? currentIds : [...currentIds, item.content.id]
     );
     onAction("已进入草稿多选模式。");
-  }
+  }, [onAction]);
 
-  function openOrToggleDraftHistoryItem(item: MobileDraftHistoryItem) {
-    if (selectionMode) {
+  const openOrToggleDraftHistoryItem = useCallback(function openOrToggleDraftHistoryItem(item: MobileDraftHistoryItem) {
+    if (selectionModeRef.current) {
       toggleDraftSelection(item);
       return;
     }
     selectDraftHistoryItem(item);
-  }
+  }, [selectDraftHistoryItem, toggleDraftSelection]);
 
-  function cancelDraftSelection() {
+  const cancelDraftSelection = useCallback(function cancelDraftSelection() {
     setSelectedDraftIds([]);
     onAction("已退出草稿多选模式。");
-  }
+  }, [onAction]);
 
-  function retryMobileDraftHistory() {
+  const retryMobileDraftHistory = useCallback(function retryMobileDraftHistory() {
     setDraftHistoryError(null);
     setDraftHistoryReloadKey((current) => current + 1);
     onAction("正在重新读取草稿历史。");
-  }
+  }, [onAction]);
 
-  function toggleDraftPin(item: MobileDraftHistoryItem) {
+  const toggleDraftPin = useCallback(function toggleDraftPin(item: MobileDraftHistoryItem) {
     persistDraftHistory(
-      draftHistory.map((draftItem) =>
+      draftHistoryRef.current.map((draftItem) =>
         draftItem.content.id === item.content.id
           ? { ...draftItem, pinned: !draftItem.pinned, saved_at: new Date().toISOString() }
           : draftItem
@@ -150,13 +155,13 @@ export function useDraftHistory(params: UseDraftHistoryParams) {
     );
     setSelectedDraftIds([]);
     onAction(item.pinned ? "已取消置顶草稿。" : "已置顶草稿。");
-  }
+  }, [persistDraftHistory, onAction]);
 
-  function applyDeletedDraftsToCurrentPreview(
+  const applyDeletedDraftsToCurrentPreview = useCallback(function applyDeletedDraftsToCurrentPreview(
     deletedIds: Set<number>,
     nextItems: MobileDraftHistoryItem[]
   ) {
-    if (generatedContent && deletedIds.has(generatedContent.id)) {
+    if (generatedContentRef.current && deletedIds.has(generatedContentRef.current.id)) {
       const nextItem = nextItems[0] ?? null;
       if (nextItem) {
         setGeneratedContent(nextItem.content);
@@ -180,9 +185,9 @@ export function useDraftHistory(params: UseDraftHistoryParams) {
         setPreviewOpen(false);
       }
     }
-  }
+  }, []);
 
-  async function deleteSelectedDraftHistoryItems(items: MobileDraftHistoryItem[]) {
+  const deleteSelectedDraftHistoryItems = useCallback(async function deleteSelectedDraftHistoryItems(items: MobileDraftHistoryItem[]) {
     if (!items.length) {
       return;
     }
@@ -191,11 +196,19 @@ export function useDraftHistory(params: UseDraftHistoryParams) {
     const failedIds: number[] = [];
     let failureMessage = "草稿删除失败，请稍后再试。";
 
+    deleteDraftAbortRef.current?.abort();
+    const deleteController = new AbortController();
+    deleteDraftAbortRef.current = deleteController;
+
     for (const item of items) {
+      if (!activeRef.current) {
+        break;
+      }
       try {
         const response = await fetch(`${apiBase}/content/${item.content.id}`, {
           headers: authHeaders(credentials),
-          method: "DELETE"
+          method: "DELETE",
+          signal: deleteController.signal
         });
         if (!response.ok && response.status !== 404) {
           throw new Error(await readApiError(response, failureMessage));
@@ -203,15 +216,20 @@ export function useDraftHistory(params: UseDraftHistoryParams) {
         rememberDeletedDraftId(item.content.id);
         deletedIds.push(item.content.id);
       } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") break;
         failedIds.push(item.content.id);
         failureMessage = error instanceof Error ? error.message : failureMessage;
       }
     }
 
+    if (!activeRef.current) {
+      return;
+    }
+
     if (deletedIds.length) {
       const deletedIdSet = new Set(deletedIds);
       const nextItems = persistDraftHistory(
-        draftHistory.filter((draftItem) => !deletedIdSet.has(draftItem.content.id))
+        draftHistoryRef.current.filter((draftItem) => !deletedIdSet.has(draftItem.content.id))
       );
       applyDeletedDraftsToCurrentPreview(deletedIdSet, nextItems);
     }
@@ -222,7 +240,14 @@ export function useDraftHistory(params: UseDraftHistoryParams) {
       return;
     }
     onAction(`已删除 ${deletedIds.length} 篇草稿，刷新后也不会再出现。`);
-  }
+  }, [apiBase, credentials, onAction, persistDraftHistory, applyDeletedDraftsToCurrentPreview]);
+
+  useEffect(() => {
+    return () => {
+      activeRef.current = false;
+      deleteDraftAbortRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     const visibleDraftIds = new Set(draftHistory.map((item) => item.content.id));

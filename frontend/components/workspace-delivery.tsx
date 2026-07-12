@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Image, PenLine } from "lucide-react";
 import { TrendCollectorPanel } from "@/components/trend-collector-panel";
 import {
@@ -14,7 +15,7 @@ import {
 import { subtleCardClass } from "./workspace-utils";
 import { IconBox, Panel, Pill, PlatformRecordBadge } from "./workspace-ui";
 
-export function ResearchView({
+export const ResearchView = memo(function ResearchView({
   onOpenSettings,
   workspaceToken
 }: {
@@ -38,9 +39,9 @@ export function ResearchView({
       </section>
     </div>
   );
-}
+});
 
-export function CoverView({ contentHref }: { contentHref: string }) {
+export const CoverView = memo(function CoverView({ contentHref }: { contentHref: string }) {
   return (
     <div className="workspace-cover-layout grid grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,0.9fr)_1fr]">
       <Panel
@@ -85,9 +86,9 @@ export function CoverView({ contentHref }: { contentHref: string }) {
       </div>
     </div>
   );
-}
+});
 
-export function DeliveryView() {
+export const DeliveryView = memo(function DeliveryView() {
   return (
     <div className="workspace-delivery-layout space-y-4">
       <Panel helper="没有已确认内容时保持禁用；确认后再生成复制包和发布记录。" title="发布动作">
@@ -158,9 +159,9 @@ export function DeliveryView() {
       </section>
     </div>
   );
-}
+});
 
-export function PublishingTable() {
+export const PublishingTable = memo(function PublishingTable() {
   return (
     <Panel helper="平台发布历史和当前确认状态。" title="发布记录">
       <div className="overflow-x-auto">
@@ -191,9 +192,9 @@ export function PublishingTable() {
       </div>
     </Panel>
   );
-}
+});
 
-export function ReferencePanel({
+export const ReferencePanel = memo(function ReferencePanel({
   helper,
   items,
   title
@@ -224,9 +225,9 @@ export function ReferencePanel({
       </div>
     </Panel>
   );
-}
+});
 
-export function SafetyGateList() {
+export const SafetyGateList = memo(function SafetyGateList() {
   return (
     <div className="glass-subtle grid grid-cols-1 divide-y divide-line rounded-md border">
       {safetyGates.map((gate, index) => (
@@ -240,16 +241,16 @@ export function SafetyGateList() {
       ))}
     </div>
   );
-}
+});
 
-export function CoverReferencePreview({ compact = false }: { compact?: boolean }) {
-  const routes = [
-    { label: "国内", detail: "周末 / 寒暑假" },
-    { label: "港澳", detail: "集中授课" },
-    { label: "海外", detail: "认证用途" },
-    { label: "合办", detail: "预算周期" }
-  ];
+const COVER_ROUTES = [
+  { label: "国内", detail: "周末 / 寒暑假" },
+  { label: "港澳", detail: "集中授课" },
+  { label: "海外", detail: "认证用途" },
+  { label: "合办", detail: "预算周期" }
+];
 
+export const CoverReferencePreview = memo(function CoverReferencePreview({ compact = false }: { compact?: boolean }) {
   return (
     <div
       className={[
@@ -271,7 +272,7 @@ export function CoverReferencePreview({ compact = false }: { compact?: boolean }
         再判断
       </div>
       <div className={["grid grid-cols-2 gap-2 text-xs font-semibold", compact ? "mt-5" : "mt-8"].join(" ")}>
-        {routes.map((route, index) => (
+        {COVER_ROUTES.map((route, index) => (
           <div key={`route-card-${index}-${route.label}`} className="rounded-md border border-white/80 bg-white/85 px-3 py-2">
             <div className="text-ink">{route.label}</div>
             <div className="mt-1 text-[11px] font-medium text-ink/55">{route.detail}</div>
@@ -283,4 +284,4 @@ export function CoverReferencePreview({ compact = false }: { compact?: boolean }
       </div>
     </div>
   );
-}
+});

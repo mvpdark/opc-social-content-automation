@@ -23,15 +23,16 @@ export function playAudioUnlockTick(context: AudioContext) {
   oscillator.stop(now + 0.03);
 }
 
+const COMPLETION_CHIME_NOTES = [
+  { delay: 0, duration: 0.14, frequency: 659.25, volume: 0.22 },
+  { delay: 0.15, duration: 0.16, frequency: 783.99, volume: 0.24 },
+  { delay: 0.32, duration: 0.28, frequency: 1046.5, volume: 0.2 }
+] as const;
+
 export function playCompletionChime(context: AudioContext) {
   const now = context.currentTime;
-  const notes = [
-    { delay: 0, duration: 0.14, frequency: 659.25, volume: 0.22 },
-    { delay: 0.15, duration: 0.16, frequency: 783.99, volume: 0.24 },
-    { delay: 0.32, duration: 0.28, frequency: 1046.5, volume: 0.2 }
-  ];
 
-  notes.forEach((note) => {
+  COMPLETION_CHIME_NOTES.forEach((note) => {
     const startAt = now + note.delay;
     const gain = context.createGain();
     const oscillator = context.createOscillator();

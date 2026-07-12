@@ -7,6 +7,7 @@ codex_test 模式下使用本地模板生成变体；openai_compatible 模式下
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 
 from fastapi import HTTPException, status
@@ -19,9 +20,11 @@ from app.models.content_variant import ContentVariant
 from app.models.user import User
 from app.schemas.content_variant import SUPPORTED_VARIANT_TYPES, VariantGenerateRequest
 from app.services.content_prompt_builder import PromptPackage
-from app.services.content_service import record_generation_log
+from app.services.content_service import _safe_commit, record_generation_log
 from app.services.model_router import load_prompt, model_router
 from app.services.variant_scorer import clamp_score, score_variants
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "GeneratedVariant",
@@ -148,24 +151,48 @@ def generate_variants_for_content(
     payload: VariantGenerateRequest,
     current_user: User,
 ) -> list[ContentVariant]:
-    """为指定内容生成变体并评分入库。"""
+    """为指定内容生成变体并评分入库。
+
+    先创建所有变体记录并 flush，再记录生成日志，最后一次性 commit，
+    保证日志状态与变体记录在同一事务中提交，避免数据不一致。
+    """
     variant_count = payload.variant_count
     variant_types = payload.variant_types
 
-    prompt_template = load_prompt("draft_generation")
     prompt_payload = _build_variant_prompt_payload(content, variant_count, variant_types)
+    # Delay loading prompt template until needed (skip for codex_test)
+    prompt_template = "" if settings.draft_provider == "codex_test" else load_prompt("variant_generation")
     log_package = PromptPackage(
-        prompt_name="draft_generation",
+        prompt_name="variant_generation",
         prompt_template=prompt_template,
         payload=prompt_payload,
     )
 
+    result_text = ""
     try:
         if settings.draft_provider == "codex_test":
             generated = _codex_test_variants(content, variant_count, variant_types)
         else:
-            result_text = model_router.draft_model("draft_generation", prompt_payload)
+            result_text = model_router.draft_model("variant_generation", prompt_payload)
             generated = _parse_model_variants(result_text, variant_types)
+    except HTTPException as exc:
+        try:
+            record_generation_log(
+                db=db,
+                current_user=current_user,
+                purpose="variant_generation",
+                model="draft_model",
+                package=log_package,
+                result="",
+                log_status="provider_not_configured",
+                error=str(exc.detail),
+            )
+            _safe_commit(db)
+        except Exception:
+            logger.error("Failed to record generation log", exc_info=True)
+        raise
+    except Exception as exc:
+        try:
             record_generation_log(
                 db=db,
                 current_user=current_user,
@@ -173,22 +200,30 @@ def generate_variants_for_content(
                 model="draft_model",
                 package=log_package,
                 result=result_text,
-                status="success",
+                log_status="error",
+                error=str(exc),
             )
-    except HTTPException as exc:
-        record_generation_log(
-            db=db,
-            current_user=current_user,
-            purpose="variant_generation",
-            model="draft_model",
-            package=log_package,
-            result="",
-            status="provider_not_configured",
-            error=str(exc.detail),
-        )
+            _safe_commit(db)
+        except Exception:
+            logger.error("Failed to record generation log", exc_info=True)
         raise
 
     if not generated:
+        # 空结果：记录日志后提交，再抛出异常。
+        if settings.draft_provider != "codex_test":
+            try:
+                record_generation_log(
+                    db=db,
+                    current_user=current_user,
+                    purpose="variant_generation",
+                    model="draft_model",
+                    package=log_package,
+                    result=result_text,
+                    log_status="empty_result",
+                )
+                _safe_commit(db)
+            except Exception:
+                logger.error("Failed to record generation log", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="变体生成结果为空，请稍后重试或调整变体类型。",
@@ -201,6 +236,7 @@ def generate_variants_for_content(
     for text, variant_type, total, _breakdown in scored:
         score_map[(text, variant_type)] = total
 
+    # 先创建所有变体记录并 flush（不提交），确保日志与变体在同一事务中提交。
     saved: list[ContentVariant] = []
     for variant in generated:
         score = clamp_score(
@@ -215,16 +251,56 @@ def generate_variants_for_content(
         )
         db.add(record)
         saved.append(record)
-    db.commit()
+    try:
+        db.flush()
+    except Exception:
+        db.rollback()
+        logger.warning("Failed to flush variant records", exc_info=True)
+        raise
+
+    # 变体记录已 flush，现在记录生成日志，与变体记录在同一事务中提交。
+    if settings.draft_provider != "codex_test":
+        _gen_log = record_generation_log(
+            db=db,
+            current_user=current_user,
+            purpose="variant_generation",
+            model="draft_model",
+            package=log_package,
+            result=result_text,
+            log_status="success",
+        )
+        if _gen_log is None:
+            logger.warning("record_generation_log returned None for variant_generation (user=%s)", current_user.id)
+
+    # 一次性提交：生成日志 + 变体记录，保证数据一致性。
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.warning(
+            "Failed to commit variant records and generation log",
+            exc_info=True,
+        )
+        raise
     for record in saved:
-        db.refresh(record)
+        try:
+            db.refresh(record)
+        except Exception:
+            logger.warning("Failed to refresh variant record", exc_info=True)
     return saved
 
 
-def list_variants_for_content(db: Session, content_id: int) -> list[ContentVariant]:
+def list_variants_for_content(
+    db: Session, content_id: int, user_id: int
+) -> list[ContentVariant]:
+    # Defense-in-depth: only return variants whose content belongs to the user.
+    user_content_ids = select(Content.id).where(Content.user_id == user_id)
     statement = (
         select(ContentVariant)
-        .where(ContentVariant.content_id == content_id)
+        .where(
+            ContentVariant.content_id == content_id,
+            ContentVariant.content_id.in_(user_content_ids),
+        )
         .order_by(
             ContentVariant.variant_type,
             desc(ContentVariant.score),
@@ -234,23 +310,47 @@ def list_variants_for_content(db: Session, content_id: int) -> list[ContentVaria
     return list(db.scalars(statement).all())
 
 
-def select_variant(db: Session, content_id: int, variant_id: int) -> ContentVariant:
-    variant = db.get(ContentVariant, variant_id)
+def select_variant(
+    db: Session, content_id: int, variant_id: int, user_id: int
+) -> ContentVariant:
+    variant = db.get(ContentVariant, variant_id, with_for_update=True)
     if variant is None or variant.content_id != content_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="未找到这个变体。",
         )
+    # Defense-in-depth: verify the variant's content belongs to the user.
+    owner_check = db.scalar(
+        select(Content.id).where(
+            Content.id == content_id, Content.user_id == user_id
+        )
+    )
+    if owner_check is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="未找到这个变体。",
+        )
     # 同一内容下同一类型的其他变体取消选中。
-    statement = select(ContentVariant).where(
-        ContentVariant.content_id == content_id,
-        ContentVariant.variant_type == variant.variant_type,
-        ContentVariant.selected.is_(True),
+    # 使用悲观锁防止并发选中导致的数据竞争（SQLite 忽略，PostgreSQL 强制行锁）。
+    statement = (
+        select(ContentVariant)
+        .where(
+            ContentVariant.content_id == content_id,
+            ContentVariant.variant_type == variant.variant_type,
+        )
+        .with_for_update()
     )
     for other in db.scalars(statement).all():
         if other.id != variant.id:
             other.selected = False
     variant.selected = True
-    db.commit()
-    db.refresh(variant)
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    try:
+        db.refresh(variant)
+    except Exception:
+        logger.warning("Failed to refresh variant after successful commit", exc_info=True)
     return variant

@@ -20,7 +20,7 @@ class ImageTemplateRead(BaseModel):
 
 class ImageRead(BaseModel):
     id: int
-    content_id: int
+    content_id: int | None
     created_by: int | None
     image_url: str
     template: str | None

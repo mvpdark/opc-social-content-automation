@@ -14,8 +14,8 @@ ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "backend"
 FRONTEND = ROOT / "frontend"
 VENV_PYTHON = ROOT / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-BACKEND_LOG = BACKEND / "uvicorn-8010.log"
-FRONTEND_LOG = FRONTEND / "next-3000.log"
+BACKEND_LOG = BACKEND / "uvicorn-60001.log"
+FRONTEND_LOG = FRONTEND / "next-60000.log"
 LEGACY_TEXT_BOMS = (b"\xff\xfe", b"\xfe\xff")
 
 
@@ -115,8 +115,8 @@ def start_process(command: list[str], *, cwd: Path, log_path: Path) -> int:
 
 
 def start_backend() -> None:
-    if port_is_open(8010):
-        print("Backend already appears to be running on http://127.0.0.1:8010")
+    if port_is_open(60001):
+        print("Backend already appears to be running on http://127.0.0.1:60001")
         return
     if not VENV_PYTHON.exists():
         raise SystemExit("Missing .venv. Run: python scripts/setup_local.py")
@@ -129,7 +129,7 @@ def start_backend() -> None:
             "--host",
             "0.0.0.0",
             "--port",
-            "8010",
+            "60001",
         ],
         cwd=BACKEND,
         log_path=BACKEND_LOG,
@@ -138,8 +138,8 @@ def start_backend() -> None:
 
 
 def start_frontend() -> None:
-    if port_is_open(3000):
-        print("Frontend already appears to be running on http://127.0.0.1:3000")
+    if port_is_open(60000):
+        print("Frontend already appears to be running on http://127.0.0.1:60000")
         return
     npm = shutil.which("npm")
     if not npm:
@@ -153,11 +153,11 @@ def start_frontend() -> None:
 
 
 def print_status() -> None:
-    backend_status = "running" if port_is_open(8010) else "stopped"
-    frontend_status = "running" if port_is_open(3000) else "stopped"
+    backend_status = "running" if port_is_open(60001) else "stopped"
+    frontend_status = "running" if port_is_open(60000) else "stopped"
     print("Local service status:")
-    print(f"  Backend  8010: {backend_status}")
-    print(f"  Frontend 3000: {frontend_status}")
+    print(f"  Backend  60001: {backend_status}")
+    print(f"  Frontend 60000: {frontend_status}")
 
 
 def main() -> None:
@@ -183,9 +183,9 @@ def main() -> None:
         return
 
     if args.restart_backend and not args.frontend_only:
-        stop_processes_on_port(8010)
+        stop_processes_on_port(60001)
     if args.restart_frontend and not args.backend_only:
-        stop_processes_on_port(3000)
+        stop_processes_on_port(60000)
 
     if not args.frontend_only:
         start_backend()
@@ -193,8 +193,8 @@ def main() -> None:
         start_frontend()
 
     print("Local URLs:")
-    print("  PC/mobile app: http://127.0.0.1:3000")
-    print("  Backend API:    http://127.0.0.1:8010")
+    print("  PC/mobile app: http://127.0.0.1:60000")
+    print("  Backend API:    http://127.0.0.1:60001")
 
 
 if __name__ == "__main__":

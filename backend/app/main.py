@@ -1,4 +1,3 @@
-import asyncio
 import contextlib
 import logging
 from pathlib import Path
@@ -7,61 +6,34 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import DataError, IntegrityError, OperationalError
 
 from app.api.v1.router import api_router
+from app.core.domain import registry as domain_registry
+from app.domains import register_all_domains
 from app.core.config import settings
 from app.db.session import SessionLocal, initialize_local_database
-from app.services.knowledge_service import compile_knowledge_base_if_due
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 STATIC_ROOT = BACKEND_ROOT / "static"
 logger = logging.getLogger(__name__)
 
 
-async def _knowledge_compile_loop(stop_event: asyncio.Event) -> None:
-    check_interval = max(60, settings.knowledge_compile_check_interval_seconds)
-    while not stop_event.is_set():
-        try:
-            with SessionLocal() as db:
-                result = compile_knowledge_base_if_due(
-                    db,
-                    interval_hours=settings.knowledge_compile_interval_hours,
-                    source_limit=settings.knowledge_compile_source_limit,
-                )
-                if result is not None:
-                    logger.info(
-                        "Knowledge base compiled automatically from %s source items.",
-                        result.source_count,
-                    )
-        except Exception:
-            logger.exception("Knowledge compilation scheduler failed.")
-
-        with contextlib.suppress(asyncio.TimeoutError):
-            await asyncio.wait_for(stop_event.wait(), timeout=check_interval)
-
-
 @contextlib.asynccontextmanager
 async def _app_lifespan(app: FastAPI):
-    if not settings.knowledge_compile_enabled:
-        yield
-        return
-
-    stop_event = asyncio.Event()
-    task = asyncio.create_task(_knowledge_compile_loop(stop_event))
-    app.state.knowledge_compile_stop_event = stop_event
-    app.state.knowledge_compile_task = task
-    try:
-        yield
-    finally:
-        stop_event.set()
-        task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await task
+    yield
 
 
 def create_app() -> FastAPI:
-    initialize_local_database()
+    try:
+        initialize_local_database()
+    except Exception:
+        logger.error("Database initialization failed", exc_info=True)
+        raise
+
+    # Register content domains at startup
+    register_all_domains(domain_registry)
+
 
     app = FastAPI(
         title="OPC Social Content Automation API",
@@ -75,8 +47,8 @@ def create_app() -> FastAPI:
         allow_origins=settings.cors_origins,
         allow_origin_regex=settings.cors_origin_regex,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "Accept"],
     )
 
     @app.get("/health", tags=["system"])
@@ -96,6 +68,46 @@ def create_app() -> FastAPI:
                     "数据库暂时连接不上。桌面或本地检查模式请重新运行本地启动助手；"
                     "自部署环境请检查 DATABASE_URL 和数据库服务。"
                 ),
+            },
+        )
+
+    @app.exception_handler(IntegrityError)
+    async def database_integrity_error(
+        _request: Request,
+        _exc: IntegrityError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=409,
+            content={
+                "detail": "data_conflict",
+                "message": "数据冲突，可能存在重复记录或约束冲突，请刷新后重试。",
+            },
+        )
+
+    @app.exception_handler(DataError)
+    async def database_data_error(
+        _request: Request,
+        _exc: DataError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=422,
+            content={
+                "detail": "invalid_data",
+                "message": "提交的数据格式或长度不符合要求，请检查后重试。",
+            },
+        )
+
+    @app.exception_handler(Exception)
+    async def unhandled_exception(
+        _request: Request,
+        exc: Exception,
+    ) -> JSONResponse:
+        logger.error("Unhandled exception: %s", exc, exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={
+                "detail": "internal_error",
+                "message": "服务内部错误，请稍后重试。",
             },
         )
 

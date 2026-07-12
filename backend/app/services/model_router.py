@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import math
 import re
 
@@ -36,6 +37,14 @@ from app.core.domain import (
 
 TOKEN_RE = re.compile(r"[\w\u4e00-\u9fff]+", re.UNICODE)
 
+logger = logging.getLogger(__name__)
+
+
+def _safe_str(value: object) -> str:
+    """Convert value to str, returning empty string for None (avoids 'None' literal)."""
+    return "" if value is None else str(value)
+
+
 __all__ = [
     "FILENAME_RE",
     "GENERATED_ASSET_ROOT",
@@ -46,7 +55,7 @@ __all__ = [
 
 
 def _public_tone(value: object) -> str:
-    tone = str(value or "自然、可信、克制")
+    tone = _safe_str(value) or "自然、可信、克制"
     return tone.split("隐藏撰稿规则：", 1)[0].rstrip("；; ") or "自然、可信、克制"
 
 
@@ -57,14 +66,24 @@ def _missing_required_web_sources(value: object) -> bool:
     return not isinstance(raw_results, list) or not raw_results
 
 
+_codex_template_load_error: str | None = None
+
+
 def _load_codex_test_draft_templates() -> dict[str, dict[str, object]]:
+    global _codex_template_load_error
+    _codex_template_load_error = None
     template_path = PROMPT_ROOT / "codex_test_drafts.json"
     if not template_path.exists():
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="缺少本地检查草稿模板：codex_test_drafts.json",
         )
-    data = json.loads(template_path.read_text(encoding="utf-8"))
+    try:
+        data = json.loads(template_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        logger.warning("本地检查草稿模板读取/解析失败：%s", template_path)
+        _codex_template_load_error = str(exc)
+        return {}
     if not isinstance(data, dict):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -74,16 +93,25 @@ def _load_codex_test_draft_templates() -> dict[str, dict[str, object]]:
 
 
 def _test_draft(payload: dict[str, object]) -> str:
-    domain = get_domain(payload.get("domain_key"))
-    topic = str(payload.get("topic") or "未命名选题")
-    platform = str(payload.get("platform") or "unknown")
+    raw_domain_key = payload.get("domain_key")
+    if not isinstance(raw_domain_key, (str, type(None))):
+        raw_domain_key = None
+    try:
+        domain = get_domain(raw_domain_key)
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="未知内容域，请检查 domain_key 参数。",
+        )
+    topic = _safe_str(payload.get("topic")) or "未命名选题"
+    platform = _safe_str(payload.get("platform")) or "unknown"
     tone = _public_tone(payload.get("tone"))
-    audience = str(payload.get("target_audience") or domain.default_audience)
+    audience = _safe_str(payload.get("target_audience")) or domain.default_audience
     tags = _string_list(payload.get("tags"))
     knowledge_context = payload.get("knowledge_context")
     context_items = knowledge_context if isinstance(knowledge_context, list) else []
     context_titles = [
-        str(item.get("title"))
+        _safe_str(item.get("title"))
         for item in context_items
         if isinstance(item, dict) and item.get("title")
     ][:3]
@@ -93,15 +121,18 @@ def _test_draft(payload: dict[str, object]) -> str:
         raw_results = web_search_context.get("results")
         if isinstance(raw_results, list):
             web_search_titles = [
-                str(item.get("title"))
+                _safe_str(item.get("title"))
                 for item in raw_results
                 if isinstance(item, dict) and item.get("title")
             ][:3]
     tag_line = " ".join(f"#{tag}" for tag in tags) if tags else domain.default_tag_line
-    is_xiaohongshu = platform == "xiaohongshu"
     is_water_ranking = is_water_ranking_topic_for(domain, topic, tags)
     topic_intent = first_matching_topic_intent_for(domain, topic, tags)
     missing_required_web_sources = _missing_required_web_sources(web_search_context)
+    popular_posts = payload.get("popular_posts")
+    popular_refs = popular_posts if isinstance(popular_posts, list) else []
+    admission_notices = payload.get("admission_notices")
+    notice_refs = admission_notices if isinstance(admission_notices, list) else []
     source_titles = [*context_titles, *web_search_titles]
     if source_titles:
         source_line = "、".join(source_titles)
@@ -116,7 +147,7 @@ def _test_draft(payload: dict[str, object]) -> str:
         source_line = "暂无知识库引用"
     branch_key = resolve_test_draft_branch(
         domain,
-        is_xiaohongshu,
+        platform,
         is_water_ranking,
         topic_intent,
         topic,
@@ -125,6 +156,11 @@ def _test_draft(payload: dict[str, object]) -> str:
     templates = _load_codex_test_draft_templates()
     branch = templates.get(branch_key)
     if not isinstance(branch, dict):
+        if not templates:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="本地检查草稿模板文件读取/解析失败，请检查文件完整性",
+            )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"本地检查草稿模板缺少分支：{branch_key}",
@@ -136,12 +172,6 @@ def _test_draft(payload: dict[str, object]) -> str:
             detail=f"本地检查草稿模板分支格式无效：{branch_key}",
         )
 
-    water_ranking_source_line = (
-        "👇当前没有可见 Tavily 来源时，就先做“榜单维度”和核验框架，不要让模型猜测学校名（这个会很亏）……"
-        if missing_required_web_sources
-        else "👇如果没有已核实的学校数据，就先做“榜单维度”，不要硬编学校名（这个会很亏）……"
-    )
-
     # 根据 topic_intent 类型调整草稿策略：
     # - topic_intent.key == "source_check"：来源核验帖，它不是普通经验帖，而是来源核验帖，需要引用官方来源。
     # - topic_intent.key == "list_filter"：榜单/筛选类内容最重要的是维度清楚，不要硬编具体排名。
@@ -152,11 +182,44 @@ def _test_draft(payload: dict[str, object]) -> str:
         intent_guidance = "榜单/筛选类内容最重要的是维度清楚，不要硬编具体排名。"
 
     body_lines = [
-        str(line)
-        .replace("{topic}", topic)
-        .replace("{water_ranking_source_line}", water_ranking_source_line)
+        str(line).replace("{topic}", topic)
         for line in raw_body_lines
     ]
+
+    # Build structure reference lines from popular posts
+    structure_lines: list[str] = []
+    if popular_refs:
+        structure_lines.append("【高赞参考】")
+        for idx, post in enumerate(popular_refs[:2], 1):
+            if not isinstance(post, dict):
+                continue
+            likes = post.get("likes", 0)
+            comments = post.get("comments", 0)
+            favorites = post.get("favorites", 0)
+            structure_lines.append(
+                f"参考{idx}：{post.get('title', '')} "
+                f"(赞{likes} 评{comments} 藏{favorites})"
+            )
+            preview = post.get("content_preview", "")
+            if isinstance(preview, str) and preview:
+                structure_lines.append(f"结构预览：{preview[:200]}")
+
+    # Build admission notice reference lines
+    notice_lines: list[str] = []
+    if notice_refs:
+        notice_lines.append("【招生通告参考】")
+        for idx, notice in enumerate(notice_refs[:2], 1):
+            if not isinstance(notice, dict):
+                continue
+            school = notice.get("school_name", "")
+            title = notice.get("title", "")
+            date = notice.get("publish_date", "")
+            notice_lines.append(f"通告{idx}：{school} - {title} ({date})")
+            summary = notice.get("summary", "")
+            if summary:
+                notice_lines.append(f"摘要：{summary[:150]}")
+
+    word_count_hint = "内容约束：正文控制在200-500字以内，简洁有力，不要啰嗦。"
 
     return "\n".join(
         [
@@ -168,8 +231,11 @@ def _test_draft(payload: dict[str, object]) -> str:
             "",
             *body_lines,
             f"参考上下文：{source_line}",
-            f"标签：{tag_line}",
+            *structure_lines,
+            *notice_lines,
+            f"话题标签：{tag_line}",
             "",
+            word_count_hint,
             "风险提示：这是本地检查模式生成的草稿，只用于流程验证，正式发布前必须经过人工审核。",
             "内容约束：不要让模型猜测具体名字、价格、logo 或排名结论；涉及具体数据时必须引用已核验来源。",
             intent_guidance,
@@ -178,12 +244,12 @@ def _test_draft(payload: dict[str, object]) -> str:
 
 
 def _test_review(payload: dict[str, object]) -> str:
-    title = str(payload.get("title") or "未命名内容")
-    platform = str(payload.get("platform") or "unknown")
-    body = str(payload.get("body") or "")
+    title = _safe_str(payload.get("title")) or "未命名内容"
+    platform = _safe_str(payload.get("platform")) or "unknown"
+    body = _safe_str(payload.get("body"))
     body_length = len(body)
     has_tags = bool(payload.get("tags"))
-    instruction = str(payload.get("instruction") or "").strip()
+    instruction = _safe_str(payload.get("instruction")).strip()
 
     score = 78
     risk_flags: list[str] = []
@@ -239,9 +305,9 @@ class ModelRouter:
         return [value / magnitude for value in vector]
 
     def draft_model(self, prompt_name: str, payload: dict[str, object]) -> str:
-        prompt_template = load_prompt(prompt_name)
         if settings.draft_provider == "codex_test":
             return _test_draft(payload)
+        prompt_template = load_prompt(prompt_name)
         if settings.draft_provider == "openai_compatible":
             if not settings.openai_compatible_api_key:
                 raise HTTPException(
@@ -294,9 +360,9 @@ class ModelRouter:
         return _extract_chat_content("DeepSeek", data)
 
     def image_model(self, prompt_name: str, payload: dict[str, object]) -> str:
-        prompt_template = load_prompt(prompt_name)
         if settings.image_provider == "codex_test":
             return _test_image(payload)
+        prompt_template = load_prompt(prompt_name)
         if settings.image_provider == "openai_compatible":
             api_key = settings.image_openai_compatible_api_key or settings.openai_compatible_api_key
             if not api_key:
@@ -334,9 +400,9 @@ class ModelRouter:
         )
 
     def review_model(self, prompt_name: str, payload: dict[str, object]) -> str:
-        prompt_template = load_prompt(prompt_name)
         if settings.review_provider == "codex_test":
             return _test_review(payload)
+        prompt_template = load_prompt(prompt_name)
         if settings.review_provider == "openai_compatible":
             if not settings.openai_compatible_api_key:
                 raise HTTPException(

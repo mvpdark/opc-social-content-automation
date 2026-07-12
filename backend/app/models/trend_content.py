@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, Integer, String, Text, func
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -8,8 +8,14 @@ from app.models.base import Base
 
 class TrendContent(Base):
     __tablename__ = "trend_contents"
+    __table_args__ = (
+        UniqueConstraint("url", "user_id", name="uq_trend_url_user"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True, index=True
+    )
     platform: Mapped[str] = mapped_column(String(40), index=True)
     author: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
     publish_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

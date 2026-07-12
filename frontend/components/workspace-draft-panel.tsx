@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Bookmark,
@@ -27,9 +27,9 @@ import { formatTagLine } from "@/lib/tags";
 import {
   buildPlatformCopy,
   isTestDraft,
-  renderXhsExpressionText,
   secondaryButtonClass
 } from "./workspace-utils";
+import { renderXhsExpressionText } from "@/lib/xhs-stickers";
 import {
   buildCoverLines,
   formatPreviewParagraphs,
@@ -40,7 +40,7 @@ import {
 } from "./workspace-ui";
 import { DraftHistoryCard } from "./workspace-draft-history-card";
 
-export function DraftPanel({
+export const DraftPanel = memo(function DraftPanel({
   content,
   coverImageAsset,
   draftActionError,
@@ -74,6 +74,7 @@ export function DraftPanel({
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const [manualCopyText, setManualCopyText] = useState<string | null>(null);
   const modalManualCopyRef = useRef<HTMLTextAreaElement | null>(null);
+  const activeRef = useRef(true);
   const previewPlatformId = platformIdForPreview(content?.platform ?? "xiaohongshu");
   const previewPlatformLabel = previewPlatformId === "douyin" ? "抖音" : "小红书";
   const preview = {
@@ -84,17 +85,30 @@ export function DraftPanel({
     tags: content?.tags ?? draftPreview.tags,
     title: content?.title ?? draftPreview.title
   };
-  const coverLines = buildCoverLines(preview.title);
-  const paragraphs = formatPreviewParagraphs(stripDuplicateStandaloneTagLines(preview.body, preview.tags));
-  const tagLine = formatTagLine(preview.tags);
-  const previewLifecycleWarning = content ? generatedContentLifecycleWarning(content.status) : null;
-  const canCopy = Boolean(content && !isTestDraft(content) && !previewLifecycleWarning);
+  const coverLines = useMemo(() => buildCoverLines(preview.title), [preview.title]);
+  const paragraphs = useMemo(
+    () => formatPreviewParagraphs(stripDuplicateStandaloneTagLines(preview.body, preview.tags)),
+    [preview.body, preview.tags]
+  );
+  const tagLine = useMemo(() => formatTagLine(preview.tags), [preview.tags]);
+  const previewLifecycleWarning = useMemo(
+    () => (content ? generatedContentLifecycleWarning(content.status) : null),
+    [content]
+  );
+  const canCopy = useMemo(
+    () => Boolean(content && !isTestDraft(content) && !previewLifecycleWarning),
+    [content, previewLifecycleWarning]
+  );
   const previewTone = previewLifecycleWarning ? "red" : content ? "green" : loading ? "blue" : "amber";
-  const coverImageUrl =
-    content && coverImageAsset?.content_id === content.id
-      ? resolveAssetUrl(coverImageAsset.image_url)
-      : null;
+  const coverImageUrl = useMemo(
+    () =>
+      content && coverImageAsset?.content_id === content.id
+        ? resolveAssetUrl(coverImageAsset.image_url)
+        : null,
+    [content, coverImageAsset]
+  );
   const hasHistory = history.length > 0;
+  const pinnedContentIdSet = useMemo(() => new Set(pinnedContentIds), [pinnedContentIds]);
 
   useEffect(() => {
     setPortalReady(true);
@@ -114,7 +128,13 @@ export function DraftPanel({
     targetRef.current?.select();
   }, [manualCopyText]);
 
-  async function handleCopy() {
+  useEffect(() => {
+    return () => {
+      activeRef.current = false;
+    };
+  }, []);
+
+  const handleCopy = useCallback(async () => {
     if (!content || !canCopy) {
       setCopyState("failed");
       setManualCopyText(null);
@@ -123,18 +143,20 @@ export function DraftPanel({
     const copyPayload = buildPlatformCopy(content);
     try {
       await copyText(copyPayload);
+      if (!activeRef.current) return;
       setCopyState("copied");
       setManualCopyText(null);
     } catch (_error) {
+      if (!activeRef.current) return;
       setCopyState("failed");
       setManualCopyText(copyPayload);
     }
-  }
+  }, [content, canCopy]);
 
-  function handleHistorySelect(selectedContent: GeneratedContent) {
+  const handleHistorySelect = useCallback((selectedContent: GeneratedContent) => {
     onSelectContent(selectedContent);
     setPreviewOpen(true);
-  }
+  }, [onSelectContent]);
 
   return (
     <Panel
@@ -193,7 +215,7 @@ export function DraftPanel({
               <DraftHistoryCard
                 content={item}
                 imageAsset={imageAssetsByContentId[item.id]}
-                isPinned={pinnedContentIds.includes(item.id)}
+                isPinned={pinnedContentIdSet.has(item.id)}
                 isSelected={content?.id === item.id}
                 key={item.id}
                 onDelete={onDeleteContent}
@@ -362,4 +384,4 @@ export function DraftPanel({
       ) : null}
     </Panel>
   );
-}
+});

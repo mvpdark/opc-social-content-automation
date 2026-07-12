@@ -1,9 +1,17 @@
-from pgvector.sqlalchemy import Vector
 from sqlalchemy import JSON, Boolean, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.config import settings
 from app.models.base import Base
+
+try:
+    from pgvector.sqlalchemy import Vector
+except ImportError:
+    if settings.is_postgresql:
+        raise RuntimeError(
+            "PostgreSQL 模式需要安装 pgvector: pip install pgvector"
+        )
+    Vector = None
 
 
 class KnowledgeBase(Base):

@@ -14,6 +14,7 @@ from typing import Callable
 __all__ = [
     "TopicIntentRule",
     "TestDraftBranchConfig",
+    "PlatformBranchConfig",
     "ContentDomain",
     "DomainRegistry",
     "registry",
@@ -40,6 +41,23 @@ class TopicIntentRule:
 
 
 @dataclass(frozen=True)
+class PlatformBranchConfig:
+    """Per-platform draft template configuration.
+
+    Each platform (xiaohongshu, douyin, shipinhao, etc.) can have its own
+    set of default templates, intent mappings, and subbranch rules.
+    """
+
+    default: str
+    water_ranking: str = ""
+    missing_web_sources: str = ""
+    intent_map: dict[str, str] = field(default_factory=dict)
+    intent_subbranch_rules: dict[str, tuple[tuple[tuple[str, ...], str], ...]] = field(
+        default_factory=dict
+    )
+
+
+@dataclass(frozen=True)
 class TestDraftBranchConfig:
     """本地检查草稿的分支选择配置。
 
@@ -54,6 +72,10 @@ class TestDraftBranchConfig:
     default: str
     # intent.key -> 小红书平台下的分支名，如 "source_check" -> "xhs_source_check"
     intent_branch_map: dict[str, str] = field(default_factory=dict)
+    # intent.key -> 非小红书平台下的分支名
+    non_xhs_intent_branch_map: dict[str, str] = field(default_factory=dict)
+    # Per-platform configs (takes priority over legacy fields)
+    platform_configs: dict[str, "PlatformBranchConfig"] = field(default_factory=dict)
     # intent.key -> ((关键词组, 子分支名), ...)，用于 mentor/sales 等带子分支的意图。
     # 关键词组内为 OR 关系：命中任意一个关键词即走子分支。
     intent_subbranch_rules: dict[str, tuple[tuple[tuple[str, ...], str], ...]] = field(
@@ -198,19 +220,39 @@ def first_matching_topic_intent_for(
 
 def resolve_test_draft_branch(
     domain: ContentDomain,
-    is_xiaohongshu: bool,
+    platform: str,
     is_water_ranking: bool,
     topic_intent: TopicIntentRule | None,
     topic: str,
     missing_required_web_sources: bool,
 ) -> str:
-    """通用版分支选择，等价于原 ``_resolve_test_draft_branch``。"""
+    """通用版分支选择，支持多平台（小红书/抖音/视频号等）。"""
     cfg = domain.test_draft_branches
-    if is_xiaohongshu and is_water_ranking:
+
+    # Check platform-specific config first
+    platform_cfg = cfg.platform_configs.get(platform)
+    if platform_cfg:
+        if is_water_ranking and platform_cfg.water_ranking:
+            return platform_cfg.water_ranking
+        if missing_required_web_sources and platform_cfg.missing_web_sources:
+            return platform_cfg.missing_web_sources
+        if topic_intent:
+            subbranches = platform_cfg.intent_subbranch_rules.get(topic_intent.key, ())
+            for keywords, subbranch in subbranches:
+                if any(keyword in topic for keyword in keywords):
+                    return subbranch
+            branch = platform_cfg.intent_map.get(topic_intent.key)
+            if branch:
+                return branch
+        return platform_cfg.default
+
+    # Legacy fallback for xiaohongshu
+    is_xhs = platform == "xiaohongshu"
+    if is_xhs and is_water_ranking:
         return cfg.xhs_water_ranking
-    if is_xiaohongshu and missing_required_web_sources:
+    if is_xhs and missing_required_web_sources:
         return cfg.xhs_missing_web_sources
-    if is_xiaohongshu and topic_intent:
+    if is_xhs and topic_intent:
         subbranches = cfg.intent_subbranch_rules.get(topic_intent.key, ())
         for keywords, subbranch in subbranches:
             if any(keyword in topic for keyword in keywords):
@@ -218,8 +260,13 @@ def resolve_test_draft_branch(
         branch = cfg.intent_branch_map.get(topic_intent.key)
         if branch:
             return branch
-    if is_xiaohongshu:
+    if is_xhs:
         return cfg.xhs_default
+    # Non-xhs legacy fallback
+    if topic_intent:
+        non_xhs_branch = cfg.non_xhs_intent_branch_map.get(topic_intent.key)
+        if non_xhs_branch:
+            return non_xhs_branch
     if is_water_ranking:
         return cfg.water_ranking
     return cfg.default

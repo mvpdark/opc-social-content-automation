@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
@@ -53,6 +55,8 @@ from app.services.variant_service import (
     select_variant,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 
@@ -73,8 +77,8 @@ def generate_variants(
     current_user: User = Depends(get_current_user),
 ) -> VariantGenerateResponse:
     """生成多个标题/开头/封面标签变体并自动评分（SSB-7）。"""
-    content = db.get(Content, payload.content_id)
-    if content is None:
+    content = db.get(Content, payload.content_id, with_for_update=True)
+    if content is None or content.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="未找到这条内容。",
@@ -89,20 +93,32 @@ def generate_variants(
 @router.get("/feedback-stats", response_model=FeedbackStatsRead)
 def get_feedback_stats(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
     limit: int = Query(default=100, ge=1, le=500),
 ) -> FeedbackStatsRead:
     """返回最近审核的反馈标签分布，用于指导未来生成（SSB-8）。"""
-    return get_feedback_tag_stats(db, limit=limit)
+    return get_feedback_tag_stats(db, limit=limit, user_id=current_user.id)
 
 
 @router.post("/source-preview", response_model=ContentSourcePreviewRead)
 def preview_content_sources(
     payload: ContentGenerateRequest,
-    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ContentSourcePreviewRead:
-    _ = current_user
-    source_context = build_content_source_context(db, payload)
+    # current_user 依赖用于强制 AUTH_REQUIRED 认证。source context 基于
+    # 共享 ZSCJ 知识库，暂未按 user_id 隔离；未来改进：为
+    # build_content_source_context 增加 user_id 参数以支持按用户过滤。
+    _ = current_user  # noqa: F841 — 保留认证依赖
+    source_context = build_content_source_context(payload)
+    if isinstance(source_context, dict) and "error" in source_context:
+        logger.warning(
+            "build_content_source_context 返回错误: %s",
+            source_context.get("error"),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=source_context.get("error", "源上下文构建失败"),
+        )
     return ContentSourcePreviewRead(source_context=source_context)
 
 
@@ -112,8 +128,8 @@ def rewrite_content(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ContentRead:
-    content = db.get(Content, payload.content_id)
-    if content is None:
+    content = db.get(Content, payload.content_id, with_for_update=True)
+    if content is None or content.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="未找到这条内容。",
@@ -129,9 +145,10 @@ def request_review(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ContentRead:
-    _ = current_user
-    content = get_content_or_404(db, content_id)
-    content = request_human_review(db, content)
+    content = db.get(Content, content_id)
+    if content is None or content.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="未找到这条内容。")
+    content = request_human_review(db, content, current_user)
     return ContentRead.model_validate(content)
 
 
@@ -142,15 +159,29 @@ def create_human_review(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ContentReviewRead:
-    content = get_content_or_404(db, content_id)
+    content = db.get(Content, content_id)
+    if content is None or content.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="未找到这条内容。")
     review = record_human_review(db, content, payload, current_user)
     return ContentReviewRead.model_validate(review)
 
 
 @router.get("/{content_id}/reviews", response_model=list[ContentReviewRead])
-def get_reviews(content_id: int, db: Session = Depends(get_db)) -> list[ContentReviewRead]:
-    get_content_or_404(db, content_id)
-    return [ContentReviewRead.model_validate(review) for review in list_reviews(db, content_id)]
+def get_reviews(
+    content_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[ContentReviewRead]:
+    content = db.get(Content, content_id)
+    if content is None or content.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="未找到这条内容。",
+        )
+    return [
+        ContentReviewRead.model_validate(review)
+        for review in list_reviews(db, content_id, current_user.id)
+    ]
 
 
 @router.post("/{content_id}/ai-review", response_model=ContentReviewRead)
@@ -160,7 +191,9 @@ def create_ai_review(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ContentReviewRead:
-    content = get_content_or_404(db, content_id)
+    content = db.get(Content, content_id)
+    if content is None or content.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="未找到这条内容。")
     review = run_ai_review(db, content, payload, current_user)
     return ContentReviewRead.model_validate(review)
 
@@ -169,12 +202,18 @@ def create_ai_review(
 def list_variants(
     content_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> list[ContentVariantRead]:
     """列出指定内容的所有变体（SSB-7）。"""
-    get_content_or_404(db, content_id)
+    content = db.get(Content, content_id)
+    if content is None or content.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="未找到这条内容。",
+        )
     return [
         ContentVariantRead.model_validate(item)
-        for item in list_variants_for_content(db, content_id)
+        for item in list_variants_for_content(db, content_id, current_user.id)
     ]
 
 
@@ -189,20 +228,29 @@ def select_content_variant(
     current_user: User = Depends(get_current_user),
 ) -> VariantSelectResponse:
     """标记选中的变体，同类型其他变体自动取消选中（SSB-7）。"""
-    _ = current_user
-    variant = select_variant(db, content_id, variant_id)
+    content = db.get(Content, content_id)
+    if content is None or content.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="未找到这条内容。")
+    variant = select_variant(db, content_id, variant_id, current_user.id)
     return VariantSelectResponse.model_validate(variant)
 
 
 @router.get("/list", response_model=list[ContentRead])
 def list_contents(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
     platform: str | None = Query(default=None, max_length=40),
     status_filter: str | None = Query(default=None, alias="status", max_length=40),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> list[ContentRead]:
-    statement = select(Content).order_by(desc(Content.created_at)).limit(limit).offset(offset)
+    statement = (
+        select(Content)
+        .where(Content.user_id == current_user.id)
+        .order_by(desc(Content.created_at))
+        .limit(limit)
+        .offset(offset)
+    )
     if platform:
         statement = statement.where(Content.platform == platform)
     if status_filter:
@@ -213,19 +261,24 @@ def list_contents(
 @router.get("/review-queue", response_model=list[ContentRead])
 def list_review_queue_contents(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
     platform: str | None = Query(default=None, max_length=40),
     limit: int = Query(default=20, ge=1, le=50),
 ) -> list[ContentRead]:
     return [
         ContentRead.model_validate(item)
-        for item in list_human_review_queue(db, platform=platform, limit=limit)
+        for item in list_human_review_queue(db, platform=platform, limit=limit, user_id=current_user.id)
     ]
 
 
 @router.get("/{content_id}", response_model=ContentRead)
-def get_content(content_id: int, db: Session = Depends(get_db)) -> ContentRead:
+def get_content(
+    content_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ContentRead:
     content = db.get(Content, content_id)
-    if content is None:
+    if content is None or content.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="未找到这条内容。",
@@ -237,10 +290,11 @@ def get_content(content_id: int, db: Session = Depends(get_db)) -> ContentRead:
 def get_task_state(
     content_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> TaskStateRead:
     """返回当前任务状态和可转换状态列表（BACKLOG #14）。"""
     content = db.get(Content, content_id)
-    if content is None:
+    if content is None or content.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="未找到这条内容。",
@@ -262,8 +316,18 @@ def transition_task_state(
     current_user: User = Depends(get_current_user),
 ) -> TaskStateRead:
     """手动转换任务状态（BACKLOG #14）。"""
-    _ = current_user
-    content = transition_task(db, content_id, payload.to_state)
+    # 使用悲观锁加载，消除 TOCTOU 窗口（低危）：避免无锁读取后
+    # transition_task 内部重新加锁期间记录被并发修改或删除。
+    existing = db.get(Content, content_id, with_for_update=True)
+    if existing is None or existing.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="未找到这条内容。")
+    with db.begin_nested():
+        content = transition_task(db, content_id, payload.to_state, user_id=current_user.id)
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     return TaskStateRead(
         content_id=content.id,
         task_state=content.task_state or TaskState.NEW.value,
@@ -280,6 +344,11 @@ def delete_content(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Response:
-    _ = current_user
-    delete_content_with_assets(db, content_id)
+    content = db.get(Content, content_id)
+    if content is None or content.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="未找到这条内容。",
+        )
+    delete_content_with_assets(db, content_id, user_id=current_user.id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

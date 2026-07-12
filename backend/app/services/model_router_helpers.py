@@ -1,4 +1,6 @@
 import json
+import logging
+import re
 from pathlib import Path
 
 import httpx
@@ -6,15 +8,30 @@ from fastapi import HTTPException, status
 
 PROMPT_ROOT = Path(__file__).resolve().parents[3] / "prompts"
 
+logger = logging.getLogger(__name__)
+
 
 def load_prompt(name: str) -> str:
+    # 路径遍历保护：仅允许字母、数字、下划线和连字符。
+    if not re.match(r"^[a-zA-Z0-9_-]+$", name):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"无效的提示词名称：{name}",
+        )
     prompt_path = PROMPT_ROOT / f"{name}.md"
     if not prompt_path.exists():
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"缺少提示词模板：{name}",
         )
-    return prompt_path.read_text(encoding="utf-8")
+    try:
+        return prompt_path.read_text(encoding="utf-8")
+    except OSError:
+        logger.exception("无法读取 prompt 文件: %s", name)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"无法读取 prompt 文件: {name}",
+        )
 
 
 def load_platform_style_reference(platform: object) -> str:
@@ -237,6 +254,11 @@ def _post_image_generation(
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=_redacted_provider_error_from_response(provider, exc.response),
+        ) from exc
+    except httpx.TimeoutException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail=_redacted_provider_timeout(provider, timeout_seconds),
         ) from exc
     except (httpx.HTTPError, ValueError) as exc:
         raise HTTPException(

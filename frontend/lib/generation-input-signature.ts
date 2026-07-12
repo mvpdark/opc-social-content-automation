@@ -45,7 +45,7 @@ export function buildGenerationInputSignature({
   };
 }
 
-export function generationInputSignaturesMatch(
+function generationInputSignaturesMatch(
   left: GenerationInputSignature,
   right: GenerationInputSignature
 ) {

@@ -236,13 +236,6 @@ export const tabMeta: Record<WorkspaceTab, { title: string; description: string 
   }
 };
 
-export const stats = [
-  { label: "趋势素材", value: "待采集", helper: "公开图文样本", tone: "steel" },
-  { label: "知识条目", value: "待入库", helper: "可检索资产", tone: "moss" },
-  { label: "待确认稿件", value: "待确认", helper: "发布前确认", tone: "coral" },
-  { label: "发布准备", value: "手动", helper: "确认后可用", tone: "amber" }
-] as const;
-
 export const pipeline = [
   {
     title: "数据采集",

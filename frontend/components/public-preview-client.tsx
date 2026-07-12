@@ -23,6 +23,7 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
 
     async function loadPreview() {
       if (!Number.isInteger(numericContentId) || numericContentId <= 0) {
@@ -33,7 +34,7 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
 
       try {
         const apiBase = getApiBase();
-        const contentResponse = await fetch(`${apiBase}/content/${numericContentId}`);
+        const contentResponse = await fetch(`${apiBase}/content/${numericContentId}`, { signal: controller.signal });
         if (!contentResponse.ok) {
           throw new Error("这条草稿暂时无法打开。");
         }
@@ -42,24 +43,31 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
           throw new Error("这条草稿数据不完整。");
         }
 
-        const imageResponse = await fetch(`${apiBase}/image/list?content_id=${numericContentId}&limit=1`);
-        const imageData: unknown = imageResponse.ok ? await imageResponse.json() : [];
-        const latestCover = Array.isArray(imageData)
-          ? imageData.find(
-              (image): image is GeneratedImageAsset =>
-                isGeneratedImageAsset(image) && image.content_id === numericContentId
-            ) ?? null
-          : null;
-
         if (!active) {
           return;
         }
         setContent(contentData);
-        setCover(latestCover);
         setStatus("ready");
         setMessage("发布前预览 · 不会自动发布");
+
+        // Fetch cover image separately so image failure doesn't block content display
+        try {
+          const imageResponse = await fetch(`${apiBase}/image/list?content_id=${numericContentId}&limit=1`, { signal: controller.signal });
+          const imageData: unknown = imageResponse.ok ? await imageResponse.json() : [];
+          const latestCover = Array.isArray(imageData)
+            ? imageData.find(
+                (image): image is GeneratedImageAsset =>
+                  isGeneratedImageAsset(image) && image.content_id === numericContentId
+              ) ?? null
+            : null;
+          if (active) {
+            setCover(latestCover);
+          }
+        } catch {
+          // Cover is optional; content is already displayed
+        }
       } catch (error) {
-        if (!active) {
+        if (!active || controller.signal.aborted) {
           return;
         }
         setStatus("error");
@@ -70,6 +78,7 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
     void loadPreview();
     return () => {
       active = false;
+      controller.abort();
     };
   }, [numericContentId]);
 
@@ -82,7 +91,14 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
         .filter(Boolean),
     [content?.body]
   );
-  const tags = formatTags(content?.tags ?? null);
+  const tags = useMemo(
+    () => formatTags(content?.tags ?? null),
+    [content?.tags]
+  );
+  const titleLines = useMemo(
+    () => (content?.title ?? "").split(/[，,]/).slice(0, 3),
+    [content?.title]
+  );
 
   if (status !== "ready" || !content) {
     return (
@@ -93,9 +109,9 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
       >
         <section className="w-full max-w-sm text-center" data-testid="public-preview-status-card">
           {status === "error" ? (
-            <AlertCircle className="mx-auto h-8 w-8 text-[#ff2442]" />
+            <AlertCircle className="mx-auto h-8 w-8 text-coral" />
           ) : (
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-[#ff2442] border-t-transparent" />
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-coral border-t-transparent" />
           )}
           <h1 className="mt-4 text-lg font-bold" data-testid="public-preview-status-title">
             {status === "error" ? "预览打不开" : "正在加载"}
@@ -114,14 +130,14 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
         {coverUrl ? (
           <img
             alt="图文封面预览"
-            className="aspect-[3/4] w-full bg-[#f7f7f7] object-contain"
+            className="aspect-[3/4] w-full bg-mist object-contain"
             data-testid="public-preview-cover"
             decoding="async"
             src={coverUrl}
           />
         ) : (
           <div
-            className="aspect-[3/4] w-full bg-[linear-gradient(160deg,#fff7df,#d9f1e5_48%,#f7cdbf)] px-6 pb-8 pt-6"
+            className="aspect-[3/4] w-full bg-[linear-gradient(160deg,rgb(var(--cream)),rgb(var(--sage))_48%,rgb(var(--blush)))] px-6 pb-8 pt-6"
             data-testid="public-preview-fallback-cover"
           >
             <div className="flex items-center justify-between">
@@ -131,7 +147,7 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
               </span>
             </div>
             <div className="mt-14 text-[34px] font-black leading-tight text-ink">
-              {content.title.split(/[，,]/).slice(0, 3).map((line, index) => (
+              {titleLines.map((line, index) => (
                 <span className="block" key={`title-line-${index}-${line}`}>
                   {line}
                 </span>
@@ -141,9 +157,9 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
         )}
 
         <section className="px-4 pb-7 pt-4">
-          <div className="flex items-center justify-between gap-3 border-b border-[#f1f1f1] pb-3">
+          <div className="flex items-center justify-between gap-3 border-b border-line pb-3">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ff2442] text-sm font-bold text-white">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-coral text-sm font-bold text-white">
                 O
               </div>
               <div className="min-w-0">
@@ -151,7 +167,7 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
                 <div className="text-[11px] text-muted">图文草稿预览</div>
               </div>
             </div>
-            <span className="rounded-full bg-[#ff2442] px-4 py-2 text-xs font-semibold text-white">关注</span>
+            <span className="rounded-full bg-coral px-4 py-2 text-xs font-semibold text-white">关注</span>
           </div>
 
           <h1 className="mt-4 text-xl font-bold leading-7" data-testid="public-preview-title">
@@ -169,7 +185,7 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
 
           {tags.length ? (
             <div
-              className="mt-4 flex flex-wrap gap-2 text-sm font-medium text-[#346cb0]"
+              className="mt-4 flex flex-wrap gap-2 text-sm font-medium text-steel"
               data-testid="public-preview-tags"
             >
               {tags.map((tag, index) => (
@@ -183,7 +199,7 @@ export function PublicPreviewClient({ contentId }: { contentId: string }) {
           </div>
         </section>
 
-        <footer className="sticky bottom-0 flex items-center justify-between border-t border-[#eeeeee] bg-white/95 px-4 py-2 backdrop-blur">
+        <footer className="sticky bottom-0 flex items-center justify-between border-t border-line bg-white/95 px-4 py-2 backdrop-blur">
           <span className="flex h-11 items-center gap-1 rounded-full px-2 text-sm font-semibold text-ink">
             <Heart className="h-5 w-5" />
             赞

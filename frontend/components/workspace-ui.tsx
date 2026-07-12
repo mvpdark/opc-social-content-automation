@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import {
   isPlatformId,
   PlatformIcon,
@@ -10,7 +10,7 @@ import {
 import { type InterfaceStyle } from "@/lib/dashboard-data";
 import { iconToneClass, pillTone } from "./workspace-utils";
 
-export function ThemeSwatches({
+export const ThemeSwatches = memo(function ThemeSwatches({
   compact = false,
   style
 }: {
@@ -40,9 +40,9 @@ export function ThemeSwatches({
       <span className={`${sizeClass} rounded-sm bg-coral`} />
     </span>
   );
-}
+});
 
-export function Panel({
+export const Panel = memo(function Panel({
   action,
   children,
   className = "",
@@ -67,25 +67,25 @@ export function Panel({
       <div className="workspace-panel-body p-4 lg:p-5">{children}</div>
     </section>
   );
-}
+});
 
-export function IconBox({ children, tone = "green" }: { children: ReactNode; tone?: keyof typeof iconToneClass }) {
+export const IconBox = memo(function IconBox({ children, tone = "green" }: { children: ReactNode; tone?: keyof typeof iconToneClass }) {
   return (
     <div className={`workspace-icon-box flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${iconToneClass[tone]}`}>
       {children}
     </div>
   );
-}
+});
 
-export function Pill({ children, tone = "neutral" }: { children: ReactNode; tone?: keyof typeof pillTone }) {
+export const Pill = memo(function Pill({ children, tone = "neutral" }: { children: ReactNode; tone?: keyof typeof pillTone }) {
   return (
     <span className={`workspace-pill inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium ${pillTone[tone]}`}>
       {children}
     </span>
   );
-}
+});
 
-export function PlatformRecordBadge({ platform }: { platform: string }) {
+export const PlatformRecordBadge = memo(function PlatformRecordBadge({ platform }: { platform: string }) {
   if (platform.includes("小红书")) {
     return (
       <PlatformLabel
@@ -116,7 +116,7 @@ export function PlatformRecordBadge({ platform }: { platform: string }) {
     );
   }
   return <span className="text-muted">{platform}</span>;
-}
+});
 
 export function formatPreviewParagraphs(body: string) {
   return body

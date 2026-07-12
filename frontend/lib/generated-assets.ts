@@ -335,3 +335,24 @@ export function isGeneratedImageAsset(value: unknown): value is GeneratedImageAs
     typeof image.status === "string"
   );
 }
+
+function isGenerationSourceContext(value: unknown): value is GenerationSourceContext {
+  if (!value || typeof value !== "object") return false;
+  const ctx = value as Record<string, unknown>;
+  if ("knowledge_items" in ctx && ctx.knowledge_items !== undefined && !Array.isArray(ctx.knowledge_items)) return false;
+  if ("knowledge_query" in ctx && ctx.knowledge_query !== undefined && ctx.knowledge_query !== null && typeof ctx.knowledge_query !== "string") return false;
+  if ("promotion_brief" in ctx && ctx.promotion_brief !== undefined && ctx.promotion_brief !== null && typeof ctx.promotion_brief !== "object") return false;
+  if ("review_note" in ctx && ctx.review_note !== undefined && typeof ctx.review_note !== "string") return false;
+  if ("source_cards" in ctx && ctx.source_cards !== undefined && !Array.isArray(ctx.source_cards)) return false;
+  if ("web_search" in ctx && ctx.web_search !== undefined && ctx.web_search !== null && typeof ctx.web_search !== "object") return false;
+  return true;
+}
+
+export function isGenerationSourceContextResponse(value: unknown): value is { source_context?: GenerationSourceContext } {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  if ("source_context" in v && v.source_context !== undefined && v.source_context !== null) {
+    return isGenerationSourceContext(v.source_context);
+  }
+  return true;
+}

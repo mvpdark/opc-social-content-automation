@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import { ChevronRight } from "lucide-react";
 
 import { MobilePanel } from "@/components/mobile-ui";
@@ -52,15 +53,15 @@ function mobileCreationProjectActionClass(projectId: MobileCreationProjectId, en
     return "border border-white/[0.84] bg-[rgba(255,253,247,0.86)] text-muted";
   }
   if (projectId === "postgraduate-phd") {
-    return "border border-[#ff2442]/[0.38] bg-white text-[#ff2442]";
+    return "border border-coral/[0.38] bg-white text-coral";
   }
   if (projectId === "ecommerce-listing") {
-    return "border border-[#171a18] bg-[#171a18] text-white";
+    return "border border-moss bg-moss text-white";
   }
-  return "border border-[#23854f]/[0.35] bg-[#e7f2ea] text-moss";
+  return "border border-moss/[0.35] bg-sage text-moss";
 }
 
-export function MobileCreationProjectGateway({
+export const MobileCreationProjectGateway = memo(function MobileCreationProjectGateway({
   draftCount,
   onSelect,
   todayDraftCount
@@ -69,18 +70,18 @@ export function MobileCreationProjectGateway({
   onSelect: (projectId: MobileCreationProjectId) => void;
   todayDraftCount: number;
 }) {
-  const projectStats = [
+  const projectStats = useMemo(() => [
     { label: "草稿总数", value: String(draftCount), tone: "text-moss" },
-    { label: "项目数", value: String(mobileCreationProjects.length), tone: "text-[#e58a00]" },
-    { label: "今日生成", value: String(todayDraftCount), tone: "text-[#1d72d2]" },
+    { label: "项目数", value: String(mobileCreationProjects.length), tone: "text-amber-ink" },
+    { label: "今日生成", value: String(todayDraftCount), tone: "text-steel" },
     { label: "已发布", value: "0", tone: "text-moss" }
-  ];
+  ], [draftCount, todayDraftCount]);
 
   return (
     <div className="space-y-4" data-testid="mobile-creation-project-gateway">
       <section className="-mx-4 -mt-3 mb-[-8px] flex min-h-[260px] flex-col justify-end overflow-hidden px-8 pb-6 pt-20 text-center">
-        <div className="mx-auto mb-2 h-1 w-28 rounded-full bg-[#5ea66b]/[0.60]" />
-        <h2 className="text-[30px] font-black leading-9 text-ink drop-shadow-[0_1px_0_rgba(255,255,255,0.88)]">
+        <div className="mx-auto mb-2 h-1 w-28 rounded-full bg-moss/[0.60]" />
+        <h2 className="text-[22px] font-black leading-7 text-ink drop-shadow-[0_1px_0_rgba(255,255,255,0.88)]">
           一键创建，高效出稿
         </h2>
         <p className="mt-2 text-[15px] font-semibold leading-6 text-ink/[0.58]">
@@ -99,7 +100,7 @@ export function MobileCreationProjectGateway({
             type="button"
           >
             <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[18px] shadow-[0_14px_28px_rgba(31,58,49,0.14)] ring-1 ring-black/10">
-              <img alt="" className="h-full w-full object-cover" src={project.iconSrc} />
+              <img alt={`${project.title}图标`} className="h-full w-full object-cover" loading="lazy" decoding="async" src={project.iconSrc} />
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-[17px] font-black leading-6">{project.title}</span>
@@ -133,10 +134,10 @@ export function MobileCreationProjectGateway({
             </div>
           ))}
         </div>
-        <p className="mt-3 rounded-[20px] bg-[#fff6d8]/[0.78] px-3 py-2 text-xs font-medium leading-5 text-[#8a5d16]">
+        <p className="mt-3 rounded-[20px] bg-amber/15 px-3 py-2 text-xs font-medium leading-5 text-amber-ink">
           发布仍需人工确认，不会自动发布，也不会伪造采集、图片或效果数据。
         </p>
       </MobilePanel>
     </div>
   );
-}
+});

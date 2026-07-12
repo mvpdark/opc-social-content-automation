@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { DraftHistoryCarousel, DraftHistorySelectionBar } from "@/components/mobile-draft-history";
 import { DraftPreviewEditor } from "@/components/mobile-draft-preview-editor";
 import type { DraftPreviewState, MobileDraftHistoryItem } from "@/lib/mobile-draft-storage";
@@ -28,9 +29,10 @@ interface DraftHistorySectionProps {
   onPreviewClose: () => void;
   onCopy: () => Promise<boolean>;
   onExportStatus: (message: string) => void;
+  onRegenerateImage?: (() => void) | null;
 }
 
-export function DraftHistorySection(props: DraftHistorySectionProps) {
+export const DraftHistorySection = memo(function DraftHistorySection(props: DraftHistorySectionProps) {
   const {
     activeContentId,
     error,
@@ -53,7 +55,8 @@ export function DraftHistorySection(props: DraftHistorySectionProps) {
     onDraftChange,
     onPreviewClose,
     onCopy,
-    onExportStatus
+    onExportStatus,
+    onRegenerateImage
   } = props;
 
   return (
@@ -89,8 +92,9 @@ export function DraftHistorySection(props: DraftHistorySectionProps) {
           onClose={onPreviewClose}
           onCopy={onCopy}
           onExportStatus={onExportStatus}
+          onRegenerateImage={onRegenerateImage}
         />
       ) : null}
     </>
   );
-}
+});

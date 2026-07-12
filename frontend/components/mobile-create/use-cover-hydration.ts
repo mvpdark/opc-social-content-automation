@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
 import { normalizeVisibleDraftHistory } from "@/components/mobile-create-helpers";
@@ -31,11 +31,12 @@ import {
   type GeneratedImageAsset,
   type GenerationSourceContext
 } from "@/lib/generated-assets";
-import { readApiError, type MobilePlatform } from "@/lib/mobile-runtime";
+import { authHeaders, readApiError, type CredentialSettings, type MobilePlatform } from "@/lib/mobile-runtime";
 
 interface UseCoverHydrationParams {
   apiBase: string;
   platform: MobilePlatform;
+  credentials: CredentialSettings;
   onAction: (message: string) => void;
   draftHistoryReloadKey: number;
   setDraftHistory: Dispatch<SetStateAction<MobileDraftHistoryItem[]>>;
@@ -50,6 +51,7 @@ export function useCoverHydration(params: UseCoverHydrationParams) {
   const {
     apiBase,
     platform,
+    credentials,
     onAction,
     draftHistoryReloadKey,
     setDraftHistory,
@@ -60,13 +62,28 @@ export function useCoverHydration(params: UseCoverHydrationParams) {
     setDraftPreview
   } = params;
 
+  const onActionRef = useRef(onAction);
+  const contentRequestIdRef = useRef(0);
+  const draftHistoryRef = useRef<MobileDraftHistoryItem[]>([]);
+  const credentialsRef = useRef(credentials);
+  useEffect(() => {
+    credentialsRef.current = credentials;
+  }, [credentials]);
+  useEffect(() => {
+    onActionRef.current = onAction;
+  }, [onAction]);
+
   useEffect(() => {
     let active = true;
     let coverHydrationRetryTimer: number | null = null;
+    const ac = new AbortController();
 
-    async function fetchLatestCover(contentId: number) {
+    async function fetchLatestCover(contentId: number, signal?: AbortSignal) {
       try {
-        const response = await fetch(`${apiBase}/image/list?content_id=${contentId}&limit=1`);
+        const response = await fetch(`${apiBase}/image/list?content_id=${contentId}&limit=1`, {
+          headers: authHeaders(credentialsRef.current),
+          signal
+        });
         if (!response.ok) {
           return null;
         }
@@ -80,26 +97,27 @@ export function useCoverHydration(params: UseCoverHydrationParams) {
           (image): image is GeneratedImageAsset =>
             isGeneratedImageAsset(image) && image.content_id === contentId
         ) ?? null;
-      } catch (_error) {
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") return null;
+        console.warn("[use-cover-hydration] Failed to fetch cover:", error);
         return null;
       }
     }
 
     function applyHistoryCover(latestCover: GeneratedImageAsset) {
-      setDraftHistory((currentItems) => {
-        const normalized = normalizeVisibleDraftHistory(
-          currentItems.map((item) =>
-            item.content.id === latestCover.content_id ? { ...item, cover: latestCover } : item
-          )
-        );
-        saveStoredMobileDraftHistory(normalized);
-        return normalized;
-      });
+      const computed = normalizeVisibleDraftHistory(
+        draftHistoryRef.current.map((item) =>
+          item.content.id === latestCover.content_id ? { ...item, cover: latestCover } : item
+        )
+      );
+      draftHistoryRef.current = computed;
+      setDraftHistory(computed);
+      saveStoredMobileDraftHistory(computed);
     }
 
-    async function loadLatestCover(contentId: number) {
+    async function loadLatestCover(contentId: number, signal?: AbortSignal) {
       try {
-        const latestCover = await fetchLatestCover(contentId);
+        const latestCover = await fetchLatestCover(contentId, signal);
         if (!active || !latestCover) {
           return;
         }
@@ -110,16 +128,16 @@ export function useCoverHydration(params: UseCoverHydrationParams) {
         ) {
           return;
         }
-        setGeneratedCover(latestCover);
+        setGeneratedCover((current) => current ?? latestCover);
         saveStoredMobileCover(latestCover);
         applyHistoryCover(latestCover);
-        onAction("已找回最近封面图。");
-      } catch (_error) {
-        // Keep the cached cover visible if the network check fails.
+        onActionRef.current("已找回最近封面图。");
+      } catch (error) {
+        console.warn("[use-cover-hydration] loadLatestCover failed:", error);
       }
     }
 
-    function scheduleMissingCoverRetry(items: MobileDraftHistoryItem[], attempt: number) {
+    function scheduleMissingCoverRetry(items: MobileDraftHistoryItem[], attempt: number, signal?: AbortSignal) {
       if (!active || attempt >= MOBILE_COVER_HYDRATION_RETRY_LIMIT) {
         return;
       }
@@ -138,67 +156,70 @@ export function useCoverHydration(params: UseCoverHydrationParams) {
           (item) => item.content.platform === platform
         );
         const retryItems = latestStoredHistory.length ? latestStoredHistory : items;
-        void hydrateMissingHistoryCovers(retryItems, attempt + 1);
+        void hydrateMissingHistoryCovers(retryItems, attempt + 1, signal);
       }, MOBILE_COVER_HYDRATION_RETRY_MS);
     }
 
-    async function hydrateMissingHistoryCovers(items: MobileDraftHistoryItem[], attempt = 0) {
-      const missingCoverIds = items
-        .filter((item) => !item.cover)
-        .map((item) => item.content.id)
-        .slice(0, MOBILE_COVER_HYDRATION_BATCH_SIZE);
-      if (!missingCoverIds.length) {
-        return;
-      }
+    async function hydrateMissingHistoryCovers(items: MobileDraftHistoryItem[], attempt = 0, signal?: AbortSignal) {
+      try {
+        const missingCoverIds = items
+          .filter((item) => !item.cover)
+          .map((item) => item.content.id)
+          .slice(0, MOBILE_COVER_HYDRATION_BATCH_SIZE);
+        if (!missingCoverIds.length) {
+          return;
+        }
 
-      const covers = (await Promise.all(missingCoverIds.map(fetchLatestCover))).filter(
-        (cover): cover is GeneratedImageAsset => Boolean(cover)
-      );
-      if (!active) {
-        return;
-      }
-      if (!covers.length) {
-        scheduleMissingCoverRetry(items, attempt);
-        return;
-      }
+        const covers = (await Promise.all(missingCoverIds.map((id) => fetchLatestCover(id, signal)))).filter(
+          (cover): cover is GeneratedImageAsset => Boolean(cover)
+        );
+        if (!active) {
+          return;
+        }
+        if (!covers.length) {
+          scheduleMissingCoverRetry(items, attempt, signal);
+          return;
+        }
 
-      const coverByContentId = new Map(covers.map((cover) => [cover.content_id, cover]));
-      const stillMissingCover = missingCoverIds.some((contentId) => !coverByContentId.has(contentId));
-      setDraftHistory((currentItems) => {
-        const normalized = normalizeVisibleDraftHistory(
-          currentItems.map((item) => ({
+        const coverByContentId = new Map(covers.map((cover) => [cover.content_id, cover]));
+        const stillMissingCover = missingCoverIds.some((contentId) => !coverByContentId.has(contentId));
+        const computedHistory = normalizeVisibleDraftHistory(
+          draftHistoryRef.current.map((item) => ({
             ...item,
             cover: item.cover ?? coverByContentId.get(item.content.id) ?? null
           }))
         );
-        saveStoredMobileDraftHistory(normalized);
-        return normalized;
-      });
+        draftHistoryRef.current = computedHistory;
+        setDraftHistory(computedHistory);
+        saveStoredMobileDraftHistory(computedHistory);
 
-      setGeneratedCover((currentCover) => {
-        if (currentCover) {
-          return currentCover;
-        }
         const storedContent = readStoredMobileContent();
         const visibleContentId = storedContent && !readStoredDeletedDraftIds().has(storedContent.id)
           ? storedContent.id
           : null;
-        const recoveredCover = visibleContentId ? coverByContentId.get(visibleContentId) : null;
-        if (recoveredCover) {
-          saveStoredMobileCover(recoveredCover);
-          return recoveredCover;
+        const computedCover = visibleContentId ? coverByContentId.get(visibleContentId) ?? null : null;
+        if (computedCover) {
+          setGeneratedCover(computedCover);
+          saveStoredMobileCover(computedCover);
         }
-        return currentCover;
-      });
 
-      if (stillMissingCover) {
-        scheduleMissingCoverRetry(items, attempt);
+        if (stillMissingCover) {
+          scheduleMissingCoverRetry(items, attempt, signal);
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") return;
+        console.warn("[use-cover-hydration] hydrateMissingHistoryCovers failed:", error);
       }
     }
 
-    async function loadLatestContent() {
+    async function loadLatestContent(signal?: AbortSignal) {
+      const requestId = ++contentRequestIdRef.current;
       try {
-        const response = await fetch(`${apiBase}/content/list?platform=${platform}`);
+        const response = await fetch(`${apiBase}/content/list?platform=${platform}`, {
+          cache: "no-cache",
+          headers: authHeaders(credentialsRef.current),
+          signal
+        });
         if (!response.ok) {
           throw new Error(await readApiError(response, "草稿历史读取失败。"));
         }
@@ -206,6 +227,7 @@ export function useCoverHydration(params: UseCoverHydrationParams) {
         if (!Array.isArray(data)) {
           throw new Error("草稿历史格式异常，请稍后重试。");
         }
+        if (requestId !== contentRequestIdRef.current) return;
         if (active) {
           setDraftHistoryError(null);
         }
@@ -226,35 +248,38 @@ export function useCoverHydration(params: UseCoverHydrationParams) {
           const currentHistory = readStoredMobileDraftHistory().filter(
             (item) => item.content.platform === platform
           );
-          const normalized = normalizeVisibleDraftHistory([...currentHistory, ...latestItems]);
-          const latestContent = normalized[0].content;
+          // MERGE: compute synchronously to avoid stale closure issues with functional updates
+          const mergedHistory = normalizeVisibleDraftHistory([
+            ...draftHistoryRef.current,
+            ...currentHistory,
+            ...latestItems
+          ]);
+          draftHistoryRef.current = mergedHistory;
+          setDraftHistory(mergedHistory);
+          saveStoredMobileDraftHistory(mergedHistory);
+          const latestContent = latestItems[0].content;
           const latestCover =
-            normalized.find((item) => item.content.id === latestContent.id)?.cover ?? null;
-          setGeneratedContent(latestContent);
-          setSourceContext(latestContent.source_context ?? null);
-          setDraftPreview(draftStateFromContent(latestContent));
+            currentHistory.find((item) => item.content.id === latestContent.id)?.cover ?? null;
+          // Guard: only set generated content if user hasn't generated/selected one
+          setGeneratedContent((current) => current ?? latestContent);
+          setSourceContext((current) => current ?? (latestContent.source_context ?? null));
+          setDraftPreview((current) =>
+            current === defaultMobileDraftPreview ? draftStateFromContent(latestContent) : current
+          );
           saveStoredMobileContent(latestContent);
           if (storedCover?.content_id === latestContent.id) {
-            setGeneratedCover(storedCover);
-            const nextHistory = normalizeVisibleDraftHistory(
-              normalized.map((item) =>
-                item.content.id === latestContent.id ? { ...item, cover: storedCover } : item
-              )
-            );
-            setDraftHistory(nextHistory);
-            saveStoredMobileDraftHistory(nextHistory);
+            setGeneratedCover((current) => current ?? storedCover);
           } else if (latestCover) {
-            setGeneratedCover(latestCover);
-            saveStoredMobileCover(latestCover);
-            setDraftHistory(normalized);
-            saveStoredMobileDraftHistory(normalized);
+            setGeneratedCover((current) => {
+              if (current) return current;
+              saveStoredMobileCover(latestCover);
+              return latestCover;
+            });
           } else {
-            setGeneratedCover(null);
-            setDraftHistory(normalized);
-            saveStoredMobileDraftHistory(normalized);
+            setGeneratedCover((current) => current ?? null);
           }
-          void hydrateMissingHistoryCovers(normalized);
-          void loadLatestCover(latestContent.id);
+          void hydrateMissingHistoryCovers(latestItems, 0, signal);
+          void loadLatestCover(latestContent.id, signal);
         }
       } catch (error) {
         if (active) {
@@ -286,11 +311,13 @@ export function useCoverHydration(params: UseCoverHydrationParams) {
         },
         ...storedHistory
       ]);
+      draftHistoryRef.current = normalized;
       setDraftHistory(normalized);
-      void hydrateMissingHistoryCovers(normalized);
+      void hydrateMissingHistoryCovers(normalized, 0, ac.signal);
     } else {
+      draftHistoryRef.current = storedHistory;
       setDraftHistory(storedHistory);
-      void hydrateMissingHistoryCovers(storedHistory);
+      void hydrateMissingHistoryCovers(storedHistory, 0, ac.signal);
     }
     if (visibleStoredContent?.platform === platform) {
       setGeneratedContent(visibleStoredContent);
@@ -299,7 +326,7 @@ export function useCoverHydration(params: UseCoverHydrationParams) {
       setGeneratedCover(
         storedCover?.content_id === visibleStoredContent.id ? storedCover : null
       );
-      void loadLatestCover(visibleStoredContent.id);
+      void loadLatestCover(visibleStoredContent.id, ac.signal);
     } else {
       setGeneratedContent(null);
       setGeneratedCover(null);
@@ -307,12 +334,13 @@ export function useCoverHydration(params: UseCoverHydrationParams) {
       setDraftPreview(defaultMobileDraftPreview);
     }
 
-    void loadLatestContent();
+    void loadLatestContent(ac.signal);
     return () => {
       active = false;
+      ac.abort();
       if (coverHydrationRetryTimer !== null) {
         window.clearTimeout(coverHydrationRetryTimer);
       }
     };
-  }, [platform, onAction, draftHistoryReloadKey]);
+  }, [apiBase, platform, credentials.workspaceToken, draftHistoryReloadKey]);
 }

@@ -8,13 +8,18 @@ from app.db.session import get_db
 from app.models.user import User
 
 bearer_scheme = HTTPBearer(auto_error=False)
-DEFAULT_PLANNER_USER = User(
-    id=0,
-    phone="local-planner",
-    nickname="默认运营员",
-    role="planner",
-    password_hash="disabled-auth",
-)
+
+
+def _default_planner_user() -> User:
+    """每次返回新的 User 实例，避免全局可变状态被污染。"""
+    return User(
+        id=0,
+        phone="local-planner",
+        nickname="默认运营员",
+        role="planner",
+        password_hash="disabled-auth",
+        domain_key="ssb",
+    )
 
 
 def get_current_user(
@@ -22,7 +27,7 @@ def get_current_user(
     db: Session = Depends(get_db),
 ) -> User:
     if not settings.auth_required:
-        return DEFAULT_PLANNER_USER
+        return _default_planner_user()
 
     if credentials is None:
         raise HTTPException(
@@ -30,10 +35,15 @@ def get_current_user(
             detail="请先登录。",
         )
 
-    token_data = decode_access_token(credentials.credentials)
     try:
-        user_id = int(token_data["sub"])
-    except ValueError as exc:
+        token_data = decode_access_token(credentials.credentials)
+        sub = token_data.get("sub")
+        if sub is None:
+            raise ValueError("missing sub claim")
+        user_id = int(sub)
+    except HTTPException:
+        raise
+    except (ValueError, TypeError) as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="登录状态异常，请重新登录。",

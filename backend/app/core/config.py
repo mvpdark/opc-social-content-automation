@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     jwt_secret_key: str = "replace-with-a-long-random-secret"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440
-    auth_required: bool = False
+    auth_required: bool = True
     embedding_dimensions: int = 1536
     draft_provider: str = "codex_test"
     draft_model: str = "gpt-5.5"
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     image_model: str = "gpt-image-2"
     image_size: str | None = None
     image_response_format: str | None = None
-    image_timeout_seconds: float = 180.0
+    image_timeout_seconds: float = 600.0
     test_static_url_prefix: str = "/static/generated"
     openai_compatible_api_key: str | None = None
     openai_compatible_base_url: str = "https://api.openai.com/v1"
@@ -52,7 +52,8 @@ class Settings(BaseSettings):
     knowledge_compile_interval_hours: int = 168
     knowledge_compile_check_interval_seconds: int = 3600
     knowledge_compile_source_limit: int = 120
-    frontend_origin: str = "http://localhost:3000"
+    frontend_origin: str = "http://localhost:60000"
+    zscj_api_base_url: str = "http://localhost:60002/api/v1"
     cors_origin_regex: str | None = (
         r"^https?://("
         r"localhost|127\.0\.0\.1|"
@@ -71,15 +72,22 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _warn_weak_jwt_secret(self) -> "Settings":
         if self.jwt_secret_key == "replace-with-a-long-random-secret":
+            if self.auth_required:
+                raise RuntimeError(
+                    "JWT_SECRET_KEY 使用默认弱密钥且 AUTH_REQUIRED=true，"
+                    "必须在 .env 中设置安全密钥后才能启动！"
+                )
             warnings.warn(
                 "JWT_SECRET_KEY 使用默认弱密钥，生产环境必须在 .env 中替换！",
                 stacklevel=2,
             )
+        if len(self.jwt_secret_key) < 32:
+            warnings.warn("JWT_SECRET_KEY 长度不足32字符，建议使用更长的随机密钥", stacklevel=2)
         return self
 
     @property
     def cors_origins(self) -> list[str]:
-        return [self.frontend_origin, "http://127.0.0.1:3000"]
+        return [self.frontend_origin, "http://127.0.0.1:60000"]
 
     @property
     def is_sqlite(self) -> bool:

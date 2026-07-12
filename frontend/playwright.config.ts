@@ -5,7 +5,7 @@ import { defineConfig, devices } from "@playwright/test";
 // 强制使用异步 loader 绕过此问题。
 process.env.PLAYWRIGHT_FORCE_ASYNC_LOADER = "1";
 
-const defaultBaseUrl = "http://127.0.0.1:3000";
+const defaultBaseUrl = "http://127.0.0.1:6000";
 const baseUrl = process.env.OPC_BASE_URL ?? defaultBaseUrl;
 
 export default defineConfig({
@@ -34,7 +34,7 @@ export default defineConfig({
   webServer: process.env.OPC_BASE_URL
     ? undefined
     : {
-        command: "npm run dev -- -H 127.0.0.1 -p 3000",
+        command: "npm run dev -- -H 127.0.0.1 -p 6000",
         url: defaultBaseUrl,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000

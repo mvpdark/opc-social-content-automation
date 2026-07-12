@@ -9,7 +9,8 @@ class UserCreate(BaseModel):
     phone: str = Field(min_length=6, max_length=32)
     password: str = Field(min_length=8, max_length=128)
     nickname: str | None = Field(default=None, max_length=80)
-    role: str = Field(default="promoter", max_length=32)
+    # NOTE: `role` 字段已移除——自助注册绝不允许客户端指定角色。
+    # auth_service.create_user 始终强制 role="promoter"，避免权限提升。
 
 
 class LoginRequest(BaseModel):
@@ -41,6 +42,7 @@ class Token(BaseModel):
 
 class MobileLoginResponse(BaseModel):
     account: str
+    access_token: str = ""
     default_keys_bound: bool
     key_profile: str
     provider_statuses: list[ProviderStatusItem]

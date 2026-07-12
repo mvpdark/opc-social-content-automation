@@ -30,7 +30,12 @@ def compile_backend() -> int:
         if not SKIP_DIRS.intersection(file.relative_to(ROOT).parts)
     ]
     for file in py_files:
-        py_compile.compile(str(file), doraise=True)
+        try:
+            py_compile.compile(str(file), doraise=True)
+        except PermissionError:
+            # Fallback: syntax-only check without writing .pyc cache
+            with open(file, "r", encoding="utf-8") as f:
+                compile(f.read(), str(file), "exec")
     return len(py_files)
 
 
@@ -43,7 +48,10 @@ def clean_pycache() -> int:
             resolved = cache_dir.resolve()
             if ROOT == resolved or ROOT not in resolved.parents:
                 raise SystemExit(f"Refusing to remove outside project: {resolved}")
-            shutil.rmtree(resolved)
+            try:
+                shutil.rmtree(resolved)
+            except PermissionError:
+                pass  # skip dirs that cannot be removed due to filesystem permissions
             count += 1
             dirnames.remove("__pycache__")
     return count

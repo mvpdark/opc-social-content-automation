@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   contentControls,
   writingReferences,
@@ -43,7 +43,7 @@ import { CreationProjectGateway } from "./workspace-creation-gateway";
 import { DraftPanel } from "./workspace-draft-panel";
 import { PcReviewQueuePanel } from "./workspace-review-queue";
 
-export function ContentView({
+export const ContentView = memo(function ContentView({
   defaultWritingStyle,
   interfaceStyle,
   initialProject,
@@ -75,93 +75,150 @@ export function ContentView({
   const [reviewQueueLoading, setReviewQueueLoading] = useState(true);
   const [reviewQueueReloadKey, setReviewQueueReloadKey] = useState(0);
   const [previewLoading, setPreviewLoading] = useState(true);
-  const selectedCreationProject = findEnabledCreationProject(selectedCreationProjectId);
-  const pcReviewQueueContents = reviewQueueContents.filter(isPcReviewQueueCandidate);
+  const selectedCreationProject = useMemo(
+    () => findEnabledCreationProject(selectedCreationProjectId),
+    [selectedCreationProjectId]
+  );
 
-  async function fetchLatestImage(contentId: number) {
+  const draftHistoryRef = useRef(draftHistory);
+  draftHistoryRef.current = draftHistory;
+  const reviewQueueContentsRef = useRef(reviewQueueContents);
+  reviewQueueContentsRef.current = reviewQueueContents;
+  const pinnedDraftIdsRef = useRef(pinnedDraftIds);
+  pinnedDraftIdsRef.current = pinnedDraftIds;
+  const previewContentRef = useRef(previewContent);
+  previewContentRef.current = previewContent;
+  const draftImagesByContentIdRef = useRef(draftImagesByContentId);
+  draftImagesByContentIdRef.current = draftImagesByContentId;
+  const activeRef = useRef(true);
+  const contentRequestIdRef = useRef(0);
+  const reviewQueueRequestIdRef = useRef(0);
+  const draftImageAbortRef = useRef<AbortController | null>(null);
+  const deleteDraftAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    activeRef.current = true;
+    return () => {
+      activeRef.current = false;
+      draftImageAbortRef.current?.abort();
+      deleteDraftAbortRef.current?.abort();
+    };
+  }, []);
+
+  const pcReviewQueueContents = useMemo(
+    () => reviewQueueContents.filter(isPcReviewQueueCandidate),
+    [reviewQueueContents]
+  );
+
+  const fetchLatestImage = useCallback(async (contentId: number, signal?: AbortSignal) => {
     try {
-      const response = await fetch(`${API_BASE}/image/list?content_id=${contentId}&limit=1`);
+      const headers = workspaceToken ? { Authorization: `Bearer ${workspaceToken}` } : undefined;
+      const response = await fetch(`${API_BASE}/image/list?content_id=${contentId}&limit=1`, {
+        headers,
+        signal
+      });
       if (!response.ok) {
         return null;
       }
-      const images = (await response.json()) as unknown;
+      const images = await response.json();
+      if (!activeRef.current) return null;
       if (!Array.isArray(images)) {
         return null;
       }
       return images.find(isGeneratedImageAsset) ?? null;
-    } catch (_error) {
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") throw error;
       return null;
     }
-  }
+  }, [workspaceToken]);
 
-  function handleGeneratedContent(content: GeneratedContent) {
+  const handleGeneratedContent = useCallback((content: GeneratedContent) => {
     setPreviewContent(content);
     setPreviewImageAsset(null);
     setDraftHistory((current) =>
-      sortDraftHistory(upsertDraftHistory(current, content), pinnedDraftIds)
+      sortDraftHistory(upsertDraftHistory(current, content), pinnedDraftIdsRef.current)
     );
     setReviewQueueContents((current) =>
       isPcReviewQueueCandidate(content)
-        ? sortDraftHistory(upsertDraftHistory(current, content), pinnedDraftIds)
+        ? sortDraftHistory(upsertDraftHistory(current, content), pinnedDraftIdsRef.current)
         : current.filter((item) => item.id !== content.id)
     );
     setDraftActionError(null);
     setDraftHistoryError(null);
     setReviewQueueError(null);
     saveStoredGeneratedContent(content);
-  }
+  }, []);
 
-  function handleImageGenerated(asset: GeneratedImageAsset) {
+  const handleImageGenerated = useCallback((asset: GeneratedImageAsset) => {
     setPreviewImageAsset(asset);
     setDraftImagesByContentId((current) => ({
       ...current,
       [asset.content_id]: asset
     }));
-  }
+  }, []);
 
-  async function handleSelectDraft(content: GeneratedContent) {
+  const handleSelectDraft = useCallback(async (content: GeneratedContent) => {
     setPreviewContent(content);
     setDraftActionError(null);
     saveStoredGeneratedContent(content);
-    if (Object.prototype.hasOwnProperty.call(draftImagesByContentId, content.id)) {
-      setPreviewImageAsset(draftImagesByContentId[content.id]);
+    if (Object.prototype.hasOwnProperty.call(draftImagesByContentIdRef.current, content.id)) {
+      setPreviewImageAsset(draftImagesByContentIdRef.current[content.id]);
       return;
     }
     setPreviewImageAsset(null);
-    const image = await fetchLatestImage(content.id);
+    draftImageAbortRef.current?.abort();
+    const draftImageController = new AbortController();
+    draftImageAbortRef.current = draftImageController;
+    let image: GeneratedImageAsset | null = null;
+    try {
+      image = await fetchLatestImage(content.id, draftImageController.signal);
+    } catch {
+      // AbortError from fetchLatestImage when user selects another draft
+      // or component unmounts. Safe to return silently.
+      return;
+    }
+    if (!activeRef.current || draftImageController.signal.aborted) return;
     setDraftImagesByContentId((current) => ({
       ...current,
       [content.id]: image
     }));
-    setPreviewImageAsset(image);
-  }
+    if (previewContentRef.current?.id === content.id) {
+      setPreviewImageAsset(image);
+    }
+  }, [fetchLatestImage]);
 
-  function handleTogglePinDraft(contentId: number) {
-    setPinnedDraftIds((current) => {
-      const next = current.includes(contentId)
-        ? current.filter((id) => id !== contentId)
-        : [contentId, ...current];
-      savePinnedDraftIds(next);
-      setDraftHistory((history) => sortDraftHistory(history, next));
-      return next;
-    });
-  }
+  const handleTogglePinDraft = useCallback((contentId: number) => {
+    const current = pinnedDraftIdsRef.current;
+    const next = current.includes(contentId)
+      ? current.filter((id) => id !== contentId)
+      : [contentId, ...current];
+    setPinnedDraftIds(next);
+    savePinnedDraftIds(next);
+    setDraftHistory((history) => sortDraftHistory(history, next));
+  }, []);
 
-  async function handleDeleteDraft(contentId: number) {
+  const handleDeleteDraft = useCallback(async (contentId: number) => {
     setDraftActionError(null);
+    deleteDraftAbortRef.current?.abort();
+    const deleteController = new AbortController();
+    deleteDraftAbortRef.current = deleteController;
     try {
+      const headers = workspaceToken ? { Authorization: `Bearer ${workspaceToken}` } : undefined;
       const response = await fetch(`${API_BASE}/content/${contentId}`, {
-        method: "DELETE"
+        headers,
+        method: "DELETE",
+        signal: deleteController.signal
       });
       if (!response.ok) {
         throw new Error(await readApiError(response, "草稿删除失败。"));
       }
-      const nextHistory = draftHistory.filter((content) => content.id !== contentId);
-      const nextReviewQueue = reviewQueueContents.filter((content) => content.id !== contentId);
-      const nextPinnedIds = pinnedDraftIds.filter((id) => id !== contentId);
-      const nextContent = previewContent?.id === contentId ? nextHistory[0] ?? null : previewContent;
-      setDraftHistory(sortDraftHistory(nextHistory, nextPinnedIds));
-      setReviewQueueContents(sortDraftHistory(nextReviewQueue, nextPinnedIds));
+      if (!activeRef.current) return;
+      const nextHistory = draftHistoryRef.current.filter((content) => content.id !== contentId);
+      const nextReviewQueue = reviewQueueContentsRef.current.filter((content) => content.id !== contentId);
+      const nextPinnedIds = pinnedDraftIdsRef.current.filter((id) => id !== contentId);
+      const nextContent = previewContentRef.current?.id === contentId ? nextHistory[0] ?? null : previewContentRef.current;
+      setDraftHistory((current) => sortDraftHistory(current.filter((content) => content.id !== contentId), nextPinnedIds));
+      setReviewQueueContents((current) => sortDraftHistory(current.filter((content) => content.id !== contentId), nextPinnedIds));
       setPinnedDraftIds(nextPinnedIds);
       savePinnedDraftIds(nextPinnedIds);
       setDraftImagesByContentId((current) => {
@@ -169,9 +226,9 @@ export function ContentView({
         delete next[contentId];
         return next;
       });
-      if (previewContent?.id === contentId) {
+      if (previewContentRef.current?.id === contentId) {
         setPreviewContent(nextContent);
-        setPreviewImageAsset(nextContent ? draftImagesByContentId[nextContent.id] ?? null : null);
+        setPreviewImageAsset(nextContent ? draftImagesByContentIdRef.current[nextContent.id] ?? null : null);
         if (nextContent) {
           saveStoredGeneratedContent(nextContent);
         } else {
@@ -179,31 +236,33 @@ export function ContentView({
         }
       }
     } catch (error) {
+      if (!activeRef.current) return;
+      if (error instanceof Error && error.name === "AbortError") return;
       setDraftActionError(error instanceof Error ? error.message : "草稿删除失败。");
     }
-  }
+  }, [workspaceToken]);
 
-  function handleSelectCreationProject(projectId: CreationProjectId) {
+  const handleSelectCreationProject = useCallback((projectId: CreationProjectId) => {
     setSelectedCreationProjectId(projectId);
     updateCreationProjectQuery(projectId);
-  }
+  }, []);
 
-  function handleReturnToProjects() {
+  const handleReturnToProjects = useCallback(() => {
     setSelectedCreationProjectId(null);
     updateCreationProjectQuery(null);
-  }
+  }, []);
 
-  function handleRetryContentList() {
+  const handleRetryContentList = useCallback(() => {
     setReviewQueueLoading(true);
     setReviewQueueError(null);
     setReviewQueueReloadKey((current) => current + 1);
-  }
+  }, []);
 
-  function handleRetryDraftHistory() {
+  const handleRetryDraftHistory = useCallback(() => {
     setPreviewLoading(true);
     setDraftHistoryError(null);
     setDraftHistoryReloadKey((current) => current + 1);
-  }
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -217,6 +276,8 @@ export function ContentView({
 
   useEffect(() => {
     let active = true;
+    const abortController = new AbortController();
+    const { signal } = abortController;
     const storedPinnedIds = loadPinnedDraftIds();
     setPinnedDraftIds(storedPinnedIds);
     const storedContent = loadStoredGeneratedContent();
@@ -226,7 +287,7 @@ export function ContentView({
     }
 
     if (storedContent) {
-      void fetchLatestImage(storedContent.id).then((image) => {
+      void fetchLatestImage(storedContent.id, signal).then((image) => {
         if (active) {
           setPreviewImageAsset(image);
           setDraftImagesByContentId((current) => ({
@@ -234,12 +295,17 @@ export function ContentView({
             [storedContent.id]: image
           }));
         }
-      });
+      }).catch((err: unknown) => { if (err instanceof Error && err.name === "AbortError") return null; if (process.env.NODE_ENV === "development") console.debug("fetchLatestImage error:", err); return null; });
     }
 
     async function loadLatestContent() {
+      const requestId = ++contentRequestIdRef.current;
       try {
-        const response = await fetch(`${API_BASE}/content/list?platform=xiaohongshu`);
+        const headers = workspaceToken ? { Authorization: `Bearer ${workspaceToken}` } : undefined;
+        const response = await fetch(`${API_BASE}/content/list?platform=xiaohongshu`, {
+          headers,
+          signal
+        });
         if (!response.ok) {
           throw new Error(await readApiError(response, "历史草稿读取失败。"));
         }
@@ -253,28 +319,44 @@ export function ContentView({
         );
         const latestContent = history[0] ?? null;
         if (active) {
-          setDraftHistory(history);
-          setPreviewContent(latestContent);
-          setPreviewImageAsset(null);
-          if (latestContent) {
-            saveStoredGeneratedContent(latestContent);
+          // MERGE: preserve drafts generated during fetch; append API history without duplicates
+          setDraftHistory((current) => {
+            const existingIds = new Set(current.map((d) => d.id));
+            const newItems = history.filter((h) => !existingIds.has(h.id));
+            return sortDraftHistory([...current, ...newItems], storedPinnedIds);
+          });
+          // Guard: only adopt API latest content/image when user hasn't selected/generated one
+          if (!previewContentRef.current) {
+            setPreviewImageAsset(null);
+            if (latestContent) {
+              saveStoredGeneratedContent(latestContent);
+            }
+            setPreviewContent(latestContent);
           }
           setDraftHistoryError(null);
         }
-        for (const content of history) {
-          void fetchLatestImage(content.id).then((image) => {
-            if (!active) {
-              return;
-            }
-            setDraftImagesByContentId((current) => ({
-              ...current,
-              [content.id]: image
-            }));
-            if (latestContent?.id === content.id) {
-              setPreviewImageAsset(image);
-            }
-          });
+        async function loadImagesBatched() {
+          const IMAGE_BATCH_SIZE = 5;
+          for (let i = 0; i < history.length; i += IMAGE_BATCH_SIZE) {
+            if (!active || contentRequestIdRef.current !== requestId) return;
+            const batch = history.slice(i, i + IMAGE_BATCH_SIZE);
+            await Promise.all(batch.map((content) =>
+              fetchLatestImage(content.id, signal).then((image) => {
+                if (!active || contentRequestIdRef.current !== requestId) {
+                  return;
+                }
+                setDraftImagesByContentId((current) => ({
+                  ...current,
+                  [content.id]: image
+                }));
+                if (latestContent?.id === content.id && !previewContentRef.current) {
+                  setPreviewImageAsset(image);
+                }
+              }).catch((err: unknown) => { if (err instanceof Error && err.name === "AbortError") return null; if (process.env.NODE_ENV === "development") console.debug("fetchLatestImage error:", err); return null; })
+            ));
+          }
         }
+        void loadImagesBatched();
       } catch (error) {
         if (active) {
           setDraftHistoryError(error instanceof Error ? error.message : "历史草稿读取失败。");
@@ -290,19 +372,27 @@ export function ContentView({
     void loadLatestContent();
     return () => {
       active = false;
+      abortController.abort();
     };
-  }, [draftHistoryReloadKey]);
+  }, [draftHistoryReloadKey, workspaceToken, fetchLatestImage]);
 
   useEffect(() => {
     let active = true;
+    const abortController = new AbortController();
+    const { signal } = abortController;
 
     async function loadReviewQueue() {
+      const requestId = ++reviewQueueRequestIdRef.current;
       try {
         if (active) {
           setReviewQueueLoading(true);
           setReviewQueueError(null);
         }
-        const response = await fetch(`${API_BASE}/content/review-queue?platform=xiaohongshu`);
+        const headers = workspaceToken ? { Authorization: `Bearer ${workspaceToken}` } : undefined;
+        const response = await fetch(`${API_BASE}/content/review-queue?platform=xiaohongshu`, {
+          headers,
+          signal
+        });
         if (!response.ok) {
           throw new Error(await readApiError(response, "待人工确认队列读取失败。"));
         }
@@ -310,22 +400,23 @@ export function ContentView({
         if (!Array.isArray(contents)) {
           throw new Error("待人工确认队列格式异常，请稍后重试。");
         }
+        if (requestId !== reviewQueueRequestIdRef.current) return;
         const queue = sortDraftHistory(
           contents
             .filter(isGeneratedContent)
             .filter((content) => !isTestDraft(content))
             .filter(isPcReviewQueueCandidate),
-          pinnedDraftIds
+          pinnedDraftIdsRef.current
         );
         if (active) {
           setReviewQueueContents(queue);
         }
       } catch (error) {
-        if (active) {
+        if (active && requestId === reviewQueueRequestIdRef.current) {
           setReviewQueueError(error instanceof Error ? error.message : "待人工确认队列读取失败。");
         }
       } finally {
-        if (active) {
+        if (active && requestId === reviewQueueRequestIdRef.current) {
           setReviewQueueLoading(false);
         }
       }
@@ -334,8 +425,9 @@ export function ContentView({
     void loadReviewQueue();
     return () => {
       active = false;
+      abortController.abort();
     };
-  }, [pinnedDraftIds, reviewQueueReloadKey]);
+  }, [reviewQueueReloadKey, workspaceToken]);
 
   if (!selectedCreationProject) {
     return (
@@ -435,4 +527,4 @@ export function ContentView({
       </div>
     </div>
   );
-}
+});

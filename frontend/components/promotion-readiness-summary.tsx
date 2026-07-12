@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   buildPromotionReadinessSummary,
   type GenerationSourceContext,
@@ -17,7 +18,7 @@ const stateLabel = {
   review: "待核对"
 } satisfies Record<PromotionReadinessState, string>;
 
-export function PromotionReadinessSummary({
+export const PromotionReadinessSummary = memo(function PromotionReadinessSummary({
   coverAvailable,
   draft,
   sourceContext,
@@ -82,4 +83,4 @@ export function PromotionReadinessSummary({
       </div>
     </section>
   );
-}
+});

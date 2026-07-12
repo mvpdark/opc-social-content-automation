@@ -1,7 +1,7 @@
-const DEFAULT_API_PORT = process.env.NEXT_PUBLIC_API_PORT ?? "8010";
+const DEFAULT_API_PORT = process.env.NEXT_PUBLIC_API_PORT ?? "60001";
 const DEFAULT_LOCAL_API_BASE = `http://localhost:${DEFAULT_API_PORT}/api`;
-const DEFAULT_ZSCJ_API_PORT = process.env.NEXT_PUBLIC_ZSCJ_API_PORT ?? "8011";
-const DEFAULT_LOCAL_ZSCJ_API_BASE = `http://localhost:${DEFAULT_ZSCJ_API_PORT}/api`;
+const DEFAULT_ZSCJ_API_PORT = process.env.NEXT_PUBLIC_ZSCJ_API_PORT ?? "60002";
+const DEFAULT_LOCAL_ZSCJ_API_BASE = `http://localhost:${DEFAULT_ZSCJ_API_PORT}/api/v1`;
 
 
 function trimTrailingSlash(value: string) {
@@ -130,8 +130,8 @@ export function getZscjApiBase() {
   }
 
   if (!isLocalOrPrivateHostname(hostname)) {
-    return `${origin}/zscj-api`;
+    return `${origin}/zscj/api/v1`;
   }
 
-  return `${protocol}//${hostname || "localhost"}:${DEFAULT_ZSCJ_API_PORT}/api`;
+  return `${protocol}//${hostname || "localhost"}:${DEFAULT_ZSCJ_API_PORT}/api/v1`;
 }

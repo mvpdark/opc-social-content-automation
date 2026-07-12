@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ExternalLink, Loader2, Search } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import {
   generationSourceContextStats,
@@ -56,7 +56,7 @@ function sourceKnowledgeItemToKnowledgeItem(item: GenerationKnowledgeSource): Kn
 
 type EvidenceSection = "knowledge" | "web" | null;
 
-export function GenerationSourceEvidenceCard({
+export const GenerationSourceEvidenceCard = memo(function GenerationSourceEvidenceCard({
   disabled = false,
   error,
   fallbackKnowledgeQuery,
@@ -77,17 +77,28 @@ export function GenerationSourceEvidenceCard({
     totalCount,
     webEvidenceCountLabel,
     webRequired
-  } = generationSourceContextStats(sourceContext);
+  } = useMemo(() => generationSourceContextStats(sourceContext), [sourceContext]);
   const webSearch = sourceContext?.web_search;
-  const webResults = webSearch?.results ?? [];
-  const knowledgeItems = sourceContext?.knowledge_items ?? [];
-  const sourceCards = sourceContext?.source_cards ?? [];
-  const visibleKnowledgeQuery = sourceContext?.knowledge_query || fallbackKnowledgeQuery?.trim() || "";
+  const webResults = useMemo(() => webSearch?.results ?? [], [webSearch]);
+  const knowledgeItems = useMemo(() => sourceContext?.knowledge_items ?? [], [sourceContext]);
+  const sourceCards = useMemo(() => sourceContext?.source_cards ?? [], [sourceContext]);
+  const visibleKnowledgeItems = useMemo(() => knowledgeItems.slice(0, 4), [knowledgeItems]);
+  const visibleWebResults = useMemo(() => webResults.slice(0, 4), [webResults]);
+  const visibleKnowledgeQuery = useMemo(
+    () => sourceContext?.knowledge_query || fallbackKnowledgeQuery?.trim() || "",
+    [sourceContext, fallbackKnowledgeQuery]
+  );
   const [openEvidenceSection, setOpenEvidenceSection] = useState<EvidenceSection>(null);
   const knowledgeListRef = useRef<HTMLDivElement | null>(null);
   const webListRef = useRef<HTMLDivElement | null>(null);
   const knowledgeOpen = openEvidenceSection === "knowledge";
   const webOpen = openEvidenceSection === "web";
+  const handleToggleKnowledge = useCallback(() => {
+    setOpenEvidenceSection((prev) => (prev === "knowledge" ? null : "knowledge"));
+  }, []);
+  const handleToggleWeb = useCallback(() => {
+    setOpenEvidenceSection((prev) => (prev === "web" ? null : "web"));
+  }, []);
 
   useEffect(() => {
     setOpenEvidenceSection(null);
@@ -141,7 +152,7 @@ export function GenerationSourceEvidenceCard({
       {error ? <p className="mt-2 text-xs leading-5 text-coral">{error}</p> : null}
       {missingRequiredWebResults ? (
         <div
-          className="mt-3 rounded-md border border-amber/40 bg-amber/10 px-3 py-2 text-[11px] leading-5 text-[#8a6110]"
+          className="mt-3 rounded-md border border-amber/40 bg-amber/10 px-3 py-2 text-[11px] leading-5 text-amber-ink"
           data-testid="source-required-web-warning"
         >
           此选题需要联网来源；未拿到 Tavily 结果前，不要让模型猜测学校、价格、logo 或排名结论。
@@ -159,7 +170,7 @@ export function GenerationSourceEvidenceCard({
               knowledgeOpen ? "bg-paper text-ink shadow-sm" : "bg-paper/60 text-muted hover:bg-paper"
             ].join(" ")}
             data-testid="source-knowledge-toggle"
-            onClick={() => setOpenEvidenceSection(knowledgeOpen ? null : "knowledge")}
+            onClick={handleToggleKnowledge}
             type="button"
           >
             <span>
@@ -186,7 +197,7 @@ export function GenerationSourceEvidenceCard({
               webOpen ? "bg-paper text-ink shadow-sm" : "bg-paper/60 text-muted hover:bg-paper"
             ].join(" ")}
             data-testid="source-web-toggle"
-            onClick={() => setOpenEvidenceSection(webOpen ? null : "web")}
+            onClick={handleToggleWeb}
             type="button"
           >
             <span>
@@ -211,8 +222,8 @@ export function GenerationSourceEvidenceCard({
           id="source-knowledge-list"
           ref={knowledgeListRef}
         >
-          {knowledgeItems.length ? (
-            knowledgeItems.slice(0, 4).map((item, index) => {
+          {visibleKnowledgeItems.length ? (
+            visibleKnowledgeItems.map((item, index) => {
               const knowledgeItem = sourceKnowledgeItemToKnowledgeItem(item);
               return (
                 <article className="workspace-evidence-result-card rounded-md border border-line bg-mist/55 p-3" key={`${item.id}-${index}`}>
@@ -254,8 +265,8 @@ export function GenerationSourceEvidenceCard({
               <span className="mt-1 block text-muted">摘要仅作线索，发布前请点开下方 URL 核对原文。</span>
             </p>
           ) : null}
-          {webResults.length ? (
-            webResults.slice(0, 4).map((item, index) => (
+          {visibleWebResults.length ? (
+            visibleWebResults.map((item, index) => (
               <a
                 aria-label={`打开联网来源：${item.title}`}
                 className="workspace-evidence-result-card block rounded-md border border-line bg-mist/55 p-3 transition hover:border-steel/60"
@@ -273,7 +284,7 @@ export function GenerationSourceEvidenceCard({
               </a>
             ))
           ) : (
-            <p className="rounded-md border border-amber/40 bg-amber/10 px-3 py-2 text-[11px] leading-5 text-[#8a6110]">
+            <p className="rounded-md border border-amber/40 bg-amber/10 px-3 py-2 text-[11px] leading-5 text-amber-ink">
               {webRequired
                 ? "这个选题需要实时资料，但本次还没有可见联网搜索结果；请先换关键词、检查 Tavily，或只写核验框架，不要让模型猜测学校、价格、logo 或排名结论。"
                 : "当前选题未触发联网搜索；如涉及学校、价格、logo、排名或市场信息，请先重新查看依据。"}
@@ -288,4 +299,4 @@ export function GenerationSourceEvidenceCard({
       ) : null}
     </div>
   );
-}
+});

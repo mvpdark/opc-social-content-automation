@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   ArrowLeft,
   Bookmark,
   Clipboard,
   ExternalLink,
   Heart,
+  ImageDown,
   Loader2,
   MessageCircle,
   Share2
@@ -16,10 +17,12 @@ import { CoverImagePreview } from "@/components/mobile-cover-image-preview";
 import { PromotionReadinessSummary } from "@/components/promotion-readiness-summary";
 import { isLocalOrPrivateHostname } from "@/lib/api-base";
 import { tryCopyText } from "@/lib/clipboard";
+import { type GeneratedContent } from "@/lib/generated-assets";
 import {
-  generationSourceContextStats,
-  type GeneratedContent
-} from "@/lib/generated-assets";
+  buildMobilePreviewChecklist,
+  mobilePreviewChecklistStateClass,
+  mobilePreviewChecklistStateLabel
+} from "@/lib/mobile-preview-checklist";
 import {
   buildEditableDraftCopy,
   type DraftPreviewState
@@ -36,127 +39,15 @@ import { renderXhsExpressionText } from "@/lib/xhs-stickers";
 
 const XHS_COPY_TEXT_ONLY_LABEL = "只复制文案";
 
-type MobilePreviewChecklistState = "ready" | "review" | "blocked";
-
-type MobilePreviewChecklistItem = {
-  detail: string;
-  key: "content" | "sources" | "cover" | "risk" | "human";
-  label: string;
-  state: MobilePreviewChecklistState;
-};
-
-const mobilePreviewChecklistStateLabel = {
-  blocked: "需补充",
-  ready: "已就绪",
-  review: "待核对"
-} satisfies Record<MobilePreviewChecklistState, string>;
-
-const mobilePreviewChecklistStateClass = {
-  blocked: "border-[#ffb3b3] bg-[#fff1f1] text-[#a63636]",
-  ready: "border-[#b9e8ce] bg-[#effaf4] text-[#167843]",
-  review: "border-[#ffe0a6] bg-[#fff8e6] text-[#8a6110]"
-} satisfies Record<MobilePreviewChecklistState, string>;
-
-const mobileBlockedPublishTerms = [
-  "保录",
-  "包过",
-  "百分百",
-  "100%",
-  "内部名额",
-  "官方录取",
-  "保证录取",
-  "保证套磁成功",
-  "必上岸"
-];
-
-function missingMobileDraftFields(draft: DraftPreviewState) {
-  const missingFields: string[] = [];
-  if (!draft.title.trim()) {
-    missingFields.push("标题");
-  }
-  if (!draft.body.trim()) {
-    missingFields.push("正文");
-  }
-  if (!draft.tags.trim()) {
-    missingFields.push("标签");
-  }
-  return missingFields;
-}
-
-function buildMobilePreviewChecklist({
-  coverImageUrl,
-  draft,
-  generatedContent
-}: {
-  coverImageUrl: string | null;
-  draft: DraftPreviewState;
-  generatedContent: GeneratedContent | null;
-}): MobilePreviewChecklistItem[] {
-  const sourceStats = generationSourceContextStats(generatedContent?.source_context);
-  const lifecycleWarning = generatedContent ? generatedContentLifecycleWarning(generatedContent.status) : null;
-  const draftText = `${draft.title}\n${draft.body}\n${draft.tags}`;
-  const missingContentFields = missingMobileDraftFields(draft);
-  const riskyTerms = mobileBlockedPublishTerms.filter((term) => draftText.includes(term));
-  const sourceDetail = !generatedContent
-    ? "本地草稿没有后端来源证据，发布前请先生成正式草稿。"
-    : sourceStats.missingRequiredWebResults
-      ? "当前选题需要实时来源，但没有可见 Tavily 结果，发布前先补来源。"
-      : sourceStats.hasEvidence
-        ? `已带 ${sourceStats.totalCount} 条来源证据，发布前核对学校、价格、logo、排名等事实。`
-        : "未带来源证据，只能作为通用草稿，发布前请人工补充可信依据。";
-
-  return [
-    {
-      detail: missingContentFields.length
-        ? `缺少${missingContentFields.join("、")}；请回到表单补齐后重新生成，或在预览中人工补充后再复制。`
-        : "标题、正文和标签会一起准备；发布前仍需逐项读一遍。",
-      key: "content",
-      label: "标题/正文/标签",
-      state: missingContentFields.length ? "blocked" : "ready"
-    },
-    {
-      detail: sourceDetail,
-      key: "sources",
-      label: "来源证据",
-      state: sourceStats.missingRequiredWebResults ? "blocked" : sourceStats.hasEvidence ? "review" : "blocked"
-    },
-    {
-      detail: coverImageUrl
-        ? "封面素材已准备；仍需核对是否含假校徽、假录取或误导视觉。"
-        : "封面尚未生成，将使用文字封面预览；发布前请确认是否补图。",
-      key: "cover",
-      label: "封面素材",
-      state: coverImageUrl ? "review" : "blocked"
-    },
-    {
-      detail: riskyTerms.length
-        ? `发现高风险词：${riskyTerms.join("、")}。请修改后再复制。`
-        : "未发现保录、包过、内部名额等高风险承诺词。",
-      key: "risk",
-      label: "安全用语",
-      state: riskyTerms.length ? "blocked" : "ready"
-    },
-    {
-      detail: lifecycleWarning
-        ? lifecycleWarning
-        : generatedContent
-          ? "当前仍是草稿素材；复制或分享只做准备，最终发布必须人工确认。"
-          : "本地草稿不可直接发布，请先生成正式草稿并人工确认。",
-      key: "human",
-      label: "人工确认",
-      state: lifecycleWarning ? "blocked" : generatedContent ? "review" : "blocked"
-    }
-  ];
-}
-
-export function DraftPreviewEditor({
+export const DraftPreviewEditor = memo(function DraftPreviewEditor({
   coverImageUrl,
   draft,
   generatedContent,
   onChange,
   onClose,
   onCopy,
-  onExportStatus
+  onExportStatus,
+  onRegenerateImage
 }: {
   coverImageUrl: string | null;
   draft: DraftPreviewState;
@@ -165,28 +56,59 @@ export function DraftPreviewEditor({
   onClose: () => void;
   onCopy: () => Promise<boolean>;
   onExportStatus: (message: string) => void;
+  onRegenerateImage?: (() => void) | null;
 }) {
   const [editing, setEditing] = useState(false);
+  const [regeneratingImage, setRegeneratingImage] = useState(false);
   const [manualCopyText, setManualCopyText] = useState<string | null>(null);
   const [xhsExporting, setXhsExporting] = useState(false);
   const [xhsExportMessage, setXhsExportMessage] = useState<string | null>(null);
   const manualCopyRef = useRef<HTMLTextAreaElement | null>(null);
-  const titleLines = draft.title.split(/[，,]/).slice(0, 3);
-  const bodyParagraphs = stripDuplicateStandaloneTagLines(draft.body, draft.tags)
-    .split(/\n+/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
-  const tags = draft.tags
-    .split(/\s+/)
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-  const lifecycleWarning = generatedContent ? generatedContentLifecycleWarning(generatedContent.status) : null;
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const activeRef = useRef(true);
+  useEffect(() => {
+    activeRef.current = true;
+    return () => {
+      activeRef.current = false;
+    };
+  }, []);
+  const titleLines = useMemo(() => draft.title.split(/[，,]/).slice(0, 3), [draft.title]);
+  const bodyParagraphs = useMemo(
+    () => stripDuplicateStandaloneTagLines(draft.body, draft.tags)
+      .split(/\n+/)
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean),
+    [draft.body, draft.tags]
+  );
+  const tags = useMemo(
+    () => draft.tags
+      .split(/\s+/)
+      .map((tag) => tag.trim())
+      .filter(Boolean),
+    [draft.tags]
+  );
+  const lifecycleWarning = useMemo(
+    () => (generatedContent ? generatedContentLifecycleWarning(generatedContent.status) : null),
+    [generatedContent]
+  );
   const exportLocked = Boolean(lifecycleWarning);
-  const prepublishChecklist = buildMobilePreviewChecklist({
-    coverImageUrl,
-    draft,
-    generatedContent
-  });
+  const prepublishChecklist = useMemo(
+    () => buildMobilePreviewChecklist({
+      coverImageUrl,
+      draft,
+      generatedContent
+    }),
+    [coverImageUrl, draft, generatedContent]
+  );
+  const promotionReadinessDraft = useMemo(
+    () => ({ body: draft.body, tags: draft.tags, title: draft.title }),
+    [draft.body, draft.tags, draft.title]
+  );
+  const editBodyRowCount = useMemo(
+    () => Math.min(16, Math.max(8, draft.body.split("\n").length + 5)),
+    [draft.body]
+  );
 
   useEffect(() => {
     if (!manualCopyText) {
@@ -202,23 +124,47 @@ export function DraftPreviewEditor({
     setXhsExportMessage(null);
   }, [generatedContent?.id]);
 
-  function updatePoint(index: number, value: string) {
+  const updatePoint = useCallback((index: number, value: string) => {
     onChange({
-      ...draft,
-      points: draft.points.map((point, pointIndex) => (pointIndex === index ? value : point))
+      ...draftRef.current,
+      points: draftRef.current.points.map((point, pointIndex) => (pointIndex === index ? value : point))
     });
-  }
+  }, [onChange]);
+
+  const handleTitleChange = useCallback((event: ChangeEvent<HTMLTextAreaElement>) => {
+    onChange({ ...draftRef.current, title: event.target.value });
+  }, [onChange]);
+
+  const handleBodyChange = useCallback((event: ChangeEvent<HTMLTextAreaElement>) => {
+    onChange({ ...draftRef.current, body: event.target.value });
+  }, [onChange]);
+
+  const handleTagsChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    onChange({ ...draftRef.current, tags: event.target.value });
+  }, [onChange]);
 
   function publishExportStatus(message: string) {
     setXhsExportMessage(message);
     onExportStatus(message);
   }
 
-  function toggleEditing() {
+  const toggleEditing = useCallback(() => {
     setManualCopyText(null);
     setXhsExportMessage(null);
     setEditing((current) => !current);
-  }
+  }, []);
+
+  const handleRegenerateImage = useCallback(async () => {
+    if (regeneratingImage || !onRegenerateImage) return;
+    setRegeneratingImage(true);
+    try {
+      await onRegenerateImage();
+    } finally {
+      if (activeRef.current) {
+        setRegeneratingImage(false);
+      }
+    }
+  }, [onRegenerateImage, regeneratingImage]);
 
   async function copyDraftTextOnly() {
     if (lifecycleWarning) {
@@ -230,6 +176,7 @@ export function DraftPreviewEditor({
     setEditing(false);
     const draftText = buildEditableDraftCopy(draft);
     const copied = await onCopy();
+    if (!activeRef.current) return;
     setManualCopyText(draftText);
     const message = copied
       ? "已尝试复制文案；下方也保留了正文，可长按全选再确认。"
@@ -251,13 +198,16 @@ export function DraftPreviewEditor({
     publishExportStatus("正在准备封面图、标题和正文；下方会保留文案兜底。");
     try {
       const textCopied = await tryCopyText(draftText);
+      if (!activeRef.current) return;
       setManualCopyText(draftText);
       const coverFile = await buildXhsCoverFile(coverImageUrl, draft);
+      if (!activeRef.current) return;
 
       const nativeBridge = getOmpcAndroidBridge();
       if (nativeBridge) {
         publishExportStatus("正在准备打开小红书发布入口；图文只会进入编辑流程，仍需人工确认后提交。");
         const nativeResult = await shareToNativeXiaohongshu(draft.title, draftText, coverFile);
+        if (!activeRef.current) return;
         if (nativeResult.ok) {
           publishExportStatus(
             textCopied
@@ -291,6 +241,7 @@ export function DraftPreviewEditor({
           const errorName = error instanceof DOMException ? error.name : "";
           if (errorName === "AbortError") {
             const restored = await tryCopyText(draftText);
+            if (!activeRef.current) return;
             setManualCopyText(draftText);
             const abortMessage = restored
               ? "已取消系统分享；已重新尝试复制文案，下方也保留了正文，可长按全选确认。"
@@ -303,6 +254,7 @@ export function DraftPreviewEditor({
         }
         if (!systemShareFailed) {
           const sharedCopyRestored = await tryCopyText(draftText);
+          if (!activeRef.current) return;
           setManualCopyText(draftText);
           const sharedMessage = sharedCopyRestored
             ? "已交给系统分享；请选择小红书发布入口，并在小红书内人工确认后再提交。已重新尝试复制文案，下方也保留了正文，如果没有自动带入请直接粘贴。"
@@ -314,6 +266,7 @@ export function DraftPreviewEditor({
 
       downloadFile(coverFile);
       const fallbackTextRestored = await tryCopyText(draftText);
+      if (!activeRef.current) return;
       setManualCopyText(draftText);
       const fallbackMessage = fallbackTextRestored
         ? "封面图已下载，文案已尝试复制。当前浏览器不能把图文直接带入小红书发布器，请手动打开小红书发布入口，选择刚下载的封面图后粘贴正文，并人工确认后再提交。"
@@ -323,7 +276,9 @@ export function DraftPreviewEditor({
       const message = error instanceof Error ? error.message : "打开小红书失败。";
       publishExportStatus(message);
     } finally {
-      setXhsExporting(false);
+      if (activeRef.current) {
+        setXhsExporting(false);
+      }
     }
   }
 
@@ -341,6 +296,7 @@ export function DraftPreviewEditor({
 
     const previewUrl = `${window.location.origin}/preview/${generatedContent.id}`;
     const copied = await tryCopyText(previewUrl);
+    if (!activeRef.current) return;
     setManualCopyText(copied ? null : previewUrl);
     const isLocalPreview = isLocalOrPrivateHostname(window.location.hostname);
     let message = "浏览器拦截了剪贴板，预览链接已展开，可长按全选复制。";
@@ -360,11 +316,11 @@ export function DraftPreviewEditor({
       role="dialog"
     >
       <div className="relative flex h-[100dvh] w-full max-w-[430px] flex-col bg-white text-ink">
-        <header className="shrink-0 border-b border-[#eeeeee] bg-white px-4 pb-3 pt-3">
+        <header className="shrink-0 border-b border-line bg-white px-4 pb-3 pt-3">
           <div className="flex items-center justify-between gap-3">
             <button
               aria-label="关闭草稿预览"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f5f5f5] text-ink"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-mist text-ink"
               data-testid="draft-preview-close"
               onClick={onClose}
               type="button"
@@ -372,13 +328,25 @@ export function DraftPreviewEditor({
               <ArrowLeft className="h-4 w-4" />
             </button>
             <div className="min-w-0 flex-1">
-              <div className="text-[11px] font-semibold text-[#ff2442]">
+              <div className="text-[11px] font-semibold text-coral">
                 {generatedContent ? "当前草稿" : "本地草稿"}
               </div>
               <h2 className="truncate text-lg font-semibold leading-6">图文预览</h2>
             </div>
+            {onRegenerateImage ? (
+              <button
+                className="flex h-10 items-center gap-1 rounded-full bg-coral px-3 text-sm font-semibold text-white disabled:opacity-50"
+                data-testid="draft-preview-regenerate-image"
+                disabled={regeneratingImage}
+                onClick={handleRegenerateImage}
+                type="button"
+              >
+                {regeneratingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageDown className="h-4 w-4" />}
+                <span className="hidden sm:inline">{regeneratingImage ? "生图中" : "重新生图"}</span>
+              </button>
+            ) : null}
             <button
-              className="h-10 rounded-full bg-[#111111] px-4 text-sm font-semibold text-white"
+              className="h-10 rounded-full bg-moss px-4 text-sm font-semibold text-white"
               data-testid={editing ? "draft-preview-save" : "draft-preview-edit-toggle"}
               onClick={toggleEditing}
               type="button"
@@ -393,12 +361,12 @@ export function DraftPreviewEditor({
             {coverImageUrl ? (
               <CoverImagePreview
                 alt="小红书图文封面预览"
-                className="aspect-[3/4] w-full bg-[#f7f7f7] object-contain"
+                className="aspect-[3/4] w-full bg-mist object-contain"
                 src={coverImageUrl}
                 testId="draft-preview-cover-image"
               />
             ) : (
-              <div className="aspect-[3/4] w-full bg-[linear-gradient(160deg,#fff7df,#d9f1e5_48%,#f7cdbf)] px-6 pb-8 pt-6">
+              <div className="aspect-[3/4] w-full bg-[linear-gradient(160deg,rgb(var(--cream)),rgb(var(--sage))_48%,rgb(var(--blush)))] px-6 pb-8 pt-6">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-steel">封面预览</span>
                   <span className="rounded-full bg-white/[0.75] px-3 py-1 text-[11px] font-semibold text-ink/[0.70]">
@@ -423,9 +391,9 @@ export function DraftPreviewEditor({
             )}
 
             <div className="px-4 pb-5 pt-4">
-              <div className="flex items-center justify-between gap-3 border-b border-[#f1f1f1] pb-3">
+              <div className="flex items-center justify-between gap-3 border-b border-line pb-3">
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ff2442] text-sm font-bold text-white">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-coral text-sm font-bold text-white">
                     O
                   </div>
                   <div className="min-w-0">
@@ -434,7 +402,7 @@ export function DraftPreviewEditor({
                   </div>
                 </div>
                 <button
-                  className="h-8 rounded-full bg-[#ff2442] px-4 text-xs font-semibold text-white"
+                  className="h-8 rounded-full bg-coral px-4 text-xs font-semibold text-white"
                   type="button"
                 >
                   关注
@@ -444,9 +412,9 @@ export function DraftPreviewEditor({
               {editing ? (
                 <textarea
                   aria-label="编辑标题"
-                  className="mt-4 block min-h-[72px] w-full resize-none rounded-md border border-[#ffd4dc] bg-[#fff8fa] px-3 py-2 text-xl font-bold leading-7 text-ink outline-none focus:border-[#ff2442]"
+                  className="mt-4 block min-h-[72px] w-full resize-none rounded-md border border-coral/30 bg-blush px-3 py-2 text-xl font-bold leading-7 text-ink outline-none focus:border-coral"
                   data-testid="draft-edit-title"
-                  onChange={(event) => onChange({ ...draft, title: event.target.value })}
+                  onChange={handleTitleChange}
                   value={draft.title}
                 />
               ) : (
@@ -456,10 +424,10 @@ export function DraftPreviewEditor({
               {editing ? (
                 <textarea
                   aria-label="编辑正文"
-                  className="mt-3 block min-h-[260px] w-full resize-y rounded-md border border-[#eeeeee] bg-[#fbfbfb] px-3 py-3 text-[15px] leading-7 text-ink outline-none focus:border-[#ff2442]"
+                  className="mt-3 block min-h-[260px] w-full resize-y rounded-md border border-line bg-mist px-3 py-3 text-[15px] leading-7 text-ink outline-none focus:border-coral"
                   data-testid="draft-edit-body"
-                  onChange={(event) => onChange({ ...draft, body: event.target.value })}
-                  rows={Math.min(16, Math.max(8, draft.body.split("\n").length + 5))}
+                  onChange={handleBodyChange}
+                  rows={editBodyRowCount}
                   value={draft.body}
                 />
               ) : (
@@ -475,14 +443,14 @@ export function DraftPreviewEditor({
               )}
 
               {editing ? (
-                <div className="mt-4 space-y-2 rounded-md border border-[#eeeeee] bg-[#fbfbfb] p-3">
+                <div className="mt-4 space-y-2 rounded-md border border-line bg-mist p-3">
                   <div className="text-xs font-semibold text-muted">封面清单</div>
                   {draft.points.map((point, index) => (
                     <input
                       aria-label={`编辑封面清单 ${index + 1}`}
-                      className="h-11 w-full rounded-md border border-[#d6e8df] bg-white px-3 text-sm font-medium text-ink outline-none focus:border-[#ff2442]"
+                      className="h-11 w-full rounded-md border border-sage bg-white px-3 text-sm font-medium text-ink outline-none focus:border-coral"
                       data-testid={`draft-edit-point-${index}`}
-                      key={`draft-edit-point-${index}`}
+                      key={`draft-edit-point-${point}-${index}`}
                       onChange={(event) => updatePoint(index, event.target.value)}
                       value={point}
                     />
@@ -493,13 +461,13 @@ export function DraftPreviewEditor({
               {editing ? (
                 <input
                   aria-label="编辑标签"
-                  className="mt-4 h-11 w-full rounded-md border border-[#d6e8df] bg-white px-3 text-sm font-medium text-[#346cb0] outline-none focus:border-[#ff2442]"
+                  className="mt-4 h-11 w-full rounded-md border border-sage bg-white px-3 text-sm font-medium text-steel outline-none focus:border-coral"
                   data-testid="draft-edit-tags"
-                  onChange={(event) => onChange({ ...draft, tags: event.target.value })}
+                  onChange={handleTagsChange}
                   value={draft.tags}
                 />
               ) : (
-                <div className="mt-4 flex flex-wrap gap-2 text-sm font-medium text-[#346cb0]">
+                <div className="mt-4 flex flex-wrap gap-2 text-sm font-medium text-steel">
                   {tags.map((tag, index) => (
                     <span key={`tag-${index}-${tag}`}>
                       {tag.startsWith("#") ? tag : `#${tag}`}
@@ -513,7 +481,7 @@ export function DraftPreviewEditor({
               </div>
               {!editing ? (
                 <div
-                  className="mt-3 rounded-[18px] border border-[#ffe0a6] bg-[#fff8e6] px-3 py-2 text-[11px] font-semibold leading-5 text-[#8a6110]"
+                  className="mt-3 rounded-[18px] border border-amber/40 bg-amber/10 px-3 py-2 text-[11px] font-semibold leading-5 text-amber-ink"
                   data-testid="draft-preview-human-review-note"
                 >
                   复制或分享只会准备标题、正文、标签和封面素材；发布前仍需人工确认，不会自动发布。
@@ -521,7 +489,7 @@ export function DraftPreviewEditor({
               ) : null}
               {!editing && lifecycleWarning ? (
                 <div
-                  className="mt-3 rounded-[18px] border border-[#ffb3b3] bg-[#fff1f1] px-3 py-2 text-[11px] font-semibold leading-5 text-[#a63636]"
+                  className="mt-3 rounded-[18px] border border-coral/40 bg-blush px-3 py-2 text-[11px] font-semibold leading-5 text-coral"
                   data-testid="draft-preview-lifecycle-warning"
                 >
                   {lifecycleWarning}
@@ -529,16 +497,12 @@ export function DraftPreviewEditor({
               ) : null}
               {!editing ? (
                 <div
-                  className="mt-3 grid gap-2 rounded-[18px] border border-[#eeeeee] bg-[#fbfbfb] p-3"
+                  className="mt-3 grid gap-2 rounded-[18px] border border-line bg-mist p-3"
                   data-testid="draft-preview-prepublish-checklist"
                 >
                   <PromotionReadinessSummary
                     coverAvailable={Boolean(coverImageUrl)}
-                    draft={{
-                      body: draft.body,
-                      tags: draft.tags,
-                      title: draft.title
-                    }}
+                    draft={promotionReadinessDraft}
                     sourceContext={generatedContent?.source_context}
                     testId="draft-preview-promotion-readiness"
                     variant="mobile"
@@ -566,9 +530,9 @@ export function DraftPreviewEditor({
           </article>
         </section>
 
-        <div className="absolute bottom-0 left-0 right-0 border-t border-[#eeeeee] bg-white/[0.95] px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2">
+        <div className="absolute bottom-0 left-0 right-0 border-t border-line bg-white/[0.95] px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2">
           <button
-            className="mb-2 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#ff2442] px-4 text-sm font-semibold text-white active:scale-[0.99] disabled:opacity-60"
+            className="mb-2 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-coral px-4 text-sm font-semibold text-white active:scale-[0.99] disabled:opacity-60"
             data-testid="draft-open-xiaohongshu"
             disabled={xhsExporting || exportLocked}
             onClick={handleOpenXiaohongshu}
@@ -578,7 +542,7 @@ export function DraftPreviewEditor({
             {exportLocked ? "需先核对状态" : xhsExporting ? "正在准备" : "复制文案+封面，人工去小红书发布"}
           </button>
           <button
-            className="mb-2 flex h-10 w-full items-center justify-center gap-2 rounded-full border border-[#eeeeee] bg-white px-4 text-sm font-semibold text-ink active:scale-[0.99] disabled:opacity-50"
+            className="mb-2 flex h-10 w-full items-center justify-center gap-2 rounded-full border border-line bg-white px-4 text-sm font-semibold text-ink active:scale-[0.99] disabled:opacity-50"
             data-testid="draft-preview-copy"
             disabled={xhsExporting || exportLocked}
             onClick={copyDraftTextOnly}
@@ -588,7 +552,7 @@ export function DraftPreviewEditor({
             {exportLocked ? "需先核对状态" : XHS_COPY_TEXT_ONLY_LABEL}
           </button>
           <button
-            className="mb-2 flex h-10 w-full items-center justify-center gap-2 rounded-full border border-[#eeeeee] bg-white px-4 text-sm font-semibold text-ink active:scale-[0.99] disabled:opacity-50"
+            className="mb-2 flex h-10 w-full items-center justify-center gap-2 rounded-full border border-line bg-white px-4 text-sm font-semibold text-ink active:scale-[0.99] disabled:opacity-50"
             data-testid="draft-copy-preview-link"
             disabled={!generatedContent || exportLocked}
             onClick={copyPreviewLink}
@@ -600,7 +564,7 @@ export function DraftPreviewEditor({
           {xhsExportMessage ? (
             <div
               aria-live="polite"
-              className="mb-2 rounded-md bg-[#fff6e3] px-3 py-2 text-[11px] font-medium leading-4 text-[#8a5d16]"
+              className="mb-2 rounded-md bg-amber/10 px-3 py-2 text-[11px] font-medium leading-4 text-amber-ink"
               data-testid="draft-export-status"
               role="status"
             >
@@ -610,7 +574,7 @@ export function DraftPreviewEditor({
           {manualCopyText ? (
             <textarea
               aria-label="手动复制内容"
-              className="mb-2 max-h-28 w-full resize-none rounded-[18px] border border-[#ffd78f] bg-[#fffaf0] px-3 py-2 text-xs leading-5 text-ink outline-none focus:border-[#ff2442] focus:ring-2 focus:ring-[#ff2442]/[0.15]"
+              className="mb-2 max-h-28 w-full resize-none rounded-[18px] border border-amber/40 bg-amber/10 px-3 py-2 text-xs leading-5 text-ink outline-none focus:border-coral focus:ring-2 focus:ring-coral/[0.15]"
               data-testid="draft-manual-copy-text"
               onFocus={(event) => event.currentTarget.select()}
               readOnly
@@ -641,4 +605,4 @@ export function DraftPreviewEditor({
       </div>
     </div>
   );
-}
+});

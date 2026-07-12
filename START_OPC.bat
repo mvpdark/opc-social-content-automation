@@ -10,11 +10,11 @@ echo   OPC Local Launcher
 echo ========================================
 echo.
 if /I "%~1"=="--status" (
-  echo Checking backend on http://127.0.0.1:8010
-  echo Checking frontend on http://127.0.0.1:3000
+  echo Checking backend on http://127.0.0.1:60001
+  echo Checking frontend on http://127.0.0.1:60000
 ) else (
-  echo Starting backend on http://127.0.0.1:8010
-  echo Starting frontend on http://127.0.0.1:3000
+  echo Starting backend on http://127.0.0.1:60001
+  echo Starting frontend on http://127.0.0.1:60000
 )
 echo.
 
@@ -56,13 +56,13 @@ if /I "%~1"=="--status" (
 echo.
 echo OPC is starting or already running.
 echo.
-echo App:     http://127.0.0.1:3000/?theme=mint
-echo API:     http://127.0.0.1:8010
-echo Backend: backend\uvicorn-8010.log
-echo Frontend: frontend\next-3000.log
+echo App:     http://127.0.0.1:60000/?theme=mint
+echo API:     http://127.0.0.1:60001
+echo Backend: backend\uvicorn-60001.log
+echo Frontend: frontend\next-60000.log
 echo.
 
-start "" "http://127.0.0.1:3000/?theme=mint"
+start "" "http://127.0.0.1:60000/?theme=mint"
 
 if /I "%OPC_LAUNCHER_NO_PAUSE%"=="1" exit /b 0
 echo You can close this window after the browser opens.

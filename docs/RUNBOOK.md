@@ -63,12 +63,12 @@ START_OPC.bat
 ```
 
 It starts the same local backend and frontend helper, keeps the launcher window
-open for errors, and opens `http://127.0.0.1:3000/?theme=mint` when startup
+open for errors, and opens `http://127.0.0.1:6000/?theme=mint` when startup
 succeeds.
 
-The helper skips services that are already listening on ports `8010` or `3000`
-and writes UTF-8 logs to `backend/uvicorn-8010.log` and
-`frontend/next-3000.log`. If it finds an older UTF-16 log from a manual
+The helper skips services that are already listening on ports `6001` or `6000`
+and writes UTF-8 logs to `backend/uvicorn-6001.log` and
+`frontend/next-6000.log`. If it finds an older UTF-16 log from a manual
 terminal launch, it moves that file aside with a `.legacy` suffix before
 starting the service.
 
@@ -91,9 +91,9 @@ python scripts/start_local.py --frontend-only
 ```
 
 The frontend derives its API base from the current browser hostname by default.
-For example, opening `http://192.168.10.88:3000` makes browser requests go to
-`http://192.168.10.88:8010/api`. Port `8000` is often used by local AI gateway
-tooling, so keep the OPC backend on `8010` unless you also update
+For example, opening `http://192.168.10.88:6000` makes browser requests go to
+`http://192.168.10.88:6001/api`. Port `8000` is often used by local AI gateway
+tooling, so keep the OPC backend on `6001` unless you also update
 `NEXT_PUBLIC_API_BASE_URL` or `NEXT_PUBLIC_API_PORT`.
 
 For external access through Cloudflare, use `opc.mvpdark.top` with the tunnel

@@ -1,5 +1,9 @@
 import json
+import logging
+import os
 import re
+import threading
+import time
 from pathlib import Path
 
 from fastapi import HTTPException, status
@@ -24,23 +28,28 @@ from app.services.model_router import model_router
 
 EXPORTABLE_STATUSES = {"approved", "published"}
 
+logger = logging.getLogger(__name__)
 
-def has_human_approved_review(db: Session, content_id: int) -> bool:
-    return (
-        db.scalar(
-            select(ContentReview.id)
-            .where(
-                ContentReview.content_id == content_id,
-                ContentReview.review_type == "human",
-                ContentReview.status == "approved",
-            )
-            .limit(1)
+# Serializes .env read-modify-write operations to prevent race conditions
+_env_write_lock = threading.RLock()
+
+
+def has_human_approved_review(db: Session, content_id: int, user_id: int) -> bool:
+    statement = (
+        select(ContentReview.id)
+        .where(
+            ContentReview.content_id == content_id,
+            ContentReview.review_type == "human",
+            ContentReview.status == "approved",
         )
-        is not None
     )
+    statement = statement.join(
+        Content, ContentReview.content_id == Content.id
+    ).where(Content.user_id == user_id)
+    return db.scalar(statement.limit(1)) is not None
 
 
-def approved_content_items(db: Session, limit: int) -> list[Content]:
+def approved_content_items(db: Session, limit: int, user_id: int) -> list[Content]:
     human_approved_review_exists = (
         exists()
         .where(ContentReview.content_id == Content.id)
@@ -50,6 +59,7 @@ def approved_content_items(db: Session, limit: int) -> list[Content]:
     statement = (
         select(Content)
         .where(Content.status.in_(EXPORTABLE_STATUSES), human_approved_review_exists)
+        .where(Content.user_id == user_id)
         .order_by(desc(Content.created_at))
         .limit(limit)
     )
@@ -60,14 +70,16 @@ def list_publish_records(
     db: Session,
     platform: str | None,
     limit: int,
+    user_id: int,
 ) -> list[PublishRecord]:
     statement = select(PublishRecord).order_by(desc(PublishRecord.created_at)).limit(limit)
     if platform:
         statement = statement.where(PublishRecord.platform == platform)
+    statement = statement.where(PublishRecord.user_id == user_id)
     return list(db.scalars(statement).all())
 
 
-def _load_export_contents(db: Session, content_ids: list[int]) -> list[Content]:
+def _load_export_contents(db: Session, content_ids: list[int], user_id: int) -> list[Content]:
     contents = [db.get(Content, content_id) for content_id in content_ids]
     missing_ids = [
         content_id
@@ -81,6 +93,12 @@ def _load_export_contents(db: Session, content_ids: list[int]) -> list[Content]:
         )
 
     loaded = [content for content in contents if content is not None]
+    unauthorized_ids = [content.id for content in loaded if content.user_id != user_id]
+    if unauthorized_ids:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"unauthorized_content_ids": unauthorized_ids},
+        )
     blocked_ids = [
         content.id for content in loaded if content.status not in EXPORTABLE_STATUSES
     ]
@@ -93,7 +111,7 @@ def _load_export_contents(db: Session, content_ids: list[int]) -> list[Content]:
             },
         )
     unreviewed_ids = [
-        content.id for content in loaded if not has_human_approved_review(db, content.id)
+        content.id for content in loaded if not has_human_approved_review(db, content.id, user_id)
     ]
     if unreviewed_ids:
         raise HTTPException(
@@ -144,8 +162,7 @@ def create_export_package(
     payload: ExportRequest,
     current_user: User,
 ) -> ExportResponse:
-    _ = current_user
-    contents = _load_export_contents(db, payload.content_ids)
+    contents = _load_export_contents(db, payload.content_ids, current_user.id)
     items = [_to_export_item(content) for content in contents]
 
     if payload.format == "json":
@@ -225,7 +242,9 @@ def provider_status_items() -> list[ProviderStatusItem]:
 def _clean_provider_key(value: str | None) -> str | None:
     if value is None:
         return None
-    stripped = value.strip()
+    # Filter newline characters to prevent .env injection attacks
+    sanitized = value.replace("\n", "").replace("\r", "")
+    stripped = sanitized.strip()
     return stripped or None
 
 
@@ -233,18 +252,50 @@ def _write_env_keys(updates: dict[str, str]) -> None:
     """将键值对写回 PROJECT_ROOT/.env（存在则更新，不存在则追加）。"""
     from app.core.config import PROJECT_ROOT
 
-    env_path = Path(PROJECT_ROOT) / ".env"
-    text = env_path.read_text(encoding="utf-8") if env_path.exists() else ""
+    with _env_write_lock:
+        env_path = Path(PROJECT_ROOT) / ".env"
+        text = env_path.read_text(encoding="utf-8") if env_path.exists() else ""
 
-    for key, value in updates.items():
-        pattern = rf"^{re.escape(key)}\s*=.*$"
-        replacement = f"{key}={value}"
-        if re.search(pattern, text, flags=re.MULTILINE):
-            text = re.sub(pattern, replacement, text, flags=re.MULTILINE)
-        else:
-            text = text.rstrip("\n") + f"\n{replacement}\n"
+        for key, value in updates.items():
+            # Escape backslashes first, then double quotes to prevent .env value injection
+            value = value.replace("\\", "\\\\").replace('"', '\\"')
+            pattern = rf"^{re.escape(key)}\s*=.*$"
+            replacement = f'{key}="{value}"'
+            if re.search(pattern, text, flags=re.MULTILINE):
+                text = re.sub(pattern, replacement, text, flags=re.MULTILINE)
+            else:
+                text = text.rstrip("\n") + f"\n{replacement}\n"
 
-    env_path.write_text(text, encoding="utf-8")
+        # Atomic write: write to temp file first, then replace original.
+        # Clean up any residual .env.tmp from a previous crashed write.
+        tmp_path = env_path.parent / ".env.tmp"
+        if tmp_path.exists():
+            try:
+                tmp_path.unlink()
+            except OSError:
+                pass
+        tmp_path.write_text(text, encoding="utf-8")
+        # On Windows the target .env may be briefly locked by another process
+        # (file watcher, antivirus, etc.). Retry a few times so transient
+        # PermissionError does not fail the whole request.
+        last_replace_error: Exception | None = None
+        for _attempt in range(3):
+            try:
+                os.replace(str(tmp_path), str(env_path))
+                last_replace_error = None
+                break
+            except PermissionError as exc:
+                last_replace_error = exc
+                logger.warning(
+                    "PermissionError replacing .env (attempt %d/3): %s",
+                    _attempt + 1,
+                    exc,
+                )
+                time.sleep(0.1)
+        if last_replace_error is not None:
+            raise PermissionError(
+                ".env 文件被占用，写入失败（重试3次后仍失败）"
+            ) from last_replace_error
 
 
 def apply_provider_key_settings(payload: ProviderKeyUpdateRequest) -> list[ProviderStatusItem]:
@@ -255,21 +306,39 @@ def apply_provider_key_settings(payload: ProviderKeyUpdateRequest) -> list[Provi
     env_updates: dict[str, str] = {}
 
     if draft_api_key:
-        settings.draft_provider = "openai_compatible"
-        settings.openai_compatible_api_key = draft_api_key
         env_updates["OPENAI_COMPATIBLE_API_KEY"] = draft_api_key
         env_updates["DRAFT_PROVIDER"] = "openai_compatible"
     if image_api_key:
-        settings.image_provider = "openai_compatible"
-        settings.image_openai_compatible_api_key = image_api_key
         env_updates["IMAGE_OPENAI_COMPATIBLE_API_KEY"] = image_api_key
         env_updates["IMAGE_PROVIDER"] = "openai_compatible"
     if deepseek_api_key:
-        settings.deepseek_api_key = deepseek_api_key
         env_updates["DEEPSEEK_API_KEY"] = deepseek_api_key
 
-    if env_updates:
-        _write_env_keys(env_updates)
+    # Persist to .env first; only update in-memory settings after successful write.
+    # Hold the lock across both file write and in-memory update so concurrent
+    # requests cannot observe a partially-applied configuration.
+    with _env_write_lock:
+        if env_updates:
+            try:
+                _write_env_keys(env_updates)
+            except Exception:
+                logger.error(
+                    "Failed to write provider key settings to .env",
+                    exc_info=True,
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="配置文件写入失败",
+                )
+
+        if draft_api_key:
+            settings.draft_provider = "openai_compatible"
+            settings.openai_compatible_api_key = draft_api_key
+        if image_api_key:
+            settings.image_provider = "openai_compatible"
+            settings.image_openai_compatible_api_key = image_api_key
+        if deepseek_api_key:
+            settings.deepseek_api_key = deepseek_api_key
 
     return provider_status_items()
 
@@ -306,7 +375,7 @@ def check_provider_connection(
                 "knowledge_query": "服务连接检测",
                 "knowledge_context": [],
                 "style_reference": "",
-                "user": {"id": None, "role": "system_check"},
+                "user": {"id": 0, "role": "system_check"},
             },
         )
     except HTTPException as exc:
@@ -315,6 +384,16 @@ def check_provider_connection(
             configured=True,
             status="failed",
             message=str(exc.detail),
+        )
+    except Exception as exc:
+        logger.error(
+            "check_provider_connection unexpected error", exc_info=True
+        )
+        return ProviderConnectionCheckResponse(
+            target=payload.target,
+            configured=True,
+            status="failed",
+            message="检测服务连接时发生意外错误，请查看服务日志。",
         )
 
     if not result.strip():

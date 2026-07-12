@@ -2,6 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .text-amber-ink {
+    color: rgb(var(--amber-ink));
+  }
+  .bg-moss-gradient {
+    background-image: linear-gradient(180deg, rgb(var(--moss)), rgb(var(--moss) / 0.82));
+  }
+  .shadow-moss-lg {
+    box-shadow: 0 16px 30px rgb(var(--moss) / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.24);
+  }
+  .shadow-moss-md {
+    box-shadow: 0 14px 28px rgb(var(--moss) / 0.24);
+  }
+  .shadow-moss-sm {
+    box-shadow: 0 12px 26px rgb(var(--moss) / 0.18);
+  }
+  .shadow-moss-nav {
+    box-shadow: 0 12px 24px rgb(var(--moss) / 0.24), inset 0 1px 0 rgb(255 255 255 / 0.22);
+  }
+}
+
 :root {
   --apple-font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
     "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", Arial, sans-serif;
@@ -12,8 +33,14 @@
   --muted: 104 112 105;
   --moss: 44 151 88;
   --coral: 255 59 48;
+  --blush: 255 241 236;
   --steel: 0 122 255;
   --amber: 255 159 10;
+  --amber-ink: 138 97 16;
+  --sand: 222 216 204;
+  --sage: 236 244 238;
+  --cream: 248 245 236;
+  --shell: 216 230 220;
   --glass: 255 255 255;
   --glass-strong: 0.82;
   --glass-panel: 0.74;
@@ -33,8 +60,14 @@
   --muted: 104 112 105;
   --moss: 44 151 88;
   --coral: 255 59 48;
+  --blush: 255 241 236;
   --steel: 0 122 255;
   --amber: 255 159 10;
+  --amber-ink: 138 97 16;
+  --sand: 222 216 204;
+  --sage: 236 244 238;
+  --cream: 248 245 236;
+  --shell: 216 230 220;
   --glass: 255 255 255;
   --selected-bg: var(--ink);
   --selected-text: 255 255 255;
@@ -55,6 +88,8 @@
   --selected-bg: 24 76 62;
   --selected-text: 255 255 255;
   --surface-grid: 52 128 92;
+  --cream: 238 248 244;
+  --shell: 201 223 215;
 }
 
 .theme-warm {
@@ -71,6 +106,8 @@
   --selected-bg: 83 56 48;
   --selected-text: 255 255 255;
   --surface-grid: 190 127 55;
+  --cream: 250 247 244;
+  --shell: 226 213 205;
 }
 
 .theme-graphite {
@@ -81,8 +118,12 @@
   --muted: 165 174 188;
   --moss: 79 209 150;
   --coral: 255 118 118;
+  --blush: 40 28 30;
   --steel: 118 168 255;
   --amber: 245 183 77;
+  --amber-ink: 245 183 77;
+  --sand: 62 58 52;
+  --sage: 28 42 38;
   --glass: 25 29 38;
   --glass-strong: 0.78;
   --glass-panel: 0.68;
@@ -92,6 +133,8 @@
   --selected-bg: 118 168 255;
   --selected-text: 18 20 24;
   --surface-grid: 118 168 255;
+  --cream: 18 20 24;
+  --shell: 34 38 46;
 }
 
 .theme-cyberpunk {
@@ -102,8 +145,12 @@
   --muted: 136 185 207;
   --moss: 53 242 177;
   --coral: 255 79 161;
+  --blush: 30 18 28;
   --steel: 77 199 255;
   --amber: 245 198 84;
+  --amber-ink: 245 198 84;
+  --sand: 42 36 30;
+  --sage: 10 24 20;
   --glass: 8 17 34;
   --glass-strong: 0.82;
   --glass-panel: 0.7;
@@ -113,6 +160,8 @@
   --selected-bg: 53 242 177;
   --selected-text: 5 8 18;
   --surface-grid: 77 199 255;
+  --cream: 5 8 18;
+  --shell: 13 22 39;
 }
 
 .theme-editorial {
@@ -129,6 +178,8 @@
   --selected-bg: 51 43 36;
   --selected-text: 255 252 245;
   --surface-grid: 170 117 60;
+  --cream: 247 243 236;
+  --shell: 216 206 192;
 }
 
 .theme-candy {
@@ -145,6 +196,8 @@
   --selected-bg: 250 232 242;
   --selected-text: 61 36 58;
   --surface-grid: 223 86 136;
+  --cream: 253 246 250;
+  --shell: 231 199 216;
 }
 
 .theme-ocean {
@@ -161,6 +214,8 @@
   --selected-bg: 25 82 118;
   --selected-text: 255 255 255;
   --surface-grid: 42 126 184;
+  --cream: 238 247 250;
+  --shell: 190 216 228;
 }
 
 .theme-brutalist {
@@ -181,6 +236,8 @@
   --selected-bg: 16 16 16;
   --selected-text: 246 246 240;
   --surface-grid: 16 16 16;
+  --cream: 246 246 240;
+  --shell: 232 232 222;
 }
 
 * {

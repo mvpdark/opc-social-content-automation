@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { Image } from "lucide-react";
 
-export function CoverImagePreview({
+export const CoverImagePreview = memo(function CoverImagePreview({
   alt,
   className,
   src,
@@ -23,7 +23,7 @@ export function CoverImagePreview({
   if (failed) {
     return (
       <div
-        className={`${className} flex flex-col items-center justify-center gap-2 bg-[#f7f7f7] px-5 text-center text-xs font-semibold text-ink/[0.65]`}
+        className={`${className} flex flex-col items-center justify-center gap-2 bg-mist px-5 text-center text-xs font-semibold text-ink/[0.65]`}
         data-testid={`${testId}-fallback`}
       >
         <Image className="h-7 w-7 text-steel" />
@@ -39,8 +39,9 @@ export function CoverImagePreview({
       className={className}
       data-testid={testId}
       decoding="async"
+      loading="lazy"
       onError={() => setFailed(true)}
       src={src}
     />
   );
-}
+});

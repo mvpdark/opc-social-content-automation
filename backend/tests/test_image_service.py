@@ -66,7 +66,7 @@ def test_draft_content_can_generate_image_preview() -> None:
     content = make_content()
     db = FakeImageSession(content)
 
-    assert get_content_for_image(db, 1) is content  # type: ignore[arg-type]
+    assert get_content_for_image(db, 1, 1) is content
 
 
 def test_published_content_cannot_generate_image() -> None:
@@ -74,7 +74,7 @@ def test_published_content_cannot_generate_image() -> None:
     db = FakeImageSession(content)
 
     with pytest.raises(HTTPException) as exc:
-        get_content_for_image(db, 1)  # type: ignore[arg-type]
+        get_content_for_image(db, 1, 1)
 
     assert exc.value.status_code == 409
 
@@ -167,22 +167,18 @@ def test_draft_image_generation_downloads_remote_cover_before_saving(
     db = FakeImageSession(content)
     remote_url = "https://cdn.test/cover.png"
 
-    def fake_get(url: str, **kwargs: object) -> httpx.Response:
-        assert url == remote_url
-        assert kwargs["follow_redirects"] is True
-        return httpx.Response(
-            200,
-            content=b"cover-bytes",
-            headers={"content-type": "image/png"},
-            request=httpx.Request("GET", url),
-        )
-
     monkeypatch.setattr(
         image_service.model_router,
         "image_model",
         lambda _prompt_name, _payload: remote_url,
     )
-    monkeypatch.setattr(image_service.httpx, "get", fake_get)
+    # _download_remote_image 现通过 IP pinning 的 http.client 实现；测试只需
+    # 验证远程封面被下载并保存到本地，故直接 mock 下载结果。
+    monkeypatch.setattr(
+        image_service,
+        "_download_remote_image",
+        lambda url: (b"cover-bytes", "image/png"),
+    )
     monkeypatch.setattr(image_service, "GENERATED_ASSET_ROOT", tmp_path)
     monkeypatch.setattr(image_service.settings, "test_static_url_prefix", "/static/generated")
     monkeypatch.setattr(image_service, "record_generation_log", lambda **_kwargs: None)

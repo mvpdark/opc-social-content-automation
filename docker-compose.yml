@@ -1,12 +1,14 @@
 services:
+  # ─── Infrastructure ───
   postgres:
     image: pgvector/pgvector:pg16
+    restart: unless-stopped
     environment:
       POSTGRES_DB: opc
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -14,18 +16,101 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 3s
       retries: 3
-      start_period: 5s
+
+  # ─── OMPC-SSB Backend (port 60001) ───
+  ssb-backend:
+    restart: unless-stopped
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:60001:60001"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-sqlite:////app/data/opc.db}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY is required}
+      AUTH_REQUIRED: "true"
+      FRONTEND_ORIGIN: http://localhost:60000
+      ZSCJ_API_BASE_URL: http://zscj:60002/api/v1
+      REDIS_URL: redis://redis:6379/0
+      DRAFT_PROVIDER: ${DRAFT_PROVIDER:-openai_compatible}
+      DRAFT_MODEL: ${DRAFT_MODEL:-deepseek-chat}
+      IMAGE_PROVIDER: ${IMAGE_PROVIDER:-openai_compatible}
+      IMAGE_MODEL: ${IMAGE_MODEL:-gpt-image-2}
+      IMAGE_TIMEOUT_SECONDS: "600"
+      IMAGE_SIZE: "1024x1366"
+      IMAGE_RESPONSE_FORMAT: b64_json
+      OPENAI_COMPATIBLE_API_KEY: ${OPENAI_COMPATIBLE_API_KEY}
+      OPENAI_COMPATIBLE_BASE_URL: ${OPENAI_COMPATIBLE_BASE_URL:-https://api.deepseek.com/v1}
+      IMAGE_OPENAI_COMPATIBLE_API_KEY: ${IMAGE_OPENAI_COMPATIBLE_API_KEY}
+      IMAGE_OPENAI_COMPATIBLE_BASE_URL: ${IMAGE_OPENAI_COMPATIBLE_BASE_URL:-https://yunwu.ai/v1}
+      TAVILY_API_KEY: ${TAVILY_API_KEY}
+    volumes:
+      - ssb_data:/app/data
+      - ssb_static:/app/static/generated
+    depends_on:
+      redis:
+        condition: service_healthy
+      zscj:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:60001/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # ─── OMPC-SSB Frontend (port 60000) ───
+  ssb-frontend:
+    restart: unless-stopped
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:60000:60000"
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:60001/api}
+      NEXT_PUBLIC_ZSCJ_API_BASE_URL: ${NEXT_PUBLIC_ZSCJ_API_BASE_URL:-http://localhost:60002/api/v1}
+      PORT: "60000"
+    depends_on:
+      ssb-backend:
+        condition: service_healthy
+
+  # ─── OMPC-ZSCJ Backend (port 60002) ───
+  zscj:
+    restart: unless-stopped
+    build:
+      context: ../OMPC-ZSCJ/backend
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:60002:60002"
+    environment:
+      DATABASE_URL: sqlite:////app/data/zscj.db
+      JWT_SECRET_KEY: ${ZSCJ_JWT_SECRET_KEY:?ZSCJ_JWT_SECRET_KEY is required}
+      AUTH_REQUIRED: "true"
+      FRONTEND_ORIGIN: http://localhost:60000
+      ENVIRONMENT: production
+    volumes:
+      - zscj_data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:60002/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
 volumes:
   postgres_data:
+  ssb_data:
+  ssb_static:
+  zscj_data:

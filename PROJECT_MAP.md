@@ -50,7 +50,7 @@ Last updated: 2026-06-22
 - Prompt templates live under `prompts/`.
 - Draft generation, image generation, review, and Tavily/web search support are separated by service modules.
 - **review_model** is implemented: `backend/app/services/review_service.py` calls `model_router.review_model()` for content review, with `review_model` and `review_provider` configured in `backend/app/core/config.py`.
-- **knowledge/trends routes have been migrated to OMPC-ZSCJ** (`E:\OMPC-ZSCJ`): knowledge base CRUD, AI knowledge compilation, trend material collection, keyword analysis, and video transcript review now live in the independent OMPC-ZSCJ service (backend port 8011, frontend port 3001). OMPC-SSB backend endpoints are now limited to `auth`, `content`, `images`, and `workspace`.
+- **knowledge/trends routes have been migrated to OMPC-ZSCJ** (`C:\TRAE\OMPC-ZSCJ`): knowledge base CRUD, AI knowledge compilation, trend material collection, keyword analysis, and video transcript review now live in the independent OMPC-ZSCJ service (backend port 6002; frontend is a static HTML page served by the ZSCJ backend). OMPC-SSB backend endpoints are now limited to `auth`, `content`, `images`, and `workspace`.
 - Tavily/web search is research support only; the app must not invent current facts when sources are required.
 - Backend source review notes, Model Router fallback drafts, and PC/mobile source-evidence warnings use no-model-guessing wording when required Tavily/web results are missing.
 - Backend draft saves reject conclusion-style school, price, logo, or ranking facts when required Tavily/web results are missing, while still allowing verification-framework drafts.
@@ -101,7 +101,7 @@ Last updated: 2026-06-22
 
 - Frontend build command: `npm run build` in `frontend/`.
 - Backend health and service startup are documented in `docs/RUNBOOK.md`.
-- Windows local startup launcher: `START_OPC.bat` wraps `python scripts/start_local.py`, starts backend `8010` and frontend `3000`, and opens the PC app URL.
+- Windows local startup launcher: `START_OPC.bat` wraps `python scripts/start_local.py`, starts backend `6001` and frontend `6000`, and opens the PC app URL.
 - Cloudflare tunnel notes are in `docs/CLOUDFLARE_OPC.md`.
 - CI runs backend project checks, backend tests, frontend typecheck, and Chromium E2E smoke tests.
 
@@ -112,6 +112,6 @@ Last updated: 2026-06-22
 - Mobile and PC login state rely on localStorage account markers; future auth work should keep explicit loading, expired-session, and network-error states.
 - PC pending-review queue is read-only and intentionally separate from approval/change-request actions.
 - Publishing and platform actions must remain behind human confirmation.
-- **knowledge/trends separation risk**: OMPC-SSB no longer hosts knowledge or trends endpoints; any frontend or integration code that still references `/api/knowledge/*` or `/api/trends/*` must be updated to call the OMPC-ZSCJ service (port 8011) instead. Cross-service dependencies should be documented explicitly.
+- **knowledge/trends separation risk**: OMPC-SSB no longer hosts knowledge or trends endpoints; any frontend or integration code that still references `/api/knowledge/*` or `/api/trends/*` must be updated to call the OMPC-ZSCJ service (port 6002) instead. Cross-service dependencies should be documented explicitly.
 - **review_model dependency**: content review depends on the configured `review_model` and `review_provider`; if the review provider is unavailable, review falls back to a safe error state but does not auto-approve content.
 - **Task lifecycle (#14) still pending**: task states remain implicit; explicit state transitions (`new` -> `material_ready` -> `generating` -> `draft_ready` -> `reviewing` -> `ready_to_publish` -> `published` -> `failed`) are not yet enforced in the UI or backend.

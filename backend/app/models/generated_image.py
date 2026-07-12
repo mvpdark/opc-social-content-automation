@@ -10,7 +10,7 @@ class GeneratedImage(Base):
     __tablename__ = "generated_images"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    content_id: Mapped[int] = mapped_column(ForeignKey("contents.id"), index=True)
+    content_id: Mapped[int | None] = mapped_column(ForeignKey("contents.id"), index=True, nullable=True)
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     image_url: Mapped[str] = mapped_column(String(500))
     template: Mapped[str | None] = mapped_column(String(120), nullable=True)

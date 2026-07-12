@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import logging
 import random
 import re
 from pathlib import Path
 from typing import Any
 
 from fastapi import HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.trend_collection_job import TrendCollectionJob
@@ -28,6 +31,8 @@ BROWSER_SESSION_ROOT = PROJECT_ROOT / ".browser-sessions"
 VIDEO_COLLECTION_DISABLED_DETAIL = (
     "视频采集暂未启用；需要先补齐转写、版权和人工复核流程。"
 )
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "CollectedTrendAsset",
@@ -98,12 +103,21 @@ def _content_kind(job: TrendCollectionJob) -> str:
     return "image_text"
 
 
+def _safe_int(value: object, default: int) -> int:
+    if value is None:
+        return default
+    try:
+        return int(float(value))
+    except (ValueError, TypeError):
+        return default
+
+
 def _delay_window(job: TrendCollectionJob) -> tuple[int, int]:
     profile = job.safety_profile or {}
     delays = profile.get("randomized_delay_seconds")
     if isinstance(delays, dict):
-        minimum = int(delays.get("min") or 4)
-        maximum = int(delays.get("max") or 12)
+        minimum = _safe_int(delays.get("min"), 4)
+        maximum = _safe_int(delays.get("max"), 12)
         if minimum < maximum:
             return minimum, maximum
     return 4, 12
@@ -129,7 +143,24 @@ def _store_assets(
     operator_wait_seconds: int = 0,
 ) -> list[TrendContent]:
     stored: list[TrendContent] = []
+
+    # 去重：跳过已存在的相同 URL 记录，无 URL 时按 title+platform 去重
+    existing_urls: set[str | None] = set()
+    existing_title_keys: set[tuple[str | None, str | None]] = set()
+    if assets:
+        existing_items = db.execute(
+            select(TrendContent.url, TrendContent.title, TrendContent.platform).where(
+                TrendContent.user_id == job.requested_by
+            )
+        ).all()
+        existing_urls = {row[0] for row in existing_items}
+        existing_title_keys = {(row[1], row[2]) for row in existing_items}
+
     for asset in assets:
+        if asset.url and asset.url in existing_urls:
+            continue
+        if not asset.url and (asset.title, asset.platform) in existing_title_keys:
+            continue
         item = TrendContent(
             platform=asset.platform,
             title=asset.title,
@@ -145,6 +176,7 @@ def _store_assets(
             cover_url=asset.cover_url,
             video_transcript=None,
             screenshot_url=None,
+            user_id=job.requested_by,
         )
         db.add(item)
         stored.append(item)
@@ -166,6 +198,21 @@ def _store_assets(
         message = (
             "未找到可采集的公开图文素材。请确认登录浏览器已完成登录，然后重试。"
         )
+    # Flush to assign IDs without committing, then build complete result_summary
+    try:
+        db.flush()
+    except Exception:
+        db.rollback()
+        raise
+    for item in stored:
+        try:
+            db.refresh(item)
+        except Exception:
+            logger.warning(
+                "db.refresh failed for trend item %s, skipping",
+                getattr(item, "id", None),
+                exc_info=True,
+            )
     job.result_summary = {
         "message": message,
         "collected_items": len(stored),
@@ -174,18 +221,101 @@ def _store_assets(
         "page_title": page_title,
         "final_url": final_url,
         "operator_wait_seconds": operator_wait_seconds,
-        "trend_ids": [],
-    }
-    db.commit()
-
-    for item in stored:
-        db.refresh(item)
-    job.result_summary = {
-        **(job.result_summary or {}),
         "trend_ids": [item.id for item in stored],
     }
-    db.commit()
-    db.refresh(job)
+    try:
+        db.commit()
+    except IntegrityError:
+        # 并发写入竞态：另一个请求已抢先插入相同 URL 记录。
+        # 回滚后改为逐条插入模式（使用 savepoint），跳过重复项，避免整批数据丢失。
+        db.rollback()
+        # 重新查询已有记录，因为并发事务可能已插入新数据
+        existing_items = db.execute(
+            select(TrendContent.url, TrendContent.title, TrendContent.platform).where(
+                TrendContent.user_id == job.requested_by
+            )
+        ).all()
+        existing_urls = {row[0] for row in existing_items}
+        existing_title_keys = {(row[1], row[2]) for row in existing_items}
+        retry_stored: list[TrendContent] = []
+        for asset in assets:
+            if asset.url and asset.url in existing_urls:
+                continue
+            if not asset.url and (asset.title, asset.platform) in existing_title_keys:
+                continue
+            retry_item = TrendContent(
+                platform=asset.platform,
+                title=asset.title,
+                content=asset.content,
+                author=asset.author,
+                publish_time=asset.publish_time,
+                url=asset.url,
+                tags=asset.tags,
+                likes=asset.likes,
+                favorites=asset.favorites,
+                comments=asset.comments,
+                shares=asset.shares,
+                cover_url=asset.cover_url,
+                video_transcript=None,
+                screenshot_url=None,
+                user_id=job.requested_by,
+            )
+            try:
+                with db.begin_nested():
+                    db.add(retry_item)
+                    db.flush()
+            except IntegrityError:
+                # 跳过此重复项，继续处理下一条
+                continue
+            retry_stored.append(retry_item)
+            if asset.url:
+                existing_urls.add(asset.url)
+            else:
+                existing_title_keys.add((asset.title, asset.platform))
+        stored = retry_stored
+        # 重新加载 job（回滚后 ORM 对象已过期）
+        job = db.get(TrendCollectionJob, job.id)
+        if job is None:
+            raise
+        job.status = "completed" if stored else "needs_operator_review"
+        if stored:
+            retry_message = "已从持久化采集浏览器会话采集公开图文素材。"
+        elif blocked_candidate_count:
+            retry_message = (
+                "未找到可采集的公开图文素材。当前页面可能被登录、验证、页脚备案或平台外壳文本拦截；"
+                "请只在合规允许时打开登录浏览器处理，然后重试。"
+            )
+        elif raw_candidate_count:
+            retry_message = (
+                "未找到可采集的公开图文素材。页面已有可见文本，但没有匹配图文过滤条件的安全候选；"
+                "请换更宽的关键词，或粘贴笔记链接导入。"
+            )
+        else:
+            retry_message = (
+                "未找到可采集的公开图文素材。请确认登录浏览器已完成登录，然后重试。"
+            )
+        job.result_summary = {
+            "message": retry_message,
+            "collected_items": len(stored),
+            "raw_candidates": raw_candidate_count,
+            "blocked_candidates": blocked_candidate_count,
+            "page_title": page_title,
+            "final_url": final_url,
+            "operator_wait_seconds": operator_wait_seconds,
+            "trend_ids": [item.id for item in stored],
+        }
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+    except Exception:
+        db.rollback()
+        raise
+    try:
+        db.refresh(job)
+    except Exception:
+        logger.warning("db.refresh failed", exc_info=True)
     return stored
 
 
@@ -202,6 +332,12 @@ def run_browser_collection_job(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="未找到采集任务。",
+        )
+
+    if job.requested_by is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="requested_by is required for data isolation.",
         )
 
     try:
@@ -223,7 +359,17 @@ def run_browser_collection_job(
         else max(0, min(operator_wait_seconds, 180))
     )
     session_dir = _session_dir(job)
-    session_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        session_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        job.status = "failed"
+        job.error = "采集浏览器会话目录创建失败。"
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            logger.warning("Failed to commit job error state", exc_info=True)
+        raise HTTPException(status_code=500, detail=job.error) from exc
 
     job.status = "running"
     job.result_summary = {
@@ -234,8 +380,15 @@ def run_browser_collection_job(
         "operator_wait_seconds": operator_wait_seconds,
     }
     job.error = None
-    db.commit()
-    db.refresh(job)
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    try:
+        db.refresh(job)
+    except Exception:
+        logger.warning("db.refresh failed", exc_info=True)
 
     raw_items: list[dict[str, Any]] = []
     assets: list[CollectedTrendAsset] = []
@@ -249,44 +402,46 @@ def run_browser_collection_job(
                 slow_mo=250,
                 viewport={"width": 1280, "height": 900},
             )
-            page = context.new_page()
-            page.goto(target_url, wait_until="domcontentloaded", timeout=60_000)
-            page_title = page.title()
-            final_url = page.url
-            if operator_wait_seconds > 0:
-                page.wait_for_timeout(operator_wait_seconds * 1000)
-
-            for _ in range(max(1, max_scrolls)):
-                evaluated_items = page.evaluate(raw_visible_items_script()) or []
-                raw_items.extend(evaluated_items)
+            try:
+                page = context.new_page()
+                page.goto(target_url, wait_until="domcontentloaded", timeout=60_000)
                 page_title = page.title()
                 final_url = page.url
-                if (
-                    len(
-                        extract_candidate_assets(
-                            raw_items,
-                            job.platform,
-                            job.keyword,
-                            max_items,
-                            content_kind=content_kind,
-                        )
-                    )
-                    >= max_items
-                ):
-                    break
-                page.mouse.move(random.randint(280, 980), random.randint(240, 760))
-                page.mouse.wheel(0, random.randint(480, 980))
-                page.wait_for_timeout(random.randint(min_delay, max_delay) * 1000)
+                if operator_wait_seconds > 0:
+                    page.wait_for_timeout(operator_wait_seconds * 1000)
 
-            assets = extract_candidate_assets(
-                raw_items,
-                job.platform,
-                job.keyword,
-                max_items,
-                content_kind=content_kind,
-            )
-            assets = _enrich_assets_from_detail_pages(page, assets, job.keyword)
-            context.close()
+                for _ in range(max(1, max_scrolls)):
+                    evaluated_items = page.evaluate(raw_visible_items_script()) or []
+                    raw_items.extend(evaluated_items)
+                    page_title = page.title()
+                    final_url = page.url
+                    if (
+                        len(
+                            extract_candidate_assets(
+                                raw_items,
+                                job.platform,
+                                job.keyword,
+                                max_items,
+                                content_kind=content_kind,
+                            )
+                        )
+                        >= max_items
+                    ):
+                        break
+                    page.mouse.move(random.randint(280, 980), random.randint(240, 760))
+                    page.mouse.wheel(0, random.randint(480, 980))
+                    page.wait_for_timeout(random.randint(min_delay, max_delay) * 1000)
+
+                assets = extract_candidate_assets(
+                    raw_items,
+                    job.platform,
+                    job.keyword,
+                    max_items,
+                    content_kind=content_kind,
+                )
+                assets = _enrich_assets_from_detail_pages(page, assets, job.keyword)
+            finally:
+                context.close()
     except PlaywrightTimeoutError as exc:
         job.status = "needs_operator_review"
         job.error = "采集浏览器加载平台页面超时。"
@@ -295,18 +450,33 @@ def run_browser_collection_job(
             "target_url": target_url,
             "collected_items": 0,
         }
-        db.commit()
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            logger.warning("Failed to commit job timeout state", exc_info=True)
         raise HTTPException(status_code=status.HTTP_504_GATEWAY_TIMEOUT, detail=job.error) from exc
-    except Exception:
-        job.status = "failed"
-        job.error = "采集浏览器采集失败，请检查本机浏览器环境和会话状态。"
-        job.result_summary = {
-            "message": job.error,
-            "target_url": target_url,
-            "collected_items": 0,
-        }
-        db.commit()
-        raise
+    except Exception as exc:
+        db.rollback()
+        job = db.get(TrendCollectionJob, job_id)
+        if job is not None:
+            job.status = "failed"
+            job.error = "采集浏览器采集失败，请检查本机浏览器环境和会话状态。"
+            job.result_summary = {
+                "message": job.error,
+                "target_url": target_url,
+                "collected_items": 0,
+            }
+            try:
+                db.commit()
+            except Exception:
+                db.rollback()
+                logger.warning("Failed to commit job failure state", exc_info=True)
+        logger.exception("Browser collection failed for job %s", job_id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="采集浏览器采集失败，请检查本机浏览器环境和会话状态。",
+        ) from exc
 
     if not assets:
         assets = extract_candidate_assets(

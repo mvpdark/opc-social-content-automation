@@ -20,6 +20,7 @@ def test_delete_content_with_assets_removes_related_records() -> None:
             body="测试正文",
             tags=["水博"],
             status="draft",
+            user_id=1,
         )
         db.add(content)
         db.flush()
@@ -44,7 +45,7 @@ def test_delete_content_with_assets_removes_related_records() -> None:
         )
         db.commit()
 
-        delete_content_with_assets(db, content.id)
+        delete_content_with_assets(db, content.id, user_id=1)
 
         assert db.get(Content, content.id) is None
         assert db.query(GeneratedImage).count() == 0

@@ -37,9 +37,9 @@ VALID_FEEDBACK_CATEGORIES = frozenset(FEEDBACK_CATEGORIES)
 class ContentReviewRequest(BaseModel):
     decision: str = Field(pattern="^(approved|rejected|changes_requested)$")
     score: int = Field(ge=1, le=100)
-    notes: str | None = None
-    risk_flags: list[str] = Field(default_factory=list)
-    feedback_tags: list[str] | None = None
+    notes: str | None = Field(default=None, max_length=2000)
+    risk_flags: list[str] = Field(default_factory=list, max_length=50)
+    feedback_tags: list[str] | None = Field(default=None, max_length=50)
     feedback_category: str | None = Field(default=None, max_length=40)
 
 

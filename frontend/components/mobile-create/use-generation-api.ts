@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useEffect, useRef } from "react";
 import {
   buildGenerationInputSignature,
   type GeneratedContentInputSignature
@@ -34,10 +35,13 @@ import {
   type MobilePlatform
 } from "@/lib/mobile-runtime";
 import { copyText } from "@/lib/clipboard";
-import type {
-  GeneratedContent,
-  GeneratedImageAsset,
-  GenerationSourceContext
+import {
+  isGeneratedContent,
+  isGeneratedImageAsset,
+  isGenerationSourceContextResponse,
+  type GeneratedContent,
+  type GeneratedImageAsset,
+  type GenerationSourceContext
 } from "@/lib/generated-assets";
 
 interface ProgressApi {
@@ -102,7 +106,7 @@ export function useGenerationApi(params: UseGenerationApiParams) {
     onAction
   } = params;
 
-  function buildMobileGenerationRequestPayload() {
+  const buildMobileGenerationRequestPayload = useCallback(() => {
     return {
       platform,
       topic: topic.trim(),
@@ -112,9 +116,21 @@ export function useGenerationApi(params: UseGenerationApiParams) {
       knowledge_limit: MOBILE_GENERATE_KNOWLEDGE_LIMIT,
       tags: parseTagText(tagsText)
     };
-  }
+  }, [platform, topic, generationKnowledgeQuery, contentMode, targetAudience, tagsText]);
 
-  async function previewMobileSourceContext() {
+  const previewAbortRef = useRef<AbortController | null>(null);
+  const activeRef = useRef(true);
+  const genControllerRef = useRef<AbortController | null>(null);
+  useEffect(() => {
+    activeRef.current = true;
+    return () => {
+      activeRef.current = false;
+      genControllerRef.current?.abort();
+      previewAbortRef.current?.abort();
+    };
+  }, []);
+
+  const previewMobileSourceContext = useCallback(async () => {
     if (!topic.trim()) {
       setSourcePreviewError("先填写选题，再查看检索依据。");
       return;
@@ -123,19 +139,25 @@ export function useGenerationApi(params: UseGenerationApiParams) {
     setSourcePreviewBusy(true);
     setSourcePreviewError(null);
     onAction("正在检索知识库和联网来源。");
+    previewAbortRef.current?.abort();
+    const controller = new AbortController();
+    previewAbortRef.current = controller;
     try {
       const response = await fetch(`${apiBase}/content/source-preview`, {
         method: "POST",
         headers: authHeaders(credentials),
-        body: JSON.stringify(buildMobileGenerationRequestPayload())
+        body: JSON.stringify(buildMobileGenerationRequestPayload()),
+        signal: controller.signal
       });
       if (!response.ok) {
         throw new Error(await readApiError(response, "检索依据读取失败。"));
       }
-      const data = (await response.json()) as { source_context?: GenerationSourceContext };
-      setSourceContext(data.source_context ?? null);
+      const raw = await response.json();
+      if (!isGenerationSourceContextResponse(raw)) throw new Error("检索依据数据格式异常。");
+      setSourceContext(raw.source_context ?? null);
       onAction("检索依据已加载，请先核对来源。");
     } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return;
       const message = sanitizeServiceErrorMessage(
         error instanceof Error ? error.message : "检索依据读取失败。"
       );
@@ -143,11 +165,13 @@ export function useGenerationApi(params: UseGenerationApiParams) {
       setSourcePreviewError(message);
       onAction(message);
     } finally {
-      setSourcePreviewBusy(false);
+      if (!controller.signal.aborted) {
+        setSourcePreviewBusy(false);
+      }
     }
-  }
+  }, [topic, onAction, apiBase, credentials, buildMobileGenerationRequestPayload]);
 
-  async function generateDraftAndCover() {
+  const generateDraftAndCover = useCallback(async () => {
     if (!topic.trim()) {
       onAction("先填写选题，再生成草稿。");
       return;
@@ -162,6 +186,9 @@ export function useGenerationApi(params: UseGenerationApiParams) {
     setGeneratedCover(null);
     clearStoredMobileCover();
     progress.startProgress("撰稿服务生成中");
+    genControllerRef.current?.abort();
+    const genController = new AbortController();
+    genControllerRef.current = genController;
     try {
       const requestPayload = buildMobileGenerationRequestPayload();
       const requestSignature = buildGenerationInputSignature({
@@ -175,12 +202,19 @@ export function useGenerationApi(params: UseGenerationApiParams) {
       const response = await fetch(`${apiBase}/content/generate`, {
         method: "POST",
         headers: authHeaders(credentials),
-        body: JSON.stringify(requestPayload)
+        body: JSON.stringify(requestPayload),
+        signal: genController.signal
       });
+      if (!activeRef.current) return;
       if (!response.ok) {
         throw new Error(await readApiError(response, "图文草稿生成失败。"));
       }
-      const data = (await response.json()) as GeneratedContent;
+      const rawContent: unknown = await response.json();
+      if (!activeRef.current) return;
+      if (!isGeneratedContent(rawContent)) {
+        throw new Error("服务返回的图文草稿数据格式不正确。");
+      }
+      const data = rawContent;
       setGeneratedContent(data);
       setGeneratedContentInputSignature({ contentId: data.id, signature: requestSignature });
       setSourceContext(data.source_context ?? null);
@@ -209,21 +243,29 @@ export function useGenerationApi(params: UseGenerationApiParams) {
         headers: authHeaders(credentials),
         body: JSON.stringify(
           buildMobileCoverImageRequestPayload(platform, data.id, coverStyleNotes)
-        )
+        ),
+        signal: genController.signal
       });
+      if (!activeRef.current) return;
       if (!imageResponse.ok) {
         throw new Error(
           `文案草稿已生成，但封面图失败：${await readApiError(imageResponse, "封面图生成失败。")}`
         );
       }
-      const cover = (await imageResponse.json()) as GeneratedImageAsset;
+      const rawCover: unknown = await imageResponse.json();
+      if (!activeRef.current) return;
+      if (!isGeneratedImageAsset(rawCover)) {
+        throw new Error("服务返回的封面图数据格式不正确。");
+      }
+      const cover = rawCover;
       setGeneratedCover(cover);
       saveStoredMobileCover(cover);
       syncDraftIntoHistory(data, cover);
       progress.finishProgress("已完成");
-      void progress.notifyGenerationComplete(data);
+      void progress.notifyGenerationComplete(data).catch(() => undefined);
       onAction("文案和封面图已生成。");
     } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return;
       progress.stopProgressTimer();
       progress.setProgressLabel("生成失败");
       onAction(
@@ -232,11 +274,31 @@ export function useGenerationApi(params: UseGenerationApiParams) {
         )
       );
     } finally {
-      setBusy(false);
+      if (activeRef.current && !genController.signal.aborted) {
+        setBusy(false);
+      }
     }
-  }
+  }, [
+    topic,
+    tagsText,
+    sourceEvidenceBlocked,
+    apiBase,
+    credentials,
+    platform,
+    syncDraftIntoHistory,
+    onAction,
+    buildMobileGenerationRequestPayload,
+    progress.startProgress,
+    progress.setProgressStage,
+    progress.finishProgress,
+    progress.stopProgressTimer,
+    progress.setProgressPercent,
+    progress.setProgressLabel,
+    progress.prepareCompletionFeedback,
+    progress.notifyGenerationComplete
+  ]);
 
-  async function copyDraft() {
+  const copyDraft = useCallback(async () => {
     try {
       await copyText(buildEditableDraftCopy(draftPreview));
       onAction(generatedContent ? "已尝试复制当前草稿。" : "已尝试复制当前预览文案。");
@@ -245,7 +307,7 @@ export function useGenerationApi(params: UseGenerationApiParams) {
       onAction("复制失败，请长按正文区域手动选择复制。");
       return false;
     }
-  }
+  }, [draftPreview, generatedContent, onAction]);
 
   return { previewMobileSourceContext, generateDraftAndCover, copyDraft };
 }

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 import re
 from dataclasses import dataclass
 from typing import Any
@@ -8,6 +10,8 @@ import httpx
 from fastapi import HTTPException, status
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 LIVE_SEARCH_FACT_TERMS = (
     "最新",
@@ -294,22 +298,28 @@ def tavily_search(query: str, *, max_results: int | None = None) -> WebSearchCon
     }
 
     try:
-        response = httpx.post(
-            f"{settings.tavily_base_url.rstrip('/')}/search",
-            headers={
-                "Authorization": f"Bearer {settings.tavily_api_key}",
-                "Content-Type": "application/json",
-            },
-            json=request_payload,
-            timeout=settings.tavily_timeout_seconds,
-        )
-        response.raise_for_status()
-        data = response.json()
+        with httpx.Client(timeout=settings.tavily_timeout_seconds) as client:
+            response = client.post(
+                f"{settings.tavily_base_url.rstrip('/')}/search",
+                headers={
+                    "Authorization": f"Bearer {settings.tavily_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json=request_payload,
+                timeout=settings.tavily_timeout_seconds,
+            )
+            response.raise_for_status()
+            data = response.json()
     except httpx.HTTPStatusError as exc:
         status_code = exc.response.status_code if exc.response is not None else None
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=_tavily_status_error_detail(status_code),
+        ) from exc
+    except httpx.TimeoutException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="联网检索超时，请稍后重试。",
         ) from exc
     except (httpx.HTTPError, ValueError) as exc:
         raise HTTPException(
@@ -341,5 +351,13 @@ def build_live_web_search_context(
     if not topic_needs_live_web_search(topic, tags):
         return None
 
-    context = tavily_search(build_tavily_query(topic=topic, platform=platform, tags=tags))
-    return context.to_prompt_payload() if context else None
+    try:
+        context = tavily_search(build_tavily_query(topic=topic, platform=platform, tags=tags))
+        return context.to_prompt_payload() if context else None
+    except HTTPException:
+        logger.warning(
+            "Tavily search failed for topic=%r, falling back to verification framework",
+            topic,
+            exc_info=True,
+        )
+        return None

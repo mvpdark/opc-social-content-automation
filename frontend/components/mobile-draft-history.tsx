@@ -1,18 +1,12 @@
 "use client";
 
-import { useRef } from "react";
-import { CheckCircle2, Pin, Trash2 } from "lucide-react";
+import { memo, useMemo, useRef, useEffect } from "react";
+import { CheckCircle2, FileText, Pin, Trash2 } from "lucide-react";
 
 import { CoverImagePreview } from "@/components/mobile-cover-image-preview";
 import { resolveAssetUrl } from "@/lib/asset-url";
-import type { GeneratedContent } from "@/lib/generated-assets";
 import type { MobileDraftHistoryItem } from "@/lib/mobile-draft-storage";
-import {
-  XHS_COVER_BASE_HEIGHT,
-  XHS_COVER_BASE_WIDTH,
-  XHS_COVER_HEIGHT,
-  XHS_COVER_WIDTH
-} from "@/lib/mobile-cover-share";
+import { buildLocalCoverUrl } from "@/lib/mobile-cover-palette";
 
 function formatMobileDraftDate(value?: string) {
   if (!value) {
@@ -42,68 +36,7 @@ export function countMobileDraftsToday(items: MobileDraftHistoryItem[]) {
   }).length;
 }
 
-const localDraftCoverPalettes = [
-  { accent: "#ff2442", backgroundEnd: "#ffd9df", backgroundMid: "#d9f1e5", backgroundStart: "#fff7df" },
-  { accent: "#209b5a", backgroundEnd: "#dff7ee", backgroundMid: "#f4ead4", backgroundStart: "#ffffff" },
-  { accent: "#111111", backgroundEnd: "#e9efe8", backgroundMid: "#f7e6cd", backgroundStart: "#fffdf7" },
-  { accent: "#1f6feb", backgroundEnd: "#d9e8ff", backgroundMid: "#f5ead9", backgroundStart: "#fffaf0" }
-];
-
-function escapeSvgText(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function chunkCoverText(value: string, size: number, maxLines: number) {
-  const compact = value.replace(/\s+/g, "");
-  const chars = Array.from(compact || "草稿");
-  const lines: string[] = [];
-  for (let index = 0; index < chars.length && lines.length < maxLines; index += size) {
-    lines.push(chars.slice(index, index + size).join(""));
-  }
-  return lines.length ? lines : ["草稿"];
-}
-
-function buildLocalDraftHistoryCoverUrl(content: GeneratedContent) {
-  const palette = localDraftCoverPalettes[Math.abs(content.id) % localDraftCoverPalettes.length];
-  const titleLines = chunkCoverText(content.title, 7, 3);
-  const excerpt = Array.from(content.body.replace(/\s+/g, " ").trim()).slice(0, 24).join("");
-  const tag = content.tags?.find((value) => value.trim())?.trim() ?? "草稿";
-  const titleSvg = titleLines
-    .map(
-      (line, index) =>
-        `<text x="86" y="${392 + index * 92}" class="title">${escapeSvgText(line)}</text>`
-    )
-    .join("");
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${XHS_COVER_WIDTH}" height="${XHS_COVER_HEIGHT}" viewBox="0 0 ${XHS_COVER_BASE_WIDTH} ${XHS_COVER_BASE_HEIGHT}">
-<defs>
-<linearGradient id="cover-bg" x1="0" y1="0" x2="1" y2="1">
-<stop offset="0%" stop-color="${palette.backgroundStart}"/>
-<stop offset="54%" stop-color="${palette.backgroundMid}"/>
-<stop offset="100%" stop-color="${palette.backgroundEnd}"/>
-</linearGradient>
-<style>
-.label{font:800 34px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;fill:${palette.accent}}
-.title{font:900 74px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;fill:#111}
-.meta{font:700 30px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;fill:#5f6a61}
-</style>
-</defs>
-<rect width="${XHS_COVER_BASE_WIDTH}" height="${XHS_COVER_BASE_HEIGHT}" fill="url(#cover-bg)"/>
-<rect x="64" y="74" width="190" height="78" rx="39" fill="rgba(255,255,255,0.78)"/>
-<text x="100" y="126" class="label">${escapeSvgText(tag.slice(0, 8))}</text>
-<path d="M92 278H808" stroke="${palette.accent}" stroke-width="8" stroke-linecap="round" opacity="0.16"/>
-${titleSvg}
-<rect x="70" y="812" width="760" height="158" rx="38" fill="rgba(255,255,255,0.54)"/>
-<text x="104" y="882" class="meta">${escapeSvgText(excerpt || "本地草稿封面预览")}</text>
-<text x="104" y="930" class="meta">本地预览 · 等待真实封面记录</text>
-</svg>`;
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-}
-
-export function DraftHistoryCarousel({
+export const DraftHistoryCarousel = memo(function DraftHistoryCarousel({
   activeContentId,
   error,
   items,
@@ -124,7 +57,7 @@ export function DraftHistoryCarousel({
   selectedDraftIds: number[];
   selectionMode: boolean;
 }) {
-  const selectedDraftIdSet = new Set(selectedDraftIds);
+  const selectedDraftIdSet = useMemo(() => new Set(selectedDraftIds), [selectedDraftIds]);
 
   return (
     <section
@@ -141,7 +74,7 @@ export function DraftHistoryCarousel({
         <span
           className={[
             "rounded-full px-2.5 py-1 text-xs font-black",
-            error ? "bg-[#fff4f6] text-[#a2152c]" : "bg-[#e7f2ea]/[0.90] text-moss"
+            error ? "bg-blush text-coral" : "bg-sage/[0.90] text-moss"
           ].join(" ")}
         >
           {error ? "读取失败" : selectionMode ? `已选 ${selectedDraftIds.length}` : items.length ? `${items.length} 篇` : "暂无"}
@@ -150,17 +83,17 @@ export function DraftHistoryCarousel({
 
       {error ? (
         <div
-          className="mb-3 rounded-[22px] border border-[#ffcfda] bg-[#fff4f6] px-3 py-3 text-xs font-bold leading-5 text-[#a2152c]"
+          className="mb-3 rounded-[22px] border border-coral/30 bg-blush px-3 py-3 text-xs font-bold leading-5 text-coral"
           data-testid="mobile-draft-history-error"
           role="alert"
         >
           <div>草稿历史读取失败</div>
-          <p className="mt-1 text-[#6f5960]">{error}</p>
-          <p className="mt-1 text-[#6f5960]">
+          <p className="mt-1 text-muted">{error}</p>
+          <p className="mt-1 text-muted">
             这不会触发生成、改写、确认或发布；可以重新读取历史草稿。
           </p>
           <button
-            className="mt-3 h-9 rounded-full bg-[#111111] px-4 text-xs font-black text-white active:scale-[0.99]"
+            className="mt-3 h-9 rounded-full bg-moss px-4 text-xs font-black text-white active:scale-[0.99]"
             data-testid="mobile-draft-history-retry"
             onClick={onRetry}
             type="button"
@@ -182,22 +115,23 @@ export function DraftHistoryCarousel({
               key={item.content.id}
               selected={selectedDraftIdSet.has(item.content.id)}
               selectionMode={selectionMode}
-              onLongPress={() => onLongPress(item)}
-              onOpen={() => onOpen(item)}
-              onToggleSelection={() => onToggleSelection(item)}
+              onLongPress={onLongPress}
+              onOpen={onOpen}
+              onToggleSelection={onToggleSelection}
             />
           ))}
         </div>
       ) : (
-        <div className="rounded-[22px] border border-white/[0.84] bg-[rgba(255,253,247,0.86)] px-4 py-5 text-sm font-semibold leading-6 text-muted">
-          生成第一篇图文后，会自动出现在这里。
+        <div className="flex flex-col items-center gap-2 rounded-[22px] border border-white/[0.84] bg-[rgba(255,253,247,0.86)] px-4 py-6 text-center text-sm font-semibold leading-6 text-muted">
+          <FileText className="h-6 w-6 text-sage/70" strokeWidth={2} />
+          <span>生成第一篇图文后，会自动出现在这里。</span>
         </div>
       )}
     </section>
   );
-}
+});
 
-function DraftHistoryCard({
+const DraftHistoryCard = memo(function DraftHistoryCard({
   active,
   item,
   onLongPress,
@@ -208,19 +142,20 @@ function DraftHistoryCard({
 }: {
   active: boolean;
   item: MobileDraftHistoryItem;
-  onLongPress: () => void;
-  onOpen: () => void;
-  onToggleSelection: () => void;
+  onLongPress: (item: MobileDraftHistoryItem) => void;
+  onOpen: (item: MobileDraftHistoryItem) => void;
+  onToggleSelection: (item: MobileDraftHistoryItem) => void;
   selected: boolean;
   selectionMode: boolean;
 }) {
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggeredRef = useRef(false);
-  const excerpt = item.content.body.replace(/\s+/g, " ").slice(0, 54);
+  const excerpt = useMemo(() => item.content.body.replace(/\s+/g, " ").slice(0, 54), [item]);
   const hasGeneratedCover = Boolean(item.cover);
-  const coverUrl = item.cover
-    ? resolveAssetUrl(item.cover.image_url)
-    : buildLocalDraftHistoryCoverUrl(item.content);
+  const coverUrl = useMemo(
+    () => (item.cover ? resolveAssetUrl(item.cover.image_url) : buildLocalCoverUrl(item.content)),
+    [item]
+  );
 
   function clearLongPressTimer() {
     if (longPressTimerRef.current) {
@@ -229,12 +164,18 @@ function DraftHistoryCard({
     }
   }
 
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    };
+  }, []);
+
   function startLongPressTimer() {
     clearLongPressTimer();
     longPressTriggeredRef.current = false;
     longPressTimerRef.current = setTimeout(() => {
       longPressTriggeredRef.current = true;
-      onLongPress();
+      onLongPress(item);
     }, 560);
   }
 
@@ -244,10 +185,10 @@ function DraftHistoryCard({
       return;
     }
     if (selectionMode) {
-      onToggleSelection();
+      onToggleSelection(item);
       return;
     }
-    onOpen();
+    onOpen(item);
   }
 
   return (
@@ -256,16 +197,16 @@ function DraftHistoryCard({
       className={[
         "relative w-[214px] shrink-0 snap-start touch-manipulation overflow-hidden rounded-[24px] border bg-white text-left shadow-[0_12px_26px_rgba(31,58,49,0.08)] active:scale-[0.99]",
         selected
-          ? "border-[#111111] ring-2 ring-[#111111]/[0.18]"
+          ? "border-moss ring-2 ring-moss/[0.18]"
           : active
-            ? "border-[#ff2442] ring-2 ring-[#ff2442]/[0.16]"
+            ? "border-coral ring-2 ring-coral/[0.16]"
             : "border-white/[0.88]"
       ].join(" ")}
       data-testid={`mobile-draft-history-card-${item.content.id}`}
       onClick={handleClick}
       onContextMenu={(event) => {
         event.preventDefault();
-        onLongPress();
+        onLongPress(item);
       }}
       onPointerCancel={clearLongPressTimer}
       onPointerDown={startLongPressTimer}
@@ -277,7 +218,7 @@ function DraftHistoryCard({
         <span
           className={[
             "absolute right-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-full border shadow-[0_8px_18px_rgba(0,0,0,0.12)]",
-            selected ? "border-[#111111] bg-[#111111] text-white" : "border-white bg-white/[0.84] text-transparent"
+            selected ? "border-moss bg-moss text-white" : "border-white bg-white/[0.84] text-transparent"
           ].join(" ")}
         >
           <CheckCircle2 className="h-4 w-4" />
@@ -286,7 +227,7 @@ function DraftHistoryCard({
       <div className="relative">
         <CoverImagePreview
           alt={hasGeneratedCover ? "草稿封面" : "本地封面预览"}
-          className="aspect-[3/4] w-full bg-[#f7f7f7] object-cover"
+          className="aspect-[3/4] w-full bg-mist object-cover"
           src={coverUrl}
           testId={`mobile-draft-history-cover-${item.content.id}`}
         />
@@ -296,7 +237,7 @@ function DraftHistoryCard({
           </span>
         ) : null}
         {item.pinned ? (
-          <span className="absolute right-2 top-2 rounded-full bg-white/[0.80] p-1.5 text-[#ff2442] shadow-[0_8px_18px_rgba(31,58,49,0.10)]">
+          <span className="absolute right-2 top-2 rounded-full bg-white/[0.80] p-1.5 text-coral shadow-[0_8px_18px_rgba(31,58,49,0.10)]">
             <Pin className="h-3.5 w-3.5" />
           </span>
         ) : null}
@@ -310,16 +251,16 @@ function DraftHistoryCard({
         </div>
         <div className="flex items-center justify-between gap-2 text-[10px] font-black text-muted">
           <span>{formatMobileDraftDate(item.content.created_at ?? item.saved_at)}</span>
-          <span className={item.pinned ? "text-[#ff2442]" : "text-moss"}>
+          <span className={item.pinned ? "text-coral" : "text-moss"}>
             {item.pinned ? "置顶" : `#${item.content.id}`}
           </span>
         </div>
       </div>
     </button>
   );
-}
+});
 
-export function DraftHistorySelectionBar({
+export const DraftHistorySelectionBar = memo(function DraftHistorySelectionBar({
   onCancel,
   onDelete,
   onPinToggle,
@@ -336,17 +277,17 @@ export function DraftHistorySelectionBar({
 
   return (
     <div
-      className="rounded-[26px] border border-[#111111]/[0.12] bg-[rgba(255,253,247,0.94)] p-3 shadow-[0_16px_34px_rgba(31,58,49,0.12),inset_0_1px_0_rgba(255,255,255,0.90)] backdrop-blur-sm"
+      className="rounded-[26px] border border-moss/[0.12] bg-[rgba(255,253,247,0.94)] p-3 shadow-[0_16px_34px_rgba(31,58,49,0.12),inset_0_1px_0_rgba(255,255,255,0.90)] backdrop-blur-sm"
       data-testid="mobile-draft-selection-toolbar"
       role="toolbar"
     >
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
-          <div className="text-[11px] font-black text-[#ff2442]">草稿多选</div>
+          <div className="text-[11px] font-black text-coral">草稿多选</div>
           <div className="mt-1 text-sm font-black text-ink">已选 {selectedCount} 篇</div>
         </div>
         <button
-          className="h-9 rounded-full border border-[#eeeeee] bg-white px-4 text-xs font-black text-muted active:scale-[0.99]"
+          className="h-9 rounded-full border border-line bg-white px-4 text-xs font-black text-muted active:scale-[0.99]"
           data-testid="mobile-draft-selection-cancel"
           onClick={onCancel}
           type="button"
@@ -356,7 +297,7 @@ export function DraftHistorySelectionBar({
       </div>
       <div className="grid grid-cols-2 gap-2">
         <button
-          className="flex h-12 items-center justify-center gap-2 rounded-full bg-[#111111] text-sm font-black text-white active:scale-[0.99] disabled:bg-[#d9d9d9] disabled:text-white"
+          className="flex h-12 items-center justify-center gap-2 rounded-full bg-moss text-sm font-black text-white active:scale-[0.99] disabled:bg-line disabled:text-white"
           data-testid="mobile-draft-selection-pin"
           disabled={!canPin}
           onClick={onPinToggle}
@@ -366,7 +307,7 @@ export function DraftHistorySelectionBar({
           {canPin ? (selectedItem.pinned ? "取消置顶" : "置顶") : "选 1 篇置顶"}
         </button>
         <button
-          className="flex h-12 items-center justify-center gap-2 rounded-full bg-[#ff2442] text-sm font-black text-white active:scale-[0.99]"
+          className="flex h-12 items-center justify-center gap-2 rounded-full bg-coral text-sm font-black text-white active:scale-[0.99]"
           data-testid="mobile-draft-selection-delete"
           onClick={onDelete}
           type="button"
@@ -377,4 +318,4 @@ export function DraftHistorySelectionBar({
       </div>
     </div>
   );
-}
+});

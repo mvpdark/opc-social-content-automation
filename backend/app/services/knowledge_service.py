@@ -1,8 +1,14 @@
+import logging
 import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+try:
+    from datetime import UTC, datetime, timedelta
+except ImportError:
+    from datetime import datetime, timedelta, timezone
+    UTC = timezone.utc
 
+from fastapi import HTTPException
 from sqlalchemy import Select, case, desc, or_, select
 from sqlalchemy.orm import Session
 
@@ -10,6 +16,8 @@ from app.core.config import settings
 from app.models.knowledge_base import KnowledgeBase
 from app.schemas.knowledge import KnowledgeSearchResult, KnowledgeUploadRequest
 from app.services.model_router import model_router
+
+logger = logging.getLogger(__name__)
 
 KNOWLEDGE_COMPILED_CATEGORY = "ai-compiled-weekly"
 KNOWLEDGE_COMPILE_MARKER = "AI_KNOWLEDGE_COMPILED_AT="
@@ -131,42 +139,25 @@ def build_knowledge_embedding(title: str, content: str, category: str | None) ->
 
 
 def create_knowledge_item(db: Session, payload: KnowledgeUploadRequest) -> KnowledgeBase:
-    embedding = build_knowledge_embedding(
-        title=payload.title,
-        content=payload.content,
-        category=payload.category,
-    )
-    item = KnowledgeBase(
-        title=payload.title,
-        content=payload.content,
-        category=payload.category,
-        embedding=embedding,
-        embedding_dirty=False,
-    )
-    db.add(item)
-    db.commit()
-    db.refresh(item)
-    return item
+    logger.warning("knowledge_service 已废弃，知识库已迁移到 ZSCJ")
+    raise HTTPException(status_code=410, detail="此接口已迁移到 ZSCJ 知识库")
 
 
 def _latest_compiled_item(db: Session) -> KnowledgeBase | None:
-    return db.scalars(
-        select(KnowledgeBase)
-        .where(KnowledgeBase.category == KNOWLEDGE_COMPILED_CATEGORY)
-        .order_by(desc(KnowledgeBase.id))
-        .limit(1)
-    ).first()
+    logger.warning("knowledge_service 已废弃，知识库已迁移到 ZSCJ")
+    raise HTTPException(status_code=410, detail="此接口已迁移到 ZSCJ 知识库")
 
 
 def latest_knowledge_compilation(db: Session) -> KnowledgeSearchResult | None:
-    item = _latest_compiled_item(db)
-    if item is None:
-        return None
-    return _knowledge_result(item, match_type="compiled", score=1.0)
+    logger.warning("knowledge_service 已废弃，知识库已迁移到 ZSCJ")
+    raise HTTPException(status_code=410, detail="此接口已迁移到 ZSCJ 知识库")
 
 
 def _compiled_at(item: KnowledgeBase | None) -> datetime | None:
     if item is None:
+        return None
+
+    if not item.content:
         return None
 
     for line in item.content.splitlines()[:8]:
@@ -184,32 +175,13 @@ def _compiled_at(item: KnowledgeBase | None) -> datetime | None:
 
 
 def is_knowledge_compilation_due(db: Session, interval_hours: int) -> bool:
-    latest = _latest_compiled_item(db)
-    if latest is None:
-        return True
-
-    compiled_at = _compiled_at(latest)
-    if compiled_at is None:
-        return True
-
-    interval = timedelta(hours=max(1, interval_hours))
-    return datetime.now(UTC) - compiled_at >= interval
+    logger.warning("knowledge_service 已废弃，知识库已迁移到 ZSCJ")
+    raise HTTPException(status_code=410, detail="此接口已迁移到 ZSCJ 知识库")
 
 
 def _source_knowledge_items(db: Session, limit: int) -> list[KnowledgeBase]:
-    return list(
-        db.scalars(
-            select(KnowledgeBase)
-            .where(
-                or_(
-                    KnowledgeBase.category.is_(None),
-                    KnowledgeBase.category != KNOWLEDGE_COMPILED_CATEGORY,
-                )
-            )
-            .order_by(desc(KnowledgeBase.id))
-            .limit(max(1, limit))
-        ).all()
-    )
+    logger.warning("knowledge_service 已废弃，知识库已迁移到 ZSCJ")
+    raise HTTPException(status_code=410, detail="此接口已迁移到 ZSCJ 知识库")
 
 
 def _compact_text(value: str, max_length: int) -> str:
@@ -222,7 +194,7 @@ def _compact_text(value: str, max_length: int) -> str:
 def _compile_keywords(items: list[KnowledgeBase], limit: int = 18) -> list[str]:
     counter: Counter[str] = Counter()
     for item in items:
-        text = f"{item.title}\n{item.category or ''}\n{item.content}".lower()
+        text = f"{item.title or ''}\n{item.category or ''}\n{item.content or ''}".lower()
         for raw_term in COMPILE_KEYWORD_RE.findall(normalize_knowledge_text(text)):
             term = raw_term.strip().lower()
             if len(term) < 2 or term in COMPILE_STOP_TERMS:
@@ -305,48 +277,15 @@ def compile_knowledge_base(
     interval_hours: int | None = None,
     source_limit: int = 120,
 ) -> KnowledgeCompilationResult:
-    interval = max(1, interval_hours or settings.knowledge_compile_interval_hours)
-    latest = _latest_compiled_item(db)
-    due = is_knowledge_compilation_due(db, interval)
-    if latest is not None and not force and not due:
-        return KnowledgeCompilationResult(
-            item=_knowledge_result(latest, match_type="compiled", score=1.0),
-            compiled=False,
-            due=False,
-            interval_hours=interval,
-            source_count=0,
-            message="latest_compilation_is_still_fresh",
-        )
-
-    source_items = _source_knowledge_items(db, source_limit)
-    if not source_items:
-        return KnowledgeCompilationResult(
-            item=_knowledge_result(latest, match_type="compiled", score=1.0) if latest else None,
-            compiled=False,
-            due=True,
-            interval_hours=interval,
-            source_count=0,
-            message="no_source_knowledge_items",
-        )
-
-    title, content = render_knowledge_compilation(source_items)
-    item = KnowledgeBase(
-        title=title,
-        content=content,
-        category=KNOWLEDGE_COMPILED_CATEGORY,
-        embedding=build_knowledge_embedding(title, content, KNOWLEDGE_COMPILED_CATEGORY),
-        embedding_dirty=False,
-    )
-    db.add(item)
-    db.commit()
-    db.refresh(item)
+    # 知识库编译已迁移到 ZSCJ，此处保留函数签名但直接返回安全结果
+    logger.warning("compile_knowledge_base 已废弃，知识库已迁移到 ZSCJ")
     return KnowledgeCompilationResult(
-        item=_knowledge_result(item, match_type="compiled", score=1.0),
-        compiled=True,
-        due=due,
-        interval_hours=interval,
-        source_count=len(source_items),
-        message="compiled",
+        item=None,
+        compiled=False,
+        due=False,
+        interval_hours=interval_hours or settings.knowledge_compile_interval_hours,
+        source_count=0,
+        message="deprecated_knowledge_migrated_to_zscj",
     )
 
 
@@ -417,29 +356,9 @@ def _keyword_relevance_score(item: KnowledgeBase, query: str, terms: list[str]) 
     return score
 
 
-def vector_search(
-    db: Session,
-    query: str,
-    category: str | None,
-    limit: int,
-) -> list[KnowledgeSearchResult]:
-    if not settings.is_postgresql:
-        return keyword_search(db, query, category, limit)
-
-    query_embedding = model_router.embedding_model(query)
-    distance = KnowledgeBase.embedding.cosine_distance(query_embedding).label("distance")
-    statement = select(KnowledgeBase, distance).where(KnowledgeBase.embedding.is_not(None))
-    if category:
-        statement = statement.where(KnowledgeBase.category == category)
-    rows = db.execute(statement.order_by(distance).limit(limit)).all()
-    return [
-        _knowledge_result(
-            item,
-            score=max(0.0, 1.0 - float(score)),
-            match_type="vector",
-        )
-        for item, score in rows
-    ]
+def _escape_ilike(term: str) -> str:
+    """转义 ilike 模式中的特殊字符：先转义反斜杠，再转义 % 和 _。"""
+    return term.replace(chr(92), chr(92) + chr(92)).replace('%', chr(92) + '%').replace('_', chr(92) + '_')
 
 
 def keyword_search(
@@ -448,51 +367,8 @@ def keyword_search(
     category: str | None,
     limit: int,
 ) -> list[KnowledgeSearchResult]:
-    normalized_query = query.strip()
-    if not normalized_query:
-        return []
-
-    terms = _keyword_search_terms(normalized_query)
-    search_terms = [normalized_query, *[term for term in terms if term != normalized_query]]
-    patterns = [f"%{term}%" for term in search_terms]
-    statement = select(KnowledgeBase).where(
-        or_(
-            *[
-                or_(KnowledgeBase.title.ilike(pattern), KnowledgeBase.content.ilike(pattern))
-                for pattern in patterns
-            ]
-        )
-    )
-    statement = _apply_category_filter(statement, category)
-
-    # 相关性排序下推到 SQL：标题匹配 > 内容匹配 > 整句匹配
-    title_match = case(
-        *[(KnowledgeBase.title.ilike(f"%{t}%"), 1) for t in search_terms],
-        else_=0,
-    )
-    content_match = case(
-        *[(KnowledgeBase.content.ilike(f"%{t}%"), 1) for t in search_terms],
-        else_=0,
-    )
-    full_query_in_title = case(
-        (KnowledgeBase.title.ilike(f"%{normalized_query}%"), 1),
-        else_=0,
-    )
-    relevance = (full_query_in_title * 140 + title_match * 24 + content_match * 10).label("relevance")
-
-    candidate_limit = max(limit * 4, 24)
-    items = db.scalars(
-        statement.order_by(desc(relevance), desc(KnowledgeBase.id)).limit(candidate_limit)
-    ).all()
-
-    return [
-        _knowledge_result(
-            item,
-            score=None,
-            match_type="keyword",
-        )
-        for item in items[:limit]
-    ]
+    logger.warning("knowledge_service 已废弃，知识库已迁移到 ZSCJ")
+    raise HTTPException(status_code=410, detail="此接口已迁移到 ZSCJ 知识库")
 
 
 def list_knowledge_items(
@@ -500,29 +376,5 @@ def list_knowledge_items(
     category: str | None,
     limit: int,
 ) -> list[KnowledgeSearchResult]:
-    statement = _apply_category_filter(select(KnowledgeBase), category)
-    items = db.scalars(statement.order_by(desc(KnowledgeBase.id)).limit(limit)).all()
-    return [
-        _knowledge_result(
-            item,
-            score=None,
-            match_type="recent",
-        )
-        for item in items
-    ]
-
-
-def search_knowledge_items(
-    db: Session,
-    query: str,
-    category: str | None,
-    limit: int,
-    mode: str,
-) -> list[KnowledgeSearchResult]:
-    if mode == "keyword":
-        return keyword_search(db, query, category, limit)
-
-    vector_results = vector_search(db, query, category, limit)
-    if vector_results or mode == "vector":
-        return vector_results
-    return keyword_search(db, query, category, limit)
+    logger.warning("knowledge_service 已废弃，知识库已迁移到 ZSCJ")
+    raise HTTPException(status_code=410, detail="此接口已迁移到 ZSCJ 知识库")

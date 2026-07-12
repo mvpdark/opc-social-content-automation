@@ -25,6 +25,7 @@ const MOBILE_LAST_CONTENT_STORAGE_KEY = "opc_mobile_last_generated_content_v1";
 const MOBILE_LAST_COVER_STORAGE_KEY = "opc_mobile_last_generated_cover_v1";
 const MOBILE_DRAFT_HISTORY_STORAGE_KEY = "opc_mobile_draft_history_v1";
 const MOBILE_DELETED_DRAFT_IDS_STORAGE_KEY = "opc_mobile_deleted_draft_ids_v1";
+const MOBILE_DRAFT_PREVIEW_STORAGE_KEY = "opc_mobile_draft_preview_v1";
 
 export const defaultMobileDraftPreview: DraftPreviewState = {
   body:
@@ -217,6 +218,30 @@ export function readStoredMobileCover() {
 export function saveStoredMobileCover(cover: GeneratedImageAsset) {
   writeMobileStorage(MOBILE_LAST_COVER_STORAGE_KEY, JSON.stringify(cover));
 }
+
+export function saveStoredMobileDraftPreview(state: DraftPreviewState) {
+  writeMobileStorage(MOBILE_DRAFT_PREVIEW_STORAGE_KEY, JSON.stringify(state));
+}
+
+export function loadStoredMobileDraftPreview(): DraftPreviewState | null {
+  const raw = readMobileStorage(MOBILE_DRAFT_PREVIEW_STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === "object" && parsed !== null &&
+        typeof parsed.body === "string" &&
+        Array.isArray(parsed.points) &&
+        parsed.points.every((p: unknown) => typeof p === "string") &&
+        typeof parsed.tags === "string" &&
+        typeof parsed.title === "string") {
+      return { body: parsed.body, points: parsed.points, tags: parsed.tags, title: parsed.title };
+    }
+  } catch (_error) {
+    // ignore
+  }
+  return null;
+}
+
 
 export function clearStoredMobileCover() {
   removeMobileStorage(MOBILE_LAST_COVER_STORAGE_KEY);

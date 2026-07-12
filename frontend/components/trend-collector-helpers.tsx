@@ -40,6 +40,64 @@ export type LinkImportTarget = {
   safety_notes: string[];
 };
 
+function isLinkCandidate(value: unknown): value is LinkCandidate {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.original_url === "string" &&
+    typeof v.normalized_url === "string" &&
+    typeof v.link_type === "string" &&
+    typeof v.accepted === "boolean" &&
+    typeof v.requires_resolution === "boolean" &&
+    (v.note_id === null || typeof v.note_id === "string") &&
+    (v.reason === null || typeof v.reason === "string")
+  );
+}
+
+export function isLinkImportTarget(value: unknown): value is LinkImportTarget {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    v.platform === "xiaohongshu" &&
+    typeof v.extracted_count === "number" &&
+    typeof v.accepted_count === "number" &&
+    typeof v.import_mode === "string" &&
+    typeof v.download_media_enabled === "boolean" &&
+    typeof v.cookie_persistence === "boolean" &&
+    Array.isArray(v.links) &&
+    v.links.every(isLinkCandidate) &&
+    Array.isArray(v.safety_notes) &&
+    v.safety_notes.every((s) => typeof s === "string")
+  );
+}
+
+export function isSearchTarget(value: unknown): value is SearchTarget {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    (v.platform === "xiaohongshu" || v.platform === "douyin") &&
+    typeof v.keyword === "string" &&
+    (v.content_kind === "image_text" || v.content_kind === "video" || v.content_kind === "mixed") &&
+    typeof v.video_collection_enabled === "boolean" &&
+    typeof v.search_url === "string" &&
+    typeof v.requires_manual_login === "boolean" &&
+    typeof v.automation_mode === "string" &&
+    Array.isArray(v.safety_notes) &&
+    v.safety_notes.every((s) => typeof s === "string")
+  );
+}
+
+export function isKnowledgeDigestResponse(
+  value: unknown
+): value is { knowledge_id: number; item_count: number } {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.knowledge_id === "number" &&
+    typeof v.item_count === "number"
+  );
+}
+
 export type TrendCollectionJob = CollectionJobStatusSnapshot & {
   platform: Platform;
   keyword: string;

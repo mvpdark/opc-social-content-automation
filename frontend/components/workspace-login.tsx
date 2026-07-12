@@ -1,29 +1,47 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { memo, useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Image, KeyRound, LockKeyhole, Loader2, PenLine, ShieldCheck, UserRound } from "lucide-react";
 import { type InterfaceStyle } from "@/lib/dashboard-data";
 import { authenticateWorkspaceLogin } from "./workspace-utils";
 import { Pill } from "./workspace-ui";
 
-export function PcLoginPage({
+export const PcLoginPage = memo(function PcLoginPage({
   interfaceStyle,
   loading,
   onLogin
 }: {
   interfaceStyle: InterfaceStyle;
   loading: boolean;
-  onLogin: (account: string) => void;
+  onLogin: (account: string, accessToken: string) => void;
 }) {
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+  const activeRef = useRef(true);
+  const loginAbortRef = useRef<AbortController | null>(null);
   const busy = loading || isSubmitting;
+
+  useEffect(() => {
+    activeRef.current = true;
+    return () => {
+      activeRef.current = false;
+      loginAbortRef.current?.abort();
+    };
+  }, []);
+
+  const handleAccountChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setAccount(event.target.value);
+  }, []);
+  const handlePasswordChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setPassword(event.target.value);
+  }, []);
 
   async function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy) {
+    if (submittingRef.current || busy) {
       return;
     }
     const normalizedAccount = account.trim();
@@ -33,13 +51,21 @@ export function PcLoginPage({
     }
 
     setError("");
+    submittingRef.current = true;
     setIsSubmitting(true);
     try {
-      const result = await authenticateWorkspaceLogin(normalizedAccount, password);
-      onLogin(result.account);
+      loginAbortRef.current?.abort();
+      const loginController = new AbortController();
+      loginAbortRef.current = loginController;
+      const result = await authenticateWorkspaceLogin(normalizedAccount, password, loginController.signal);
+      if (!activeRef.current) return;
+      onLogin(result.account, result.accessToken);
     } catch (loginError) {
+      if (!activeRef.current) return;
       setError(loginError instanceof Error ? loginError.message : "登录失败，请稍后再试。");
     } finally {
+      if (!activeRef.current) return;
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   }
@@ -119,7 +145,7 @@ export function PcLoginPage({
                   data-testid="pc-login-account"
                   disabled={busy}
                   id="pc-login-account"
-                  onChange={(event) => setAccount(event.target.value)}
+                  onChange={handleAccountChange}
                   placeholder="请输入账号"
                   value={account}
                 />
@@ -136,7 +162,7 @@ export function PcLoginPage({
                   data-testid="pc-login-password"
                   disabled={busy}
                   id="pc-login-password"
-                  onChange={(event) => setPassword(event.target.value)}
+                  onChange={handlePasswordChange}
                   placeholder="请输入密码"
                   type="password"
                   value={password}
@@ -173,4 +199,4 @@ export function PcLoginPage({
       </div>
     </main>
   );
-}
+});

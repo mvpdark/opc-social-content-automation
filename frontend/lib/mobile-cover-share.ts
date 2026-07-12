@@ -46,8 +46,28 @@ function loadImage(src: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new window.Image();
     image.crossOrigin = "anonymous";
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("封面图读取失败。"));
+    let settled = false;
+    const timeoutId = window.setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        image.src = "";
+        reject(new Error("封面图加载超时。"));
+      }
+    }, 15000);
+    image.onload = () => {
+      if (!settled) {
+        settled = true;
+        window.clearTimeout(timeoutId);
+        resolve(image);
+      }
+    };
+    image.onerror = () => {
+      if (!settled) {
+        settled = true;
+        window.clearTimeout(timeoutId);
+        reject(new Error("封面图读取失败。"));
+      }
+    };
     image.src = src;
   });
 }
@@ -127,6 +147,8 @@ export async function buildXhsCoverFile(coverImageUrl: string | null, draft: Dra
   return buildFallbackCoverFile(draft);
 }
 
+let downloadRevokeCleanup: (() => void) | null = null;
+
 export function downloadFile(file: File) {
   const url = URL.createObjectURL(file);
   const link = document.createElement("a");
@@ -136,7 +158,21 @@ export function downloadFile(file: File) {
   document.body.appendChild(link);
   link.click();
   link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  if (downloadRevokeCleanup) {
+    downloadRevokeCleanup();
+    downloadRevokeCleanup = null;
+  }
+  const revokeTimer = window.setTimeout(() => URL.revokeObjectURL(url), 10000);
+  const unloadListener = () => {
+    window.clearTimeout(revokeTimer);
+    URL.revokeObjectURL(url);
+  };
+  window.addEventListener("pagehide", unloadListener, { once: true });
+  downloadRevokeCleanup = () => {
+    window.removeEventListener("pagehide", unloadListener);
+    window.clearTimeout(revokeTimer);
+    URL.revokeObjectURL(url);
+  };
 }
 
 function readFileAsBase64Payload(file: File) {
@@ -170,7 +206,12 @@ export async function shareToNativeXiaohongshu(title: string, text: string, cove
     return { ok: false, message: "当前不是 OMPC App，继续使用浏览器分享。" };
   }
   const imageBase64 = await readFileAsBase64Payload(coverFile);
-  const result = bridge.shareToXiaohongshu(title, text, imageBase64, coverFile.name);
+  let result: unknown;
+  try {
+    result = bridge.shareToXiaohongshu(title, text, imageBase64, coverFile.name);
+  } catch (_bridgeError) {
+    return { ok: false, message: "\u5c0f\u7ea2\u4e66\u539f\u751f\u5206\u4eab\u5f02\u5e38\uff0c\u7ee7\u7eed\u4f7f\u7528\u7cfb\u7edf\u5206\u4eab\u3002" };
+  }
   const resultText = typeof result === "string" ? result : "";
   if (resultText === "ok") {
     return { ok: true, message: "已交给小红书：封面图、标题和正文已一起发送，正文也已复制兜底。" };

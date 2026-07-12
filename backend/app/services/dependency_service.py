@@ -6,7 +6,11 @@ import shutil
 import socket
 import subprocess
 import sys
-from datetime import UTC, datetime
+try:
+    from datetime import UTC, datetime
+except ImportError:
+    from datetime import datetime, timezone
+    UTC = timezone.utc
 from pathlib import Path
 
 from app.core.config import settings

@@ -1,8 +1,13 @@
 "use client";
 
+import { memo, type CSSProperties } from "react";
 import { Sparkles } from "lucide-react";
 
 import { MOBILE_CREATE_CARD_BG } from "@/components/mobile-create-utils";
+
+const CREATE_CARD_BG_STYLE: CSSProperties = {
+  backgroundImage: `url(${MOBILE_CREATE_CARD_BG})`
+};
 
 interface HeroSectionProps {
   heroProgressPercent: number;
@@ -10,13 +15,13 @@ interface HeroSectionProps {
   heroProgressValue: string;
 }
 
-export function HeroSection({ heroProgressPercent, heroProgressLabel, heroProgressValue }: HeroSectionProps) {
+export const HeroSection = memo(function HeroSection({ heroProgressPercent, heroProgressLabel, heroProgressValue }: HeroSectionProps) {
   return (
     <section className="relative overflow-hidden rounded-[30px] border border-white/[0.88] bg-[rgba(255,253,247,0.90)] p-4 text-ink shadow-[0_18px_42px_rgba(31,58,49,0.10),inset_0_1px_0_rgba(255,255,255,0.90)] backdrop-blur-sm">
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-cover bg-center opacity-85"
-        style={{ backgroundImage: `url(${MOBILE_CREATE_CARD_BG})` }}
+        style={CREATE_CARD_BG_STYLE}
       />
       <div
         aria-hidden="true"
@@ -24,15 +29,15 @@ export function HeroSection({ heroProgressPercent, heroProgressLabel, heroProgre
       />
       <div
         aria-hidden="true"
-        className="absolute -right-12 -top-14 h-40 w-40 rounded-full bg-[#ff2442]/[0.12] blur-2xl"
+        className="absolute -right-12 -top-14 h-40 w-40 rounded-full bg-coral/[0.12] blur-2xl"
       />
       <div className="relative">
         <div className="flex items-center justify-between gap-3">
           <div>
             <div className="text-xs font-black text-moss">一键生成</div>
-            <h2 className="mt-1 text-[25px] font-black leading-8">撰稿 + 封面图</h2>
+            <h2 className="mt-1 text-[22px] font-black leading-7">撰稿 + 封面图</h2>
           </div>
-          <div className="flex h-11 w-11 items-center justify-center rounded-[18px] border border-white/[0.84] bg-[rgba(255,253,247,0.78)] text-[#ff2442] shadow-[inset_0_1px_0_rgba(255,255,255,0.86)] backdrop-blur-sm">
+          <div className="flex h-11 w-11 items-center justify-center rounded-[18px] border border-white/[0.84] bg-[rgba(255,253,247,0.78)] text-coral shadow-[inset_0_1px_0_rgba(255,255,255,0.86)] backdrop-blur-sm">
             <Sparkles className="h-5 w-5" />
           </div>
         </div>
@@ -41,17 +46,17 @@ export function HeroSection({ heroProgressPercent, heroProgressLabel, heroProgre
             <div className="text-[11px] font-black text-ink/[0.45]">流程进度</div>
             <div className="mt-1 truncate text-xs font-black text-ink/[0.72]">{heroProgressLabel}</div>
           </div>
-          <div className="flex items-center justify-center rounded-[20px] border border-[#ffdbe2] bg-[#fff5f7]/[0.86] text-center text-xs font-black text-[#a2152c] shadow-[inset_0_1px_0_rgba(255,255,255,0.82)] backdrop-blur-sm">
+          <div className="flex items-center justify-center rounded-[20px] border border-coral/20 bg-blush/[0.86] text-center text-xs font-black text-coral shadow-[inset_0_1px_0_rgba(255,255,255,0.82)] backdrop-blur-sm">
             {heroProgressValue}
           </div>
         </div>
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-ink/10">
           <div
-            className="h-full rounded-full bg-[#ff2442] transition-all duration-500"
+            className="h-full rounded-full bg-coral transition-all duration-500"
             style={{ width: `${heroProgressPercent}%` }}
           />
         </div>
       </div>
     </section>
   );
-}
+})

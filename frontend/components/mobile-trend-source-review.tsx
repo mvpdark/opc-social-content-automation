@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
   ArrowLeft,
@@ -9,154 +9,22 @@ import {
   Trash2
 } from "lucide-react";
 
-import { PlatformIcon } from "@/components/platform-icon";
-import { resolveAssetUrl } from "@/lib/asset-url";
+import { PlatformIcon, type PlatformId } from "@/components/platform-icon";
+import {
+  formatMobileTrendDate,
+  mobileTrendAuthor,
+  mobileTrendBodyText,
+  mobileTrendCoverUrl,
+  mobileTrendExcerpt,
+  mobileTrendLikes,
+  mobileTrendMetricItems,
+  mobilePlatformText,
+  type MobileTrendContent
+} from "@/lib/mobile-trend-utils";
+import { COLLECTION_COLLAGE_BG } from "@/components/mobile-collect-utils";
 
-const COMPACT_XHS_METADATA_RE =
-  /(.{2,60}?)\s+(\d{4}-\d{2}-\d{2}|\d{2}-\d{2}|\d+\s*天前|昨天|前天|刚刚)\s*(\d+(?:\.\d+)?\s*(?:万|w|W|k|K|千)?)?$/;
-const COMPACT_XHS_METADATA_ONLY_RE =
-  /(.{2,60}?)\s+(\d{4}-\d{2}-\d{2}|\d{2}-\d{2}|\d+\s*天前|昨天|前天|刚刚)\s*(\d+(?:\.\d+)?\s*(?:万|w|W|k|K|千)?)?\s*(赞|点赞|藏|收藏|评|评论|转发|分享)?$/;
-
-export type MobileTrendContent = {
-  id: number;
-  platform: string;
-  title: string;
-  content: string;
-  author: string | null;
-  publish_time: string | null;
-  url: string | null;
-  tags: string[] | null;
-  likes: number;
-  favorites: number;
-  comments: number;
-  shares: number;
-  cover_url: string | null;
-  video_transcript: string | null;
-  screenshot_url: string | null;
-  created_at: string;
-};
-
-function isMobileTrendContent(value: unknown): value is MobileTrendContent {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const item = value as Partial<MobileTrendContent>;
-  return (
-    typeof item.id === "number" &&
-    typeof item.platform === "string" &&
-    typeof item.title === "string" &&
-    typeof item.content === "string"
-  );
-}
-
-export function sanitizeMobileTrendItems(value: unknown) {
-  return Array.isArray(value) ? value.filter(isMobileTrendContent) : [];
-}
-
-export function mobilePlatformText(platform: string) {
-  if (platform === "xiaohongshu") {
-    return "小红书";
-  }
-  if (platform === "douyin") {
-    return "抖音";
-  }
-  return platform || "未知平台";
-}
-
-function mobileTrendExcerpt(item: MobileTrendContent, maxLength = 96) {
-  const text = mobileTrendBodyText(item);
-  if (text.length <= maxLength) {
-    return text || "正文未采到，打开来源人工确认。";
-  }
-  return `${text.slice(0, maxLength)}...`;
-}
-
-function mobileTrendBodyText(item: MobileTrendContent) {
-  let text = item.content.replace(/\s+/g, " ").trim();
-  const title = item.title.replace(/\s+/g, " ").trim();
-  for (let index = 0; index < 2; index += 1) {
-    if (title && text.startsWith(title)) {
-      text = text.slice(title.length).trim();
-    }
-  }
-  if (!text || text === title || COMPACT_XHS_METADATA_ONLY_RE.test(text)) {
-    return "";
-  }
-  return text;
-}
-
-function formatMobileTrendDate(value: string | null) {
-  if (!value) {
-    return "时间未知";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "时间未知";
-  }
-  return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, "0")}:${String(
-    date.getMinutes()
-  ).padStart(2, "0")}`;
-}
-
-function mobileTrendCoverUrl(item: MobileTrendContent) {
-  const url = item.cover_url || item.screenshot_url;
-  return url ? resolveAssetUrl(url) : null;
-}
-
-function mobileTrendMetricItems(item: MobileTrendContent) {
-  return [
-    { label: "点赞", value: mobileTrendLikes(item) },
-    { label: "收藏", value: item.favorites },
-    { label: "评论", value: item.comments },
-    { label: "转发", value: item.shares }
-  ];
-}
-
-function parseCompactMetric(value: string | undefined) {
-  if (!value) {
-    return 0;
-  }
-  const match = value.replace(/,/g, "").match(/(\d+(?:\.\d+)?)\s*(万|w|W|k|K|千)?/);
-  if (!match) {
-    return 0;
-  }
-  let count = Number(match[1]);
-  const unit = match[2]?.toLowerCase();
-  if (unit === "万" || unit === "w") {
-    count *= 10000;
-  } else if (unit === "千" || unit === "k") {
-    count *= 1000;
-  }
-  return Math.max(0, Math.floor(count));
-}
-
-function compactXhsMetadata(item: MobileTrendContent) {
-  let text = item.content.replace(/\s+/g, " ").trim();
-  const title = item.title.replace(/\s+/g, " ").trim();
-  for (let index = 0; index < 2; index += 1) {
-    if (title && text.startsWith(title)) {
-      text = text.slice(title.length).trim();
-    }
-  }
-  const match = text.match(COMPACT_XHS_METADATA_RE);
-  if (!match) {
-    return { author: null as string | null, likes: 0 };
-  }
-  const author = match[1]?.trim();
-  const noisyAuthor = /赞|收藏|评论|分享|转发|关注|登录|小红书/.test(author);
-  return {
-    author: author && !noisyAuthor ? author : null,
-    likes: parseCompactMetric(match[3])
-  };
-}
-
-function mobileTrendAuthor(item: MobileTrendContent) {
-  return item.author || compactXhsMetadata(item).author || "未知作者";
-}
-
-function mobileTrendLikes(item: MobileTrendContent) {
-  return item.likes || compactXhsMetadata(item).likes;
-}
+export type { MobileTrendContent } from "@/lib/mobile-trend-utils";
+export { mobilePlatformText, sanitizeMobileTrendItems } from "@/lib/mobile-trend-utils";
 
 function MobileOverlayPortal({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
@@ -193,15 +61,18 @@ export function TrendSourceCard({
   reviewed: boolean;
   selected: boolean;
 }) {
-  const knownPlatform = item.platform === "xiaohongshu" || item.platform === "douyin" ? item.platform : null;
-  const coverUrl = mobileTrendCoverUrl(item);
-  const platformLabel = mobilePlatformText(item.platform);
-  const author = mobileTrendAuthor(item);
-  const date = item.publish_time
-    ? formatMobileTrendDate(item.publish_time)
-    : formatMobileTrendDate(item.created_at);
-  const metrics = `赞 ${mobileTrendLikes(item)} · 藏 ${item.favorites} · 评 ${item.comments} · 转 ${item.shares}`;
-  const bodyText = mobileTrendBodyText(item);
+  const { knownPlatform, coverUrl, platformLabel, author, date, metrics, bodyText } = useMemo(() => {
+    const knownPlatform = item.platform === "xiaohongshu" || item.platform === "douyin" ? (item.platform as PlatformId) : null;
+    const coverUrl = mobileTrendCoverUrl(item);
+    const platformLabel = mobilePlatformText(item.platform);
+    const author = mobileTrendAuthor(item);
+    const date = item.publish_time
+      ? formatMobileTrendDate(item.publish_time)
+      : formatMobileTrendDate(item.created_at);
+    const metrics = `赞 ${mobileTrendLikes(item)} · 藏 ${item.favorites} · 评 ${item.comments} · 转 ${item.shares}`;
+    const bodyText = mobileTrendBodyText(item);
+    return { knownPlatform, coverUrl, platformLabel, author, date, metrics, bodyText };
+  }, [item]);
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
   const startRef = useRef<{ x: number; y: number; pointerId: number } | null>(null);
@@ -325,26 +196,26 @@ export function TrendSourceCard({
       onPointerUp={handlePointerUp}
     >
       <div aria-hidden="true" className="absolute inset-0 grid grid-cols-2 rounded-[24px]">
-        <div className="flex items-center gap-2 bg-[#23854f] px-4 text-xs font-black text-white">
+        <div className="flex items-center gap-2 bg-moss px-4 text-xs font-black text-white">
           <CheckCircle2 className="h-4 w-4" />
           右滑确认
         </div>
-        <div className="flex items-center justify-end gap-2 bg-[#ef4444] px-4 text-xs font-black text-white">
+        <div className="flex items-center justify-end gap-2 bg-coral px-4 text-xs font-black text-white">
           左滑删除
           <Trash2 className="h-4 w-4" />
         </div>
       </div>
       <div
         className={[
-          "relative rounded-[24px] border bg-[#fffdf7] p-2.5 shadow-[0_10px_24px_rgba(31,58,49,0.06),inset_0_1px_0_rgba(255,255,255,0.90)]",
+          "relative rounded-[24px] border bg-paper p-2.5 shadow-[0_10px_24px_rgba(31,58,49,0.06),inset_0_1px_0_rgba(255,255,255,0.90)]",
           dragging ? "" : "transition-transform duration-200 ease-out",
-          selected ? "border-[#23854f] ring-2 ring-[#23854f]/[0.12]" : "border-white/[0.86]"
+          selected ? "border-moss ring-2 ring-moss/[0.12]" : "border-white/[0.86]"
         ].join(" ")}
         style={{ transform: `translateX(${dragX}px)` }}
       >
         <div className="flex items-center gap-3">
           <button
-            className="h-[74px] w-[74px] shrink-0 overflow-hidden rounded-[18px] border border-white/[0.88] bg-[#eef4ed] shadow-[0_8px_18px_rgba(31,58,49,0.08)] active:scale-[0.98]"
+            className="h-[74px] w-[74px] shrink-0 overflow-hidden rounded-[18px] border border-white/[0.88] bg-sage shadow-[0_8px_18px_rgba(31,58,49,0.08)] active:scale-[0.98]"
             onClick={() => {
               if (!suppressNextClick()) {
                 onOpen();
@@ -353,12 +224,12 @@ export function TrendSourceCard({
             type="button"
           >
             {coverUrl ? (
-              <img alt="" className="h-full w-full object-cover" src={coverUrl} />
+              <img alt={`${item.title}封面`} className="h-full w-full object-cover" loading="lazy" decoding="async" src={coverUrl} />
             ) : (
               <span
                 aria-hidden="true"
                 className="block h-full w-full bg-cover bg-center"
-                style={{ backgroundImage: "url(/mobile-assets/collection-collage.png)" }}
+                style={COLLECTION_COLLAGE_BG}
               />
             )}
           </button>
@@ -376,14 +247,14 @@ export function TrendSourceCard({
               <span
                 className={[
                   "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[11px] font-black text-white",
-                  item.platform === "douyin" ? "bg-[#101010]" : "bg-[#ff2442]"
+                  item.platform === "douyin" ? "bg-ink" : "bg-coral"
                 ].join(" ")}
               >
                 {knownPlatform ? <PlatformIcon platform={knownPlatform} size="sm" /> : null}
                 {platformLabel}
               </span>
               {reviewed ? (
-                <span className="shrink-0 rounded-full bg-[#e7f2ea] px-2 py-0.5 text-[10px] font-black text-moss">
+                <span className="shrink-0 rounded-full bg-sage px-2 py-0.5 text-[10px] font-black text-moss">
                   已确认
                 </span>
               ) : null}
@@ -402,7 +273,7 @@ export function TrendSourceCard({
               </p>
             ) : (
               <div
-                className="mt-1 inline-flex max-w-full items-center rounded-full bg-[#fff4d8] px-2 py-1 text-[11px] font-black leading-none text-[#8a5d16]"
+                className="mt-1 inline-flex max-w-full items-center rounded-full bg-amber/15 px-2 py-1 text-[11px] font-black leading-none text-amber-ink"
                 data-testid={`mobile-trend-source-body-${item.id}`}
               >
                 正文未采到，打开来源人工确认。
@@ -412,11 +283,12 @@ export function TrendSourceCard({
 
           <div className="flex w-12 shrink-0 flex-col items-center gap-1">
             <button
+              aria-label={selected ? "取消选择" : "选择"}
               className={[
                 "flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border text-[11px] font-black active:scale-[0.98]",
                 selected
-                  ? "border-[#23854f] bg-[#23854f] text-white"
-                  : "border-transparent bg-[#ecebe2] text-[#9ca28f]"
+                  ? "border-moss bg-moss text-white"
+                  : "border-transparent bg-mist text-muted"
               ].join(" ")}
               data-swipe-ignore="true"
               onClick={onToggle}
@@ -427,7 +299,7 @@ export function TrendSourceCard({
             <span className="text-xs font-black text-muted">{selected ? "已选" : "选择"}</span>
             <button
               aria-label="打开来源链接"
-              className="mt-1 flex h-7 w-7 touch-manipulation items-center justify-center rounded-full border border-[#d6e8df] bg-white/[0.72] text-muted active:scale-[0.98] disabled:opacity-40"
+              className="mt-1 flex h-7 w-7 touch-manipulation items-center justify-center rounded-full border border-line bg-white/[0.72] text-muted active:scale-[0.98] disabled:opacity-40"
               data-swipe-ignore="true"
               disabled={!item.url}
               onClick={onOpenUrl}
@@ -442,7 +314,43 @@ export function TrendSourceCard({
   );
 }
 
-export function TrendSourceReviewSheet({
+export const MemoizedTrendSourceCard = memo(function MemoizedTrendSourceCard({
+  deleting = false,
+  item,
+  onConfirmSwipe,
+  onDeleteSwipe,
+  onOpen,
+  onOpenUrl,
+  onToggle,
+  reviewed,
+  selected
+}: {
+  deleting?: boolean;
+  item: MobileTrendContent;
+  onConfirmSwipe: (item: MobileTrendContent) => void;
+  onDeleteSwipe: (item: MobileTrendContent) => void;
+  onOpen: (item: MobileTrendContent) => void;
+  onOpenUrl: (item: MobileTrendContent) => void;
+  onToggle: (id: number) => void;
+  reviewed: boolean;
+  selected: boolean;
+}) {
+  return (
+    <TrendSourceCard
+      deleting={deleting}
+      item={item}
+      onConfirmSwipe={() => onConfirmSwipe(item)}
+      onDeleteSwipe={() => void onDeleteSwipe(item)}
+      onOpen={() => onOpen(item)}
+      onOpenUrl={() => onOpenUrl(item)}
+      onToggle={() => onToggle(item.id)}
+      reviewed={reviewed}
+      selected={selected}
+    />
+  );
+});
+
+export const TrendSourceReviewSheet = memo(function TrendSourceReviewSheet({
   item,
   onClose,
   onConfirm,
@@ -457,12 +365,15 @@ export function TrendSourceReviewSheet({
   reviewed: boolean;
   selected: boolean;
 }) {
-  const knownPlatform = item.platform === "xiaohongshu" || item.platform === "douyin" ? item.platform : null;
-  const tags = item.tags?.filter((tag) => tag.trim()) ?? [];
-  const coverUrl = mobileTrendCoverUrl(item);
-  const publishedAt = item.publish_time ? formatMobileTrendDate(item.publish_time) : "未记录";
-  const collectedAt = formatMobileTrendDate(item.created_at);
-  const bodyText = mobileTrendBodyText(item);
+  const { knownPlatform, tags, coverUrl, publishedAt, collectedAt, bodyText } = useMemo(() => {
+    const knownPlatform = item.platform === "xiaohongshu" || item.platform === "douyin" ? (item.platform as PlatformId) : null;
+    const tags = item.tags?.filter((tag) => tag.trim()) ?? [];
+    const coverUrl = mobileTrendCoverUrl(item);
+    const publishedAt = item.publish_time ? formatMobileTrendDate(item.publish_time) : "未记录";
+    const collectedAt = formatMobileTrendDate(item.created_at);
+    const bodyText = mobileTrendBodyText(item);
+    return { knownPlatform, tags, coverUrl, publishedAt, collectedAt, bodyText };
+  }, [item]);
 
   return (
     <MobileOverlayPortal>
@@ -472,8 +383,8 @@ export function TrendSourceReviewSheet({
         data-testid="mobile-trend-source-detail"
         role="dialog"
       >
-        <div className="flex h-[100dvh] w-full max-w-[430px] flex-col bg-[#f8f5ec] text-ink">
-          <header className="shrink-0 border-b border-[#e6dece] bg-[rgba(255,253,247,0.96)] px-4 pb-3 pt-[calc(12px+env(safe-area-inset-top))]">
+        <div className="flex h-[100dvh] w-full max-w-[430px] flex-col bg-paper text-ink">
+          <header className="shrink-0 border-b border-sand bg-[rgba(255,253,247,0.96)] px-4 pb-3 pt-[calc(12px+env(safe-area-inset-top))]">
             <div className="flex items-center justify-between gap-3">
               <button
                 aria-label="关闭采集素材详情"
@@ -493,7 +404,7 @@ export function TrendSourceReviewSheet({
               <span
                 className={[
                   "rounded-full px-3 py-1 text-[11px] font-black",
-                  reviewed ? "bg-[#e7f2ea] text-moss" : "bg-[#fff6e3] text-[#8a5d16]"
+                  reviewed ? "bg-sage text-moss" : "bg-amber/15 text-amber-ink"
                 ].join(" ")}
               >
                 {reviewed ? "已确认" : selected ? "已选择" : "待确认"}
@@ -504,8 +415,8 @@ export function TrendSourceReviewSheet({
           <section className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-4">
             <article className="rounded-[28px] border border-white/[0.88] bg-[rgba(255,253,247,0.92)] p-4 shadow-[0_12px_32px_rgba(31,58,49,0.07),inset_0_1px_0_rgba(255,255,255,0.90)]">
               {coverUrl ? (
-                <div className="mb-4 overflow-hidden rounded-[24px] border border-white/[0.88] bg-[#eef4ed]">
-                  <img alt="" className="aspect-[4/3] w-full object-cover" src={coverUrl} />
+                <div className="mb-4 overflow-hidden rounded-[24px] border border-white/[0.88] bg-sage">
+                  <img alt={`${item.title}封面`} className="aspect-[4/3] w-full object-cover" loading="lazy" decoding="async" src={coverUrl} />
                 </div>
               ) : null}
               <h3 className="break-words text-[20px] font-black leading-7">{item.title}</h3>
@@ -523,7 +434,7 @@ export function TrendSourceReviewSheet({
               <div className="mt-3 grid grid-cols-4 gap-1.5">
                 {mobileTrendMetricItems(item).map((metric) => (
                   <div
-                    className="min-w-0 rounded-[16px] bg-[#e7f2ea]/[0.68] px-2 py-2 text-center"
+                    className="min-w-0 rounded-[16px] bg-sage/[0.68] px-2 py-2 text-center"
                     key={`${item.id}-${metric.label}`}
                   >
                     <div className="text-[10px] font-black text-moss/[0.72]">{metric.label}</div>
@@ -538,7 +449,7 @@ export function TrendSourceReviewSheet({
                 </div>
               </div>
               {item.video_transcript ? (
-                <div className="mt-3 whitespace-pre-wrap break-words rounded-[22px] bg-[#fff6e3]/[0.88] px-3.5 py-3 text-xs font-semibold leading-6 text-[#8a5d16]">
+                <div className="mt-3 whitespace-pre-wrap break-words rounded-[22px] bg-amber/15 px-3.5 py-3 text-xs font-semibold leading-6 text-amber-ink">
                   {item.video_transcript}
                 </div>
               ) : null}
@@ -556,17 +467,17 @@ export function TrendSourceReviewSheet({
                   <span className="text-xs font-semibold text-muted">暂无标签</span>
                 )}
               </div>
-              <div className="mt-4 rounded-[20px] border border-[#e6dece] bg-white/[0.68] px-3 py-2 text-xs font-semibold leading-5 text-muted">
+              <div className="mt-4 rounded-[20px] border border-sand bg-white/[0.68] px-3 py-2 text-xs font-semibold leading-5 text-muted">
                 <div className="font-black text-ink/[0.58]">来源</div>
                 <div className="mt-1 break-all">{item.url || "未保存来源链接"}</div>
               </div>
             </article>
           </section>
 
-          <footer className="shrink-0 border-t border-[#e6dece] bg-[rgba(255,253,247,0.96)] px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3">
+          <footer className="shrink-0 border-t border-sand bg-[rgba(255,253,247,0.96)] px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3">
             <div className="grid grid-cols-2 gap-2">
               <button
-                className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full border border-[#d6e8df] bg-white text-sm font-black text-ink active:scale-[0.99] disabled:opacity-50"
+                className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full border border-line bg-white text-sm font-black text-ink active:scale-[0.99] disabled:opacity-50"
                 disabled={!item.url}
                 onClick={onOpenUrl}
                 type="button"
@@ -575,7 +486,7 @@ export function TrendSourceReviewSheet({
                 打开来源
               </button>
               <button
-                className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full bg-[#23854f] text-sm font-black text-white shadow-[0_12px_26px_rgba(35,133,79,0.18)] active:scale-[0.99]"
+                className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-full bg-moss text-sm font-black text-white shadow-moss-sm active:scale-[0.99]"
                 onClick={onConfirm}
                 type="button"
               >
@@ -588,4 +499,4 @@ export function TrendSourceReviewSheet({
       </div>
     </MobileOverlayPortal>
   );
-}
+});

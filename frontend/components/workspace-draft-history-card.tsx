@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, type PointerEvent } from "react";
+import { memo, useState, useRef, useEffect, type PointerEvent } from "react";
 import { Bookmark, Trash2 } from "lucide-react";
 import { PlatformIcon } from "@/components/platform-icon";
 import { resolveAssetUrl } from "@/lib/asset-url";
@@ -12,7 +12,7 @@ import { generatedContentStatusLabel } from "@/lib/status-labels";
 import { formatDraftTime } from "./workspace-utils";
 import { buildCoverLines, platformIdForPreview } from "./workspace-ui";
 
-export function DraftHistoryCard({
+export const DraftHistoryCard = memo(function DraftHistoryCard({
   content,
   imageAsset,
   isPinned,
@@ -41,6 +41,12 @@ export function DraftHistoryCard({
       longPressTimer.current = null;
     }
   }
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    };
+  }, []);
 
   function handlePointerDown(event: PointerEvent<HTMLButtonElement>) {
     if (event.pointerType === "mouse" && event.button !== 0) {
@@ -90,6 +96,8 @@ export function DraftHistoryCard({
             <img
               alt="历史草稿封面"
               className="h-full w-full object-cover"
+              decoding="async"
+              loading="lazy"
               src={coverImageUrl}
             />
           ) : (
@@ -154,4 +162,4 @@ export function DraftHistoryCard({
       ) : null}
     </article>
   );
-}
+});

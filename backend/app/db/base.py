@@ -8,11 +8,13 @@ from app.models.publish_record import PublishRecord
 from app.models.trend_collection_job import TrendCollectionJob
 from app.models.trend_content import TrendContent
 from app.models.user import User
+from app.models.content_variant import ContentVariant
 
 __all__ = [
     "Base",
     "Content",
     "ContentReview",
+    "ContentVariant",
     "GeneratedImage",
     "GenerationLog",
     "KnowledgeBase",

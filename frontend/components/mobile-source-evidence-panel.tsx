@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronDown, ExternalLink, Loader2, Search } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { BookOpen, ChevronDown, ExternalLink, Globe, Loader2, Search } from "lucide-react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   generationSourceContextStats,
@@ -34,7 +34,7 @@ function mobileSourceKnowledgeItemToKnowledgeItem(item: GenerationKnowledgeSourc
 
 type MobileEvidenceSection = "knowledge" | "web" | null;
 
-export function MobileSourceEvidencePanel({
+export const MobileSourceEvidencePanel = memo(function MobileSourceEvidencePanel({
   error,
   fallbackKnowledgeQuery,
   onPreview,
@@ -47,23 +47,34 @@ export function MobileSourceEvidencePanel({
   previewBusy: boolean;
   sourceContext: GenerationSourceContext | null;
 }) {
-  const knowledgeItems = sourceContext?.knowledge_items ?? [];
-  const sourceCards = sourceContext?.source_cards ?? [];
+  const knowledgeItems = useMemo(() => sourceContext?.knowledge_items ?? [], [sourceContext]);
+  const sourceCards = useMemo(() => sourceContext?.source_cards ?? [], [sourceContext]);
   const webSearch = sourceContext?.web_search;
-  const webResults = webSearch?.results ?? [];
+  const webResults = useMemo(() => webSearch?.results ?? [], [webSearch]);
+  const visibleKnowledgeItems = useMemo(() => knowledgeItems.slice(0, 3), [knowledgeItems]);
+  const visibleWebResults = useMemo(() => webResults.slice(0, 3), [webResults]);
   const {
     hasEvidence,
     missingRequiredWebResults,
     totalCount,
     webEvidenceCountLabel,
     webRequired
-  } = generationSourceContextStats(sourceContext);
-  const visibleKnowledgeQuery = sourceContext?.knowledge_query || fallbackKnowledgeQuery?.trim() || "";
+  } = useMemo(() => generationSourceContextStats(sourceContext), [sourceContext]);
+  const visibleKnowledgeQuery = useMemo(
+    () => sourceContext?.knowledge_query || fallbackKnowledgeQuery?.trim() || "",
+    [sourceContext, fallbackKnowledgeQuery]
+  );
   const [openEvidenceSection, setOpenEvidenceSection] = useState<MobileEvidenceSection>(null);
   const knowledgeListRef = useRef<HTMLDivElement | null>(null);
   const webListRef = useRef<HTMLDivElement | null>(null);
   const knowledgeOpen = openEvidenceSection === "knowledge";
   const webOpen = openEvidenceSection === "web";
+  const handleToggleKnowledge = useCallback(() => {
+    setOpenEvidenceSection((prev) => (prev === "knowledge" ? null : "knowledge"));
+  }, []);
+  const handleToggleWeb = useCallback(() => {
+    setOpenEvidenceSection((prev) => (prev === "web" ? null : "web"));
+  }, []);
 
   useEffect(() => {
     setOpenEvidenceSection(null);
@@ -101,9 +112,9 @@ export function MobileSourceEvidencePanel({
           className={[
             "rounded-full px-2.5 py-1 text-[11px] font-black",
             missingRequiredWebResults
-              ? "bg-[#fff3d6] text-[#8a6110]"
+              ? "bg-amber/15 text-amber-ink"
               : hasEvidence
-                ? "bg-[#e7f2ea] text-moss"
+                ? "bg-sage text-moss"
                 : "bg-white text-muted"
           ].join(" ")}
         >
@@ -125,10 +136,10 @@ export function MobileSourceEvidencePanel({
         {previewBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
         {previewBusy ? "正在检索" : hasEvidence ? "重新查看依据" : "查看检索依据"}
       </button>
-      {error ? <p className="mt-2 text-[11px] font-medium leading-5 text-[#c92a3f]">{error}</p> : null}
+      {error ? <p className="mt-2 text-[11px] font-medium leading-5 text-coral">{error}</p> : null}
       {missingRequiredWebResults ? (
         <div
-          className="mt-3 rounded-[18px] border border-[#f3dca3] bg-[#fff8e6] px-3 py-2 text-[11px] font-semibold leading-5 text-[#8a6110]"
+          className="mt-3 rounded-[18px] border border-amber/40 bg-amber/10 px-3 py-2 text-[11px] font-semibold leading-5 text-amber-ink"
           data-testid="mobile-source-required-web-warning"
         >
           此选题需要联网来源；未拿到 Tavily 结果前，不要让模型猜测学校、价格、logo 或排名结论。
@@ -150,10 +161,10 @@ export function MobileSourceEvidencePanel({
             aria-expanded={knowledgeOpen}
             className={[
               "flex min-h-11 touch-manipulation items-center justify-between gap-2 rounded-[16px] px-3 py-2 text-left active:scale-[0.99]",
-              knowledgeOpen ? "bg-[#e7f2ea] text-ink" : "bg-white/70 text-muted"
+              knowledgeOpen ? "bg-sage text-ink" : "bg-white/70 text-muted"
             ].join(" ")}
             data-testid="mobile-source-knowledge-toggle"
-            onClick={() => setOpenEvidenceSection(knowledgeOpen ? null : "knowledge")}
+            onClick={handleToggleKnowledge}
             type="button"
           >
             <span>
@@ -177,10 +188,10 @@ export function MobileSourceEvidencePanel({
             aria-expanded={webOpen}
             className={[
               "flex min-h-11 touch-manipulation items-center justify-between gap-2 rounded-[16px] px-3 py-2 text-left active:scale-[0.99]",
-              webOpen ? "bg-[#e7f2ea] text-ink" : "bg-white/70 text-muted"
+              webOpen ? "bg-sage text-ink" : "bg-white/70 text-muted"
             ].join(" ")}
             data-testid="mobile-source-web-toggle"
-            onClick={() => setOpenEvidenceSection(webOpen ? null : "web")}
+            onClick={handleToggleWeb}
             type="button"
           >
             <span>
@@ -208,8 +219,8 @@ export function MobileSourceEvidencePanel({
           id="mobile-source-knowledge-list"
           ref={knowledgeListRef}
         >
-          {knowledgeItems.length ? (
-            knowledgeItems.slice(0, 3).map((item, index) => {
+          {visibleKnowledgeItems.length ? (
+            visibleKnowledgeItems.map((item, index) => {
               const knowledgeItem = mobileSourceKnowledgeItemToKnowledgeItem(item);
               return (
                 <article className="mobile-source-evidence-result-card rounded-[18px] border border-white/[0.86] bg-white/70 px-3 py-2" key={`${item.id}-${index}`}>
@@ -217,7 +228,7 @@ export function MobileSourceEvidencePanel({
                     <h4 className="line-clamp-2 text-xs font-black leading-5 text-ink">
                       {knowledgeItemTitle(knowledgeItem)}
                     </h4>
-                    <span className="shrink-0 rounded-full bg-[#e7f2ea] px-2 py-0.5 text-[10px] font-black text-moss">
+                    <span className="shrink-0 rounded-full bg-sage px-2 py-0.5 text-[10px] font-black text-moss">
                       {knowledgeCategoryLabel(knowledgeItem.category)}
                     </span>
                   </div>
@@ -228,9 +239,10 @@ export function MobileSourceEvidencePanel({
               );
             })
           ) : (
-            <p className="rounded-[18px] border border-white/[0.86] bg-white/70 px-3 py-2 text-[11px] font-medium leading-5 text-muted">
-              暂无知识库引用，请先点击“查看检索依据”。
-            </p>
+            <div className="flex flex-col items-center gap-1.5 rounded-[18px] border border-white/[0.86] bg-white/70 px-3 py-3 text-center text-[11px] font-medium leading-5 text-muted">
+              <BookOpen className="h-5 w-5 text-sage/70" strokeWidth={2} />
+              <p>暂无知识库引用，请先点击“查看检索依据”。</p>
+            </div>
           )}
         </div>
       ) : null}
@@ -253,8 +265,8 @@ export function MobileSourceEvidencePanel({
               <span className="mt-1 block text-muted">摘要仅作线索，发布前请点开下方 URL 核对原文。</span>
             </p>
           ) : null}
-          {webResults.length ? (
-            webResults.slice(0, 3).map((item, index) => (
+          {visibleWebResults.length ? (
+            visibleWebResults.map((item, index) => (
               <a
                 aria-label={`打开联网来源：${item.title}`}
                 className="mobile-source-evidence-result-card block rounded-[18px] border border-white/[0.86] bg-white/70 px-3 py-2"
@@ -272,19 +284,20 @@ export function MobileSourceEvidencePanel({
               </a>
             ))
           ) : (
-            <p className="rounded-[18px] border border-[#f3dca3] bg-[#fff8e6] px-3 py-2 text-[11px] font-medium leading-5 text-[#8a6110]">
-              {webRequired
+            <div className="flex flex-col items-center gap-1.5 rounded-[18px] border border-amber/40 bg-amber/10 px-3 py-3 text-center text-[11px] font-medium leading-5 text-amber-ink">
+              <Globe className="h-5 w-5 text-amber-ink/60" strokeWidth={2} />
+              <p>{webRequired
                 ? "这个选题需要实时资料，但本次还没拿到可见联网搜索结果；请换关键词、检查 Tavily，或只写核验框架，不要让模型猜测学校、价格、logo 或排名结论。"
-                : "当前选题未触发联网搜索；如涉及学校、价格、logo、排名或市场信息，请先重新查看依据。"}
-            </p>
+                : "当前选题未触发联网搜索；如涉及学校、价格、logo、排名或市场信息，请先重新查看依据。"}</p>
+            </div>
           )}
         </div>
       ) : null}
       {sourceContext?.review_note ? (
-        <div className="mt-3 border-l-4 border-[#f0c76b] pl-3 text-[11px] font-medium leading-5 text-muted">
+        <div className="mt-3 border-l-4 border-amber/60 pl-3 text-[11px] font-medium leading-5 text-muted">
           {sourceContext.review_note}
         </div>
       ) : null}
     </div>
   );
-}
+});

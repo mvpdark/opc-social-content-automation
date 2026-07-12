@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import {
   BookOpenText,
   Clipboard,
@@ -16,7 +17,17 @@ import {
 } from "./workspace-utils";
 import { IconBox, Pill } from "./workspace-ui";
 
-export function CreationProjectGateway({
+const GATEWAY_WORKFLOW_ICONS = [Search, PenLine, Clipboard, ShieldCheck] as const;
+const GATEWAY_WORKFLOW_TONES = ["blue", "green", "amber", "red"] as const;
+const GATEWAY_PIPELINE_STEPS: ReadonlyArray<readonly [string, string]> = [
+  ["采集", "先看来源，再入知识库"],
+  ["生成", "只生成草稿和封面"],
+  ["发布", "人工确认后手动复制"]
+];
+const LIVE_PROJECT = creationProjects.find((project) => project.enabled) ?? creationProjects[0];
+const ROADMAP_PROJECTS = creationProjects.filter((project) => !project.enabled);
+
+export const CreationProjectGateway = memo(function CreationProjectGateway({
   latestContent,
   loading,
   onSelect
@@ -25,10 +36,8 @@ export function CreationProjectGateway({
   loading: boolean;
   onSelect: (projectId: CreationProjectId) => void;
 }) {
-  const liveProject = creationProjects.find((project) => project.enabled) ?? creationProjects[0];
-  const roadmapProjects = creationProjects.filter((project) => !project.enabled);
-  const gatewayWorkflowIcons = [Search, PenLine, Clipboard, ShieldCheck] as const;
-  const gatewayWorkflowTones = ["blue", "green", "amber", "red"] as const;
+  const liveProject = LIVE_PROJECT;
+  const roadmapProjects = ROADMAP_PROJECTS;
 
   return (
     <div className="workspace-creation-gateway space-y-6" data-testid="creation-project-gateway">
@@ -62,14 +71,14 @@ export function CreationProjectGateway({
 
               <div className="mt-6 grid grid-cols-2 gap-2 2xl:grid-cols-4">
                 {liveProject.workflow.map((step, index) => {
-                  const StepIcon = gatewayWorkflowIcons[index] ?? ShieldCheck;
+                  const StepIcon = GATEWAY_WORKFLOW_ICONS[index] ?? ShieldCheck;
                   return (
                     <div
                       className="min-h-[84px] rounded-[18px] border border-line/70 bg-paper/55 px-3 py-3 transition group-hover:border-steel/45 group-hover:bg-paper/70"
                       key={`live-project-step-${index}-${step}`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <IconBox tone={gatewayWorkflowTones[index] ?? "blue"}>
+                        <IconBox tone={GATEWAY_WORKFLOW_TONES[index] ?? "blue"}>
                           <StepIcon className="h-4 w-4" />
                         </IconBox>
                         <span className="text-[11px] font-semibold text-muted">
@@ -179,11 +188,7 @@ export function CreationProjectGateway({
             </div>
 
             <div className="mt-4 divide-y divide-line/70 rounded-[22px] border border-line/70 bg-paper/45">
-              {[
-                ["采集", "先看来源，再入知识库"],
-                ["生成", "只生成草稿和封面"],
-                ["发布", "人工确认后手动复制"]
-              ].map(([label, detail]) => (
+              {GATEWAY_PIPELINE_STEPS.map(([label, detail]) => (
                 <div className="flex items-center justify-between gap-3 px-4 py-3" key={label}>
                   <span className="text-xs font-semibold text-ink">{label}</span>
                   <span className="text-right text-xs leading-5 text-muted">{detail}</span>
@@ -250,4 +255,4 @@ export function CreationProjectGateway({
       </section>
     </div>
   );
-}
+});

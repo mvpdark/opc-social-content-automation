@@ -1,13 +1,13 @@
 import json
 from dataclasses import dataclass
 
-from sqlalchemy.orm import Session
-
 from app.models.content import Content
 from app.models.user import User
 from app.schemas.content import ContentGenerateRequest, ContentRewriteRequest
 from app.services.content_source_context import (
+    _admission_notices_context,
     _knowledge_context,
+    _popular_posts_context,
     _public_source_context,
     _source_context_with_promotion_brief,
 )
@@ -172,11 +172,12 @@ def _draft_missing_required_web_source_issue(
 
 
 def build_draft_prompt_package(
-    db: Session,
     payload: ContentGenerateRequest,
     current_user: User,
 ) -> PromptPackage:
-    knowledge_context = _knowledge_context(db, payload)
+    knowledge_context = _knowledge_context(payload)
+    popular_posts = _popular_posts_context(payload, limit=3)
+    admission_notices = _admission_notices_context(payload, limit=3)
     web_search_context = build_live_web_search_context(
         platform=payload.platform,
         topic=payload.topic,
@@ -199,6 +200,8 @@ def build_draft_prompt_package(
             "knowledge_query": payload.knowledge_query,
             "knowledge_context": knowledge_context,
             "web_search_context": _prompt_web_search_context(source_context, web_search_context),
+            "popular_posts": popular_posts,
+            "admission_notices": admission_notices,
             "source_context": source_context,
             "promotion_brief": source_context["promotion_brief"],
             "style_reference": load_platform_style_reference(payload.platform),

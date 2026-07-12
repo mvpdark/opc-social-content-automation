@@ -1,3 +1,6 @@
+"use client";
+
+import { memo, useMemo } from "react";
 import type { GenerationSourceCard } from "@/lib/generated-assets";
 
 const confidenceLabel: Record<string, string> = {
@@ -10,7 +13,7 @@ function cardConfidenceLabel(confidence: string | null | undefined) {
   return confidence ? confidenceLabel[confidence] ?? confidence : "待复核";
 }
 
-export function SourceCardSummary({
+export const SourceCardSummary = memo(function SourceCardSummary({
   cards,
   testId,
   variant = "desktop"
@@ -19,11 +22,12 @@ export function SourceCardSummary({
   testId: string;
   variant?: "desktop" | "mobile";
 }) {
+  const mobile = variant === "mobile";
+  const visibleCards = useMemo(() => cards.slice(0, mobile ? 3 : 4), [cards, mobile]);
+
   if (!cards.length) {
     return null;
   }
-
-  const mobile = variant === "mobile";
 
   return (
     <section
@@ -39,12 +43,12 @@ export function SourceCardSummary({
         <div className={mobile ? "text-xs font-black text-ink" : "text-xs font-semibold text-ink"}>
           来源卡片
         </div>
-        <span className={mobile ? "rounded-full bg-[#e7f2ea] px-2 py-0.5 text-[10px] font-black text-moss" : "rounded-md border border-moss/40 bg-moss/10 px-2 py-0.5 text-[10px] font-semibold text-ink"}>
+        <span className={mobile ? "rounded-full bg-sage px-2 py-0.5 text-[10px] font-black text-moss" : "rounded-md border border-moss/40 bg-moss/10 px-2 py-0.5 text-[10px] font-semibold text-ink"}>
           {cards.length} 条
         </span>
       </div>
       <div className="mt-2 space-y-2">
-        {cards.slice(0, mobile ? 3 : 4).map((card) => (
+        {visibleCards.map((card) => (
           <article
             className={mobile ? "rounded-[16px] border border-white/[0.86] bg-white/76 px-3 py-2" : "rounded-md border border-line bg-mist/45 px-3 py-2"}
             data-testid={`${testId}-item`}
@@ -62,7 +66,7 @@ export function SourceCardSummary({
               支持内容：{card.supported_claim}
             </p>
             {card.unsupported_boundary ? (
-              <p className="mt-1 whitespace-pre-wrap break-words text-[#8a6110]">
+              <p className="mt-1 whitespace-pre-wrap break-words text-amber-ink">
                 使用边界：{card.unsupported_boundary}
               </p>
             ) : null}
@@ -74,6 +78,6 @@ export function SourceCardSummary({
       </div>
     </section>
   );
-}
+});
 
 

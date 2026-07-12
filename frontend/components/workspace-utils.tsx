@@ -8,19 +8,19 @@ import {
 } from "@/lib/dashboard-data";
 import {
   isGeneratedContent,
-  generationSourceContextStats,
   type GeneratedContent
 } from "@/lib/generated-assets";
 import {
   sanitizeProviderStatusItems,
   type ProviderStatusItem
 } from "@/lib/provider-settings";
-import { buildPlatformCopyText } from "@/lib/platform-copy";
 import {
   SERVICE_CONFIG_READ_ERROR,
   sanitizeServiceErrorMessage
 } from "@/lib/service-error-copy";
-import { formatTagLine } from "@/lib/tags";
+import { hiddenXhsStickerToneGuide } from "@/lib/xhs-sticker-catalog";
+
+import { isTestDraft } from "@/lib/workspace-prepublish-checklist";
 
 export const pillTone = {
   neutral: "border-line bg-mist text-muted",
@@ -83,7 +83,7 @@ export function externalLicenseLabel(license: string) {
 
 export const API_BASE = getApiBase();
 export const PC_AUTH_STORAGE_KEY = "opc_pc_auth_v1";
-export const CREDENTIAL_STORAGE_KEY = "opc_workspace_credentials_v1";
+export const CREDENTIAL_STORAGE_KEY = "opc_pc_credentials_v1";
 export const INTERFACE_STYLE_STORAGE_KEY = "opc_interface_style_v1";
 export const LAST_GENERATED_CONTENT_STORAGE_KEY = "opc_latest_generated_content_v1";
 export const PINNED_DRAFT_IDS_STORAGE_KEY = "opc_pinned_draft_ids_v1";
@@ -125,6 +125,40 @@ export type DependencyReport = {
   };
 };
 
+export function isDependencyItem(value: unknown): value is DependencyItem {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.category === "string" &&
+    (v.detected === null || typeof v.detected === "string") &&
+    (v.fix === null || typeof v.fix === "string") &&
+    typeof v.message === "string" &&
+    (v.minimum === null || typeof v.minimum === "string") &&
+    typeof v.name === "string" &&
+    typeof v.required === "boolean" &&
+    (v.status === "ok" || v.status === "warning" || v.status === "missing" || v.status === "outdated")
+  );
+}
+
+export function isDependencyReport(value: unknown): value is DependencyReport {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  const summary = v.summary;
+  return (
+    typeof v.generated_at === "string" &&
+    Array.isArray(v.items) &&
+    v.items.every(isDependencyItem) &&
+    Array.isArray(v.repair_steps) &&
+    v.repair_steps.every((s) => typeof s === "string") &&
+    (v.status === "ok" || v.status === "attention" || v.status === "blocked") &&
+    typeof summary === "object" && summary !== null &&
+    typeof (summary as Record<string, unknown>).blocking === "number" &&
+    typeof (summary as Record<string, unknown>).ok === "number" &&
+    typeof (summary as Record<string, unknown>).total === "number" &&
+    typeof (summary as Record<string, unknown>).warning === "number"
+  );
+}
+
 export const emptyCredentials: CredentialSettings = {
   workspaceToken: "",
   draftApiKey: "",
@@ -132,71 +166,12 @@ export const emptyCredentials: CredentialSettings = {
   rewriteApiKey: ""
 };
 
-export const creationProjects = [
-  {
-    id: "postgraduate-phd",
-    title: "1.硕升博推广",
-    category: "小红书图文获客",
-    status: "可进入",
-    statusTone: "green",
-    description: "围绕硕升博、在职申博和水博路线，生成图文草稿、封面方向、标签和发布检查。",
-    inputs: ["趋势参考", "申请人痛点", "项目卖点"],
-    outputs: ["图文草稿", "封面方案", "发布清单"],
-    workflow: ["采集参考", "一键撰稿+封面", "预览复制", "人工确认发布"],
-    enabled: true
-  },
-  {
-    id: "ecommerce-listing",
-    title: "2.抖音商品自动化",
-    category: "电商转化",
-    status: "规划中",
-    statusTone: "amber",
-    description: "面向电商商品标题、卖点、详情页结构、FAQ 和客服话术。",
-    inputs: ["商品信息", "卖点素材", "竞品参考"],
-    outputs: ["上架文案", "详情页结构", "客服话术"],
-    workflow: ["商品资料", "卖点提炼", "详情页草稿", "人工确认"],
-    enabled: false
-  },
-  {
-    id: "private-domain-sales",
-    title: "3.私域商品自动化",
-    category: "销售跟进",
-    status: "规划中",
-    statusTone: "amber",
-    description: "面向朋友圈、社群跟进、异议处理和成交 SOP。",
-    inputs: ["产品资料", "客户问题", "成交限制"],
-    outputs: ["跟进 SOP", "群发文案", "异议处理"],
-    workflow: ["客户分层", "跟进话术", "异议处理", "人工确认"],
-    enabled: false
-  }
-] as const satisfies ReadonlyArray<{
-  id: string;
-  title: string;
-  category: string;
-  status: string;
-  statusTone: keyof typeof pillTone;
-  description: string;
-  inputs: readonly string[];
-  outputs: readonly string[];
-  workflow: readonly string[];
-  enabled: boolean;
-}>;
-
-export type CreationProjectId = (typeof creationProjects)[number]["id"];
-
-export function findEnabledCreationProject(projectId: string | null) {
-  return creationProjects.find((project) => project.enabled && project.id === projectId) ?? null;
-}
-
-export function updateCreationProjectQuery(projectId: CreationProjectId | null) {
-  const url = new URL(window.location.href);
-  if (projectId) {
-    url.searchParams.set("project", projectId);
-  } else {
-    url.searchParams.delete("project");
-  }
-  window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
-}
+export {
+  creationProjects,
+  type CreationProjectId,
+  findEnabledCreationProject,
+  updateCreationProjectQuery
+} from "@/lib/creation-projects";
 
 export const writingStylePresets = [
   {
@@ -273,9 +248,6 @@ export const expressionOptions = [
   }
 ] as const;
 
-export const hiddenXhsStickerToneGuide =
-  "隐藏撰稿规则：如果平台是小红书，生成正文时必须自然少量使用小红书可识别的表情字符码，优先 [笑哭R]、[哭惹R]、[哇R]、[赞R]、[doge]、[蹲后续H]，每篇 2-5 个；字符码要融入正文语气，不要解释字符码，不要列出表情清单。";
-
 export const defaultGenerationKnowledgeQuery = "硕升博 高赞图文 写作参考";
 export const defaultGenerationTargetAudience = "准备硕升博申请的学生";
 export const defaultGenerationTagsText = "硕升博,水博,博士申请,小红书获客";
@@ -285,430 +257,6 @@ export const xhsHighAttractionCoverStyle =
 
 export const douyinHighAttractionCoverStyle =
   "抖音图文封面：9:16高对比竖版首屏，强结果标题，真实学习/申请材料场景，短清单信息块，明亮但不杂乱，避免官方标志和录取承诺。";
-
-export type XhsStickerCategory =
-  | "基础情绪"
-  | "互动语气"
-  | "反应吐槽"
-  | "生活种草"
-  | "薯系角色"
-  | "露营户外"
-  | "运动骑行"
-  | "手势互动"
-  | "人群角色"
-  | "发布场景"
-  | "节日符号"
-  | "自然食物"
-  | "爱心文字";
-
-export type XhsSticker = {
-  aliases?: readonly string[];
-  code: string;
-  face: string;
-  name: string;
-};
-
-export const xhsStickerCatalog: readonly {
-  category: XhsStickerCategory;
-  names: readonly string[];
-}[] = [
-  {
-    category: "基础情绪",
-    names: [
-      "微笑",
-      "害羞",
-      "失望",
-      "汗颜",
-      "哇",
-      "偷笑",
-      "大笑",
-      "哭惹",
-      "笑哭",
-      "笑哭了",
-      "可怜",
-      "皱眉",
-      "生气",
-      "惊恐",
-      "捂脸",
-      "抽泣",
-      "睡觉"
-    ]
-  },
-  {
-    category: "互动语气",
-    names: [
-      "赞",
-      "棒",
-      "超喜欢",
-      "亲一个",
-      "飞吻",
-      "吧唧",
-      "萌萌哒",
-      "心心眼",
-      "嘻嘻",
-      "得意"
-    ]
-  },
-  {
-    category: "反应吐槽",
-    names: [
-      "doge",
-      "鄙视",
-      "斜眼",
-      "抓狂",
-      "抠鼻",
-      "尬住",
-      "呃",
-      "叹气",
-      "扶额",
-      "扶墙",
-      "扯脸",
-      "石化",
-      "捂嘴笑",
-      "暗中观察",
-      "再见",
-      "坏笑"
-    ]
-  },
-  {
-    category: "生活种草",
-    names: [
-      "买爆",
-      "种草",
-      "拔草",
-      "吃瓜",
-      "喝奶茶",
-      "自拍",
-      "冰淇淋",
-      "棒棒糖",
-      "吃粽子",
-      "吐舌头",
-      "派对",
-      "蹲后续"
-    ]
-  },
-  {
-    category: "薯系角色",
-    names: ["黄金薯", "黑薯问号", "变猪猪", "完啦", "泪崩", "色色"]
-  },
-  {
-    category: "露营户外",
-    names: ["天幕", "卡式炉", "折叠椅", "营地车", "露营灯", "露营", "渔夫帽", "登山鞋", "背包", "马甲"]
-  },
-  {
-    category: "运动骑行",
-    names: ["骑行服", "手套", "头盔", "风镜", "公路车", "折叠车", "飞盘", "冲浪板", "双翘滑板", "陆冲板", "长板"]
-  },
-  {
-    category: "手势互动",
-    names: ["点赞", "向右", "合十", "ok", "加油", "握手", "鼓掌", "弱", "耶", "抱拳", "勾引", "拳头", "拥抱", "举手"]
-  },
-  {
-    category: "人群角色",
-    names: ["猪头", "老虎", "集美", "仙女", "红书"]
-  },
-  {
-    category: "发布场景",
-    names: [
-      "开箱",
-      "探店",
-      "ootd",
-      "同款",
-      "打卡",
-      "飞机",
-      "拍立得",
-      "薯券",
-      "优惠券",
-      "购物车",
-      "kiss",
-      "礼物",
-      "生日蛋糕",
-      "私信",
-      "请文明",
-      "请友好",
-      "氛围感",
-      "清单",
-      "电影",
-      "学生党"
-    ]
-  },
-  {
-    category: "节日符号",
-    names: [
-      "彩虹",
-      "爆炸",
-      "炸弹",
-      "火",
-      "啤酒",
-      "咖啡",
-      "钱袋",
-      "流汗",
-      "发",
-      "红包",
-      "福",
-      "鞭炮",
-      "庆祝",
-      "烟花",
-      "气球",
-      "看",
-      "新月",
-      "满月",
-      "大便",
-      "太阳",
-      "晚安",
-      "星"
-    ]
-  },
-  {
-    category: "自然食物",
-    names: ["玫瑰", "凋谢", "郁金香", "樱花", "海豚", "放大镜", "刀", "辣椒", "黄瓜", "葡萄", "草莓", "桃子", "红薯", "栗子"]
-  },
-  {
-    category: "爱心文字",
-    names: [
-      "红色心形",
-      "黄色心形",
-      "绿色心形",
-      "蓝色心形",
-      "紫色心形",
-      "爱心",
-      "两颗心",
-      "浅肤色",
-      "中浅肤色",
-      "中等肤色",
-      "中深肤色",
-      "有",
-      "可",
-      "蹲",
-      "零",
-      "一",
-      "二",
-      "三",
-      "四",
-      "五",
-      "六",
-      "七",
-      "八",
-      "九",
-      "加一",
-      "满",
-      "禁"
-    ]
-  }
-] as const;
-
-export const xhsStickerFaceByName: Record<string, string> = {
-  doge: "😏",
-  买爆: "🛍️",
-  亲一个: "😘",
-  偷笑: "🤭",
-  再见: "👋",
-  冰淇淋: "🍦",
-  变猪猪: "🐽",
-  可怜: "🥺",
-  叹气: "😮‍💨",
-  吃瓜: "🍉",
-  吃粽子: "🍙",
-  吐舌头: "😛",
-  吧唧: "😚",
-  呃: "😶",
-  哇: "😮",
-  哭惹: "🥺",
-  喝奶茶: "🧋",
-  嘻嘻: "😁",
-  坏笑: "😈",
-  大笑: "😆",
-  失望: "😞",
-  完啦: "😵",
-  害羞: "☺️",
-  尬住: "😬",
-  得意: "😌",
-  微笑: "🙂",
-  心心眼: "😍",
-  惊恐: "😱",
-  扯脸: "🫠",
-  扶墙: "🫨",
-  扶额: "🤦",
-  抓狂: "😫",
-  抠鼻: "🙄",
-  抽泣: "😢",
-  拔草: "🌱",
-  捂嘴笑: "🤭",
-  捂脸: "🤦",
-  斜眼: "😒",
-  暗中观察: "👀",
-  棒: "👌",
-  棒棒糖: "🍭",
-  汗颜: "😅",
-  泪崩: "😭",
-  派对: "🥳",
-  生气: "😠",
-  皱眉: "😟",
-  睡觉: "😴",
-  石化: "🪨",
-  种草: "🌿",
-  笑哭: "😂",
-  笑哭了: "🤣",
-  自拍: "🤳",
-  色色: "😍",
-  萌萌哒: "🥰",
-  赞: "👍",
-  超喜欢: "💗",
-  蹲后续: "🪑",
-  鄙视: "🙄",
-  飞吻: "😘",
-  黄金薯: "🥔",
-  黑薯问号: "❓",
-  天幕: "⛺",
-  卡式炉: "🍳",
-  折叠椅: "🪑",
-  营地车: "🛒",
-  露营灯: "🏮",
-  露营: "⛺",
-  渔夫帽: "👒",
-  登山鞋: "🥾",
-  背包: "🎒",
-  马甲: "🦺",
-  骑行服: "🚴",
-  手套: "🧤",
-  头盔: "🪖",
-  风镜: "🥽",
-  公路车: "🚲",
-  折叠车: "🚲",
-  飞盘: "🥏",
-  冲浪板: "🏄",
-  双翘滑板: "🛹",
-  陆冲板: "🛹",
-  长板: "🛹",
-  点赞: "👍",
-  向右: "👉",
-  合十: "🙏",
-  ok: "👌",
-  加油: "💪",
-  握手: "🤝",
-  鼓掌: "👏",
-  弱: "👎",
-  耶: "✌️",
-  抱拳: "🙏",
-  勾引: "👆",
-  拳头: "✊",
-  拥抱: "🤗",
-  举手: "🙋",
-  猪头: "🐷",
-  老虎: "🐯",
-  集美: "👭",
-  仙女: "🧚",
-  红书: "📕",
-  开箱: "📦",
-  探店: "🏬",
-  ootd: "👗",
-  同款: "🧩",
-  打卡: "📍",
-  飞机: "✈️",
-  拍立得: "📸",
-  薯券: "🎫",
-  优惠券: "🎟️",
-  购物车: "🛒",
-  kiss: "💋",
-  礼物: "🎁",
-  生日蛋糕: "🎂",
-  私信: "💌",
-  请文明: "🛡️",
-  请友好: "🤝",
-  氛围感: "✨",
-  清单: "📝",
-  电影: "🎬",
-  学生党: "🎓",
-  彩虹: "🌈",
-  爆炸: "💥",
-  炸弹: "💣",
-  火: "🔥",
-  啤酒: "🍺",
-  咖啡: "☕",
-  钱袋: "💰",
-  流汗: "💦",
-  发: "🧧",
-  红包: "🧧",
-  福: "🧧",
-  鞭炮: "🧨",
-  庆祝: "🎉",
-  烟花: "🎆",
-  气球: "🎈",
-  看: "👀",
-  新月: "🌙",
-  满月: "🌕",
-  大便: "💩",
-  太阳: "☀️",
-  晚安: "🌙",
-  星: "⭐",
-  玫瑰: "🌹",
-  凋谢: "🥀",
-  郁金香: "🌷",
-  樱花: "🌸",
-  海豚: "🐬",
-  放大镜: "🔍",
-  刀: "🔪",
-  辣椒: "🌶️",
-  黄瓜: "🥒",
-  葡萄: "🍇",
-  草莓: "🍓",
-  桃子: "🍑",
-  红薯: "🍠",
-  栗子: "🌰",
-  红色心形: "❤️",
-  黄色心形: "💛",
-  绿色心形: "💚",
-  蓝色心形: "💙",
-  紫色心形: "💜",
-  爱心: "♥️",
-  两颗心: "💕",
-  浅肤色: "🏻",
-  中浅肤色: "🏼",
-  中等肤色: "🏽",
-  中深肤色: "🏾",
-  有: "有",
-  可: "可",
-  蹲: "蹲",
-  零: "0",
-  一: "1",
-  二: "2",
-  三: "3",
-  四: "4",
-  五: "5",
-  六: "6",
-  七: "7",
-  八: "8",
-  九: "9",
-  加一: "+1",
-  满: "满",
-  禁: "禁"
-};
-
-export const xhsStickerCodeByName: Record<string, string> = {
-  doge: "[doge]",
-  蹲后续: "[蹲后续H]",
-  吐舌头: "[吐舌头H]",
-  扯脸: "[扯脸H]"
-};
-
-export const xhsStickerAliasesByName: Record<string, readonly string[]> = {
-  蹲后续: ["[蹲后续R]"]
-};
-
-export const xhsStyleStickers: XhsSticker[] = xhsStickerCatalog.flatMap((group) =>
-  group.names.map((name) => ({
-    aliases: xhsStickerAliasesByName[name],
-    code: xhsStickerCodeByName[name] ?? `[${name}R]`,
-    face: xhsStickerFaceByName[name] ?? "💬",
-    name
-  }))
-);
-
-export const xhsStickerByCode = new Map<string, XhsSticker>(
-  xhsStyleStickers.flatMap((sticker) =>
-    [sticker.code, ...(sticker.aliases ?? [])].map((code) => [code, sticker] as const)
-  )
-);
 
 export function buildWritingTone(
   presetId: WritingStylePresetId,
@@ -758,6 +306,7 @@ export function isWritingStylePresetId(value: string | null): value is WritingSt
 }
 
 export function readLocalStorage(key: string) {
+  if (typeof window === "undefined") return null;
   try {
     return window.localStorage.getItem(key);
   } catch (_error) {
@@ -766,6 +315,7 @@ export function readLocalStorage(key: string) {
 }
 
 export function writeLocalStorage(key: string, value: string) {
+  if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(key, value);
   } catch (_error) {
@@ -774,6 +324,7 @@ export function writeLocalStorage(key: string, value: string) {
 }
 
 export function removeLocalStorage(key: string) {
+  if (typeof window === "undefined") return;
   try {
     window.localStorage.removeItem(key);
   } catch (_error) {
@@ -822,42 +373,72 @@ export type ProviderCheckResult = {
   target: string;
 };
 
+export function isProviderCheckResult(value: unknown): value is ProviderCheckResult {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const result = value as Partial<ProviderCheckResult>;
+  return (
+    typeof result.configured === "boolean" &&
+    typeof result.message === "string" &&
+    typeof result.status === "string" &&
+    typeof result.target === "string"
+  );
+}
+
 export type WorkspaceLoginResponse = {
   account: string;
+  access_token?: string;
   default_keys_bound: boolean;
   key_profile: string;
   provider_statuses: ProviderStatusItem[];
 };
 
-export async function fetchProviderStatuses() {
-  const response = await fetch(`${API_BASE}/workspace/provider-status`);
+export function isWorkspaceLoginResponse(value: unknown): value is WorkspaceLoginResponse {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.account === "string" &&
+    (v.access_token === undefined || typeof v.access_token === "string") &&
+    typeof v.default_keys_bound === "boolean" &&
+    typeof v.key_profile === "string" &&
+    Array.isArray(v.provider_statuses)
+  );
+}
+
+export async function fetchProviderStatuses(workspaceToken?: string, signal?: AbortSignal) {
+  const headers = workspaceToken ? { "Content-Type": "application/json", Authorization: `Bearer ${workspaceToken}` } : undefined;
+  const response = await fetch(`${API_BASE}/workspace/provider-status`, {
+    headers,
+    signal
+  });
   if (!response.ok) {
     throw new Error(await readApiError(response, SERVICE_CONFIG_READ_ERROR));
   }
   return sanitizeProviderStatusItems(
-    (await response.json()) as ProviderStatusItem[]
+    await response.json()
   );
 }
 
-export async function authenticateWorkspaceLogin(account: string, password: string) {
+export async function authenticateWorkspaceLogin(account: string, password: string, signal?: AbortSignal) {
   try {
     const response = await fetch(`${API_BASE}/auth/mobile-login`, {
       body: JSON.stringify({ account, password }),
       headers: { "Content-Type": "application/json" },
-      method: "POST"
+      method: "POST",
+      signal
     });
 
     if (response.ok) {
-      const data = (await response.json()) as Partial<WorkspaceLoginResponse>;
-      if (!data.account?.trim()) {
+      const raw = await response.json();
+      if (!isWorkspaceLoginResponse(raw) || !raw.account.trim()) {
         throw new Error("登录服务响应异常，请稍后再试。");
       }
       return {
-        account: data.account.trim(),
-        defaultKeysBound: Boolean(data.default_keys_bound),
-        providerStatuses: Array.isArray(data.provider_statuses)
-          ? sanitizeProviderStatusItems(data.provider_statuses)
-          : []
+        account: raw.account.trim(),
+        accessToken: typeof raw.access_token === "string" ? raw.access_token : "",
+        defaultKeysBound: raw.default_keys_bound,
+        providerStatuses: sanitizeProviderStatusItems(raw.provider_statuses)
       };
     }
 
@@ -883,147 +464,21 @@ export function hasLiveImageProvider(statuses: ProviderStatusItem[]) {
   );
 }
 
-export const blockedPublishTerms = [
-  "保录",
-  "包过",
-  "百分百",
-  "100%",
-  "内部名额",
-  "官方录取",
-  "保证录取",
-  "保证套磁成功",
-  "必上岸"
-];
-
-export const localDraftMarkers = [
-  "codex_test",
-  "\u3010\u6d4b\u8bd5\u8349\u7a3f\u3011",
-  "\u3010\u6f14\u793a\u8349\u7a3f\u3011",
-  "\u3010\u672c\u5730\u68c0\u67e5\u8349\u7a3f\u3011"
-];
-
-export const pcReviewQueueStatuses = new Set(["draft", "rewritten", "review_pending"]);
-
-export function buildPlatformCopy(content: GeneratedContent) {
-  return buildPlatformCopyText({
-    body: content.body,
-    tags: content.tags,
-    title: content.title
-  });
-}
-
-export function complianceWarnings(content: GeneratedContent) {
-  const text = `${content.title}\n${content.body}\n${formatTagLine(content.tags)}`;
-  return blockedPublishTerms.filter((term) => text.includes(term));
-}
-
-export function isTestDraft(content: GeneratedContent) {
-  return localDraftMarkers.some((marker) => content.body.includes(marker));
-}
-
-export function isPcReviewQueueCandidate(content: GeneratedContent) {
-  return content.platform === "xiaohongshu" && pcReviewQueueStatuses.has(content.status) && !isTestDraft(content);
-}
-
-export type PrepublishChecklistState = "ready" | "review" | "blocked";
-
-export type PrepublishChecklistItem = {
-  detail: string;
-  key: "content" | "sources" | "cover" | "risk" | "human";
-  label: string;
-  state: PrepublishChecklistState;
-};
-
-export const prepublishChecklistTone = {
-  blocked: "red",
-  ready: "green",
-  review: "amber"
-} satisfies Record<PrepublishChecklistState, keyof typeof pillTone>;
-
-export const prepublishChecklistStateLabel = {
-  blocked: "需补充",
-  ready: "已就绪",
-  review: "待核对"
-} satisfies Record<PrepublishChecklistState, string>;
-
-export function missingGeneratedContentFields(content: GeneratedContent) {
-  const missingFields: string[] = [];
-  if (!content.title.trim()) {
-    missingFields.push("标题");
-  }
-  if (!content.body.trim()) {
-    missingFields.push("正文");
-  }
-  if (!formatTagLine(content.tags)) {
-    missingFields.push("标签");
-  }
-  return missingFields;
-}
-
-export function buildPrepublishChecklist({
-  content,
-  imageReady,
-  lifecycleWarning,
-  testDraft,
-  warnings
-}: {
-  content: GeneratedContent;
-  imageReady: boolean;
-  lifecycleWarning: string | null;
-  testDraft: boolean;
-  warnings: string[];
-}): PrepublishChecklistItem[] {
-  const sourceStats = generationSourceContextStats(content.source_context);
-  const missingContentFields = missingGeneratedContentFields(content);
-  const sourceDetail = sourceStats.missingRequiredWebResults
-    ? "当前选题需要实时来源，但没有可见 Tavily 结果，复制前先补来源。"
-    : sourceStats.hasEvidence
-      ? `已带 ${sourceStats.totalCount} 条来源证据，复制前核对学校、价格、logo、排名等事实。`
-      : "未带来源证据，只能作为通用草稿，复制前请人工补充可信依据。";
-
-  return [
-    {
-      detail: missingContentFields.length
-        ? `缺少${missingContentFields.join("、")}；请回到表单补齐后重新生成，或人工补充后再复制。`
-        : "标题、正文、标签会一起复制；发布前仍需逐项读一遍。",
-      key: "content",
-      label: "标题/正文/标签",
-      state: missingContentFields.length ? "blocked" : "ready"
-    },
-    {
-      detail: sourceDetail,
-      key: "sources",
-      label: "来源证据",
-      state: sourceStats.missingRequiredWebResults ? "blocked" : sourceStats.hasEvidence ? "review" : "blocked"
-    },
-    {
-      detail: imageReady
-        ? "封面素材已生成；仍需核对是否含假校徽、假录取或误导视觉。"
-        : "封面尚未生成或不可用；复制正文前先决定是否补封面。",
-      key: "cover",
-      label: "封面素材",
-      state: imageReady ? "review" : "blocked"
-    },
-    {
-      detail: warnings.length
-        ? `发现高风险词：${warnings.join("、")}。请修改后再复制。`
-        : "未发现保录、包过、内部名额等高风险承诺词。",
-      key: "risk",
-      label: "安全用语",
-      state: warnings.length ? "blocked" : "ready"
-    },
-    {
-      detail: testDraft
-        ? "这是本地检查草稿，不可直接发布。"
-        : lifecycleWarning
-          ? lifecycleWarning
-          : "当前仍是草稿状态；复制只准备素材，最终发布必须人工确认。",
-      key: "human",
-      label: "人工确认",
-      state: testDraft || lifecycleWarning ? "blocked" : "review"
-    }
-  ];
-}
+export {
+  blockedPublishTerms,
+  localDraftMarkers,
+  pcReviewQueueStatuses,
+  buildPlatformCopy,
+  complianceWarnings,
+  isTestDraft,
+  isPcReviewQueueCandidate,
+  type PrepublishChecklistState,
+  type PrepublishChecklistItem,
+  prepublishChecklistTone,
+  prepublishChecklistStateLabel,
+  missingGeneratedContentFields,
+  buildPrepublishChecklist
+} from "@/lib/workspace-prepublish-checklist";
 
 export function loadStoredGeneratedContent() {
   if (typeof window === "undefined") {
@@ -1108,23 +563,4 @@ export function formatDraftTime(value?: string) {
     minute: "2-digit",
     month: "2-digit"
   }).format(date);
-}
-
-export function renderXhsExpressionText(text: string) {
-  return text.split(/(\[[^\[\]]+\])/g).map((part, index) => {
-    const sticker = xhsStickerByCode.get(part);
-    if (!sticker) {
-      return part;
-    }
-    return (
-      <span
-        aria-label={`${sticker.name}表情`}
-        className="mx-0.5 inline-flex h-6 min-w-6 translate-y-[3px] items-center justify-center rounded-full border border-coral/20 bg-coral/10 px-1.5 text-base leading-none text-ink shadow-sm"
-        key={`${part}-${index}`}
-        title={`${part}：${sticker.name}，本地近似预览，复制后仍保留原字符码`}
-      >
-        {sticker.face}
-      </span>
-    );
-  });
 }

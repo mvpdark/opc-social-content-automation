@@ -197,8 +197,8 @@ def validate_safety_gates() -> int:
         "scripts/start_local.py": [
             "0.0.0.0",
             "dev:lan",
-            "8010",
-            "3000",
+            "6001",
+            "6000",
             "port_is_open",
             "process_ids_on_port",
             "--restart-frontend",
@@ -213,8 +213,8 @@ def validate_safety_gates() -> int:
             "hostname: opc.mvpdark.top",
             "path: ^/api($|/.*)",
             "path: ^/static($|/.*)",
-            "service: http://localhost:8010",
-            "service: http://localhost:3000",
+            "service: http://localhost:6001",
+            "service: http://localhost:6000",
             "service: http_status:404",
         ],
         "docs/CLOUDFLARE_OPC.md": [

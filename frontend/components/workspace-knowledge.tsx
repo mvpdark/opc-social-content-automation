@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { createPortal } from "react-dom";
-import { Clipboard, ExternalLink, Loader2, RotateCcw, Search, X } from "lucide-react";
+import { Clipboard, ExternalLink, GraduationCap, Loader2, RotateCcw, Search, X } from "lucide-react";
 import { knowledgeAssets } from "@/lib/dashboard-data";
 import { copyText } from "@/lib/clipboard";
 import {
@@ -14,6 +14,7 @@ import {
   type KnowledgeItem
 } from "@/lib/knowledge-api";
 import { getZscjApiBase } from "@/lib/api-base";
+import { fetchAdmissionNotices, formatNoticeDate, type AdmissionNotice } from "@/lib/admission-api";
 import {
   secondaryButtonClass,
   subtleCardClass
@@ -21,7 +22,7 @@ import {
 import { IconBox, Panel, Pill } from "./workspace-ui";
 import { SafetyGateList } from "./workspace-delivery";
 
-export function KnowledgeView() {
+export const KnowledgeView = memo(function KnowledgeView() {
   const [items, setItems] = useState<KnowledgeItem[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -30,16 +31,29 @@ export function KnowledgeView() {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const [portalReady, setPortalReady] = useState(false);
+  const [notices, setNotices] = useState<AdmissionNotice[]>([]);
+  const [noticesLoading, setNoticesLoading] = useState(true);
+  const activeRef = useRef(true);
+  const requestIdRef = useRef(0);
+  const noticesRequestIdRef = useRef(0);
+  const searchAbortRef = useRef<AbortController | null>(null);
 
-  async function loadKnowledge(nextQuery = query) {
+  const handleQueryChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setQuery(event.target.value);
+  }, []);
+
+  const loadKnowledge = useCallback(async function loadKnowledge(nextQuery: string = "", signal?: AbortSignal) {
+    const requestId = ++requestIdRef.current;
     const normalizedQuery = nextQuery.trim();
     setLoading(true);
     setMessage(normalizedQuery ? "正在搜索知识库..." : "正在读取最近入库内容...");
     try {
       const data = await fetchKnowledgeItems(getZscjApiBase(), {
         limit: 24,
-        query: normalizedQuery
+        query: normalizedQuery,
+        signal
       });
+      if (!activeRef.current || requestIdRef.current !== requestId) return;
       setItems(data);
       setMessage(
         data.length
@@ -51,16 +65,40 @@ export function KnowledgeView() {
             : "知识库还没有条目，先从采集页保存知识摘要。"
       );
     } catch (error) {
+      if (!activeRef.current || requestIdRef.current !== requestId) return;
+      if (error instanceof Error && error.name === "AbortError") return;
       setItems([]);
       setMessage(error instanceof Error ? error.message : "知识库读取失败，请稍后再试。");
     } finally {
-      setLoading(false);
+      if (activeRef.current && requestIdRef.current === requestId) setLoading(false);
     }
-  }
+  }, []);
+
+  const loadNotices = useCallback(async function loadNotices(signal?: AbortSignal) {
+    const requestId = ++noticesRequestIdRef.current;
+    setNoticesLoading(true);
+    try {
+      const data = await fetchAdmissionNotices(getZscjApiBase(), { limit: 30, signal });
+      if (!activeRef.current || noticesRequestIdRef.current !== requestId) return;
+      setNotices(data);
+    } catch {
+      if (activeRef.current && noticesRequestIdRef.current === requestId) setNotices([]);
+    } finally {
+      if (activeRef.current && noticesRequestIdRef.current === requestId) setNoticesLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    void loadKnowledge("");
-  }, []);
+    activeRef.current = true;
+    const controller = new AbortController();
+    void loadKnowledge("", controller.signal);
+    void loadNotices(controller.signal);
+    return () => {
+      activeRef.current = false;
+      searchAbortRef.current?.abort();
+      controller.abort();
+    };
+  }, [loadKnowledge, loadNotices]);
 
   useEffect(() => {
     setPortalReady(true);
@@ -72,28 +110,37 @@ export function KnowledgeView() {
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void loadKnowledge(query);
+    searchAbortRef.current?.abort();
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
+    void loadKnowledge(query, controller.signal);
   }
 
-  function openKnowledgeItem(item: KnowledgeItem) {
+  const openKnowledgeItem = useCallback((item: KnowledgeItem) => {
     setSelectedItem(item);
-  }
+  }, []);
 
-  function openKnowledgeDetailModal(item: KnowledgeItem) {
+  const openKnowledgeDetailModal = useCallback((item: KnowledgeItem) => {
     setSelectedItem(item);
     setDetailModalOpen(true);
-  }
+  }, []);
 
-  async function copyKnowledgeItem(item: KnowledgeItem) {
+  const copyKnowledgeItem = useCallback(async (item: KnowledgeItem) => {
     try {
       await copyText(`${knowledgeItemTitle(item)}\n\n${knowledgeItemContent(item)}`);
+      if (!activeRef.current) return;
       setCopyState("copied");
     } catch (_error) {
+      if (!activeRef.current) return;
       setCopyState("failed");
     }
-  }
+  }, []);
 
-  const visibleDetailItem = selectedItem ?? items[0] ?? null;
+  const visibleDetailItem = useMemo(() => selectedItem ?? items[0] ?? null, [selectedItem, items]);
+  const detailPanelAction = useMemo(
+    () => (visibleDetailItem ? <Pill tone="green">可复制</Pill> : <Pill tone="neutral">待选择</Pill>),
+    [visibleDetailItem?.id]
+  );
 
   return (
     <div className="workspace-knowledge-layout grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
@@ -106,7 +153,7 @@ export function KnowledgeView() {
               <input
                 className="min-w-0 flex-1 bg-transparent text-sm outline-none"
                 data-testid="knowledge-search-input"
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={handleQueryChange}
                 placeholder="例如：水博 排名 学校 认证"
                 value={query}
               />
@@ -125,7 +172,10 @@ export function KnowledgeView() {
             disabled={loading}
             onClick={() => {
               setQuery("");
-              void loadKnowledge("");
+              searchAbortRef.current?.abort();
+              const controller = new AbortController();
+              searchAbortRef.current = controller;
+              void loadKnowledge("", controller.signal);
             }}
             type="button"
           >
@@ -155,57 +205,13 @@ export function KnowledgeView() {
               </thead>
               <tbody className="divide-y divide-line">
                 {items.map((item) => (
-                  <tr
-                    className={[
-                      "cursor-pointer bg-paper/50 align-top transition focus-within:bg-moss/10 hover:bg-moss/5",
-                      visibleDetailItem?.id === item.id ? "bg-moss/10" : ""
-                    ].join(" ")}
-                    data-testid="knowledge-item"
+                  <KnowledgeTableRow
+                    isSelected={visibleDetailItem?.id === item.id}
+                    item={item}
                     key={item.id}
-                    onClick={() => openKnowledgeItem(item)}
-                  >
-                    <td className="px-3 py-3">
-                      <button
-                        className="block w-full text-left focus-visible:outline-none"
-                        onClick={() => openKnowledgeItem(item)}
-                        type="button"
-                      >
-                        <span className="line-clamp-2 break-words font-semibold leading-5 text-ink">
-                          {knowledgeItemTitle(item)}
-                        </span>
-                        <span className="mt-1 line-clamp-2 break-words text-xs leading-5 text-muted">
-                          {knowledgeItemExcerpt(item, 150)}
-                        </span>
-                      </button>
-                    </td>
-                    <td className="px-3 py-3">
-                      <Pill>{knowledgeCategoryLabel(item.category)}</Pill>
-                    </td>
-                    <td className="px-3 py-3 text-xs leading-5 text-muted">
-                      #{item.id}
-                      <br />
-                      {item.match_type === "recent" ? "最近入库" : "检索结果"}
-                    </td>
-                    <td className="px-3 py-3">
-                      {typeof item.score === "number" ? (
-                        <Pill tone="green">匹配 {Math.round(item.score * 100)}%</Pill>
-                      ) : (
-                        <Pill tone="neutral">点击看全文</Pill>
-                      )}
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      <button
-                        className="inline-flex h-8 items-center justify-center rounded-md border border-line bg-paper/70 px-3 text-xs font-semibold text-ink"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          openKnowledgeDetailModal(item);
-                        }}
-                        type="button"
-                      >
-                        展开
-                      </button>
-                    </td>
-                  </tr>
+                    onOpen={openKnowledgeItem}
+                    onOpenDetail={openKnowledgeDetailModal}
+                  />
                 ))}
               </tbody>
             </table>
@@ -283,7 +289,7 @@ export function KnowledgeView() {
 
       <div className="space-y-4">
         <Panel
-          action={visibleDetailItem ? <Pill tone="green">可复制</Pill> : <Pill tone="neutral">待选择</Pill>}
+          action={detailPanelAction}
           helper="点击左侧知识条目后，会在这里直接展开正文。"
           title="知识详情"
         >
@@ -337,6 +343,58 @@ export function KnowledgeView() {
         <Panel helper="系统默认不跳过的项目规则。" title="入库规则">
           <SafetyGateList />
         </Panel>
+        <Panel
+          action={noticesLoading ? undefined : `${notices.length} 条`}
+          helper="各高校研究生招生公告，点击可查看原文。"
+          title="大学通告"
+        >
+          {noticesLoading ? (
+            <div className="flex items-center gap-2 px-4 py-5 text-sm text-muted">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              正在加载大学通告...
+            </div>
+          ) : notices.length === 0 ? (
+            <div className={`${subtleCardClass} px-4 py-5 text-sm leading-6 text-muted`}>
+              暂无大学通告数据。
+            </div>
+          ) : (
+            <div className="max-h-[480px] space-y-2 overflow-y-auto">
+              {notices.map((notice) => (
+                <a
+                  key={notice.id}
+                  href={notice.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`${subtleCardClass} block p-3 transition hover:bg-moss/5`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-moss/10 text-moss">
+                      <GraduationCap className="h-3.5 w-3.5" />
+                    </span>
+                    <Pill tone="green">{notice.school_name || "高校"}</Pill>
+                    {notice.publish_date ? (
+                      <span className="ml-auto text-xs text-muted">
+                        {formatNoticeDate(notice.publish_date)}
+                      </span>
+                    ) : null}
+                  </div>
+                  <h4 className="mt-2 line-clamp-2 break-words text-sm font-semibold leading-5">
+                    {notice.title}
+                  </h4>
+                  {notice.summary ? (
+                    <p className="mt-1 line-clamp-2 break-words text-xs leading-4 text-muted">
+                      {notice.summary}
+                    </p>
+                  ) : null}
+                  <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-moss">
+                    <ExternalLink className="h-3 w-3" />
+                    查看原文
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+        </Panel>
         <Panel helper="这些是知识资产的类型说明，不是虚构样本。" title="知识资产类型">
           <div className="grid grid-cols-1 gap-3">
             {knowledgeAssets.map((asset, index) => (
@@ -360,4 +418,75 @@ export function KnowledgeView() {
       </div>
     </div>
   );
-}
+});
+
+const KnowledgeTableRow = memo(function KnowledgeTableRow({
+  isSelected,
+  item,
+  onOpen,
+  onOpenDetail
+}: {
+  isSelected: boolean;
+  item: KnowledgeItem;
+  onOpen: (item: KnowledgeItem) => void;
+  onOpenDetail: (item: KnowledgeItem) => void;
+}) {
+  const title = useMemo(() => knowledgeItemTitle(item), [item]);
+  const excerpt = useMemo(() => knowledgeItemExcerpt(item, 150), [item]);
+  const categoryLabel = useMemo(() => knowledgeCategoryLabel(item.category), [item.category]);
+  const scorePill = useMemo(() => {
+    if (typeof item.score !== "number") {
+      return <Pill tone="neutral">点击看全文</Pill>;
+    }
+    return <Pill tone="green">匹配 {Math.round(item.score * 100)}%</Pill>;
+  }, [item.score]);
+
+  return (
+    <tr
+      className={[
+        "cursor-pointer bg-paper/50 align-top transition focus-within:bg-moss/10 hover:bg-moss/5",
+        isSelected ? "bg-moss/10" : ""
+      ].join(" ")}
+      data-testid="knowledge-item"
+      onClick={() => onOpen(item)}
+    >
+      <td className="px-3 py-3">
+        <button
+          className="block w-full text-left focus-visible:outline-none"
+          onClick={() => onOpen(item)}
+          type="button"
+        >
+          <span className="line-clamp-2 break-words font-semibold leading-5 text-ink">
+            {title}
+          </span>
+          <span className="mt-1 line-clamp-2 break-words text-xs leading-5 text-muted">
+            {excerpt}
+          </span>
+        </button>
+      </td>
+      <td className="px-3 py-3">
+        <Pill>{categoryLabel}</Pill>
+      </td>
+      <td className="px-3 py-3 text-xs leading-5 text-muted">
+        #{item.id}
+        <br />
+        {item.match_type === "recent" ? "最近入库" : "检索结果"}
+      </td>
+      <td className="px-3 py-3">
+        {scorePill}
+      </td>
+      <td className="px-3 py-3 text-right">
+        <button
+          className="inline-flex h-8 items-center justify-center rounded-md border border-line bg-paper/70 px-3 text-xs font-semibold text-ink"
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenDetail(item);
+          }}
+          type="button"
+        >
+          展开
+        </button>
+      </td>
+    </tr>
+  );
+});

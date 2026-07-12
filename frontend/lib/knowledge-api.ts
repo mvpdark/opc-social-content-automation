@@ -14,6 +14,7 @@ type FetchKnowledgeItemsOptions = {
   category?: string;
   limit?: number;
   query?: string;
+  signal?: AbortSignal;
 };
 
 export async function fetchKnowledgeItems(
@@ -33,14 +34,23 @@ export async function fetchKnowledgeItems(
   }
 
   const path = query ? "search" : "list";
-  const response = await fetch(`${apiBase}/knowledge/${path}?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(query ? "知识库搜索失败，请稍后再试。" : "知识库读取失败，请稍后再试。");
-  }
+  try {
+    const response = await fetch(`${apiBase}/knowledge/${path}?${params.toString()}`, { signal: options.signal });
+    if (!response.ok) {
+      throw new Error(query ? "知识库搜索失败，请稍后再试。" : "知识库读取失败，请稍后再试。");
+    }
 
-  const payload = (await response.json()) as unknown;
-  if (!Array.isArray(payload)) {
-    return [];
+    const payload = (await response.json()) as unknown;
+    if (!Array.isArray(payload)) {
+      return [];
+    }
+    return payload.filter(isKnowledgeItem);
+  } catch (error) {
+    // ZSCJ 服务（知识库/趋势采集）可能未启动，网络错误时返回空数组而非抛出异常
+    if (error instanceof TypeError) {
+      if (process.env.NODE_ENV === "development") console.warn("[knowledge-api] Network error fetching knowledge items:", error);
+      return [];
+    }
+    throw error;
   }
-  return payload.filter(isKnowledgeItem);
 }

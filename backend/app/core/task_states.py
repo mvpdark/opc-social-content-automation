@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 from enum import Enum
 
@@ -17,6 +18,8 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.content import Content
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "ALLOWED_TRANSITIONS",
@@ -126,18 +129,32 @@ def transition_task(
     db: Session,
     content_id: int,
     to_state: str | TaskState,
+    *,
+    user_id: int | None = None,
 ) -> Content:
     """执行任务状态转换（含校验）。
 
     - 内容不存在时返回 404。
     - 非法转换时返回 409。
+    - 当提供 ``user_id`` 时，校验调用者对内容的所有权（不匹配返回 403）。
     - 转换成功后更新 ``task_state`` 与 ``task_state_updated_at``。
     """
-    content = db.get(Content, content_id)
+    content = db.get(Content, content_id, with_for_update=True)
     if content is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="未找到这条内容。",
+        )
+
+    if user_id is not None and content.user_id != user_id:
+        logger.warning(
+            "transition_task ownership check failed: content %s belongs to user %s, "
+            "caller user_id=%s",
+            content_id, content.user_id, user_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权操作这条内容。",
         )
 
     current_state = content.task_state or TaskState.NEW.value
@@ -154,6 +171,13 @@ def transition_task(
 
     content.task_state = target.value
     content.task_state_updated_at = datetime.now(timezone.utc)
-    db.commit()
-    db.refresh(content)
+    db.flush()
+    try:
+        db.refresh(content)
+    except Exception:
+        logger.warning(
+            "Failed to refresh content %s after task_state commit",
+            content_id,
+            exc_info=True,
+        )
     return content

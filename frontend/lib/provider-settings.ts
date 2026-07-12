@@ -9,11 +9,27 @@ export type ProviderStatusItem = {
   status: string;
 };
 
-export function sanitizeProviderStatusItems(statuses: ProviderStatusItem[]) {
-  return statuses.map((item) => ({
-    ...item,
-    note: sanitizeServiceErrorMessage(item.note)
-  }));
+function isProviderStatusItem(value: unknown): value is ProviderStatusItem {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.configured === "boolean" &&
+    (v.model === null || typeof v.model === "string") &&
+    typeof v.name === "string" &&
+    typeof v.note === "string" &&
+    typeof v.provider === "string" &&
+    typeof v.status === "string"
+  );
+}
+
+export function sanitizeProviderStatusItems(statuses: unknown): ProviderStatusItem[] {
+  if (!Array.isArray(statuses)) return [];
+  return statuses
+    .filter(isProviderStatusItem)
+    .map((item) => ({
+      ...item,
+      note: sanitizeServiceErrorMessage(item.note)
+    }));
 }
 
 export type ProviderBindingDefaults = {

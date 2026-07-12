@@ -1,5 +1,7 @@
 "use client";
 
+import { memo, useMemo } from "react";
+
 import { type GeneratedContent } from "@/lib/generated-assets";
 import { generatedContentStatusLabel } from "@/lib/status-labels";
 import {
@@ -9,7 +11,7 @@ import {
 } from "./workspace-utils";
 import { Panel, Pill } from "./workspace-ui";
 
-export function PcReviewQueuePanel({
+export const PcReviewQueuePanel = memo(function PcReviewQueuePanel({
   contents,
   error,
   loading,
@@ -22,7 +24,7 @@ export function PcReviewQueuePanel({
   onRetry: () => void;
   onSelectContent: (content: GeneratedContent) => void;
 }) {
-  const visibleContents = contents.slice(0, 4);
+  const visibleContents = useMemo(() => contents.slice(0, 4), [contents]);
 
   return (
     <Panel helper="只读查看待人工确认草稿；这里不会提交审核、发布或外发内容。" title="待人工确认">
@@ -102,4 +104,4 @@ export function PcReviewQueuePanel({
       </div>
     </Panel>
   );
-}
+});

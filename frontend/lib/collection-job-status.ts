@@ -1,6 +1,6 @@
 import { collectionJobStatusLabel } from "@/lib/status-labels";
 
-export const COLLECTION_JOB_TERMINAL_STATUSES = new Set([
+const COLLECTION_JOB_TERMINAL_STATUSES = new Set([
   "completed",
   "failed",
   "needs_operator_review"
@@ -24,6 +24,20 @@ export type CollectionJobStatusSnapshot = {
   } | null;
   error: string | null;
 };
+
+export function isCollectionJobStatusSnapshot(value: unknown): value is CollectionJobStatusSnapshot {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const snapshot = value as Partial<CollectionJobStatusSnapshot>;
+  return (
+    typeof snapshot.id === "number" &&
+    typeof snapshot.status === "string" &&
+    (snapshot.error === null || typeof snapshot.error === "string") &&
+    (snapshot.result_summary === null ||
+      (typeof snapshot.result_summary === "object" && snapshot.result_summary !== null))
+  );
+}
 
 export type CollectionJobDiagnosticItem = {
   label: string;
@@ -70,7 +84,7 @@ function collectionJobStatusParts(job: CollectionJobStatusSnapshot) {
   };
 }
 
-export function isStaleAutoStartedQueuedJob(job: CollectionJobStatusSnapshot) {
+function isStaleAutoStartedQueuedJob(job: CollectionJobStatusSnapshot) {
   if (job.status !== "queued" || !job.result_summary?.auto_start) {
     return false;
   }

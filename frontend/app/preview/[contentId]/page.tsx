@@ -1,4 +1,5 @@
 import { PublicPreviewClient } from "@/components/public-preview-client";
+import { ViewErrorBoundary } from "@/components/error-boundary";
 
 export default async function PublicPreviewPage({
   params
@@ -6,5 +7,9 @@ export default async function PublicPreviewPage({
   params: Promise<{ contentId: string }>;
 }) {
   const { contentId } = await params;
-  return <PublicPreviewClient contentId={contentId} />;
+  return (
+    <ViewErrorBoundary>
+      <PublicPreviewClient contentId={contentId} />
+    </ViewErrorBoundary>
+  );
 }

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:lan": "next dev -H 0.0.0.0",
+    "dev:lan": "next dev -H 0.0.0.0 -p 60000",
     "build": "node scripts/next-with-dist.mjs build",
     "e2e": "playwright test",
     "lint": "next lint",

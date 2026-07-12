@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import { LogOut, ShieldCheck } from "lucide-react";
 
 import { MobilePanel, SettingRow } from "@/components/mobile-ui";
@@ -5,8 +6,7 @@ import {
   providerBindingDefaultsFromStatuses,
   type ProviderStatusItem
 } from "@/lib/provider-settings";
-
-const MOBILE_COLLECTION_COLLAGE = "/mobile-assets/collection-collage.png";
+import { COLLECTION_COLLAGE_BG } from "@/components/mobile-collect-utils";
 
 type SettingsScreenProps = {
   mobileAccount: string;
@@ -15,7 +15,7 @@ type SettingsScreenProps = {
   providerStatuses: ProviderStatusItem[];
 };
 
-export function SettingsScreen({
+export const SettingsScreen = memo(function SettingsScreen({
   mobileAccount,
   onAction,
   onLogout,
@@ -28,11 +28,14 @@ export function SettingsScreen({
     : providerBindings.draft && providerBindings.image && providerBindings.rewrite
       ? "默认服务已就绪，生成链路可直接使用。"
       : "默认服务未完整，请在电脑端工作台完成授权后再生成。";
-  const providerChecks = [
-    { bound: providerBindings.draft, label: "撰稿" },
-    { bound: providerBindings.image, label: "图片" },
-    { bound: providerBindings.rewrite, label: "改写" }
-  ];
+  const providerChecks = useMemo(
+    () => [
+      { bound: providerBindings.draft, label: "撰稿" },
+      { bound: providerBindings.image, label: "图片" },
+      { bound: providerBindings.rewrite, label: "改写" }
+    ],
+    [providerBindings.draft, providerBindings.image, providerBindings.rewrite]
+  );
 
   return (
     <div className="space-y-4">
@@ -40,10 +43,10 @@ export function SettingsScreen({
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-cover bg-center opacity-28"
-          style={{ backgroundImage: `url(${MOBILE_COLLECTION_COLLAGE})` }}
+          style={COLLECTION_COLLAGE_BG}
         />
         <div aria-hidden="true" className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,252,244,0.96)_0%,rgba(255,252,244,0.88)_48%,rgba(255,252,244,0.70)_100%)]" />
-        <div aria-hidden="true" className="absolute -right-10 -top-14 h-36 w-36 rounded-full bg-[#38bf6b]/[0.12] blur-2xl" />
+        <div aria-hidden="true" className="absolute -right-10 -top-14 h-36 w-36 rounded-full bg-moss/[0.12] blur-2xl" />
         <div className="relative">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -59,7 +62,7 @@ export function SettingsScreen({
             {providerChecks.map(({ bound, label }) => (
               <div
                 className={`rounded-[20px] border border-white/[0.72] px-3 py-2 text-center text-xs font-black shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] ${
-                  bound ? "bg-[#e7f2ea]/[0.88] text-moss" : "bg-[#fff6d8]/[0.88] text-[#8a5a00]"
+                  bound ? "bg-sage/[0.88] text-moss" : "bg-amber/15 text-amber-ink"
                 }`}
                 key={`provider-binding-${label}`}
               >
@@ -89,4 +92,4 @@ export function SettingsScreen({
       </MobilePanel>
     </div>
   );
-}
+});
