@@ -5,7 +5,7 @@ echo "Starting OMPC-SSB..."
 
 # Start Next.js frontend (port 60000)
 cd /app/frontend
-PORT=60000 NODE_ENV=production node server.js &
+HOSTNAME=0.0.0.0 PORT=60000 NODE_ENV=production node server.js &
 FRONTEND_PID=$!
 echo "Frontend started on port 60000 (PID: $FRONTEND_PID)"
 
