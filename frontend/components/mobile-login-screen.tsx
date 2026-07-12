@@ -53,13 +53,17 @@ async function authenticateMobileLogin(account: string, password: string, signal
       signal
     });
     if (response.ok) {
-      const raw = await response.json();
+      const raw: unknown = await response.json().catch(() => null);
       if (!isMobileLoginResponse(raw) || !raw.account.trim()) {
         throw new Error("登录服务响应异常，请稍后再试。");
       }
+      const accessToken = typeof raw.access_token === "string" ? raw.access_token : "";
+      if (!accessToken) {
+        throw new Error("登录服务未返回有效的访问令牌，请稍后再试。");
+      }
       return {
         account: raw.account.trim(),
-        accessToken: typeof raw.access_token === "string" ? raw.access_token : "",
+        accessToken,
         defaultKeysBound: raw.default_keys_bound,
         providerStatuses: sanitizeProviderStatusItems(raw.provider_statuses)
       };

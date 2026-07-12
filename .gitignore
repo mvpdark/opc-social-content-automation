@@ -12,6 +12,7 @@ venv/
 node_modules/
 .next/
 .next-build/
+.next-broken-old/
 out/
 dist/
 *.tsbuildinfo

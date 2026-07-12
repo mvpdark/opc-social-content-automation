@@ -152,8 +152,9 @@ export function useGenerationApi(params: UseGenerationApiParams) {
       if (!response.ok) {
         throw new Error(await readApiError(response, "检索依据读取失败。"));
       }
-      const raw = await response.json();
+      const raw: unknown = await response.json();
       if (!isGenerationSourceContextResponse(raw)) throw new Error("检索依据数据格式异常。");
+      if (!activeRef.current || controller.signal.aborted) return;
       setSourceContext(raw.source_context ?? null);
       onAction("检索依据已加载，请先核对来源。");
     } catch (error) {
