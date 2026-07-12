@@ -38,7 +38,7 @@ RUN pip install --no-cache-dir .
 
 # Copy frontend standalone build (next-with-dist.mjs outputs to .next-build)
 COPY --from=frontend-builder /frontend/.next-build/standalone /app/frontend/
-COPY --from=frontend-builder /frontend/.next-build/static /app/frontend/.next/static
+COPY --from=frontend-builder /frontend/.next-build/static /app/frontend/.next-build/static
 COPY --from=frontend-builder /frontend/public /app/frontend/public
 
 # Create directories
