@@ -34,7 +34,6 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
 # Install backend Python dependencies
 COPY backend/pyproject.toml ./
 COPY backend/app/ ./app/
-COPY backend/prompts/ ./prompts/
 RUN pip install --no-cache-dir .
 
 # Copy frontend standalone build
