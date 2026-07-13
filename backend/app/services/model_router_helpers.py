@@ -190,6 +190,15 @@ def _extract_chat_content(provider: str, data: dict[str, object]) -> str:
     return content.strip()
 
 
+
+def _normalize_base_url(base_url: str) -> str:
+    """Ensure base_url ends with /v1 for OpenAI-compatible APIs."""
+    url = base_url.rstrip('/')
+    if not url.endswith('/v1'):
+        url = f"{url}/v1"
+    return url
+
+
 def _post_chat_completion(
     provider: str,
     base_url: str,
@@ -200,7 +209,7 @@ def _post_chat_completion(
     try:
         with httpx.Client(timeout=timeout_seconds) as client:
             response = client.post(
-                f"{base_url.rstrip('/')}/chat/completions",
+                f"{_normalize_base_url(base_url)}/chat/completions",
                 headers={
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
@@ -243,7 +252,7 @@ def _post_image_generation(
     try:
         with httpx.Client(timeout=timeout_seconds) as client:
             response = client.post(
-                f"{base_url.rstrip('/')}/images/generations",
+                f"{_normalize_base_url(base_url)}/images/generations",
                 headers={
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
