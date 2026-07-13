@@ -204,7 +204,9 @@ def _image_prompt(prompt_template: str, payload: dict[str, object]) -> str:
             f"Role type: {profile_style.get('role_type', '')}",
             f"Style DNA: {profile_style.get('style_dna', '')}",
             f"Description: {profile_style.get('description', '')}",
-            "Use the style_dna above as the primary visual voice for this cover image.",
+            f"Cover style: {profile_style.get('cover_style', '')}",
+            f"System prompt: {profile_style.get('system_prompt', '')}",
+            "Use the style_dna and cover_style above as the primary visual voice for this cover image.",
             "Match the writer's aesthetic, color preferences, and visual personality.",
         ])
     source_context = payload.get("source_context")
