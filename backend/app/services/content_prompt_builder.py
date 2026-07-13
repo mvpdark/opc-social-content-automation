@@ -1,5 +1,7 @@
 import json
+import logging
 from dataclasses import dataclass
+import httpx
 
 from app.models.content import Content
 from app.models.user import User
@@ -19,6 +21,9 @@ from app.core.domain import (
     is_water_ranking_topic_for,
 )
 from app.services.web_search_service import build_live_web_search_context
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 MIN_DRAFT_MEANINGFUL_CHARACTERS = 20
 DRAFT_METADATA_SECTION_HEADINGS = (
@@ -171,7 +176,33 @@ def _draft_missing_required_web_source_issue(
     return None
 
 
-def build_draft_prompt_package(
+
+
+async def _fetch_zscj_profile_style(profile_id: str) -> dict[str, str] | None:
+    """从 ZSCJ 获取风格 Profile 的写作风格信息，注入到生成 prompt 中。"""
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(
+                f"{settings.zscj_api_base_url}/generate/profiles"
+            )
+            if resp.status_code != 200:
+                return None
+            data = resp.json()
+            for rt in data if isinstance(data, list) else []:
+                for acct in rt.get("accounts", []):
+                    if acct.get("id") == profile_id:
+                        return {
+                            "profile_name": acct.get("name", ""),
+                            "role_type": rt.get("name", rt.get("label", "")),
+                            "style_dna": json.dumps(acct.get("style_dna", {}), ensure_ascii=False),
+                            "description": acct.get("description", ""),
+                        }
+    except Exception:
+        logger.warning("Failed to fetch ZSCJ profile style for %s", profile_id, exc_info=True)
+    return None
+
+
+async def build_draft_prompt_package(
     payload: ContentGenerateRequest,
     current_user: User,
 ) -> PromptPackage:
@@ -188,6 +219,12 @@ def build_draft_prompt_package(
         _public_source_context(payload, knowledge_context, web_search_context),
     )
     domain = get_domain(getattr(current_user, "domain_key", None))
+
+    # 当选择了风格 Profile 时，从 ZSCJ 获取风格信息并注入
+    profile_style: dict[str, str] | None = None
+    if getattr(payload, "profile_id", None):
+        profile_style = await _fetch_zscj_profile_style(payload.profile_id)
+
     return PromptPackage(
         prompt_name=domain.draft_prompt_name,
         prompt_template=load_prompt(domain.draft_prompt_name),
@@ -206,6 +243,7 @@ def build_draft_prompt_package(
             "promotion_brief": source_context["promotion_brief"],
             "style_reference": load_platform_style_reference(payload.platform),
             "domain_key": getattr(current_user, "domain_key", None),
+            "profile_style": profile_style,
             "user": {
                 "id": current_user.id,
                 "role": current_user.role,

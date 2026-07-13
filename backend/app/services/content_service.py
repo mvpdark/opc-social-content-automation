@@ -101,12 +101,12 @@ def record_generation_log(
     return log
 
 
-def generate_content_draft(
+async def generate_content_draft(
     db: Session,
     payload: ContentGenerateRequest,
     current_user: User,
 ) -> Content:
-    package = build_draft_prompt_package(payload, current_user)
+    package = await build_draft_prompt_package(payload, current_user)
     try:
         draft = model_router.draft_model(package.prompt_name, package.payload)
     except HTTPException as exc:

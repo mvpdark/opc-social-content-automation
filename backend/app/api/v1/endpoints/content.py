@@ -61,12 +61,12 @@ router = APIRouter()
 
 
 @router.post("/generate", response_model=ContentRead)
-def generate_content(
+async def generate_content(
     payload: ContentGenerateRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ContentRead:
-    content = generate_content_draft(db, payload, current_user)
+    content = await generate_content_draft(db, payload, current_user)
     return ContentRead.model_validate(content)
 
 

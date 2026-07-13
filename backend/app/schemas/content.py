@@ -12,6 +12,7 @@ class ContentGenerateRequest(BaseModel):
     target_audience: str | None = Field(default=None, max_length=120)
     knowledge_limit: int = Field(default=5, ge=0, le=20)
     tags: list[str] = Field(default_factory=list, max_length=30)
+    profile_id: str | None = Field(default=None, max_length=100)
 
 
 class ContentRewriteRequest(BaseModel):

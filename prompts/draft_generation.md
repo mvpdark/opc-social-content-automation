@@ -109,6 +109,13 @@ The generation payload includes several fields that guide content creation:
   prefer tone (it is user-customized).
 - `style_reference` — Platform-specific persona and style guide. Internalize
   the persona (warm, credible senior schoolmate) and apply it to Layer 5.
+- `profile_style` — When present (not null), a distilled writer profile has been
+  selected. It contains `profile_name`, `role_type`, `style_dna`, and `description`.
+  **When this field is present, it OVERRIDES the default style rules above.** Use
+  the style_dna as your primary writing voice. Generate tags and title in the
+  selected writer's style. Ignore `target_audience` and `tags` from the payload
+  (they are empty when a profile is selected) — infer the audience and generate
+  tags from the topic and style_dna instead.
 - `source_context` — Knowledge base items, web search results, and source
   cards. Use these for factual claims in Layer 3. Cite sources naturally.
 - `popular_posts` — High-engagement reference posts from the same niche. Study
