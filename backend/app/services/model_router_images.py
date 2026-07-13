@@ -195,6 +195,18 @@ def _image_prompt(prompt_template: str, payload: dict[str, object]) -> str:
     style_reference = str(payload.get("style_reference") or "").strip()
     if style_reference:
         lines.extend(["", "Platform style reference:", style_reference[:2400]])
+    profile_style = payload.get("profile_style")
+    if isinstance(profile_style, dict) and profile_style:
+        lines.extend([
+            "",
+            "Writer profile style (OVERRIDE all default style with this profile):",
+            f"Profile name: {profile_style.get('profile_name', '')}",
+            f"Role type: {profile_style.get('role_type', '')}",
+            f"Style DNA: {profile_style.get('style_dna', '')}",
+            f"Description: {profile_style.get('description', '')}",
+            "Use the style_dna above as the primary visual voice for this cover image.",
+            "Match the writer's aesthetic, color preferences, and visual personality.",
+        ])
     source_context = payload.get("source_context")
     if isinstance(source_context, dict):
         source_lines = ["", "Source context (verified facts only):"]

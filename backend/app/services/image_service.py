@@ -648,6 +648,7 @@ def build_image_prompt_package(
                 variant_index=variant_index,
             ),
             "style_reference": load_platform_style_reference(content.platform),
+            "profile_style": payload.profile_style,
             "user": {
                 "id": current_user.id,
                 "role": current_user.role,

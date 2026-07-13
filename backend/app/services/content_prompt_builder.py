@@ -220,10 +220,14 @@ async def build_draft_prompt_package(
     )
     domain = get_domain(getattr(current_user, "domain_key", None))
 
-    # 当选择了风格 Profile 时，从 ZSCJ 获取风格信息并注入
+    # 当选择了风格 Profile 时，优先使用请求直传的 profile_style（避免 Docker 网络隔离问题）
+    # 如果请求未携带 profile_style，则回退到从 ZSCJ 获取
     profile_style: dict[str, str] | None = None
     if getattr(payload, "profile_id", None):
-        profile_style = await _fetch_zscj_profile_style(payload.profile_id)
+        if getattr(payload, "profile_style", None):
+            profile_style = payload.profile_style
+        else:
+            profile_style = await _fetch_zscj_profile_style(payload.profile_id)
 
     return PromptPackage(
         prompt_name=domain.draft_prompt_name,

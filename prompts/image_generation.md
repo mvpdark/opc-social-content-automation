@@ -124,6 +124,19 @@ emotional hooks with the platform's native aesthetic. Merge it with the
 baseline, while visual_direction and style_notes define the specific layout
 and concept for this post.
 
+## Writer Profile Style
+
+If `profile_style` is provided in the payload, it contains a distilled writer
+profile with `profile_name`, `role_type`, `style_dna`, and `description`.
+
+**When this field is present, it OVERRIDES the default cover style rules above.**
+Use the style_dna as the primary visual direction for the cover image:
+- Match the writer's aesthetic preferences, color palette tendencies, and visual personality
+- Adapt the typography, layout, and emotional hooks to align with the writer's voice
+- The style_dna may contain specific visual cues, composition preferences, and mood descriptors
+- Still follow the core technical rules (aspect ratio, text readability, no fake logos)
+- Merge the writer's style with the topic-specific cover direction for a unique result
+
 ## Output
 
 Return an image prompt directly usable by the image provider (yunwu.ai

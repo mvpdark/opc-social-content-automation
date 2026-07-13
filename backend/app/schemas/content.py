@@ -13,6 +13,7 @@ class ContentGenerateRequest(BaseModel):
     knowledge_limit: int = Field(default=5, ge=0, le=20)
     tags: list[str] = Field(default_factory=list, max_length=30)
     profile_id: str | None = Field(default=None, max_length=100)
+    profile_style: dict[str, object] | None = Field(default=None)
 
 
 class ContentRewriteRequest(BaseModel):

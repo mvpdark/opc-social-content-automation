@@ -8,6 +8,7 @@ class ImageGenerateRequest(BaseModel):
     template: str = Field(default="xiaohongshu-cover", max_length=120)
     aspect_ratio: str = Field(default="3:4", max_length=20)
     style_notes: str | None = Field(default=None, max_length=500)
+    profile_style: dict[str, object] | None = Field(default=None)
 
 
 class ImageTemplateRead(BaseModel):
