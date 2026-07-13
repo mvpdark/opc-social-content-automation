@@ -19,6 +19,9 @@ COPY backend/pyproject.toml ./
 COPY backend/app/ ./app/
 RUN pip install --no-cache-dir .
 
+# Copy prompt templates (load_prompt expects them at parents[3]/prompts)
+COPY prompts/ /prompts/
+
 # Create directories
 RUN mkdir -p /app/data /app/static/generated
 
