@@ -178,37 +178,138 @@ def _image_prompt(prompt_template: str, payload: dict[str, object]) -> str:
             f"Avoid: {visual_direction.get('avoid') or 'Avoid repetitive template styling.'}",
         ]
     body_excerpt = body[:500]
-    lines = [
-        prompt_template.strip(),
-        "",
-        "Payload:",
-        f"Platform: {platform}.",
-        f"Template: {template_name}.",
-        f"Aspect ratio: {aspect_ratio}.",
-        f"Content status: {content_status}.",
-        f"Primary cover headline, copied verbatim: {title}",
-        f"Tags: {tags}",
-        f"Style notes: {style_notes}",
-        f"Content context: {body_excerpt}",
-    ]
-    lines.extend(visual_direction_lines)
-    style_reference = str(payload.get("style_reference") or "").strip()
-    if style_reference:
-        lines.extend(["", "Platform style reference:", style_reference[:2400]])
     profile_style = payload.get("profile_style")
+
+    # When a writer profile is selected, it becomes the PRIMARY creative direction.
+    # The default template is reduced to essential technical rules only.
     if isinstance(profile_style, dict) and profile_style:
+        cover_style = str(profile_style.get("cover_style", "")).strip()
+        style_dna = str(profile_style.get("style_dna", "")).strip()
+        profile_name = str(profile_style.get("profile_name", "")).strip()
+        role_type = str(profile_style.get("role_type", "")).strip()
+        description = str(profile_style.get("description", "")).strip()
+        system_prompt = str(profile_style.get("system_prompt", "")).strip()
+
+        lines = [
+            "# Cover Image Generation — Writer Profile Mode",
+            "",
+            f"You are generating a cover image that MUST match the visual style of the writer profile below.",
+            f"This is the #1 priority. The cover must look like it belongs to this writer's account.",
+            "",
+            "## Writer Profile (PRIMARY Visual Direction)",
+            f"Profile name: {profile_name}",
+            f"Role type: {role_type}",
+            f"Description: {description}",
+            f"Cover style: {cover_style}",
+            f"Style DNA: {style_dna}",
+            f"System prompt: {system_prompt}",
+            "",
+            "## Visual Style Instructions (based on writer profile)",
+            f"Based on the cover_style '{cover_style}', generate a cover image that:",
+        ]
+
+        # Expand cover_style into actionable visual instructions
+        cover_lower = cover_style.lower() if cover_style else ""
+        if any(kw in cover_lower for kw in ["截图", "screenshot", "公示", "名单", "表格"]):
+            lines.extend([
+                "- Look like a real screenshot of an official document, announcement, or data table",
+                "- Use a clean, formal layout with table-like structures or document-style formatting",
+                "- Minimal decoration, no fancy graphics — raw information presentation",
+                "- Font: clean sans-serif, document-style, as if captured from an official webpage",
+                "- Background: white or very light gray, like a real document screenshot",
+            ])
+        elif any(kw in cover_lower for kw in ["纯文字", "text", "文字封面"]):
+            lines.extend([
+                "- Pure typography cover with NO photos or illustrations",
+                "- Large bold text on solid color background (cream, navy, or sage green)",
+                "- Minimalist, understated, no decorative elements",
+                "- Font: bold sans-serif or clean handwriting style",
+                "- The text IS the design — make it visually striking through scale and contrast alone",
+            ])
+        elif any(kw in cover_lower for kw in ["时间线", "图表", "信息图", "流程图"]):
+            lines.extend([
+                "- Data visualization style: timeline, chart, or infographic layout",
+                "- Clean information design with clear visual hierarchy",
+                "- Use the topic data to create an actual visual chart or timeline",
+                "- Font: modern sans-serif, data-label style",
+                "- Color: 2-3 colors max, professional and clean",
+            ])
+        elif any(kw in cover_lower for kw in ["照片", "场景", "风景", "人设"]):
+            lines.extend([
+                "- Photographic style cover with a real-life scene",
+                "- Natural lighting, candid feel, not staged or corporate",
+                "- Text overlay should complement the photo, not dominate it",
+                "- Color: natural tones matching the photo's mood",
+            ])
+        else:
+            lines.extend([
+                "- Follow the cover_style description above as literally as possible",
+                "- Match the writer's visual aesthetic and personality",
+            ])
+
+        # Add style_dna-based tone guidance
+        if style_dna:
+            lines.extend([
+                "",
+                "## Writer Tone & Personality (from Style DNA)",
+                f"The writer's style DNA is: {style_dna}",
+                "Match the cover's emotional tone to this DNA:",
+            ])
+            if any(kw in style_dna.lower() for kw in ["极简", "minimalist", "零emoji", "中立"]):
+                lines.extend([
+                "- Cover tone: clean, neutral, objective — no emotional manipulation",
+                "- Avoid flashy colors, warning icons, or exaggerated typography",
+                ])
+            elif any(kw in style_dna.lower() for kw in ["情绪", "紧迫", "焦虑", "hook"]):
+                lines.extend([
+                "- Cover tone: urgent, attention-grabbing, emotionally charged",
+                "- Use bold colors, warning signals, or contrast to create urgency",
+                ])
+            elif any(kw in style_dna.lower() for kw in ["真诚", "克制", "经验"]):
+                lines.extend([
+                "- Cover tone: sincere, understated, trustworthy",
+                "- Avoid clickbait-style visuals — aim for credibility and authenticity",
+                ])
+
         lines.extend([
             "",
-            "Writer profile style (OVERRIDE all default style with this profile):",
-            f"Profile name: {profile_style.get('profile_name', '')}",
-            f"Role type: {profile_style.get('role_type', '')}",
-            f"Style DNA: {profile_style.get('style_dna', '')}",
-            f"Description: {profile_style.get('description', '')}",
-            f"Cover style: {profile_style.get('cover_style', '')}",
-            f"System prompt: {profile_style.get('system_prompt', '')}",
-            "Use the style_dna and cover_style above as the primary visual voice for this cover image.",
-            "Match the writer's aesthetic, color preferences, and visual personality.",
+            "## Essential Technical Rules (must follow)",
+            f"Aspect ratio: {aspect_ratio}",
+            f"Primary cover headline, copied verbatim: {title}",
+            f"Content context: {body_excerpt}",
+            f"Tags: {tags}",
+            "- Text must be readable at mobile thumbnail size",
+            "- Never use fake university seals, logos, or official marks",
+            "- Every character fully inside canvas with 8% safe margin",
+            "- Vary layout across generations — never repeat the exact same style",
+            "",
+            "## Default Design Reference (secondary, use only as fallback)",
+            "The following are default design rules. Use them ONLY as supplementary",
+            "guidance when the writer profile above doesn't specify something.",
+            "The writer profile ALWAYS takes priority over these defaults.",
+            "",
+            prompt_template.strip()[:800],
         ])
+    else:
+        # No profile selected — use the full default template
+        lines = [
+            prompt_template.strip(),
+            "",
+            "Payload:",
+            f"Platform: {platform}.",
+            f"Template: {template_name}.",
+            f"Aspect ratio: {aspect_ratio}.",
+            f"Content status: {content_status}.",
+            f"Primary cover headline, copied verbatim: {title}",
+            f"Tags: {tags}",
+            f"Style notes: {style_notes}",
+            f"Content context: {body_excerpt}",
+        ]
+        lines.extend(visual_direction_lines)
+        style_reference = str(payload.get("style_reference") or "").strip()
+        if style_reference:
+            lines.extend(["", "Platform style reference:", style_reference[:2400]])
+
     source_context = payload.get("source_context")
     if isinstance(source_context, dict):
         source_lines = ["", "Source context (verified facts only):"]
