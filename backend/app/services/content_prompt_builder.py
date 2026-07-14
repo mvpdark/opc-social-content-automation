@@ -196,6 +196,8 @@ async def _fetch_zscj_profile_style(profile_id: str) -> dict[str, str] | None:
                             "role_type": rt.get("name", rt.get("label", "")),
                             "style_dna": json.dumps(acct.get("style_dna", {}), ensure_ascii=False),
                             "description": acct.get("description", ""),
+                            "system_prompt": acct.get("system_prompt", ""),
+                            "cover_style": acct.get("cover_style", ""),
                         }
     except Exception:
         logger.warning("Failed to fetch ZSCJ profile style for %s", profile_id, exc_info=True)
@@ -229,6 +231,88 @@ async def build_draft_prompt_package(
         else:
             profile_style = await _fetch_zscj_profile_style(payload.profile_id)
 
+    # 当有写手风格时，构建以写手 system_prompt 为主体的自定义 prompt
+    if profile_style and profile_style.get("system_prompt"):
+        system_prompt = profile_style.get("system_prompt", "")
+        profile_name = profile_style.get("profile_name", "")
+        role_type = profile_style.get("role_type", "")
+        style_dna = profile_style.get("style_dna", "")
+        description = profile_style.get("description", "")
+
+        custom_prompt = f"""# Draft Generation — Writer Profile Mode
+
+You are generating a Xiaohongshu post draft. You MUST write in the exact style of the writer profile below. This is the #1 priority.
+
+## Writer Profile (PRIMARY Writing Instruction)
+
+{system_prompt}
+
+## Writer Style DNA
+
+Profile name: {profile_name}
+Role type: {role_type}
+Description: {description}
+Style DNA: {style_dna}
+
+## Writing Rules (based on writer profile)
+
+1. Follow the writer's system_prompt above as your PRIMARY writing guide
+2. Generate the title using the writer's title_pattern from style_dna — do NOT just copy the topic verbatim
+3. Generate tags in the writer's tag_pattern style
+4. Match the writer's sentence_pattern, emoji_usage, tone, and structure exactly
+5. If the writer uses zero emoji, use zero emoji. If the writer uses specific emoji, use those.
+6. If the writer's tone is "中立客观播报", write in neutral objective tone — do NOT add feminine voice, cute particles, or emotional hooks
+7. Ignore any default style rules about 7-layer funnel, feminine voice, or structural emoji — the writer's style OVERRIDES all defaults
+
+## Topic
+
+Use this as the SUBJECT/THEME of the post (do NOT copy it as the title — generate your own title in the writer's style):
+{payload.topic}
+
+## Compliance Rules (must follow regardless of writer style)
+
+- No WeChat IDs, phone numbers, or QR codes in the body
+- No "加微信", "加V" — use "私信交流" instead
+- No admissions guarantees: no "保过", "包上岸"
+- No fake scarcity: no "仅限3个名额", "最后X天"
+- No extreme words: no "最", "第一", "全网独家"
+- Do not include hashtags in the body; the application appends tags separately
+
+## Source Context
+
+Use only approved knowledge base context and web search results. Do not invent source material.
+
+## Output Format
+
+Return only the final post body text. Do not output separate Title, Body, Tags sections."""
+
+        return PromptPackage(
+            prompt_name="draft_generation_profile",
+            prompt_template=custom_prompt,
+            payload={
+                "platform": payload.platform,
+                "topic": payload.topic,
+                "tags": payload.tags,
+                "tone": payload.tone,
+                "target_audience": payload.target_audience,
+                "knowledge_query": payload.knowledge_query,
+                "knowledge_context": knowledge_context,
+                "web_search_context": _prompt_web_search_context(source_context, web_search_context),
+                "popular_posts": popular_posts,
+                "admission_notices": admission_notices,
+                "source_context": source_context,
+                "promotion_brief": source_context["promotion_brief"],
+                "style_reference": load_platform_style_reference(payload.platform),
+                "domain_key": getattr(current_user, "domain_key", None),
+                "profile_style": profile_style,
+                "user": {
+                    "id": current_user.id,
+                    "role": current_user.role,
+                },
+            },
+        )
+
+    # 无写手风格时，使用默认 prompt 模板
     return PromptPackage(
         prompt_name=domain.draft_prompt_name,
         prompt_template=load_prompt(domain.draft_prompt_name),
